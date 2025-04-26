@@ -12,8 +12,8 @@ import DeliveryHistory from '../screens/DeliveryHistory'
 // Admin Screens
 import AdminHome from '../screens/admin/AdminHome'
 import UserManagement from '../screens/admin/UserManagement'
-import AddNewAccountScreen from '../screens/admin/UserManagement/AddNewAccountScreen'
-import EditAccountScreen from '../screens/admin/UserManagement/EditAccountScreen'
+// import AddNewAccountScreen from '../screens/admin/UserManagement/AddNewAccountScreen'
+// import EditAccountScreen from '../screens/admin/UserManagement/EditAccountScreen'
 import AdminTrackLuggage from '../screens/admin/AdminTrackLuggage'
 import AdminContracts from '../screens/admin/AdminContracts'
 
@@ -22,7 +22,6 @@ import DeliveryHome from '../screens/delivery/DeliveryHome'
 import DeliveryContracts from '../screens/delivery/DeliveryContracts'
 
 import CheckLocation from '../screens/delivery/CheckLocation'
-import Analytics from '../screens/delivery/Analytics'
 
 // Airline Screens
 import AirlineHome from '../screens/airline/AirlineHome'
@@ -66,7 +65,6 @@ const DeliveryDrawer = () => (
       <Drawer.Screen name="DeliveryHome" component={DeliveryHome} />
       <Drawer.Screen name="DeliveryContracts" component={DeliveryContracts} />
       <Drawer.Screen name="CheckLocation" component={CheckLocation} />
-      <Drawer.Screen name="Analytics" component={Analytics} />
 
       {/* SHARED SCREENS */}
       <Drawer.Screen name="DeliveryHistory" component={DeliveryHistory} />
@@ -112,7 +110,7 @@ const StackNavigator = () => (
         component={AdminDrawer}
         options={{ headerShown: false }}
       />
-      <Stack.Screen
+      {/* <Stack.Screen
         name="AddNewAccount"
         component={AddNewAccountScreen}
         options={{ headerShown: true, title: 'Add New Account' }}
@@ -121,7 +119,7 @@ const StackNavigator = () => (
         name="EditAccount"
         component={EditAccountScreen}
         options={{ headerShown: true, title: 'Edit Account' }}
-      />
+      /> */}
       {/* Delivery Drawer (no headers shown inside) */}
       <Stack.Screen
         name="DeliveryDrawer"

@@ -1,52 +1,40 @@
 import React, { useState, useEffect } from 'react'
-import {
-    ScrollView,
-    StyleSheet,
-    View,
-} from 'react-native'
-import {
-    useTheme,
-    Searchbar,
-    Button,
-    IconButton,
-    DataTable,
-    Text,
-} from 'react-native-paper'
+import { ScrollView, View } from 'react-native'
+import { Searchbar, Button, DataTable, Text } from 'react-native-paper'
 import Header from '../../customComponents/Header'
+import { useTheme } from 'react-native-paper'
 
-const AdminLuggageTracking = ({ navigation }) => {
-    const { colors, fonts } = useTheme()
-
+const AdminTrackLuggage = ({ navigation }) => {
     const [searchQuery, setSearchQuery] = useState('')
     const [sortColumn, setSortColumn] = useState('trackingId')
     const [sortDirection, setSortDirection] = useState('ascending')
     const [luggages, setLuggages] = useState([])
 
+    const { colors, fonts } = useTheme()
+
     const onChangeSearch = query => setSearchQuery(query)
 
-    const fetchLuggage = async () => {
-        try {
-            const response = await fetch('http://10.0.2.2:8000/api/accounts/?format=json')
-            const data = await response.json()
+    // const fetchLuggage = async () => {
+    //     try {
+    //         const response = await fetch('http://10.0.2.2:8000/api/accounts/?format=json')
+    //         const data = await response.json()
+    //         const transformed = data.map(item => ({
+    //             trackingId: item.tracking_id,
+    //             passengerName: `${item.first_name} ${item.last_name}`,
+    //             status: item.status,
+    //             location: item.current_location,
+    //             destination: item.destination,
+    //             bookedDate: new Date(item.created_at).toLocaleDateString(),
+    //         }))
+    //         setLuggages(transformed)
+    //     } catch (error) {
+    //         console.error('Failed to fetch luggage data:', error)
+    //     }
+    // }
 
-            const transformed = data.map(item => ({
-                trackingId: item.tracking_id,
-                passengerName: `${item.first_name} ${item.last_name}`,
-                status: item.status,
-                location: item.current_location,
-                destination: item.destination,
-                bookedDate: new Date(item.created_at).toLocaleDateString(),
-            }))
-
-            setLuggages(transformed)
-        } catch (error) {
-            console.error('Failed to fetch luggage data:', error)
-        }
-    }
-
-    useEffect(() => {
-        fetchLuggage()
-    }, [])
+    // useEffect(() => {
+    //     fetchLuggage()
+    // }, [])
 
     const handleSort = column => {
         if (sortColumn === column) {
@@ -80,78 +68,68 @@ const AdminLuggageTracking = ({ navigation }) => {
     ]
 
     return (
-        <ScrollView style={{ backgroundColor: colors.background, flex: 1 }}>
+        <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>
             <Header navigation={navigation} />
-            <View style={styles.container}>
+            <View style={{ padding: 16, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <Searchbar
                     placeholder="Search by passenger"
                     onChangeText={onChangeSearch}
                     value={searchQuery}
-                    style={[styles.searchbar, { backgroundColor: colors.surface }]}
-                    inputStyle={{ fontFamily: fonts.regular.fontFamily }}
+                    style={{
+                        flex: 1,
+                        backgroundColor: colors.surface,
+                        borderRadius: 8,
+                        ...fonts.bodyLarge,
+                        elevation: 2,
+                    }}
                 />
                 <Button
                     mode="outlined"
                     icon="filter-variant"
                     onPress={() => console.log('Filter')}
-                    style={styles.filterButton}
-                    labelStyle={{ fontFamily: fonts.medium.fontFamily, fontSize: 14 }}
+                    style={{ marginLeft: 8 }}
                 >
                     Filter
                 </Button>
             </View>
 
             <ScrollView horizontal>
-                <DataTable style={styles.table}>
+                <DataTable>
                     <DataTable.Header>
                         {columns.map(({ key, label }) => (
                             <DataTable.Title
                                 key={key}
-                                style={styles.columnHeader}
                                 onPress={() => handleSort(key)}
+                                style={{ width: 130, justifyContent: 'center' }}
                             >
-                                <View style={styles.sortableHeader}>
-                                    <Text variant="labelMedium">{label}</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Text style={{ ...fonts.labelMedium, color: colors.text }}>{label}</Text>
                                     {sortColumn === key && (
-                                        <Text variant="labelSmall" style={styles.sortIcon}>
+                                        <Text style={{ marginLeft: 4, ...fonts.labelSmall, color: colors.text }}>
                                             {getSortIcon(key)}
                                         </Text>
                                     )}
                                 </View>
                             </DataTable.Title>
                         ))}
-                        <DataTable.Title style={styles.columnHeader} numeric>
-                            <Text variant="labelMedium">Actions</Text>
+                        <DataTable.Title style={{ width: 130, justifyContent: 'center' }}>
+                            <Text style={{ ...fonts.labelMedium, color: colors.text }}>Actions</Text>
                         </DataTable.Title>
                     </DataTable.Header>
 
                     {filteredAndSorted.map((item, idx) => (
                         <DataTable.Row key={idx}>
-                            <DataTable.Cell style={styles.columnCell}>
-                                <Text>{item.trackingId}</Text>
-                            </DataTable.Cell>
-                            <DataTable.Cell style={styles.columnCell}>
-                                <Text>{item.passengerName}</Text>
-                            </DataTable.Cell>
-                            <DataTable.Cell style={styles.columnCell}>
-                                <Text>{item.status}</Text>
-                            </DataTable.Cell>
-                            <DataTable.Cell style={styles.columnCell}>
-                                <Text>{item.location}</Text>
-                            </DataTable.Cell>
-                            <DataTable.Cell style={styles.columnCell}>
-                                <Text>{item.destination}</Text>
-                            </DataTable.Cell>
-                            <DataTable.Cell style={styles.columnCell}>
-                                <Text>{item.bookedDate}</Text>
-                            </DataTable.Cell>
-                            <DataTable.Cell numeric style={styles.columnCell}>
+                            {columns.map(({ key }) => (
+                                <DataTable.Cell key={key} style={{ width: 130, justifyContent: 'center', paddingVertical: 8 }}>
+                                    <Text style={{ color: colors.text }}>{item[key]}</Text>
+                                </DataTable.Cell>
+                            ))}
+                            <DataTable.Cell numeric style={{ width: 130, justifyContent: 'center' }}>
                                 <Button
                                     mode="outlined"
                                     icon="eye"
                                     compact
                                     onPress={() => navigation.navigate('TrackLuggage', { trackingId: item.trackingId })}
-                                    labelStyle={{ fontSize: 16, fontFamily: fonts.medium.fontFamily }}
                                 >
                                     View
                                 </Button>
@@ -164,38 +142,4 @@ const AdminLuggageTracking = ({ navigation }) => {
     )
 }
 
-const styles = StyleSheet.create({
-    container: {
-        padding: 16,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-    },
-    searchbar: {
-        flex: 1,
-    },
-    filterButton: {
-        marginLeft: 8,
-    },
-    table: {
-        paddingHorizontal: 16,
-    },
-    columnHeader: {
-        width: 130,
-        justifyContent: 'center',
-    },
-    columnCell: {
-        width: 130,
-        justifyContent: 'center',
-        paddingVertical: 8,
-    },
-    sortableHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    sortIcon: {
-        marginLeft: 4,
-    },
-})
-
-export default AdminLuggageTracking
+export default AdminTrackLuggage

@@ -1,7 +1,7 @@
-import React from 'react';
-import { ScrollView, View, TouchableOpacity } from 'react-native';
-import { Avatar, Card, Text, Divider } from 'react-native-paper';
-import Header from '../customComponents/Header';
+import React from 'react'
+import { ScrollView, View, TouchableOpacity, StyleSheet } from 'react-native'
+import { Avatar, Card, Text, Divider, useTheme } from 'react-native-paper'
+import Header from '../customComponents/Header'
 
 const messages = [
   {
@@ -25,33 +25,66 @@ const messages = [
     lastMessage: 'Your luggage will arrive this afternoon.',
     time: 'Yesterday',
   },
-];
+]
 
 const MessageCenterScreen = ({ navigation }) => {
+  const { colors, fonts } = useTheme()
+
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#fff' }} contentContainerStyle={{ paddingVertical: 10 }}>
-      <Header title="Message Center" navigation={navigation}/>
+    <ScrollView
+      style={[styles.scrollView, { backgroundColor: colors.background }]}
+      contentContainerStyle={styles.contentContainer}
+    >
+      <Header title="Message Center" navigation={navigation} />
       {messages.map((item, index) => (
         <View key={item.id}>
           <TouchableOpacity onPress={() => navigation.navigate('ChatRoom', { userId: item.id })}>
-            <Card style={{ marginVertical: 4, marginHorizontal: 10 }}>
-              <Card.Content style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Card style={[styles.card, { backgroundColor: colors.surface, elevation: colors.elevation.level2 }]}>
+              <Card.Content style={styles.cardContent}>
                 <Avatar.Image size={48} source={{ uri: item.avatar }} />
-                <View style={{ marginLeft: 12, flex: 1 }}>
-                  <Text variant="titleMedium">{item.name}</Text>
-                  <Text numberOfLines={1} style={{ color: 'gray' }}>
+                <View style={styles.cardTextContainer}>
+                  <Text style={{ color: colors.onSurface, ...fonts.titleMedium }}>
+                    {item.name}
+                  </Text>
+                  <Text numberOfLines={1} style={{ color: colors.onSurface, ...fonts.default }}>
                     {item.lastMessage}
                   </Text>
                 </View>
-                <Text style={{ color: 'gray', fontSize: 12 }}>{item.time}</Text>
+                <Text style={{ color: colors.onSurface, ...fonts.labelMedium }}>
+                  {item.time}
+                </Text>
               </Card.Content>
             </Card>
           </TouchableOpacity>
-          {index !== messages.length - 1 && <Divider style={{ marginHorizontal: 10 }} />}
+          {index !== messages.length - 1 && <Divider style={[styles.divider, { backgroundColor: colors.divider }]} />}
         </View>
       ))}
     </ScrollView>
-  );
-};
+  )
+}
 
-export default MessageCenterScreen;
+const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+  },
+  contentContainer: {
+    paddingVertical: 10,
+  },
+  card: {
+    marginVertical: 4,
+    marginHorizontal: 10,
+  },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  divider: {
+    marginHorizontal: 10,
+  },
+})
+
+export default MessageCenterScreen

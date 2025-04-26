@@ -1,23 +1,27 @@
-import React from 'react';
-import { Image, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { Appbar, IconButton, useTheme } from 'react-native-paper';
-const Header = ({ navigation}) => {
-    const { colors } = useTheme();
+import React from 'react'
+import { Image, ScrollView, StyleSheet, TouchableOpacity } from 'react-native'
+import { Appbar, IconButton } from 'react-native-paper'
+import { useTheme } from 'react-native-paper'
+
+const Header = ({ navigation }) => {
     const userProfileImage = 
     // ''
     'https://cdn.prod.website-files.com/62d84e447b4f9e7263d31e94/6399a4d27711a5ad2c9bf5cd_ben-sweet-2LowviVHZ-E-unsplash-1.jpeg'
 
     const handleProfilePress = () => {
-        navigation.navigate('Profile');
-    };
+        navigation.navigate('Profile')
+    }
+
+    const { colors } = useTheme()  // Correcting here to destructure `colors` from the theme
+
     return (
-        <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+        <ScrollView style={styles.container}>
             {/* Header */}
-            <Appbar.Header style={[styles.header, { backgroundColor: colors.background }]}>
+            <Appbar.Header style={styles.header}>
                 <IconButton
                     icon="menu"
                     size={30}
-                    color={colors.primary}
+                    iconColor={colors.primary}
                     onPress={() => navigation.openDrawer()}
                 />
                 <Image source={require('../../assets/icon-w_o-name.png')} style={styles.logo} />
@@ -27,23 +31,20 @@ const Header = ({ navigation}) => {
                         <Image
                             source={{ uri: userProfileImage }}
                             style={styles.profileImage}
-                            size={30}
-
                         />
                     </TouchableOpacity>
                 ) : (
                     <IconButton
                         icon="account-circle"
                         size={30}
-                        color={colors.icon}
                         onPress={handleProfilePress}
                     />
                 )}
             </Appbar.Header>
             {/* Header */}
         </ScrollView>
-    );
-};
+    )
+}
 
 const styles = StyleSheet.create({
     container: {
@@ -68,6 +69,6 @@ const styles = StyleSheet.create({
         height: 50,
         borderRadius: 50,
     },
-});
+})
 
-export default Header;
+export default Header

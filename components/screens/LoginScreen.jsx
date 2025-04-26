@@ -1,13 +1,13 @@
 import React, { useState } from 'react'
-import { View, Image, TouchableOpacity, StyleSheet, Text } from 'react-native'
+import { View, Image, Text, StyleSheet } from 'react-native'
 import { Button, useTheme } from 'react-native-paper'
 import BottomModal from '../customComponents/BottomModal'
 import LoginModalContent from '../customComponents/LoginModalContent'
 
 const LoginScreen = ({ navigation }) => {
+  const { colors, fonts } = useTheme()
   const [modalVisible, setModalVisible] = useState(false)
   const [isResetPasswordModal, setIsResetPasswordModal] = useState(false)
-  const { colors, fonts } = useTheme()
 
   const showModal = () => setModalVisible(true)
   const hideModal = () => setModalVisible(false)
@@ -24,22 +24,22 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Image source={require('../../assets/banner.png')} style={styles.banner} />
-      <Image source={require('../../assets/icon-w_o-name.png')} style={styles.image}
-      />
-      <Text style={[styles.title, { color: colors.primary, fontFamily: fonts.regular.fontFamily }]}>
+      <Image source={require('../../assets/banner.png')} style={styles.bannerImage} />
+      <Image source={require('../../assets/icon-w_o-name.png')} style={styles.logoImage} />
+
+      <Text style={[styles.title, { color: colors.primary, ...fonts.displayLarge }]}>
         EasyTrack
       </Text>
-      <Text style={[styles.description, { color: colors.tertiary, fontFamily: fonts.regular.fontFamily }]}>
+
+      <Text style={[styles.subtitle, { color: colors.onBackground, ...fonts.titleMedium }]}>
         For your luggage contracting and tracking needs. Keep track of your luggage location in real-time.
       </Text>
 
       <Button
         mode="contained"
         onPress={handleLogin}
-        buttonColor={colors.primary}
-        labelStyle={[styles.buttonLabel, { color: '#FFFFFF', fontFamily: fonts.regular.fontFamily }]}
-        style={styles.firstButton}
+        style={[styles.button, { backgroundColor: colors.primary }]}
+        labelStyle={[styles.buttonLabel, { color: colors.onPrimary, ...fonts.labelLarge }]}
       >
         Login
       </Button>
@@ -47,8 +47,8 @@ const LoginScreen = ({ navigation }) => {
       <Button
         mode="text"
         onPress={showResetPasswordModal}
-        labelStyle={[styles.buttonLabel, { color: colors.primary, fontFamily: fonts.regular.fontFamily }]}
-        style={styles.secondaryButton}
+        style={styles.resetPasswordButton}
+        labelStyle={[styles.buttonLabel, { color: colors.primary }]}
       >
         Forgot Password?
       </Button>
@@ -70,30 +70,27 @@ const styles = StyleSheet.create({
     padding: 20,
     justifyContent: 'center',
   },
-  banner: {
+  bannerImage: {
     alignSelf: 'center',
     maxWidth: '110%',
     maxHeight: '30%',
   },
-  image: {
-    width: undefined,  // Adjusts the width to 50% of the parent container
-    height: '20%',  // Automatically adjusts height based on aspect ratio
-    alignSelf:'center',
-    aspectRatio: 1,  // Maintains the aspect ratio of the image
-    resizeMode: 'contain',  // Ensures the image fits within the bounds
+  logoImage: {
+    width: undefined,
+    height: '20%',
+    alignSelf: 'center',
+    aspectRatio: 1,
+    resizeMode: 'contain',
   },
   title: {
-    fontSize: 40,
-    fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 20,
   },
-  description: {
-    fontSize: 16,
+  subtitle: {
     textAlign: 'center',
     marginBottom: 20,
   },
-  firstButton: {
+  button: {
     alignSelf: 'center',
     width: '85%',
     height: 50,
@@ -102,24 +99,12 @@ const styles = StyleSheet.create({
     marginTop: '10%',
     marginBottom: 12,
   },
-  secondaryButton: {
+  buttonLabel: {
+    textAlign: 'center',
+  },
+  resetPasswordButton: {
     alignSelf: 'center',
     marginTop: 12,
-  },
-  buttonLabel: {
-    fontSize: 16,
-  },
-  signUpRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 12,
-  },
-  signUpText: {
-    fontSize: 16,
-  },
-  signUpLink: {
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 })
 

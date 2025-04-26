@@ -5,18 +5,18 @@ import {
     View,
 } from 'react-native'
 import {
-    useTheme,
     Searchbar,
     Button,
     IconButton,
     Avatar,
     DataTable,
     Text,
+    useTheme
 } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 
 const UserManagement = ({ navigation }) => {
-    const { colors, fonts } = useTheme()
+    const { colors } = useTheme()
 
     const [searchQuery, setSearchQuery] = useState('')
     const [sortColumn, setSortColumn] = useState('name')
@@ -47,8 +47,6 @@ const UserManagement = ({ navigation }) => {
         }
     }
     useEffect(() => {
-        
-
         fetchUsers()
     }, [])
 
@@ -84,46 +82,44 @@ const UserManagement = ({ navigation }) => {
     ]
 
     return (
-        <ScrollView style={{ backgroundColor: colors.background, flex: 1 }}>
+        <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>
             <Header navigation={navigation} />
 
-            <View style={styles.container}>
+            <View style={[styles.container, { backgroundColor: colors.background }]}>
                 <Searchbar
                     placeholder="Search by name"
                     onChangeText={onChangeSearch}
                     value={searchQuery}
                     style={[styles.searchbar, { backgroundColor: colors.surface }]}
-                    inputStyle={{ fontFamily: fonts.regular.fontFamily }}
                 />
                 <Button
                     mode="outlined"
                     icon="filter-variant"
                     onPress={() => console.log('Filter pressed')}
-                    style={styles.filterButton}
-                    labelStyle={{ fontFamily: fonts.medium.fontFamily, fontSize: 14 }}
+                    style={[styles.filterButton, { borderColor: colors.primary }]}
+                    labelStyle={{ color: colors.primary }}
                 >
                     Filter
                 </Button>
             </View>
 
-            <View style={styles.actions}>
+            <View style={[styles.actions, { backgroundColor: colors.background }]}>
                 <Button
                     mode="contained"
                     icon="account-plus"
                     onPress={() => navigation.navigate('AddNewAccount')}
-                    style={styles.addButton}
-                    labelStyle={{ fontFamily: fonts.medium.fontFamily }}
+                    style={[styles.addButton, { backgroundColor: colors.primary }]}
                 >
                     Add New Account
                 </Button>
-                <IconButton icon="refresh" size={24} onPress={fetchUsers} iconColor={colors.primary} />
+                <IconButton icon="refresh" size={24} onPress={fetchUsers} color={colors.primary} />
             </View>
 
             <ScrollView horizontal>
-                <DataTable style={styles.table}>
+                <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
                     <DataTable.Header>
                         <DataTable.Title style={styles.avatarColumn}>
-                        <Text variant="labelMedium">Avatar</Text>
+                            <Text style={{ color: colors.tertiary }}>Avatar</Text>
                         </DataTable.Title>
                         {columns.map(({ key, label, width }) => (
                             <DataTable.Title
@@ -132,9 +128,9 @@ const UserManagement = ({ navigation }) => {
                                 onPress={() => handleSort(key)}
                             >
                                 <View style={styles.sortableHeader}>
-                                    <Text variant="labelMedium">{label}</Text>
+                                    <Text style={{ color: colors.tertiary }}>{label}</Text>
                                     {sortColumn === key && (
-                                        <Text variant="labelSmall" style={styles.sortIcon}>
+                                        <Text style={[styles.sortIcon, { color: colors.tertiary }]}>
                                             {getSortIcon(key)}
                                         </Text>
                                     )}
@@ -142,7 +138,7 @@ const UserManagement = ({ navigation }) => {
                             </DataTable.Title>
                         ))}
                         <DataTable.Title style={styles.columnHeader} numeric>
-                            <Text variant="labelMedium">Actions</Text>
+                            <Text style={{ color: colors.tertiary }}>Actions</Text>
                         </DataTable.Title>
                     </DataTable.Header>
 
@@ -156,22 +152,22 @@ const UserManagement = ({ navigation }) => {
                                 )}
                             </DataTable.Cell>
                             <DataTable.Cell style={styles.columnCell}>
-                                <Text variant="bodyMedium">{user.name}</Text>
+                                <Text style={{ color: colors.tertiary }}>{user.name}</Text>
                             </DataTable.Cell>
                             <DataTable.Cell style={styles.emailColumnCell}>
-                                <Text variant="bodyMedium">{user.email}</Text>
+                                <Text style={{ color: colors.tertiary }}>{user.email}</Text>
                             </DataTable.Cell>
                             <DataTable.Cell style={styles.columnCell}>
-                                <Text variant="bodyMedium">{user.role}</Text>
+                                <Text style={{ color: colors.tertiary }}>{user.role}</Text>
                             </DataTable.Cell>
                             <DataTable.Cell style={styles.columnCell}>
-                                <Text variant="bodyMedium">{user.status}</Text>
+                                <Text style={{ color: colors.tertiary }}>{user.status}</Text>
                             </DataTable.Cell>
                             <DataTable.Cell style={styles.columnCell}>
-                                <Text variant="bodyMedium">{user.dateCreated}</Text>
+                                <Text style={{ color: colors.tertiary }}>{user.dateCreated}</Text>
                             </DataTable.Cell>
                             <DataTable.Cell style={styles.columnCell}>
-                                <Text variant="bodyMedium">{user.lastLogin}</Text>
+                                <Text style={{ color: colors.tertiary }}>{user.lastLogin}</Text>
                             </DataTable.Cell>
                             <DataTable.Cell numeric style={styles.columnCell}>
                                 <Button
@@ -180,7 +176,7 @@ const UserManagement = ({ navigation }) => {
                                     compact
                                     onPress={() => navigation.navigate('EditAccount', { userId: user.id })}
                                     style={styles.viewButton}
-                                    labelStyle={{ fontSize: 18, fontFamily: fonts.medium.fontFamily }}
+                                    labelStyle={{ color: colors.primary }}
                                 >
                                     View
                                 </Button>

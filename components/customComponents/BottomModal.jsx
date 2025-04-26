@@ -65,7 +65,7 @@ const BottomModal = ({ visible, onDismiss, children }) => {
   return (
     <Portal>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.overlay}>
+        <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={styles.keyboardAvoiding}
@@ -94,7 +94,6 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.4)',
   },
   keyboardAvoiding: {
     flex: 1,

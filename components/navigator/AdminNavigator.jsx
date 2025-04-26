@@ -1,9 +1,14 @@
-import React, { useState } from 'react'
-import { Image, ScrollView, StyleSheet } from 'react-native'
-import { useTheme, Text, List, Surface, Dialog, Portal, Button } from 'react-native-paper'
+import React, { useState, useContext } from 'react'
+import { Image, ScrollView, View, StyleSheet } from 'react-native'
+import { Text, List, Surface, Dialog, Portal, Button, IconButton, Switch } from 'react-native-paper'
 import { CommonActions } from '@react-navigation/native'
+import { ThemeContext } from '../themes/themeContext'
+import { useTheme } from 'react-native-paper'
 
 const AdminNavigator = ({ navigation }) => {
+  const { toggleTheme } = useContext(ThemeContext)
+  const { colors, fonts } = useTheme()
+
   const [expandedSections, setExpandedSections] = useState({
     transactions: true,
     account: true,
@@ -11,7 +16,12 @@ const AdminNavigator = ({ navigation }) => {
     help: true,
   })
   const [isDialogVisible, setIsDialogVisible] = useState(false)
-  const { colors } = useTheme()
+  const [isSwitchOn, setIsSwitchOn] = useState(false)
+
+  const handleThemeSwitch = () => {
+    toggleTheme()
+    setIsSwitchOn(!isSwitchOn)
+  }
 
   const handleLogout = () => setIsDialogVisible(true)
   const confirmLogout = () => {
@@ -31,30 +41,30 @@ const AdminNavigator = ({ navigation }) => {
       icon={icon}
       items={items}
       navigation={navigation}
-      iconColor={colors.iconColor}
+      fonts={fonts}
     />
   )
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>
-      <Surface style={styles.header}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+      <Surface style={[styles.surface, { backgroundColor: colors.surface }]}>
         <Image source={require('../../assets/icon-w_o-name.png')} style={styles.logo} />
-        <Text variant="titleLarge" style={{ fontWeight: 'bold', marginTop: 10, fontSize: 30, color: colors.primary }}>
+        <Text style={[styles.appName, { color: colors.onSurface, ...fonts.displaySmall }]}>
           EasyTrack
         </Text>
       </Surface>
 
       {renderSection('Transactions', 'transactions', 'package', [
         { icon: 'home-outline', label: 'Home', screen: 'AdminHome' },
-        { icon: 'file-document-outline', label: 'Contracts', screen: 'AdminContracts' },
-        { icon: 'map-marker-path', label: 'Luggage Tracking', screen: 'AdminTrackLuggage' },
+        { icon: 'file-document-outline', label: 'Contracts (Pending)', screen: 'AdminContracts' },
+        { icon: 'map-marker-path', label: 'Luggage Tracking (In Transit)', screen: 'AdminTrackLuggage' },
         { icon: 'account-group-outline', label: 'User Management', screen: 'UserManagement' },
       ])}
 
       {renderSection('Results and Statistics', 'results', 'chart-bar', [
-        // { icon: 'credit-card-clock-outline', label: 'Transaction History', screen: '' },
-        { icon: 'history', label: 'Delivery History and Reports', screen: 'DeliveryHistory' },
-        // { icon: 'chart-line', label: 'Performance Statistics', screen: '' },
+        { icon: 'credit-card-clock-outline', label: 'Transaction History', screen: '' },
+        { icon: 'history', label: 'Delivery History (Completed)', screen: 'DeliveryHistory' },
+        { icon: 'chart-line', label: 'Performance Statistics', screen: '' },
       ])}
 
       {renderSection('My Account', 'account', 'account', [
@@ -66,15 +76,37 @@ const AdminNavigator = ({ navigation }) => {
         { icon: 'message-outline', label: 'Message Center', screen: 'MessageCenter' },
       ])}
 
+      <View style={styles.themeToggleContainer}>
+        <IconButton
+          icon="theme-light-dark"
+          size={24}
+          iconColor={colors.primary}
+          onPress={handleThemeSwitch}
+          style={styles.themeIconButton}
+        />
+        <Text style={[styles.themeToggleText, { color: colors.onSurface, ...fonts.titleMedium }]}>
+          Toggle Theme
+        </Text>
+        <Switch value={isSwitchOn} onValueChange={handleThemeSwitch} />
+      </View>
+
       <Portal>
-        <Dialog visible={isDialogVisible} onDismiss={cancelLogout}>
-          <Dialog.Title>Logout</Dialog.Title>
+        <Dialog visible={isDialogVisible} onDismiss={cancelLogout} style={{ backgroundColor: colors.surface }}>
+          <Dialog.Title style={{ color: colors.onSurface, ...fonts.titleLarge }}>
+            Logout
+          </Dialog.Title>
           <Dialog.Content>
-            <Text>This will log you out. Are you sure?</Text>
+            <Text style={{ color: colors.onSurface, ...fonts.bodyMedium }}>
+              This will log you out. Are you sure?
+            </Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={cancelLogout}>Cancel</Button>
-            <Button onPress={confirmLogout}>OK</Button>
+            <Button onPress={cancelLogout} labelStyle={{ color: colors.primary }}>
+              Cancel
+            </Button>
+            <Button onPress={confirmLogout} labelStyle={{ color: colors.primary }}>
+              OK
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -82,29 +114,36 @@ const AdminNavigator = ({ navigation }) => {
   )
 }
 
-const ExpandableSection = ({ title, expanded, onToggle, icon, items, navigation, iconColor }) => (
-  <List.Accordion
-    title={title}
-    titleStyle={{ fontWeight: 'bold', fontSize: 16, color: iconColor }}
-    left={(props) => <List.Icon {...props} icon={icon} color={iconColor} />}
-    expanded={expanded}
-    onPress={onToggle}
-  >
-    {items.map(({ icon, label, screen, action, color }, idx) => (
-      <List.Item
-        key={idx}
-        title={label}
-        left={(props) => <List.Icon {...props} icon={icon} color={color || iconColor} />}
-        onPress={() => (action ? action() : navigation.navigate(screen))}
-        titleStyle={{ color: color || undefined, fontSize: 14 }}
-        style={{ paddingLeft: 30 }}
-      />
-    ))}
-  </List.Accordion>
-)
+const ExpandableSection = ({ title, expanded, onToggle, icon, items, navigation, fonts }) => {
+  const { colors } = useTheme()
+
+  return (
+    <List.Accordion
+      title={title}
+      titleStyle={{ color: colors.onSurface, ...fonts.titleMedium }}
+      left={(props) => <List.Icon {...props} icon={icon} />}
+      expanded={expanded}
+      onPress={onToggle}
+    >
+      {items.map(({ icon, label, screen, action, color }, idx) => (
+        <List.Item
+          key={idx}
+          title={label}
+          left={(props) => <List.Icon {...props} icon={icon} color={color || colors.onSurface} />}
+          onPress={() => (action ? action() : navigation.navigate(screen))}
+          titleStyle={{ color: color || colors.onSurface, ...fonts.bodyMedium }}
+          style={styles.listItem}
+        />
+      ))}
+    </List.Accordion>
+  )
+}
 
 const styles = StyleSheet.create({
-  header: {
+  container: {
+    flex: 1,
+  },
+  surface: {
     padding: 20,
     marginTop: 40,
     elevation: 4,
@@ -114,6 +153,24 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     resizeMode: 'contain',
+  },
+  appName: {
+    marginTop: 10,
+  },
+  themeToggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    margin: 20,
+  },
+  themeIconButton: {
+    marginRight: 10,
+  },
+  themeToggleText: {
+    flex: 1,
+  },
+  listItem: {
+    paddingLeft: 30,
   },
 })
 
