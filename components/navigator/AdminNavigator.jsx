@@ -1,5 +1,5 @@
-import React, { useState, useContext } from 'react'
-import { Image, ScrollView, View, StyleSheet } from 'react-native'
+import React, { useState, useContext, useEffect } from 'react'
+import { Image, ScrollView, View, StyleSheet, BackHandler } from 'react-native'
 import { Text, List, Surface, Dialog, Portal, Button, IconButton, Switch } from 'react-native-paper'
 import { CommonActions } from '@react-navigation/native'
 import { ThemeContext } from '../themes/themeContext'
@@ -44,6 +44,15 @@ const AdminNavigator = ({ navigation }) => {
       fonts={fonts}
     />
   )
+
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleLogout() 
+      return true
+    })
+    return () => backHandler.remove()
+  }, [])
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>

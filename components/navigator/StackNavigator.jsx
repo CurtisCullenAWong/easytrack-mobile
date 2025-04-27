@@ -65,7 +65,7 @@ const AirlineDrawer = () => (
       screenOptions={{ headerShown: false }}
   >
       <Drawer.Screen name="AirlineHome" component={AirlineHome} />
-      <Drawer.Screen name="TrackLuggage" component={TrackLuggage} />
+      <Drawer.Screen name="AirlineTrackLuggage" component={TrackLuggage} />
       <Drawer.Screen name="AirlineContracts" component={AirlineContracts} />
       <Drawer.Screen name="Contracting" component={Contracting} />
 
