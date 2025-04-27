@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react'
 import { Image, ScrollView, View, StyleSheet, BackHandler } from 'react-native'
-import { Text, List, Surface, Dialog, Portal, Button, IconButton, Switch } from 'react-native-paper'
+import { Text, List, Surface, Dialog, Portal, Button, IconButton, Switch, Divider } from 'react-native-paper'
 import { CommonActions } from '@react-navigation/native'
 import { ThemeContext } from '../themes/themeContext'
 import { useTheme } from 'react-native-paper'
@@ -58,10 +58,11 @@ const DeliveryNavigator = ({ navigation }) => {
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       <Surface style={[styles.surface, { backgroundColor: colors.background }]}>
         <Image source={require('../../assets/icon-w_o-name.png')} style={styles.logo} />
-        <Text style={[styles.appName, { color: colors.primary, ...fonts.displaySmall, fontWeight: 'bold' }]}>
+        <Text style={[styles.appName, { color: colors.primary, ...fonts.displaySmall }]}>
           EasyTrack
         </Text>
       </Surface>
+      <Divider style={styles.divider} />
 
       {renderSection('Transactions', 'transactions', 'package', [
         { icon: 'home-outline', label: 'Home', screen: 'DeliveryHome' },
@@ -167,6 +168,10 @@ const styles = StyleSheet.create({
   },
   appName: {
     marginTop: 10,
+  },
+  divider: {
+    height: 2,
+    alignSelf: 'center',
   },
   themeToggleContainer: {
     flexDirection: 'row',

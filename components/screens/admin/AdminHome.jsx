@@ -1,6 +1,6 @@
 import React from 'react'
 import { ScrollView, View, Dimensions, FlatList, StyleSheet } from 'react-native'
-import { Text, Button, Surface, Card, Title, Paragraph, useTheme } from 'react-native-paper'
+import { Text, Button, Surface, Card, Title, Paragraph, useTheme, Divider } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 
 const { width } = Dimensions.get('window')
@@ -32,7 +32,7 @@ const AdminHome = ({ navigation }) => {
       <View style={styles.container}>
         <Title style={[styles.title, { color: colors.onBackground, ...fonts.titleLarge }]}>Welcome Admin!</Title>
         <Text style={[styles.subTitle, { color: colors.onBackground, ...fonts.titleMedium }]}>Hi, System Administrator</Text>
-
+        <Divider />
         {images.length ? (
           <FlatList
             data={images}

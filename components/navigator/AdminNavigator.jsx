@@ -1,11 +1,11 @@
 import React, { useState, useContext, useEffect } from 'react'
 import { Image, ScrollView, View, StyleSheet, BackHandler } from 'react-native'
-import { Text, List, Surface, Dialog, Portal, Button, IconButton, Switch } from 'react-native-paper'
+import { Text, List, Surface, Dialog, Portal, Button, IconButton, Switch, Divider } from 'react-native-paper'
 import { CommonActions } from '@react-navigation/native'
 import { ThemeContext } from '../themes/themeContext'
 import { useTheme } from 'react-native-paper'
 
-const AirlineNavigator = ({ navigation }) => {
+const AdminNavigator = ({ navigation }) => {
   const { toggleTheme } = useContext(ThemeContext)
   const { colors, fonts } = useTheme()
 
@@ -62,7 +62,7 @@ const AirlineNavigator = ({ navigation }) => {
           EasyTrack
         </Text>
       </Surface>
-
+      <Divider style={styles.divider} />
       {renderSection('Transactions', 'transactions', 'package', [
         { icon: 'home-outline', label: 'Home', screen: 'AdminHome' },
         { icon: 'file-document-outline', label: 'Contracts (Pending)', screen: 'AdminContracts' },
@@ -166,6 +166,10 @@ const styles = StyleSheet.create({
   appName: {
     marginTop: 10,
   },
+  divider: {
+    height: 2,
+    alignSelf: 'center',
+  },
   themeToggleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -183,4 +187,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default AirlineNavigator
+export default AdminNavigator

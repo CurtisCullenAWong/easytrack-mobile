@@ -17,6 +17,7 @@ const App = () => {
   const loadFonts = async () => {
     await Font.loadAsync({
       'Onest-Regular': require('./assets/fonts/Onest-Regular.ttf'), // <-- your font file
+      'Onest-Bold': require('./assets/fonts/Onest-Bold.ttf'), // <-- your font file
     });
     setFontsLoaded(true);
   };

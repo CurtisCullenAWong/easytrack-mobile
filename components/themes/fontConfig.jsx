@@ -1,31 +1,15 @@
 const common = { fontFamily: 'Onest-Regular' };
+const commonBold = { fontFamily: 'Onest-Bold' };
 
 const fontConfig = {
-  default: {
-    regular: {
-      fontFamily: 'Onest-Regular',
-      fontWeight: 'normal',
-    },
-    medium: {
-      fontFamily: 'Onest-Regular',
-      fontWeight: '500',
-    },
-    light: {
-      fontFamily: 'Onest-Regular',
-      fontWeight: '300',
-    },
-    thin: {
-      fontFamily: 'Onest-Regular',
-      fontWeight: '100',
-    },
-  },
-  displayLarge: { ...common, fontWeight: '400', fontSize: 56, lineHeight: 64, letterSpacing: -0.2 },
+
+  displayLarge: { ...commonBold, fontWeight: '400', fontSize: 56, lineHeight: 64, letterSpacing: -0.2 },
   displayMedium: { ...common, fontWeight: '400', fontSize: 44, lineHeight: 52 },
   displaySmall: { ...common, fontWeight: '400', fontSize: 36, lineHeight: 44 },
-  headlineLarge: { ...common, fontWeight: '400', fontSize: 32, lineHeight: 40 },
+  headlineLarge: { ...commonBold, fontWeight: '400', fontSize: 32, lineHeight: 40 },
   headlineMedium: { ...common, fontWeight: '400', fontSize: 28, lineHeight: 36 },
   headlineSmall: { ...common, fontWeight: '400', fontSize: 24, lineHeight: 32 },
-  titleLarge: { ...common, fontWeight: '500', fontSize: 22, lineHeight: 28 },
+  titleLarge: { ...commonBold, fontWeight: '500', fontSize: 22, lineHeight: 28 },
   titleMedium: { ...common, fontWeight: '500', fontSize: 16, lineHeight: 24, letterSpacing: 0.15 },
   titleSmall: { ...common, fontWeight: '500', fontSize: 14, lineHeight: 20, letterSpacing: 0.1 },
   labelLarge: { ...common, fontWeight: '600', fontSize: 14, lineHeight: 20, letterSpacing: 0.1 },

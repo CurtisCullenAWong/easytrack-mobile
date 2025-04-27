@@ -41,7 +41,7 @@ const Profile = ({ navigation, route }) => {
             {/* Account Info Card */}
             <Card style={[styles.card, {backgroundColor: colors.surface}]}>
                 <Card.Title title="Account Info" titleStyle={[styles.title, { color: colors.onSurface, ...fonts.titleMedium }]} />
-                <Divider />
+                <Divider style={[styles.divider,{backgroundColor: colors.onSurface}]}/>
                 <Card.Content>
                     <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>Role: {user.role}</Text>
                     <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>Date Created: {user.dateCreated}</Text>
@@ -51,10 +51,10 @@ const Profile = ({ navigation, route }) => {
             {/* Recent Activity Section */}
             <Card style={[styles.card, {backgroundColor: colors.surface}]}>
                 <Card.Title title="Recent Activity" titleStyle={[styles.title, { color: colors.onSurface, ...fonts.titleMedium }]} />
-                <Divider />
+                <Divider style={styles.divider}/>
                 <Card.Content>
                     <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>Last Login: Jan 1, 2024</Text>
-                    <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>Posts Created: 15</Text>
+                    <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>Deliveries Made: 15</Text>
                     <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>Active Sessions: 3</Text>
                 </Card.Content>
             </Card>
@@ -114,6 +114,10 @@ const styles = StyleSheet.create({
     },
     text: {
         marginBottom: 6,
+    },
+    divider: {
+        height: 2,
+        alignSelf: 'center',
     },
     logoutContainer: {
         marginTop: 24,
