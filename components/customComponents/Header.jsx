@@ -1,21 +1,21 @@
 import React from 'react'
-import { Image, ScrollView, StyleSheet, TouchableOpacity } from 'react-native'
+import { Image, StyleSheet, TouchableOpacity, Text, View } from 'react-native'
 import { Appbar, IconButton } from 'react-native-paper'
 import { useTheme } from 'react-native-paper'
 
-const Header = ({ navigation }) => {
-    const userProfileImage = 
-    // ''
-    'https://cdn.prod.website-files.com/62d84e447b4f9e7263d31e94/6399a4d27711a5ad2c9bf5cd_ben-sweet-2LowviVHZ-E-unsplash-1.jpeg'
+const Header = ({ navigation, title }) => {
+    const userProfileImage =
+        // ''
+        'https://cdn.prod.website-files.com/62d84e447b4f9e7263d31e94/6399a4d27711a5ad2c9bf5cd_ben-sweet-2LowviVHZ-E-unsplash-1.jpeg'
 
     const handleProfilePress = () => {
         navigation.navigate('Profile')
     }
 
-    const { colors } = useTheme()  // Correcting here to destructure `colors` from the theme
+    const { colors, fonts } = useTheme()  // Destructure `colors` from the theme
 
     return (
-        <ScrollView style={styles.container}>
+        <View style={styles.container}>
             {/* Header */}
             <Appbar.Header style={styles.header}>
                 <IconButton
@@ -24,7 +24,7 @@ const Header = ({ navigation }) => {
                     iconColor={colors.primary}
                     onPress={() => navigation.openDrawer()}
                 />
-                <Image source={require('../../assets/icon-w_o-name.png')} style={styles.logo} />
+                <Text style={[styles.title, fonts.headlineSmall, {color:colors.onBackground, fontWeight: 'bold' }]}>{title}</Text>
                 {/* Conditional rendering for profile picture or account icon */}
                 {userProfileImage ? (
                     <TouchableOpacity onPress={handleProfilePress}>
@@ -37,12 +37,13 @@ const Header = ({ navigation }) => {
                     <IconButton
                         icon="account-circle"
                         size={30}
+                        iconColor={colors.primary}
                         onPress={handleProfilePress}
                     />
                 )}
             </Appbar.Header>
             {/* Header */}
-        </ScrollView>
+        </View>
     )
 }
 

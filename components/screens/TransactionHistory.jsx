@@ -30,7 +30,7 @@ const TransactionHistory = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header navigation={navigation} title="" />
+      <Header navigation={navigation} title="Transaction" />
       <FlatList
         data={transactions}
         keyExtractor={(item) => item.id}

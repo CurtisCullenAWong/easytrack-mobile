@@ -1,7 +1,10 @@
-const common = { fontFamily: 'Poppins' }
+const common = { fontFamily: 'Onest-Regular' };
 
 const fontConfig = {
-  // Largest to smallest font sizes
+  regular: { ...common, fontWeight: 'normal' },
+  medium: { ...common, fontWeight: '500' },
+  light: { ...common, fontWeight: '300' },
+  thin: { ...common, fontWeight: '100' },
   displayLarge: { ...common, fontWeight: '400', fontSize: 56, lineHeight: 64, letterSpacing: -0.2 },
   displayMedium: { ...common, fontWeight: '400', fontSize: 44, lineHeight: 52 },
   displaySmall: { ...common, fontWeight: '400', fontSize: 36, lineHeight: 44 },
@@ -14,10 +17,9 @@ const fontConfig = {
   labelLarge: { ...common, fontWeight: '600', fontSize: 14, lineHeight: 20, letterSpacing: 0.1 },
   labelMedium: { ...common, fontWeight: '600', fontSize: 12, lineHeight: 16, letterSpacing: 0.5 },
   labelSmall: { ...common, fontWeight: '600', fontSize: 11, lineHeight: 16, letterSpacing: 0.5 },
-  // Body text styles
   bodyLarge: { ...common, fontWeight: '400', fontSize: 16, lineHeight: 24, letterSpacing: 0.5 },
   bodyMedium: { ...common, fontWeight: '400', fontSize: 14, lineHeight: 20, letterSpacing: 0.25 },
   bodySmall: { ...common, fontWeight: '400', fontSize: 12, lineHeight: 16, letterSpacing: 0.4 },
 };
 
-export default fontConfig
+export default fontConfig;

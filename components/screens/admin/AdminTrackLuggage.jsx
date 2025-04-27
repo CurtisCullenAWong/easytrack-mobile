@@ -69,7 +69,7 @@ const AdminTrackLuggage = ({ navigation }) => {
 
     return (
         <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>
-            <Header navigation={navigation} />
+            <Header navigation={navigation} title={'Track Luggage'} />
             <View style={{ padding: 16, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <Searchbar
                     placeholder="Search by passenger"

@@ -5,7 +5,7 @@ import { CommonActions } from '@react-navigation/native'
 import { ThemeContext } from '../themes/themeContext'
 import { useTheme } from 'react-native-paper'
 
-const AdminNavigator = ({ navigation }) => {
+const AirlineNavigator = ({ navigation }) => {
   const { toggleTheme } = useContext(ThemeContext)
   const { colors, fonts } = useTheme()
 
@@ -56,9 +56,9 @@ const AdminNavigator = ({ navigation }) => {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Surface style={[styles.surface, { backgroundColor: colors.surface }]}>
+      <Surface style={[styles.surface, { backgroundColor: colors.background }]}>
         <Image source={require('../../assets/icon-w_o-name.png')} style={styles.logo} />
-        <Text style={[styles.appName, { color: colors.onSurface, ...fonts.displaySmall }]}>
+        <Text style={[styles.appName, { color: colors.primary, ...fonts.displaySmall, fontWeight: 'bold' }]}>
           EasyTrack
         </Text>
       </Surface>
@@ -138,7 +138,7 @@ const ExpandableSection = ({ title, expanded, onToggle, icon, items, navigation,
         <List.Item
           key={idx}
           title={label}
-          left={(props) => <List.Icon {...props} icon={icon} color={color || colors.onSurface} />}
+          left={(props) => <List.Icon {...props} icon={icon} color={color || colors.primary} />}
           onPress={() => (action ? action() : navigation.navigate(screen))}
           titleStyle={{ color: color || colors.onSurface, ...fonts.bodyMedium }}
           style={styles.listItem}
@@ -159,8 +159,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 100,
-    height: 100,
+    width: 200,
+    height: 150,
     resizeMode: 'contain',
   },
   appName: {
@@ -183,4 +183,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default AdminNavigator
+export default AirlineNavigator

@@ -1,6 +1,6 @@
-import { DefaultTheme } from 'react-native-paper'
-import { colorConfigLight } from './colorConfig'
-import { fontConfig } from './fontConfig'
+import { DefaultTheme, configureFonts } from 'react-native-paper';
+import { colorConfigLight } from './colorConfig';
+import fontConfig from './fontConfig';
 
 const lightTheme = {
   ...DefaultTheme,
@@ -9,9 +9,8 @@ const lightTheme = {
     ...colorConfigLight,
   },
   fonts: {
-    ...DefaultTheme.fonts,
-    ...fontConfig,
+    fonts: configureFonts({config: fontConfig, isV3: false}),
   },
-}
+};
 
-export default lightTheme
+export default lightTheme;

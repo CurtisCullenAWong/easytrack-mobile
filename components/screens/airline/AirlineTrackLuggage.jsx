@@ -17,7 +17,7 @@ const AirlineTrackLuggage = ({ navigation }) => {
 
     return (
         <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
-            <Header navigation={navigation} />
+            <Header navigation={navigation} title={'Track Luggage'}/>
 
             <View style={styles.container}>
                 <Text

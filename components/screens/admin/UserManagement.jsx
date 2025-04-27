@@ -83,7 +83,7 @@ const UserManagement = ({ navigation }) => {
 
     return (
         <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>
-            <Header navigation={navigation} />
+            <Header navigation={navigation} title={'Manage Users'} />
 
             <View style={[styles.container, { backgroundColor: colors.background }]}>
                 <Searchbar

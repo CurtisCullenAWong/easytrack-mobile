@@ -1,8 +1,8 @@
-import { DefaultTheme } from 'react-native-paper'
-import { colorConfigDark } from './colorConfig'
-import { fontConfig } from './fontConfig'
+import { DefaultTheme } from 'react-native-paper';
+import { colorConfigDark } from './colorConfig';
+import fontConfig from './fontConfig';
 
-const darkTheme = {
+const lightTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
@@ -12,6 +12,6 @@ const darkTheme = {
     ...DefaultTheme.fonts,
     ...fontConfig,
   },
-}
+};
 
-export default darkTheme
+export default lightTheme;

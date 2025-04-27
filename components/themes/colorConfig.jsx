@@ -32,19 +32,21 @@ outline — The color used for borders and dividers, providing subtle separation
 */
 
 export const colorConfigLight = {
-    primary: '#373E31', onPrimary: '#FFFFFF', primaryContainer: '#A5D6A7', onPrimaryContainer: '#1A3A26',
-    secondary: '#67854B', onSecondary: '#FFFFFF', secondaryContainer: '#D1D99E', onSecondaryContainer: '#2A3A25',
-    tertiary: '#616161', onTertiary: '#FFFFFF', tertiaryContainer: '#F1C0C0', onTertiaryContainer: '#3C1E1D',
-    error: '#B3261E', onError: '#FFFFFF', errorContainer: '#F9DEDC', onErrorContainer: '#410E0B',
-    background: '#FAF9F6', onBackground: '#1C1B1F', surface: '#F4F2F0', onSurface: '#1C1B1F',
-    surfaceVariant: '#D1C9D4', onSurfaceVariant: '#49454F', outline: '#7A746D',
+    primary: '#388E3C', onPrimary: '#FFFFFF', primaryContainer: '#C8E6C9', onPrimaryContainer: '#1B5E20',
+    secondary: '#81C784', onSecondary: '#FFFFFF', secondaryContainer: '#E6F4EA', onSecondaryContainer: '#2E7D32',
+    tertiary: '#A5D6A7', onTertiary: '#1B5E20', tertiaryContainer: '#E8F5E9', onTertiaryContainer: '#2E7D32',
+    error: '#D32F2F', onError: '#FFFFFF', errorContainer: '#F9DEDC', onErrorContainer: '#410E0B',
+    background: '#F1F8E9', onBackground: '#1B1B1B', surface: '#FFFFFF', onSurface: '#1B1B1B',
+    surfaceVariant: '#E0E0E0', onSurfaceVariant: '#4D4D4D', outline: '#8E8E8E',
 }
 
 export const colorConfigDark = {
-    primary: '#A8B3A3', onPrimary: '#1C2019', primaryContainer: '#525B4B', onPrimaryContainer: '#DCE3D7',
-    secondary: '#9BBF78', onSecondary: '#263015', secondaryContainer: '#4E6340', onSecondaryContainer: '#D8E6C6',
-    tertiary: '#8E8E8E', onTertiary: '#1F1F1F', tertiaryContainer: '#5A5A5A', onTertiaryContainer: '#E0E0E0',
-    error: '#F2B8B5', onError: '#601410', errorContainer: '#8C1D18', onErrorContainer: '#F9DEDC',
-    background: '#1C1B1F', onBackground: '#E6E1E5', surface: '#1C1B1F', onSurface: '#E6E1E5',
-    surfaceVariant: '#49454F', onSurfaceVariant: '#CAC4D0', outline: '#938F99',
+    primary: '#66BB6A', onPrimary: '#003910', primaryContainer: '#338A3E', onPrimaryContainer: '#C8E6C9',
+    secondary: '#A5D6A7', onSecondary: '#1E4620', secondaryContainer: '#4CAF50', onSecondaryContainer: '#E8F5E9',
+    tertiary: '#81C784', onTertiary: '#1B5E20', tertiaryContainer: '#388E3C', onTertiaryContainer: '#E6F4EA',
+    error: '#FF6B6B', onError: '#601410', errorContainer: '#8C1D18', onErrorContainer: '#F9DEDC',
+    background: '#121212', onBackground: '#E1E1E1',
+    surface: '#1E1E1E', onSurface: '#E1E1E1',
+    surfaceVariant: '#3A3A3A', onSurfaceVariant: '#CACACA',
+    outline: '#6F6F6F',
 }

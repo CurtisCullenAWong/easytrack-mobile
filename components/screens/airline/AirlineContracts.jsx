@@ -107,7 +107,7 @@ const AirlineContracts = ({ navigation }) => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Animated.View style={[styles.headerContainer, { backgroundColor: colors.background }]}>
-        <Header navigation={navigation} />
+        <Header navigation={navigation} title={'Contracts'}/>
         <Card style={[styles.timeCard, { backgroundColor: colors.surface, elevation: colors.elevation.level3 }]}>
           <Card.Content style={styles.timeCardContent}>
             <Text style={fonts.titleSmall}>{currentTime}</Text>

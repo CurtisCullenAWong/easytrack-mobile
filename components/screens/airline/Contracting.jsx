@@ -8,7 +8,7 @@ const Contracting = ({ navigation }) => {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header navigation={navigation} />
+      <Header navigation={navigation} title={'Make Contracts'}/>
         <Text>
             Contracting
         </Text>

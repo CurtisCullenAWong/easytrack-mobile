@@ -15,7 +15,7 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header navigation={navigation} />
+      <Header navigation={navigation} title={'Statistics'}/>
 
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
         <Card.Content>

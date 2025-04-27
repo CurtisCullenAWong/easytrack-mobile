@@ -25,12 +25,9 @@ const LoginScreen = ({ navigation }) => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Image source={require('../../assets/banner.png')} style={styles.bannerImage} />
-      <Image source={require('../../assets/icon-w_o-name.png')} style={styles.logoImage} />
-
       <Text style={[styles.title, { color: colors.primary, ...fonts.displayLarge }]}>
-        EasyTrack
+          EasyTrack
       </Text>
-
       <Text style={[styles.subtitle, { color: colors.onBackground, ...fonts.titleMedium }]}>
         For your luggage contracting and tracking needs. Keep track of your luggage location in real-time.
       </Text>
@@ -84,7 +81,7 @@ const styles = StyleSheet.create({
   },
   title: {
     textAlign: 'center',
-    marginBottom: 20,
+    marginVertical: 20,
   },
   subtitle: {
     textAlign: 'center',
