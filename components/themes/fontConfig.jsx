@@ -1,10 +1,24 @@
 const common = { fontFamily: 'Onest-Regular' };
 
 const fontConfig = {
-  regular: { ...common, fontWeight: 'normal' },
-  medium: { ...common, fontWeight: '500' },
-  light: { ...common, fontWeight: '300' },
-  thin: { ...common, fontWeight: '100' },
+  default: {
+    regular: {
+      fontFamily: 'Onest-Regular',
+      fontWeight: 'normal',
+    },
+    medium: {
+      fontFamily: 'Onest-Regular',
+      fontWeight: '500',
+    },
+    light: {
+      fontFamily: 'Onest-Regular',
+      fontWeight: '300',
+    },
+    thin: {
+      fontFamily: 'Onest-Regular',
+      fontWeight: '100',
+    },
+  },
   displayLarge: { ...common, fontWeight: '400', fontSize: 56, lineHeight: 64, letterSpacing: -0.2 },
   displayMedium: { ...common, fontWeight: '400', fontSize: 44, lineHeight: 52 },
   displaySmall: { ...common, fontWeight: '400', fontSize: 36, lineHeight: 44 },

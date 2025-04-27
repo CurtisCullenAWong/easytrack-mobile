@@ -9,7 +9,8 @@ const lightTheme = {
     ...colorConfigLight,
   },
   fonts: {
-    fonts: configureFonts({config: fontConfig, isV3: false}),
+    ...DefaultTheme.fonts,
+    ...fontConfig,
   },
 };
 
