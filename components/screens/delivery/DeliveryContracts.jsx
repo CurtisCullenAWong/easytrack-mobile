@@ -94,7 +94,7 @@ const DeliveryContracts = ({ navigation }) => {
         <Button mode="contained" onPress={() => console.log('Check Location')} style={{...styles.actionButton, backgroundColor: colors.primary }}>
           Check Location
         </Button>
-        <Button mode="contained" onPress={() => console.log('Show Details')} style={{...styles.actionButton, backgroundColor: colors.onPrimaryContainer }}>
+        <Button mode="contained" onPress={() => console.log('Show Details')} style={{...styles.actionButton, backgroundColor: colors.primary }}>
           Accept Contract
         </Button>
       </Card.Content>

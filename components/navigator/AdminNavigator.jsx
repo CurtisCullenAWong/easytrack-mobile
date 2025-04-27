@@ -62,9 +62,9 @@ const AdminNavigator = ({ navigation }) => {
       ])}
 
       {renderSection('Results and Statistics', 'results', 'chart-bar', [
-        { icon: 'credit-card-clock-outline', label: 'Transaction History', screen: '' },
+        { icon: 'credit-card-clock-outline', label: 'Transaction History', screen: 'TransactionHistory' },
         { icon: 'history', label: 'Delivery History (Completed)', screen: 'DeliveryHistory' },
-        { icon: 'chart-line', label: 'Performance Statistics', screen: '' },
+        { icon: 'chart-line', label: 'Performance Statistics', screen: 'PerformanceStatistics' },
       ])}
 
       {renderSection('My Account', 'account', 'account', [

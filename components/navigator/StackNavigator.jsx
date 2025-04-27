@@ -8,12 +8,12 @@ import LoginScreen from '../screens/LoginScreen'
 import Profile from '../screens/Profile'
 import MessageCenter from '../screens/MessageCenter'
 import DeliveryHistory from '../screens/DeliveryHistory'
+import PerformanceStatistics from '../screens/PerformanceStatistics'
+import TransactionHistory from '../screens/TransactionHistory'
 
 // Admin Screens
 import AdminHome from '../screens/admin/AdminHome'
 import UserManagement from '../screens/admin/UserManagement'
-// import AddNewAccountScreen from '../screens/admin/UserManagement/AddNewAccountScreen'
-// import EditAccountScreen from '../screens/admin/UserManagement/EditAccountScreen'
 import AdminTrackLuggage from '../screens/admin/AdminTrackLuggage'
 import AdminContracts from '../screens/admin/AdminContracts'
 
@@ -49,32 +49,16 @@ const AdminDrawer = () => (
       <Drawer.Screen name="AdminContracts" component={AdminContracts} />
 
       {/* SHARED SCREENS */}
+      <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />
       <Drawer.Screen name="DeliveryHistory" component={DeliveryHistory} />
+      <Drawer.Screen name="TransactionHistory" component={TransactionHistory} />
       <Drawer.Screen name="Profile" component={Profile} />
       <Drawer.Screen name="MessageCenter" component={MessageCenter} />
   </Drawer.Navigator>
 )
 
-/** Delivery Drawer Navigator */
-
-const DeliveryDrawer = () => (
-  <Drawer.Navigator
-      drawerContent={(props) => <DeliveryNavigator {...props} />}
-      screenOptions={{ headerShown: false }}
-  >
-      <Drawer.Screen name="DeliveryHome" component={DeliveryHome} />
-      <Drawer.Screen name="DeliveryContracts" component={DeliveryContracts} />
-      <Drawer.Screen name="CheckLocation" component={CheckLocation} />
-
-      {/* SHARED SCREENS */}
-      <Drawer.Screen name="DeliveryHistory" component={DeliveryHistory} />
-      <Drawer.Screen name="Profile" component={Profile} />
-      <Drawer.Screen name="MessageCenter" component={MessageCenter} />
-  </Drawer.Navigator>
-)
 
 /** Airline Drawer Navigator */
-
 const AirlineDrawer = () => (
   <Drawer.Navigator
       drawerContent={(props) => <AirlineNavigator {...props} />}
@@ -86,7 +70,28 @@ const AirlineDrawer = () => (
       <Drawer.Screen name="Contracting" component={Contracting} />
 
       {/* SHARED SCREENS */}
+      <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />
       <Drawer.Screen name="DeliveryHistory" component={DeliveryHistory} />
+      <Drawer.Screen name="TransactionHistory" component={TransactionHistory} />
+      <Drawer.Screen name="Profile" component={Profile} />
+      <Drawer.Screen name="MessageCenter" component={MessageCenter} />
+  </Drawer.Navigator>
+)
+
+/** Delivery Drawer Navigator */
+const DeliveryDrawer = () => (
+  <Drawer.Navigator
+      drawerContent={(props) => <DeliveryNavigator {...props} />}
+      screenOptions={{ headerShown: false }}
+  >
+      <Drawer.Screen name="DeliveryHome" component={DeliveryHome} />
+      <Drawer.Screen name="DeliveryContracts" component={DeliveryContracts} />
+      <Drawer.Screen name="CheckLocation" component={CheckLocation} />
+
+      {/* SHARED SCREENS */}
+      <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />
+      <Drawer.Screen name="DeliveryHistory" component={DeliveryHistory} />
+      <Drawer.Screen name="TransactionHistory" component={TransactionHistory} />
       <Drawer.Screen name="Profile" component={Profile} />
       <Drawer.Screen name="MessageCenter" component={MessageCenter} />
   </Drawer.Navigator>
@@ -110,6 +115,7 @@ const StackNavigator = () => (
         component={AdminDrawer}
         options={{ headerShown: false }}
       />
+      {/* SUBSCREENS */}
       {/* <Stack.Screen
         name="AddNewAccount"
         component={AddNewAccountScreen}

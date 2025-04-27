@@ -1,88 +1,28 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, Image, StyleSheet, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
+import { useTheme } from 'react-native-paper';
 import Header from '../../customComponents/Header';
 
 const Contracting = ({ navigation }) => {
+    const { colors } = useTheme(); // Access colors from the theme
+
     return (
-        <View style={styles.container}>
-            {/* Reusable Header */}
+        <ScrollView style={styles.container}>
             <Header navigation={navigation} />
-
-            {/* Date & Time */}
-            <View style={styles.dateContainer}>
+            <View style={[styles.dateContainer, { backgroundColor: colors.background }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Icon name="chevron-left" size={20} color="#5D8736" />
-                </TouchableOpacity>
-                <Text style={styles.dateText}>16 October 2025, 8:52 PM</Text>
-                <View style={styles.placeholder} />
-            </View>
-
-            {/* Booking Details */}
-            <View style={styles.bookingDetails}>
-                <View style={styles.bookingHeader}>
-                    <Text style={styles.bookingText}>BOOKING ID</Text>
-                    <Text style={styles.bookingText}>A4G-BUIN8-IAS09855</Text>
-                </View>
-
-                {/* Passenger Info */}
-                <View style={styles.passengerInfo}>
-                    <Image source={require('../../../assets/profile-placeholder.png')} style={styles.profileImage} />
-                    <View>
-                        <Text style={styles.bookingID}>2022-15482324253</Text>
-                        <Text style={styles.passengerName}>Naiza F. Albina</Text>
-                    </View>
-                </View>
-
-                {/* Fare Info */}
-                <View style={styles.fareContainer}>
-                    <Text style={styles.fareLabel}>FARE:</Text>
-                    <Text style={styles.fareAmount}>₱ 185</Text>
-                </View>
-
-                {/* Locations */}
-                <View style={styles.locationContainer}>
-                    <View style={styles.locationItem}>
-                        <Icon name="map-marker-alt" size={12} color="blue" />
-                        <Text style={styles.locationText}>SM CITY North EDSA Main Entrance</Text>
-                    </View>
-                    <View style={styles.locationItem}>
-                        <Icon name="dot-circle" size={12} color="red" />
-                        <Text style={styles.locationText}>76 P Florentino Street</Text>
-                    </View>
-                </View>
-            </View>
-
-            {/* Check Location Button */}
-            <TouchableOpacity style={styles.checkLocationButton} onPress={() => navigation.navigate('CheckLocation')}>
-                <Text style={styles.checkLocationText}>CHECK LOCATION</Text>
             </TouchableOpacity>
-        </View>
+            </View>
+        </ScrollView>
     );
 };
 
-// Styles
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FFFFFF',
         paddingHorizontal: 15,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        width: '100%',
-        paddingVertical: 15,
-        marginTop: 30,
-    },
-    hamburger: {
-        padding: 10,
-    },
-    logo: {
-        width: 40,
-        height: 40,
-        resizeMode: 'contain',
     },
     dateContainer: {
         flexDirection: 'row',
@@ -99,7 +39,6 @@ const styles = StyleSheet.create({
     dateText: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#333',
     },
     placeholder: {
         width: 30,
@@ -120,7 +59,6 @@ const styles = StyleSheet.create({
     },
     bookingText: {
         fontSize: 12,
-        color: '#666',
         fontWeight: 'bold',
     },
     passengerInfo: {
@@ -140,11 +78,9 @@ const styles = StyleSheet.create({
     bookingID: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#333',
     },
     passengerName: {
         fontSize: 12,
-        color: '#666',
     },
     fareContainer: {
         flexDirection: 'row',
@@ -155,13 +91,11 @@ const styles = StyleSheet.create({
     },
     fareLabel: {
         fontSize: 12,
-        color: '#666',
         fontWeight: 'bold',
     },
     fareAmount: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#333',
     },
     locationContainer: {
         paddingVertical: 10,
@@ -173,7 +107,6 @@ const styles = StyleSheet.create({
     },
     locationText: {
         fontSize: 14,
-        color: '#333',
         marginLeft: 8,
     },
     checkLocationButton: {

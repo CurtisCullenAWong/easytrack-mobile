@@ -61,7 +61,7 @@ const AirlineNavigator = ({ navigation }) => {
 
       {renderSection('Results and Statistics', 'results', 'chart-bar', [
         { icon: 'history', label: 'Delivery History (Completed)', screen: 'DeliveryHistory' },
-        { icon: 'chart-line', label: 'Performance Statistics', screen: '' },
+        { icon: 'chart-line', label: 'Performance Statistics', screen: 'PerformanceStatistics' },
       ])}
 
       {renderSection('My Account', 'account', 'account', [
