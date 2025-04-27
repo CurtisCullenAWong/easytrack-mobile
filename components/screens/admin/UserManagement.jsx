@@ -24,31 +24,31 @@ const UserManagement = ({ navigation }) => {
     const [users, setUsers] = useState([])
 
     const onChangeSearch = query => setSearchQuery(query)
-    const fetchUsers = async () => {
-        try {
-            const response = await fetch('http://10.0.2.2:8000/api/accounts/?format=json')
-            const data = await response.json()
+    // const fetchUsers = async () => {
+    //     try {
+    //         const response = await fetch('http://10.0.2.2:8000/api/accounts/?format=json')
+    //         const data = await response.json()
 
-            const transformedUsers = data.map(user => ({
-                id: user.id,
-                name: `${user.first_name} ${user.middle_name} ${user.last_name}`,
-                email: user.email_address,
-                role: user.role || 'N/A',
-                status: user.is_active ? 'Active' : 'Inactive',
-                avatar: user.first_name?.[0] || '?',
-                avatarUrl: user.avatar_url || null,
-                dateCreated: new Date(user.date_joined).toLocaleDateString(),
-                lastLogin: user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never',
-            }))
+    //         const transformedUsers = data.map(user => ({
+    //             id: user.id,
+    //             name: `${user.first_name} ${user.middle_name} ${user.last_name}`,
+    //             email: user.email_address,
+    //             role: user.role || 'N/A',
+    //             status: user.is_active ? 'Active' : 'Inactive',
+    //             avatar: user.first_name?.[0] || '?',
+    //             avatarUrl: user.avatar_url || null,
+    //             dateCreated: new Date(user.date_joined).toLocaleDateString(),
+    //             lastLogin: user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never',
+    //         }))
 
-            setUsers(transformedUsers)
-        } catch (error) {
-            console.error('Failed to fetch users:', error)
-        }
-    }
-    useEffect(() => {
-        fetchUsers()
-    }, [])
+    //         setUsers(transformedUsers)
+    //     } catch (error) {
+    //         console.error('Failed to fetch users:', error)
+    //     }
+    // }
+    // useEffect(() => {
+    //     fetchUsers()
+    // }, [])
 
     const handleSort = (column) => {
         if (sortColumn === column) {
@@ -102,19 +102,6 @@ const UserManagement = ({ navigation }) => {
                     Filter
                 </Button>
             </View>
-
-            <View style={[styles.actions, { backgroundColor: colors.background }]}>
-                <Button
-                    mode="contained"
-                    icon="account-plus"
-                    onPress={() => navigation.navigate('AddNewAccount')}
-                    style={[styles.addButton, { backgroundColor: colors.primary }]}
-                >
-                    Add New Account
-                </Button>
-                <IconButton icon="refresh" size={24} onPress={fetchUsers} color={colors.primary} />
-            </View>
-
             <ScrollView horizontal>
                 <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
                     <DataTable.Header>
@@ -201,16 +188,6 @@ const styles = StyleSheet.create({
     },
     filterButton: {
         marginLeft: 8,
-    },
-    actions: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingBottom: 8,
-    },
-    addButton: {
-        borderRadius: 6,
     },
     table: {
         paddingHorizontal: 16,

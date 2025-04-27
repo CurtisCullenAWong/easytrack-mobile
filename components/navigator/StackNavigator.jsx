@@ -21,7 +21,7 @@ import AdminContracts from '../screens/admin/AdminContracts'
 import DeliveryHome from '../screens/delivery/DeliveryHome'
 import DeliveryContracts from '../screens/delivery/DeliveryContracts'
 
-import CheckLocation from '../screens/delivery/CheckLocation'
+import CheckLocation from '../screens/CheckLocation'
 
 // Airline Screens
 import AirlineHome from '../screens/airline/AirlineHome'

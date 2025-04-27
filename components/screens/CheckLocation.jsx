@@ -11,13 +11,13 @@ const CheckLocation = ({ navigation }) => {
                     <Icon name="bars" size={24} color="#5D8736" />
                 </TouchableOpacity>
 
-                <Image source={require('../../../assets/icon-w_o-name.png')} style={styles.logo} />
+                <Image source={require('../../assets/icon-w_o-name.png')} style={styles.logo} />
             </View>
 
             {/* Map Container with Overlays */}
             <View style={styles.mapContainer}>
                 <Image
-                    source={require('../../../assets/contracting-map.png')}
+                    source={require('../../assets/contracting-map.png')}
                     style={styles.mapImage}
                     resizeMode="cover"
                 />
