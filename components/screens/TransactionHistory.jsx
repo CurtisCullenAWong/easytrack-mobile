@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { View, FlatList, StyleSheet } from 'react-native'
 import { Text, Card, Divider, useTheme, Avatar, Button } from 'react-native-paper'
 import Header from '../customComponents/Header'
+import DraggableFAB from '../customComponents/DraggableFAB'
 
 const MOCK_TRANSACTIONS = [
   { id: '1', transactionId: 'TXN-981237', date: '2025-04-25', passengerName: 'Naiza F. Albina', amount: '₱ 185', status: 'Paid' },
@@ -40,7 +41,7 @@ const TransactionHistory = ({ navigation }) => {
         <Divider />
         <View style={styles.amountInfoContainer}>
           <Text style={[fonts.labelSmall, styles.amountLabel]}>AMOUNT:</Text>
-          <Text style={[fonts.bodySmall, styles.amount]}>{transaction.amount}</Text>
+          <Text style={[fonts.bodyMedium, styles.amount]}>{transaction.amount}</Text>
         </View>
         <Divider />
         <View style={styles.statusContainer}>
@@ -56,6 +57,7 @@ const TransactionHistory = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <DraggableFAB/>
       <FlatList
         ListHeaderComponent={
           <View style={[styles.headerContainer, { backgroundColor: colors.background }]}>

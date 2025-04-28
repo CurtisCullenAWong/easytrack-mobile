@@ -129,7 +129,7 @@ const ExpandableSection = ({ title, expanded, onToggle, icon, items, navigation,
   return (
     <List.Accordion
       title={title}
-      titleStyle={{ color: colors.onSurface, ...fonts.titleMedium }}
+      titleStyle={[{ color: colors.onSurface }, fonts.labelLarge]}
       left={(props) => <List.Icon {...props} icon={icon} />}
       expanded={expanded}
       onPress={onToggle}
@@ -138,9 +138,9 @@ const ExpandableSection = ({ title, expanded, onToggle, icon, items, navigation,
         <List.Item
           key={idx}
           title={label}
+          titleStyle={[{ color: colors.onSurface }, fonts.labelMedium]}
           left={(props) => <List.Icon {...props} icon={icon} color={color || colors.primary} />}
           onPress={() => (action ? action() : navigation.navigate(screen))}
-          titleStyle={{ color: color || colors.onSurface, ...fonts.bodyMedium }}
           style={styles.listItem}
         />
       ))}

@@ -12,7 +12,7 @@ const fontConfig = {
   titleLarge: { ...commonBold, fontWeight: '500', fontSize: 22, lineHeight: 28 },
   titleMedium: { ...common, fontWeight: '500', fontSize: 16, lineHeight: 24, letterSpacing: 0.15 },
   titleSmall: { ...common, fontWeight: '500', fontSize: 14, lineHeight: 20, letterSpacing: 0.1 },
-  labelLarge: { ...common, fontWeight: '600', fontSize: 14, lineHeight: 20, letterSpacing: 0.1 },
+  labelLarge: { ...commonBold, fontWeight: '600', fontSize: 14, lineHeight: 20, letterSpacing: 0.1 },
   labelMedium: { ...common, fontWeight: '600', fontSize: 12, lineHeight: 16, letterSpacing: 0.5 },
   labelSmall: { ...common, fontWeight: '600', fontSize: 11, lineHeight: 16, letterSpacing: 0.5 },
   bodyLarge: { ...common, fontWeight: '400', fontSize: 16, lineHeight: 24, letterSpacing: 0.5 },

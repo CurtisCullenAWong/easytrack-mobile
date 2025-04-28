@@ -5,7 +5,7 @@ import { CommonActions } from '@react-navigation/native'
 import { ThemeContext } from '../themes/themeContext'
 import { useTheme } from 'react-native-paper'
 
-const DelivieryNavigator = ({ navigation }) => {
+const DeliveryNavigator = ({ navigation }) => {
   const { toggleTheme } = useContext(ThemeContext)
   const { colors, fonts } = useTheme()
 
@@ -63,6 +63,7 @@ const DelivieryNavigator = ({ navigation }) => {
         </Text>
       </Surface>
       <Divider style={styles.divider} />
+      
       {renderSection('Transactions', 'transactions', 'package', [
         { icon: 'home-outline', label: 'Home', screen: 'DeliveryHome' },
         { icon: 'file-document-outline', label: 'Contracts (Pending)', screen: 'DeliveryContracts' },
@@ -131,7 +132,7 @@ const ExpandableSection = ({ title, expanded, onToggle, icon, items, navigation,
   return (
     <List.Accordion
       title={title}
-      titleStyle={{ color: colors.onSurface, ...fonts.titleMedium }}
+      titleStyle={[{ color: colors.onSurface }, fonts.labelLarge]}
       left={(props) => <List.Icon {...props} icon={icon} />}
       expanded={expanded}
       onPress={onToggle}
@@ -140,9 +141,9 @@ const ExpandableSection = ({ title, expanded, onToggle, icon, items, navigation,
         <List.Item
           key={idx}
           title={label}
+          titleStyle={[{ color: colors.onSurface }, fonts.labelMedium]}
           left={(props) => <List.Icon {...props} icon={icon} color={color || colors.primary} />}
           onPress={() => (action ? action() : navigation.navigate(screen))}
-          titleStyle={{ color: color || colors.onSurface, ...fonts.bodyMedium }}
           style={styles.listItem}
         />
       ))}
@@ -189,4 +190,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default DelivieryNavigator
+export default DeliveryNavigator

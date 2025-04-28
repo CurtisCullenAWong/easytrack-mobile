@@ -101,7 +101,7 @@ const DeliveryDrawer = () => (
 
 const StackNavigator = () => (
   <NavigationContainer>
-      <Stack.Navigator initialRouteName="Login">
+    <Stack.Navigator initialRouteName="Login">
       
       {/* Login Screen */}
       <Stack.Screen
@@ -109,23 +109,14 @@ const StackNavigator = () => (
         component={LoginScreen}
         options={{ headerShown: false }}
       />
+
       {/* Admin Drawer (no headers shown inside) */}
       <Stack.Screen
         name="AdminDrawer"
         component={AdminDrawer}
         options={{ headerShown: false }}
       />
-      {/* SUBSCREENS */}
-      {/* <Stack.Screen
-        name="AddNewAccount"
-        component={AddNewAccountScreen}
-        options={{ headerShown: true, title: 'Add New Account' }}
-      />
-      <Stack.Screen
-        name="EditAccount"
-        component={EditAccountScreen}
-        options={{ headerShown: true, title: 'Edit Account' }}
-      /> */}
+
       {/* Delivery Drawer (no headers shown inside) */}
       <Stack.Screen
         name="DeliveryDrawer"
@@ -139,6 +130,13 @@ const StackNavigator = () => (
         component={AirlineDrawer}
         options={{ headerShown: false }}
       />
+
+      {/* SUBSCREENS */}
+      {/* <Stack.Screen
+        name="AddNewAccount"
+        component={}
+        options={{ headerShown: true, title: 'Add New Account' }}
+      /> */}
     </Stack.Navigator>
 
   </NavigationContainer>

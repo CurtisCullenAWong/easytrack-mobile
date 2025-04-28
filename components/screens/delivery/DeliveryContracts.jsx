@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { View, Animated, FlatList, StyleSheet } from 'react-native'
 import { Text, Button, Card, Avatar, Divider, Menu, IconButton, useTheme } from 'react-native-paper'
 import Header from '../../customComponents/Header'
+import DraggableFAB from '../../customComponents/DraggableFAB'
 
 const MOCK_BOOKINGS = [
   { id: '1', bookingId: 'A4G-BUIN8-IAS09855', passengerId: '2022-15482324253', passengerName: 'Naiza F. Albina', fare: '₱ 185', fromLocation: 'SM CITY North EDSA Main Entrance', toLocation: '76 P Florentino Street' },
@@ -113,6 +114,7 @@ const DeliveryContracts = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <DraggableFAB/>
       <FlatList
         ListHeaderComponent={
           <Animated.View style={[styles.headerContainer, { backgroundColor: colors.background }]}>
@@ -122,7 +124,7 @@ const DeliveryContracts = ({ navigation }) => {
                 <Text style={fonts.titleSmall}>{currentTime}</Text>
               </Card.Content>
             </Card>
-            <SortMenu sortCriterion={sortCriterion} sortBookings={sortBookings} />
+            {/* <SortMenu sortCriterion={sortCriterion} sortBookings={sortBookings} /> */}
           </Animated.View>
         }
         data={sortedBookings}

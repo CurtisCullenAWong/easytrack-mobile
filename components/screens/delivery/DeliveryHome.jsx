@@ -27,7 +27,7 @@ const DeliveryHome = ({ navigation }) => {
     )
 
     const buttons = [
-        { label: 'Contracting', icon: 'file-document-outline', screen: 'Contracting' },
+        { label: 'Contracts', icon: 'file-document-outline', screen: 'DeliveryContracts' },
         { label: 'Delivery History', icon: 'history', screen: 'DeliveryHistory' },
         { label: 'Performance Statistics', icon: 'chart-line', screen: 'PerformanceStatistics' },
     ]

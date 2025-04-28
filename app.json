@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "EasyTrack",
-    "slug": "EasyTrack",
+    "slug": "easytrack",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -24,8 +24,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.hahatrashboat.EasyTrack",
-      "versionCode": 1
+      "package": "com.hahatrashboat.EasyTrack"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -36,8 +35,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "a7830852-e397-4e76-b983-93cdf8a57635"
+        "projectId": "f2135978-32e1-4b2d-963a-32c5bcd044ca"
       }
-    }
+    },
+    "owner": "hahatrashboat"
   }
 }

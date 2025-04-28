@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { View, Animated, FlatList, StyleSheet } from 'react-native'
 import { Text, Button, Card, Avatar, Divider, Menu, IconButton, useTheme } from 'react-native-paper'
 import Header from '../customComponents/Header'
+import DraggableFAB from '../customComponents/DraggableFAB'
 
 const MOCK_DELIVERIES = [
   { id: '1', deliveryId: 'D4G-PRK9-LMNO123', passengerName: 'Naiza F. Albina', status: 'In Transit', fromLocation: 'SM CITY North EDSA', toLocation: '76 P Florentino Street' },
@@ -105,6 +106,7 @@ const DeliveryHistory = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <DraggableFAB/>
       <FlatList
         ListHeaderComponent={
           <Animated.View style={[styles.headerContainer, { backgroundColor: colors.background }]}>
@@ -114,7 +116,7 @@ const DeliveryHistory = ({ navigation }) => {
                 <Text style={fonts.titleSmall}>{currentTime}</Text>
               </Card.Content>
             </Card>
-            <SortMenu sortCriterion={sortCriterion} sortDeliveries={sortDeliveries} />
+            {/* <SortMenu sortCriterion={sortCriterion} sortDeliveries={sortDeliveries} /> */}
           </Animated.View>
         }
         data={sortedDeliveries}
