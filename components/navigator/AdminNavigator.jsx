@@ -58,7 +58,7 @@ const AdminNavigator = ({ navigation }) => {
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       <Surface style={[styles.surface, { backgroundColor: colors.background }]}>
         <Image source={require('../../assets/icon-w_o-name.png')} style={styles.logo} />
-        <Text style={[styles.appName, { color: colors.primary, ...fonts.displaySmall }]}>
+        <Text style={[styles.appName, { color: colors.primary, ...fonts.headlineLarge }]}>
           EasyTrack
         </Text>
       </Surface>

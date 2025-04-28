@@ -7,6 +7,7 @@ const MOCK_BOOKINGS = [
   { id: '1', bookingId: 'A4G-BUIN8-IAS09855', passengerId: '2022-15482324253', passengerName: 'Naiza F. Albina', fare: '₱ 185', fromLocation: 'SM CITY North EDSA Main Entrance', toLocation: '76 P Florentino Street' },
   { id: '2', bookingId: 'A5X-JK98K-QWE09233', passengerId: '2023-12345678901', passengerName: 'Miguel S. Cruz', fare: '₱ 210', fromLocation: 'Ayala Center Cebu', toLocation: 'Mactan Airport' },
   { id: '3', bookingId: 'A5X-JK98K-QWE09233', passengerId: '2023-12345678901', passengerName: 'Miguel S. Cruz', fare: '₱ 210', fromLocation: 'Ayala Center Cebu', toLocation: 'Mactan Airport' },
+  { id: '4', bookingId: 'A5X-JK98K-QWE09233', passengerId: '2023-12345678901', passengerName: 'Miguel S. Cruz', fare: '₱ 210', fromLocation: 'Ayala Center Cebu', toLocation: 'Mactan Airport' },
 ]
 
 const AirlineContracts = ({ navigation }) => {
@@ -17,7 +18,9 @@ const AirlineContracts = ({ navigation }) => {
   const [menuVisible, setMenuVisible] = useState(false)
 
   useEffect(() => {
-    const updateTime = () => setCurrentTime(new Date().toLocaleString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: false, timeZone: 'Asia/Manila' }))
+    const updateTime = () => setCurrentTime(
+      new Date().toLocaleString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: false, timeZone: 'Asia/Manila' })
+    )
     updateTime()
     const interval = setInterval(updateTime, 1000)
     return () => clearInterval(interval)
@@ -25,7 +28,9 @@ const AirlineContracts = ({ navigation }) => {
 
   const sortBookings = useCallback((criterion, title) => {
     const sortedArray = [...MOCK_BOOKINGS].sort((a, b) => {
-      if (criterion === 'fare') return parseInt(a.fare.replace('₱', '').replace(',', '')) - parseInt(b.fare.replace('₱', '').replace(',', ''))
+      if (criterion === 'fare') {
+        return parseInt(a.fare.replace('₱', '').replace(',', '')) - parseInt(b.fare.replace('₱', '').replace(',', ''))
+      }
       return a[criterion].localeCompare(b[criterion])
     })
     setSortedBookings(sortedArray)
@@ -33,27 +38,29 @@ const AirlineContracts = ({ navigation }) => {
     setMenuVisible(false)
   }, [])
 
-  const SortMenu = ({ sortCriterion, setSortCriterion, setMenuVisible, sortBookings }) => (
+  const SortMenu = ({ sortCriterion, sortBookings }) => (
     <View style={styles.sortMenuContainer}>
       <Text style={[fonts.labelSmall, styles.sortMenuLabel]}>Sort by:</Text>
-      <View style={[styles.sortMenuButtonContainer, { backgroundColor: colors.background }]}>
+      <View style={[styles.sortMenuButtonContainer, { backgroundColor: colors.surface }]}>
         <Menu
-          style={{ backgroundColor: colors.background }}
+          contentStyle={{ backgroundColor: colors.surface }}
           visible={menuVisible}
           onDismiss={() => setMenuVisible(false)}
           anchor={
-            <Button mode="outlined" onPress={() => setMenuVisible(true)}>
+            <Button onPress={() => setMenuVisible(true)}>
               {sortCriterion === 'none' ? 'Sort by' : sortCriterion}
             </Button>
           }
         >
-          {[{ criterion: 'bookingId', title: 'Booking ID' }, { criterion: 'passengerName', title: 'Passenger Name' }, { criterion: 'fare', title: 'Fare' }]
+          {[{ criterion: 'bookingId', title: 'Booking ID' },
+          { criterion: 'passengerName', title: 'Passenger Name' },
+          { criterion: 'fare', title: 'Fare' }]
             .map(option => (
               <Menu.Item
                 key={option.criterion}
                 onPress={() => sortBookings(option.criterion, option.title)}
                 title={option.title}
-                titleStyle={{ ...fonts.default, color: colors.tertiary }}
+                titleStyle={{ ...fonts.bodyMedium, color: colors.onSurface }}
               />
             ))}
         </Menu>
@@ -62,7 +69,7 @@ const AirlineContracts = ({ navigation }) => {
   )
 
   const BookingCard = ({ booking }) => (
-    <Card style={[styles.bookingCard, { backgroundColor: colors.background }]}>
+    <Card style={[styles.bookingCard, { backgroundColor: colors.surface }]}>
       <Card.Content>
         <View style={styles.bookingCardHeader}>
           <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>BOOKING ID</Text>
@@ -91,8 +98,8 @@ const AirlineContracts = ({ navigation }) => {
               </View>
             ))}
         </View>
-        <Button mode="contained" onPress={() => console.log('Check Location')} style={{...styles.actionButton, backgroundColor: colors.primary }}>
-          Check Location
+        <Button mode="contained" onPress={() => console.log('Track Delivery')} style={{...styles.actionButton, backgroundColor: colors.primary }}>
+          Track Delivery
         </Button>
         <Button mode="contained" onPress={() => console.log('Show Details')} style={{...styles.actionButton, backgroundColor: colors.primary }}>
           Show Details
@@ -106,16 +113,18 @@ const AirlineContracts = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Animated.View style={[styles.headerContainer, { backgroundColor: colors.background }]}>
-        <Header navigation={navigation} title={'Contracts'}/>
-        <Card style={[styles.timeCard, { backgroundColor: colors.surface, elevation: colors.elevation.level3 }]}>
-          <Card.Content style={styles.timeCardContent}>
-            <Text style={fonts.titleSmall}>{currentTime}</Text>
-          </Card.Content>
-        </Card>
-        <SortMenu sortCriterion={sortCriterion} setSortCriterion={setSortCriterion} setMenuVisible={setMenuVisible} sortBookings={sortBookings} />
-      </Animated.View>
       <FlatList
+        ListHeaderComponent={
+          <Animated.View style={[styles.headerContainer, { backgroundColor: colors.background }]}>
+            <Header navigation={navigation} title={'Contracts'}/>
+            <Card style={[styles.timeCard, { backgroundColor: colors.surface, elevation: colors.elevation.level3 }]}>
+              <Card.Content style={styles.timeCardContent}>
+                <Text style={fonts.titleSmall}>{currentTime}</Text>
+              </Card.Content>
+            </Card>
+            <SortMenu sortCriterion={sortCriterion} sortBookings={sortBookings} />
+          </Animated.View>
+        }
         data={sortedBookings}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <BookingCard booking={item} />}
@@ -130,13 +139,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 999,
-    width: '100%',
-    alignSelf: 'center',
+    marginBottom: 16,
   },
   timeCard: {
     borderRadius: 10,
@@ -149,7 +152,7 @@ const styles = StyleSheet.create({
   },
   sortMenuContainer: {
     paddingHorizontal: 16,
-    marginBottom: '5%',
+    marginBottom: 10,
   },
   sortMenuLabel: {
     fontWeight: 'bold',
@@ -157,9 +160,13 @@ const styles = StyleSheet.create({
   },
   sortMenuButtonContainer: {
     borderRadius: 10,
+    padding: 5,
+    elevation: 2
   },
   bookingCard: {
     marginTop: 10,
+    marginBottom: 10,
+    marginHorizontal: 10,
     borderRadius: 12,
     elevation: 2,
   },
@@ -200,14 +207,12 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     borderRadius: 25,
-    marginTop: 20,
+    marginTop: 10,
     alignSelf: 'center',
     width: '80%',
   },
   flatListContent: {
-    paddingTop: '60%',
-    paddingHorizontal: '5%',
-    paddingBottom: '5%',
+    paddingBottom: 20,
   },
 })
 

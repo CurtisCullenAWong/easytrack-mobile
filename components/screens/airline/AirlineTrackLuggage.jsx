@@ -1,19 +1,19 @@
-import React from 'react';
+import React from 'react'
 import {
     View,
     ScrollView,
     Dimensions,
     Image,
     StyleSheet,
-} from 'react-native';
-import { Text, TextInput, Button, Surface, useTheme } from 'react-native-paper';
-import Header from '../../customComponents/Header';
+} from 'react-native'
+import { Text, TextInput, Button, Surface, useTheme } from 'react-native-paper'
+import Header from '../../customComponents/Header'
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window')
 
 const AirlineTrackLuggage = ({ navigation }) => {
-    const [trackingNumber, setTrackingNumber] = React.useState('');
-    const { colors, fonts } = useTheme();
+    const [trackingNumber, setTrackingNumber] = React.useState('')
+    const { colors, fonts } = useTheme()
 
     return (
         <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
@@ -31,7 +31,7 @@ const AirlineTrackLuggage = ({ navigation }) => {
                 <Text
                     style={[
                         styles.subtitle,
-                        { ...fonts.default, color: colors.tertiary },
+                        { ...fonts.default, color: colors.onBackground },
                     ]}
                 >
                     Please enter your tracking number
@@ -49,7 +49,7 @@ const AirlineTrackLuggage = ({ navigation }) => {
 
                     <Button
                         mode="contained"
-                        onPress={() => navigation.navigate('LuggageStatus')}
+                        onPress={() => {console.log('Track Luggage', trackingNumber)}}
                         style={styles.button}
                         buttonColor={colors.primary}
                         icon="magnify"
@@ -63,7 +63,7 @@ const AirlineTrackLuggage = ({ navigation }) => {
                     <Text
                         style={[
                             styles.surfaceText,
-                            { ...fonts.default, color: colors.tertiary },
+                            { ...fonts.default, color: colors.onSurface },
                         ]}
                     >
                         “Quickly check the status and location of your luggage in real-time. Your journey, our priority.”
@@ -76,8 +76,8 @@ const AirlineTrackLuggage = ({ navigation }) => {
                 style={styles.image}
             />
         </ScrollView>
-    );
-};
+    )
+}
 
 const styles = StyleSheet.create({
     scrollView: {
@@ -126,6 +126,6 @@ const styles = StyleSheet.create({
         resizeMode: 'contain',
         marginTop: 10,
     },
-});
+})
 
-export default AirlineTrackLuggage;
+export default AirlineTrackLuggage

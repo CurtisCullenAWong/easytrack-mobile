@@ -38,7 +38,9 @@ const MessageCenterScreen = ({ navigation }) => {
       <Header title="Message Center" navigation={navigation} />
       {messages.map((item, index) => (
         <View key={item.id}>
-          <TouchableOpacity onPress={() => navigation.navigate('ChatRoom', { userId: item.id })}>
+          <TouchableOpacity 
+          // onPress={() => navigation.navigate('ChatRoom', { userId: item.id })}
+            >
             <Card style={[styles.card, { backgroundColor: colors.surface, elevation: colors.elevation.level2 }]}>
               <Card.Content style={styles.cardContent}>
                 <Avatar.Image size={48} source={{ uri: item.avatar }} />

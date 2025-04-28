@@ -5,7 +5,7 @@ import { CommonActions } from '@react-navigation/native'
 import { ThemeContext } from '../themes/themeContext'
 import { useTheme } from 'react-native-paper'
 
-const DeliveryNavigator = ({ navigation }) => {
+const DelivieryNavigator = ({ navigation }) => {
   const { toggleTheme } = useContext(ThemeContext)
   const { colors, fonts } = useTheme()
 
@@ -58,12 +58,11 @@ const DeliveryNavigator = ({ navigation }) => {
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       <Surface style={[styles.surface, { backgroundColor: colors.background }]}>
         <Image source={require('../../assets/icon-w_o-name.png')} style={styles.logo} />
-        <Text style={[styles.appName, { color: colors.primary, ...fonts.displaySmall }]}>
+        <Text style={[styles.appName, { color: colors.primary, ...fonts.headlineLarge }]}>
           EasyTrack
         </Text>
       </Surface>
       <Divider style={styles.divider} />
-
       {renderSection('Transactions', 'transactions', 'package', [
         { icon: 'home-outline', label: 'Home', screen: 'DeliveryHome' },
         { icon: 'file-document-outline', label: 'Contracts (Pending)', screen: 'DeliveryContracts' },
@@ -190,4 +189,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default DeliveryNavigator
+export default DelivieryNavigator
