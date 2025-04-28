@@ -1,14 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Provider as PaperProvider } from 'react-native-paper';
 import * as Font from 'expo-font';
-import * as SplashScreen from 'expo-splash-screen';
 import StackNavigator from './components/navigator/StackNavigator';
 import lightTheme from './components/themes/lightTheme';
 import darkTheme from './components/themes/darkTheme';
 import { ThemeContext } from './components/themes/themeContext';
-
-// Prevent auto hiding the splash screen
-SplashScreen.preventAutoHideAsync();
 
 const App = () => {
   const [theme, setTheme] = useState(lightTheme);
@@ -26,11 +22,6 @@ const App = () => {
     loadFonts();
   }, []);
 
-  useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded]);
 
   const toggleTheme = () => {
     setTheme(theme === lightTheme ? darkTheme : lightTheme);
