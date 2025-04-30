@@ -63,8 +63,13 @@ const AdminNavigator = ({ navigation }) => {
         </Text>
       </Surface>
       <Divider style={styles.divider} />
-      {renderSection('Transactions', 'transactions', 'package', [
+
+      {renderSection('My Account', 'account', 'account', [
         { icon: 'home-outline', label: 'Home', screen: 'AdminHome' },
+        { icon: 'card-account-details-outline', label: 'Profile', screen: 'Profile' },
+        { icon: 'logout', label: 'Logout', color: 'red', action: handleLogout },
+      ])}
+      {renderSection('Transactions', 'transactions', 'package', [
         { icon: 'file-document-outline', label: 'Contracts (Pending)', screen: 'AdminContracts' },
         { icon: 'map-marker-path', label: 'Luggage Tracking (In Transit)', screen: 'AdminTrackLuggage' },
         { icon: 'account-group-outline', label: 'User Management', screen: 'UserManagement' },
@@ -74,11 +79,6 @@ const AdminNavigator = ({ navigation }) => {
         { icon: 'credit-card-clock-outline', label: 'Transaction History', screen: 'TransactionHistory' },
         { icon: 'history', label: 'Delivery History (Completed)', screen: 'DeliveryHistory' },
         { icon: 'chart-line', label: 'Performance Statistics', screen: 'PerformanceStatistics' },
-      ])}
-
-      {renderSection('My Account', 'account', 'account', [
-        { icon: 'card-account-details-outline', label: 'Profile', screen: 'Profile' },
-        { icon: 'logout', label: 'Logout', color: 'red', action: handleLogout },
       ])}
 
       {renderSection('Help and Support', 'help', 'help', [

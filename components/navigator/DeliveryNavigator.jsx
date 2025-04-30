@@ -64,17 +64,8 @@ const DeliveryNavigator = ({ navigation }) => {
       </Surface>
       <Divider style={styles.divider} />
       
-      {renderSection('Transactions', 'transactions', 'package', [
-        { icon: 'home-outline', label: 'Home', screen: 'DeliveryHome' },
-        { icon: 'file-document-outline', label: 'Contracts (Pending)', screen: 'DeliveryContracts' },
-      ])}
-
-      {renderSection('Results and Statistics', 'results', 'chart-bar', [
-        { icon: 'history', label: 'Delivery History (Completed)', screen: 'DeliveryHistory' },
-        { icon: 'chart-line', label: 'Performance Statistics', screen: 'PerformanceStatistics' },
-      ])}
-
       {renderSection('My Account', 'account', 'account', [
+        { icon: 'home-outline', label: 'Home', screen: 'DeliveryHome' },
         { icon: 'card-account-details-outline', label: 'Profile', screen: 'Profile' },
         {
           icon: 'logout',
@@ -83,6 +74,16 @@ const DeliveryNavigator = ({ navigation }) => {
           action: handleLogout,
         },
       ])}
+      {renderSection('Transactions', 'transactions', 'package', [
+        { icon: 'file-document-outline', label: 'Contracts (Pending)', screen: 'DeliveryContracts' },
+      ])}
+
+      {renderSection('Results and Statistics', 'results', 'chart-bar', [
+        { icon: 'history', label: 'Delivery History (Completed)', screen: 'DeliveryHistory' },
+        { icon: 'chart-line', label: 'Performance Statistics', screen: 'PerformanceStatistics' },
+      ])}
+
+
 
       {renderSection('Help and Support', 'help', 'help', [
         { icon: 'message-outline', label: 'Message Center', screen: 'MessageCenter' },

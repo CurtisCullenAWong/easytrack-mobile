@@ -17,8 +17,8 @@ const DraggableFAB = ({ onFilter, onSort }) => {
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
     onPanResponderMove: (e, gestureState) => {
-      const maxRight = width - 60
-      const maxBottom = height - 60
+      const maxRight = width - 66
+      const maxBottom = height - 66
 
       let newX = gestureState.moveX
       let newY = gestureState.moveY
@@ -76,7 +76,7 @@ const DraggableFAB = ({ onFilter, onSort }) => {
           <Animated.View
             style={{
               marginTop: 10,
-              width: 200,
+              width: 320,
               minHeight: 100,
               backgroundColor: colors.surface,
               borderRadius: 10,

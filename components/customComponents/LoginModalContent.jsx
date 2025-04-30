@@ -72,8 +72,8 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
 
       {isResetPasswordModal ? (
         <>
-          {renderPasswordInput('New Password', 'newPassword', 'newPassword')}
-          {renderPasswordInput('Confirm New Password', 'confirmPassword', 'confirmPassword')}
+          {/* {renderPasswordInput('New Password', 'newPassword', 'newPassword')} */}
+          {/* {renderPasswordInput('Confirm New Password', 'confirmPassword', 'confirmPassword')} */}
           <Button
             mode="contained"
             onPress={handleResetPassword}
