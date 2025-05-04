@@ -69,14 +69,13 @@ const AirlineNavigator = ({ navigation }) => {
         { icon: 'logout', label: 'Logout', color: 'red', action: handleLogout },
       ])}
       {renderSection('Transactions', 'transactions', 'package', [
-        { icon: 'clipboard-edit-outline', label: 'Contracting', screen: 'Contracting' },
-        { icon: 'file-document-outline', label: 'Contracts (Pending)', screen: 'AirlineContracts' },
+        { icon: 'clipboard-edit-outline', label: 'Booking Management', screen: 'BookingManagement' },
         { icon: 'map-marker-path', label: 'Luggage Tracking (In Transit)', screen: 'AirlineTrackLuggage' },
       ])}
 
       {renderSection('Results and Statistics', 'results', 'chart-bar', [
         { icon: 'credit-card-clock-outline', label: 'Transaction History', screen: 'TransactionHistory' },
-        { icon: 'history', label: 'Delivery History (Completed)', screen: 'DeliveryHistory' },
+        { icon: 'history', label: 'Booking History (Completed)', screen: 'BookingHistory' },
         { icon: 'chart-line', label: 'Performance Statistics', screen: 'PerformanceStatistics' },
       ])}
 

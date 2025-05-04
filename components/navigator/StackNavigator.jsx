@@ -7,7 +7,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import LoginScreen from '../screens/LoginScreen'
 import Profile from '../screens/Profile'
 import MessageCenter from '../screens/MessageCenter'
-import DeliveryHistory from '../screens/DeliveryHistory'
+import BookingHistory from '../screens/BookingHistory'
 import PerformanceStatistics from '../screens/PerformanceStatistics'
 import TransactionHistory from '../screens/TransactionHistory'
 
@@ -15,19 +15,16 @@ import TransactionHistory from '../screens/TransactionHistory'
 import AdminHome from '../screens/admin/AdminHome'
 import UserManagement from '../screens/admin/UserManagement'
 import AdminTrackLuggage from '../screens/admin/AdminTrackLuggage'
-import AdminContracts from '../screens/admin/AdminContracts'
-
-// Delivery Screens
-import DeliveryHome from '../screens/delivery/DeliveryHome'
-import DeliveryContracts from '../screens/delivery/DeliveryContracts'
-
-import CheckLocation from '../screens/CheckLocation'
 
 // Airline Screens
 import AirlineHome from '../screens/airline/AirlineHome'
 import TrackLuggage from '../screens/airline/AirlineTrackLuggage'
-import AirlineContracts from '../screens/airline/AirlineContracts'
-import Contracting from '../screens/airline/Contracting'
+import AirlineBookingManagement from '../screens/airline/BookingManagement'
+
+// Delivery Screens
+import DeliveryHome from '../screens/delivery/DeliveryHome'
+import CheckLocation from '../screens/CheckLocation'
+import DeliveryBookingManagement from '../screens/delivery/BookingManagement'
 
 // Import Navigators
 import AdminNavigator from './AdminNavigator'
@@ -46,11 +43,10 @@ const AdminDrawer = () => (
       <Drawer.Screen name="AdminHome" component={AdminHome} />
       <Drawer.Screen name="UserManagement" component={UserManagement} />
       <Drawer.Screen name="AdminTrackLuggage" component={AdminTrackLuggage} />
-      <Drawer.Screen name="AdminContracts" component={AdminContracts} />
 
       {/* SHARED SCREENS */}
       <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />
-      <Drawer.Screen name="DeliveryHistory" component={DeliveryHistory} />
+      <Drawer.Screen name="BookingHistory" component={BookingHistory} />
       <Drawer.Screen name="TransactionHistory" component={TransactionHistory} />
       <Drawer.Screen name="Profile" component={Profile} />
       <Drawer.Screen name="MessageCenter" component={MessageCenter} />
@@ -66,12 +62,11 @@ const AirlineDrawer = () => (
   >
       <Drawer.Screen name="AirlineHome" component={AirlineHome} />
       <Drawer.Screen name="AirlineTrackLuggage" component={TrackLuggage} />
-      <Drawer.Screen name="AirlineContracts" component={AirlineContracts} />
-      <Drawer.Screen name="Contracting" component={Contracting} />
+      <Drawer.Screen name="BookingManagement" component={AirlineBookingManagement} />
 
       {/* SHARED SCREENS */}
       <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />
-      <Drawer.Screen name="DeliveryHistory" component={DeliveryHistory} />
+      <Drawer.Screen name="BookingHistory" component={BookingHistory} />
       <Drawer.Screen name="TransactionHistory" component={TransactionHistory} />
       <Drawer.Screen name="Profile" component={Profile} />
       <Drawer.Screen name="MessageCenter" component={MessageCenter} />
@@ -85,12 +80,12 @@ const DeliveryDrawer = () => (
       screenOptions={{ headerShown: false }}
   >
       <Drawer.Screen name="DeliveryHome" component={DeliveryHome} />
-      <Drawer.Screen name="DeliveryContracts" component={DeliveryContracts} />
       <Drawer.Screen name="CheckLocation" component={CheckLocation} />
+      <Drawer.Screen name="BookingManagement" component={DeliveryBookingManagement} />
 
       {/* SHARED SCREENS */}
       <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />
-      <Drawer.Screen name="DeliveryHistory" component={DeliveryHistory} />
+      <Drawer.Screen name="BookingHistory" component={BookingHistory} />
       <Drawer.Screen name="TransactionHistory" component={TransactionHistory} />
       <Drawer.Screen name="Profile" component={Profile} />
       <Drawer.Screen name="MessageCenter" component={MessageCenter} />

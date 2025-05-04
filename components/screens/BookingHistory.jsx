@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { View, Animated, FlatList, StyleSheet } from 'react-native'
 import { Text, Button, Card, Avatar, Divider, Menu, IconButton, useTheme } from 'react-native-paper'
 import Header from '../customComponents/Header'
-import DraggableFAB from '../customComponents/DraggableFAB'
 
 const MOCK_DELIVERIES = [
   { id: '1', deliveryId: 'D4G-PRK9-LMNO123', passengerName: 'Naiza F. Albina', status: 'In Transit', fromLocation: 'SM CITY North EDSA', toLocation: '76 P Florentino Street' },
@@ -11,7 +10,7 @@ const MOCK_DELIVERIES = [
   { id: '4', deliveryId: 'D7X-VKT9-LMN90876', passengerName: 'Sarah K. Tan', status: 'Pending', fromLocation: 'Bonifacio High Street', toLocation: 'Eastwood City' },
 ]
 
-const DeliveryHistory = ({ navigation }) => {
+const BookingHistory = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const [currentTime, setCurrentTime] = useState('')
   const [sortedDeliveries, setSortedDeliveries] = useState(MOCK_DELIVERIES)
@@ -106,11 +105,10 @@ const DeliveryHistory = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <DraggableFAB/>
       <FlatList
         ListHeaderComponent={
           <Animated.View style={[styles.headerContainer, { backgroundColor: colors.background }]}>
-            <Header navigation={navigation} title={'Delivery History'}/>
+            <Header navigation={navigation} title={'Booking History'}/>
             <Card style={[styles.timeCard, { backgroundColor: colors.surface, elevation: colors.elevation.level3 }]}>
               <Card.Content style={styles.timeCardContent}>
                 <Text style={fonts.titleSmall}>{currentTime}</Text>
@@ -199,4 +197,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default DeliveryHistory
+export default BookingHistory

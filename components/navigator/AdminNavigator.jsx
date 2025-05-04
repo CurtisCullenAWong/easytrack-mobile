@@ -70,14 +70,13 @@ const AdminNavigator = ({ navigation }) => {
         { icon: 'logout', label: 'Logout', color: 'red', action: handleLogout },
       ])}
       {renderSection('Transactions', 'transactions', 'package', [
-        { icon: 'file-document-outline', label: 'Contracts (Pending)', screen: 'AdminContracts' },
         { icon: 'map-marker-path', label: 'Luggage Tracking (In Transit)', screen: 'AdminTrackLuggage' },
         { icon: 'account-group-outline', label: 'User Management', screen: 'UserManagement' },
       ])}
 
       {renderSection('Results and Statistics', 'results', 'chart-bar', [
         { icon: 'credit-card-clock-outline', label: 'Transaction History', screen: 'TransactionHistory' },
-        { icon: 'history', label: 'Delivery History (Completed)', screen: 'DeliveryHistory' },
+        { icon: 'history', label: 'Booking History (Completed)', screen: 'BookingHistory' },
         { icon: 'chart-line', label: 'Performance Statistics', screen: 'PerformanceStatistics' },
       ])}
 

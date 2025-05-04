@@ -1,24 +1,22 @@
 import React, { useState } from 'react'
 import { View, ScrollView, StyleSheet } from 'react-native'
 import { useTheme, TextInput, Button, Text, IconButton } from 'react-native-paper'
-import Header from '../../customComponents/Header'
 
-const Contracting = ({ navigation }) => {
+const MakeContracts = () => {
   const { colors, fonts } = useTheme()
   const [address, setAddress] = useState('')
   const [luggageQuantity, setLuggageQuantity] = useState(0)
   const [luggageDetails, setLuggageDetails] = useState([])
-  const [quantityError, setQuantityError] = useState('') // State for error message
+  const [quantityError, setQuantityError] = useState('')
 
   const handleQuantityChange = (newQuantity) => {
     if (newQuantity < 1 || newQuantity > 10) {
       setQuantityError('Luggage quantity must be between 1 and 10.')
       return
-    } else {
-      setQuantityError('')
     }
-    
+    setQuantityError('')
     setLuggageQuantity(newQuantity)
+
     const updatedDetails = Array.from({ length: newQuantity }, (_, index) => luggageDetails[index] || {
       name: '',
       caseNumber: '',
@@ -44,7 +42,6 @@ const Contracting = ({ navigation }) => {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>
-      <Header navigation={navigation} title="Issue Contract" />
       <View style={{ padding: 16 }}>
         <TextInput
           label="Delivery Address"
@@ -52,11 +49,10 @@ const Contracting = ({ navigation }) => {
           onChangeText={setAddress}
           mode="outlined"
           style={{ marginBottom: 16 }}
-          theme={{ colors: { primary: colors.primary } }}
         />
 
         <View style={styles.quantityContainer}>
-          <Text style={[styles.label, { color: colors.primary }]}>
+          <Text style={[fonts.titleSmall, { color: colors.primary, marginBottom: 8 }]}>
             Luggage Quantity
           </Text>
           <View style={styles.quantityControls}>
@@ -70,7 +66,7 @@ const Contracting = ({ navigation }) => {
             <TextInput
               value={String(luggageQuantity)}
               onChangeText={(text) => {
-                const newValue = Math.min(10, Math.max(1, Number(text))) // Ensure the value is between 1 and 10
+                const newValue = Math.min(10, Math.max(1, Number(text)))
                 handleQuantityChange(newValue)
               }}
               keyboardType="numeric"
@@ -86,7 +82,9 @@ const Contracting = ({ navigation }) => {
             />
           </View>
           {quantityError ? (
-            <Text style={[styles.errorText, { color: colors.error }]}>{quantityError}</Text>
+            <Text style={[fonts.bodyMedium, styles.errorText, { color: colors.error }]}>
+              {quantityError}
+            </Text>
           ) : null}
         </View>
 
@@ -95,7 +93,7 @@ const Contracting = ({ navigation }) => {
             key={index}
             style={[styles.luggageBlock, { backgroundColor: colors.surface, borderColor: colors.primary }]}
           >
-            <Text style={[styles.luggageTitle, { color: colors.primary }]}>
+            <Text style={[fonts.titleSmall, { color: colors.primary, marginBottom: 12 }]}>
               Luggage {index + 1}
             </Text>
             <TextInput
@@ -104,7 +102,6 @@ const Contracting = ({ navigation }) => {
               onChangeText={(text) => handleDetailChange(index, 'name', text)}
               mode="outlined"
               style={{ marginBottom: 12 }}
-              theme={{ colors: { primary: colors.primary } }}
             />
             <TextInput
               label="Case Number"
@@ -112,7 +109,6 @@ const Contracting = ({ navigation }) => {
               onChangeText={(text) => handleDetailChange(index, 'caseNumber', text)}
               mode="outlined"
               style={{ marginBottom: 12 }}
-              theme={{ colors: { primary: colors.primary } }}
             />
             <TextInput
               label="Item Description"
@@ -120,7 +116,6 @@ const Contracting = ({ navigation }) => {
               onChangeText={(text) => handleDetailChange(index, 'itemDescription', text)}
               mode="outlined"
               style={{ marginBottom: 12 }}
-              theme={{ colors: { primary: colors.primary } }}
             />
             <TextInput
               label="Weight (kg)"
@@ -129,7 +124,6 @@ const Contracting = ({ navigation }) => {
               keyboardType="numeric"
               mode="outlined"
               style={{ marginBottom: 12 }}
-              theme={{ colors: { primary: colors.primary } }}
             />
           </View>
         ))}
@@ -151,10 +145,6 @@ const styles = StyleSheet.create({
   quantityContainer: {
     marginBottom: 24,
   },
-  label: {
-    fontSize: 16,
-    marginBottom: 8,
-  },
   quantityControls: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -162,8 +152,8 @@ const styles = StyleSheet.create({
   },
   quantityInput: {
     width: 60,
-    textAlign: 'center',
     marginHorizontal: 12,
+    textAlign: 'center'
   },
   luggageBlock: {
     marginBottom: 20,
@@ -171,17 +161,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
   },
-  luggageTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
   errorText: {
     marginTop: 8,
-    fontSize: 14,
-    fontStyle: 'italic',
     alignSelf: 'center',
   },
 })
 
-export default Contracting
+export default MakeContracts

@@ -1,45 +1,11 @@
 import React, { useState } from 'react'
-import { View, TouchableOpacity, Text, PanResponder, Dimensions, Animated } from 'react-native'
-import { IconButton, Searchbar } from 'react-native-paper'
-import { useTheme } from 'react-native-paper'
+import { View, TouchableOpacity, Text } from 'react-native'
+import { IconButton, Searchbar, useTheme } from 'react-native-paper'
 
 const DraggableFAB = ({ onFilter, onSort }) => {
   const { colors, fonts } = useTheme()
-  const { width, height } = Dimensions.get('window')
-  
   const [containerVisible, setContainerVisible] = useState(false)
   const [searchText, setSearchText] = useState('')
-
-  // Animated values for smooth dragging
-  const pan = useState(new Animated.ValueXY({ x: 10, y: 95 }))[0]
-
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderMove: (e, gestureState) => {
-      const maxRight = width - 66
-      const maxBottom = height - 66
-
-      let newX = gestureState.moveX
-      let newY = gestureState.moveY
-
-      if (newX > maxRight) newX = maxRight
-      if (newY > maxBottom) newY = maxBottom
-
-      Animated.spring(pan, {
-        toValue: { x: newX, y: newY },
-        useNativeDriver: false,
-        bounciness: 5, // Adds a bounce effect at the edges
-      }).start()
-    },
-    onPanResponderRelease: () => {
-      // Snap back to nearest valid position after dragging
-      Animated.spring(pan, {
-        toValue: { x: pan.x.__getValue(), y: pan.y.__getValue() }, // Ensure position is locked
-        useNativeDriver: false,
-      }).start()
-    },
-  })
 
   const toggleContainer = () => {
     setContainerVisible(!containerVisible)
@@ -47,14 +13,13 @@ const DraggableFAB = ({ onFilter, onSort }) => {
 
   return (
     <View style={{ flex: 1 }}>
-      <Animated.View
+      <View
         style={{
           position: 'absolute',
-          left: pan.x,
-          top: pan.y,
+          bottom: 24,
+          right: 24,
           zIndex: 9999,
         }}
-        {...panResponder.panHandlers}
       >
         <TouchableOpacity onPress={toggleContainer} activeOpacity={0.8}>
           <View
@@ -65,7 +30,7 @@ const DraggableFAB = ({ onFilter, onSort }) => {
               borderRadius: 30,
               justifyContent: 'center',
               alignItems: 'center',
-              elevation: 5, // Small shadow
+              elevation: 5,
             }}
           >
             <IconButton icon="cog" size={20} iconColor={colors.onPrimary} />
@@ -73,7 +38,7 @@ const DraggableFAB = ({ onFilter, onSort }) => {
         </TouchableOpacity>
 
         {containerVisible && (
-          <Animated.View
+          <View
             style={{
               marginTop: 10,
               width: 320,
@@ -82,13 +47,8 @@ const DraggableFAB = ({ onFilter, onSort }) => {
               borderRadius: 10,
               padding: 10,
               elevation: 2,
-              opacity: containerVisible ? 1 : 0, // Fade-in effect
-              transform: [
-                { scale: containerVisible ? 1 : 0.95 }, // Smooth scaling effect
-              ],
             }}
           >
-            {/* Replacing TextInput with Searchbar from React Native Paper */}
             <Searchbar
               placeholder="Search"
               value={searchText}
@@ -109,9 +69,9 @@ const DraggableFAB = ({ onFilter, onSort }) => {
               <IconButton icon="sort" size={20} iconColor={colors.onSurface} />
               <Text style={{ ...fonts.bodyMedium, color: colors.onSurface }}>Sort By</Text>
             </TouchableOpacity>
-          </Animated.View>
+          </View>
         )}
-      </Animated.View>
+      </View>
     </View>
   )
 }

@@ -23,8 +23,8 @@ const AirlineHome = ({ navigation }) => {
   )
 
   const buttons = [
-    { label: 'Book Delivery', icon: 'send', screen: 'Contracting' },
-    { label: 'Delivery History', icon: 'history', screen: 'DeliveryHistory' },
+    { label: 'Book Delivery', icon: 'send', screen: 'BookingManagement' },
+    { label: 'Booking History', icon: 'history', screen: 'BookingHistory' },
     { label: 'Transaction History', icon: 'credit-card', screen: 'TransactionHistory' },
   ]
 

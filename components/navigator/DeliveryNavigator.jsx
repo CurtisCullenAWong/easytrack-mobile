@@ -75,11 +75,11 @@ const DeliveryNavigator = ({ navigation }) => {
         },
       ])}
       {renderSection('Transactions', 'transactions', 'package', [
-        { icon: 'file-document-outline', label: 'Contracts (Pending)', screen: 'DeliveryContracts' },
+        { icon: 'clipboard-edit-outline', label: 'Booking Management', screen: 'BookingManagement' },
       ])}
 
       {renderSection('Results and Statistics', 'results', 'chart-bar', [
-        { icon: 'history', label: 'Delivery History (Completed)', screen: 'DeliveryHistory' },
+        { icon: 'history', label: 'Booking History (Completed)', screen: 'BookingHistory' },
         { icon: 'chart-line', label: 'Performance Statistics', screen: 'PerformanceStatistics' },
       ])}
 

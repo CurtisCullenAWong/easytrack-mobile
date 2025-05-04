@@ -13,22 +13,35 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
   })
   const [snackbar, setSnackbar] = useState({ visible: false, message: '' })
 
-  const handleChange = (field, value) => setCredentials(prev => ({ ...prev, [field]: value }))
-  const toggleVisibility = (field) => setVisibility(prev => ({ ...prev, [field]: !prev[field] }))
+  const handleChange = (field, value) => {
+    setCredentials(prev => ({ ...prev, [field]: value }))
+  }
 
-  const showSnackbar = (message) => setSnackbar({ message, visible: true })
+  const toggleVisibility = (field) => {
+    setVisibility(prev => ({ ...prev, [field]: !prev[field] }))
+  }
+
+  const showSnackbar = (message) => {
+    setSnackbar({ message, visible: true })
+  }
 
   const handleResetPassword = () => {
-    const { email, newPassword, confirmPassword } = credentials
-    if (!email || !newPassword || !confirmPassword) return showSnackbar('All fields are required.')
-    if (newPassword !== confirmPassword) return showSnackbar('Passwords do not match.')
+    const { email } = credentials
+    if (!email || !newPassword || !confirmPassword) {
+      return showSnackbar('All fields are required.')
+    }
+    if (newPassword !== confirmPassword) {
+      return showSnackbar('Passwords do not match.')
+    }
     console.log('Reset Password Submitted:', { email, newPassword })
     onClose()
   }
 
   const handleLogin = () => {
     const { email, password } = credentials
-    if (!email || !password) return showSnackbar('Email and password are required.')
+    if (!email || !password) {
+      return showSnackbar('Email and password are required.')
+    }
     console.log('Login Creds:', { email, password })
 
     if (email.includes('@admin')) navigation.navigate('AdminDrawer')
@@ -72,8 +85,8 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
 
       {isResetPasswordModal ? (
         <>
-          {/* {renderPasswordInput('New Password', 'newPassword', 'newPassword')} */}
-          {/* {renderPasswordInput('Confirm New Password', 'confirmPassword', 'confirmPassword')} */}
+          {renderPasswordInput('New Password', 'newPassword', 'newPassword')}
+          {renderPasswordInput('Confirm New Password', 'confirmPassword', 'confirmPassword')}
           <Button
             mode="contained"
             onPress={handleResetPassword}
@@ -96,6 +109,7 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
           </Button>
         </>
       )}
+
       <Portal>
         <Snackbar
           visible={snackbar.visible}
@@ -103,7 +117,9 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
           duration={3000}
           style={[styles.snackbar, { backgroundColor: colors.error }]}
         >
-          <Text style={[fonts.default, styles.snackbarText]}>{snackbar.message}</Text>
+          <Text style={[fonts.default, styles.snackbarText]}>
+            {snackbar.message}
+          </Text>
         </Snackbar>
       </Portal>
     </ScrollView>

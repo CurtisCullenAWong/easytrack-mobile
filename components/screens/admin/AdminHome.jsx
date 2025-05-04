@@ -21,7 +21,6 @@ const AdminHome = ({ navigation }) => {
 
   const buttons = [
     { label: 'User Management', icon: 'account-group', screen: 'UserManagement' },
-    { label: 'Contracts', icon: 'file-document', screen: 'AdminContracts' },
     { label: 'History', icon: 'history', screen: 'DeliveryHistory' },
     { label: 'Statistics', icon: 'chart-bar', screen: 'PerformanceStatistics' },
   ]
