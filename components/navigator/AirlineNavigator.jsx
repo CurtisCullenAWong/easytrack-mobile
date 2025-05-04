@@ -1,9 +1,9 @@
 import React, { useState, useContext, useEffect } from 'react'
 import { Image, ScrollView, View, StyleSheet, BackHandler } from 'react-native'
 import { Text, List, Surface, Dialog, Portal, Button, IconButton, Switch, Divider } from 'react-native-paper'
-import { CommonActions } from '@react-navigation/native'
 import { ThemeContext } from '../themes/themeContext'
 import { useTheme } from 'react-native-paper'
+import useLogout from '../hooks/useLogout'
 
 const AirlineNavigator = ({ navigation }) => {
   const { toggleTheme } = useContext(ThemeContext)
@@ -15,20 +15,13 @@ const AirlineNavigator = ({ navigation }) => {
     results: true,
     help: true,
   })
-  const [isDialogVisible, setIsDialogVisible] = useState(false)
   const [isSwitchOn, setIsSwitchOn] = useState(false)
+  const { handleLogout, LogoutDialog } = useLogout(navigation)
 
   const handleThemeSwitch = () => {
     toggleTheme()
     setIsSwitchOn(!isSwitchOn)
   }
-
-  const handleLogout = () => setIsDialogVisible(true)
-  const confirmLogout = () => {
-    setIsDialogVisible(false)
-    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'Login' }] }))
-  }
-  const cancelLogout = () => setIsDialogVisible(false)
 
   const toggleSection = (section) =>
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }))
@@ -97,26 +90,8 @@ const AirlineNavigator = ({ navigation }) => {
         <Switch value={isSwitchOn} onValueChange={handleThemeSwitch} />
       </View>
 
-      <Portal>
-        <Dialog visible={isDialogVisible} onDismiss={cancelLogout} style={{ backgroundColor: colors.surface }}>
-          <Dialog.Title style={{ color: colors.onSurface, ...fonts.titleLarge }}>
-            Logout
-          </Dialog.Title>
-          <Dialog.Content>
-            <Text style={{ color: colors.onSurface, ...fonts.bodyMedium }}>
-              This will log you out. Are you sure?
-            </Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={cancelLogout} labelStyle={{ color: colors.primary }}>
-              Cancel
-            </Button>
-            <Button onPress={confirmLogout} labelStyle={{ color: colors.primary }}>
-              OK
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
+      {LogoutDialog}
+
     </ScrollView>
   )
 }

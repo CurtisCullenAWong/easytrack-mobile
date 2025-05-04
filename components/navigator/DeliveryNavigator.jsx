@@ -1,9 +1,9 @@
 import React, { useState, useContext, useEffect } from 'react'
 import { Image, ScrollView, View, StyleSheet, BackHandler } from 'react-native'
-import { Text, List, Surface, Dialog, Portal, Button, IconButton, Switch, Divider } from 'react-native-paper'
-import { CommonActions } from '@react-navigation/native'
+import { Text, List, Surface, IconButton, Switch, Divider } from 'react-native-paper'
 import { ThemeContext } from '../themes/themeContext'
 import { useTheme } from 'react-native-paper'
+import useLogout from '../hooks/useLogout'
 
 const DeliveryNavigator = ({ navigation }) => {
   const { toggleTheme } = useContext(ThemeContext)
@@ -15,20 +15,14 @@ const DeliveryNavigator = ({ navigation }) => {
     results: true,
     help: true,
   })
-  const [isDialogVisible, setIsDialogVisible] = useState(false)
   const [isSwitchOn, setIsSwitchOn] = useState(false)
+
+  const { handleLogout, LogoutDialog } = useLogout(navigation)
 
   const handleThemeSwitch = () => {
     toggleTheme()
     setIsSwitchOn(!isSwitchOn)
   }
-
-  const handleLogout = () => setIsDialogVisible(true)
-  const confirmLogout = () => {
-    setIsDialogVisible(false)
-    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'Login' }] }))
-  }
-  const cancelLogout = () => setIsDialogVisible(false)
 
   const toggleSection = (section) =>
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }))
@@ -45,10 +39,9 @@ const DeliveryNavigator = ({ navigation }) => {
     />
   )
 
-
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      handleLogout() 
+      handleLogout()
       return true
     })
     return () => backHandler.remove()
@@ -63,28 +56,19 @@ const DeliveryNavigator = ({ navigation }) => {
         </Text>
       </Surface>
       <Divider style={styles.divider} />
-      
+
       {renderSection('My Account', 'account', 'account', [
         { icon: 'home-outline', label: 'Home', screen: 'DeliveryHome' },
         { icon: 'card-account-details-outline', label: 'Profile', screen: 'Profile' },
-        {
-          icon: 'logout',
-          label: 'Logout',
-          color: 'red',
-          action: handleLogout,
-        },
+        { icon: 'logout', label: 'Logout', color: 'red', action: handleLogout },
       ])}
       {renderSection('Transactions', 'transactions', 'package', [
         { icon: 'clipboard-edit-outline', label: 'Booking Management', screen: 'BookingManagement' },
       ])}
-
       {renderSection('Results and Statistics', 'results', 'chart-bar', [
         { icon: 'history', label: 'Booking History (Completed)', screen: 'BookingHistory' },
         { icon: 'chart-line', label: 'Performance Statistics', screen: 'PerformanceStatistics' },
       ])}
-
-
-
       {renderSection('Help and Support', 'help', 'help', [
         { icon: 'message-outline', label: 'Message Center', screen: 'MessageCenter' },
       ])}
@@ -103,26 +87,7 @@ const DeliveryNavigator = ({ navigation }) => {
         <Switch value={isSwitchOn} onValueChange={handleThemeSwitch} />
       </View>
 
-      <Portal>
-        <Dialog visible={isDialogVisible} onDismiss={cancelLogout} style={{ backgroundColor: colors.surface }}>
-          <Dialog.Title style={{ color: colors.onSurface, ...fonts.titleLarge }}>
-            Logout
-          </Dialog.Title>
-          <Dialog.Content>
-            <Text style={{ color: colors.onSurface, ...fonts.bodyMedium }}>
-              This will log you out. Are you sure?
-            </Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={cancelLogout} labelStyle={{ color: colors.primary }}>
-              Cancel
-            </Button>
-            <Button onPress={confirmLogout} labelStyle={{ color: colors.primary }}>
-              OK
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
+      {LogoutDialog}
     </ScrollView>
   )
 }

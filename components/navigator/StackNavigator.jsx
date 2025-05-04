@@ -10,7 +10,7 @@ import MessageCenter from '../screens/MessageCenter'
 import BookingHistory from '../screens/BookingHistory'
 import PerformanceStatistics from '../screens/PerformanceStatistics'
 import TransactionHistory from '../screens/TransactionHistory'
-
+import SignUpSubScreen from '../SignUpSubsceen'
 // Admin Screens
 import AdminHome from '../screens/admin/AdminHome'
 import UserManagement from '../screens/admin/UserManagement'
@@ -96,21 +96,26 @@ const DeliveryDrawer = () => (
 
 const StackNavigator = () => (
   <NavigationContainer>
-    <Stack.Navigator initialRouteName="Login">
-      
+    <Stack.Navigator>
+      <Stack.Screen
+        name="AdminDrawer"
+        component={AdminDrawer}
+        options={{ headerShown: false }}
+      />
       {/* Login Screen */}
       <Stack.Screen
         name="Login"
         component={LoginScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="SignUp"
+        component={SignUpSubScreen}
+        options={{ headerShown: true }}
+      />
 
       {/* Admin Drawer (no headers shown inside) */}
-      <Stack.Screen
-        name="AdminDrawer"
-        component={AdminDrawer}
-        options={{ headerShown: false }}
-      />
+      
 
       {/* Delivery Drawer (no headers shown inside) */}
       <Stack.Screen

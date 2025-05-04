@@ -49,6 +49,13 @@ const LoginScreen = ({ navigation }) => {
       >
         Forgot Password?
       </Button>
+      <Button
+        mode="text"
+        onPress={() => navigation.navigate('SignUp')}
+        labelStyle={[styles.buttonLabel, { color: colors.primary }]}
+      >
+        Don't have an account? Sign Up
+      </Button>
 
       <BottomModal visible={modalVisible} onDismiss={hideModal}>
         <LoginModalContent

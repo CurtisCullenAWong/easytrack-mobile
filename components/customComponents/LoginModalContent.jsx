@@ -1,9 +1,12 @@
 import React, { useState } from 'react'
 import { ScrollView, StyleSheet } from 'react-native'
-import { TextInput, Button, Snackbar, useTheme, Text, Portal } from 'react-native-paper'
+import { TextInput, Button, useTheme, Text } from 'react-native-paper'
+import { supabase } from '../../lib/supabase'
+import useSnackbar from '../hooks/useSnackbar' // the new combined hook
 
 const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
   const { colors, fonts } = useTheme()
+  const { showSnackbar, SnackbarElement } = useSnackbar()
 
   const [credentials, setCredentials] = useState({
     email: '', password: '', newPassword: '', confirmPassword: '',
@@ -11,7 +14,6 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
   const [visibility, setVisibility] = useState({
     password: false, newPassword: false, confirmPassword: false,
   })
-  const [snackbar, setSnackbar] = useState({ visible: false, message: '' })
 
   const handleChange = (field, value) => {
     setCredentials(prev => ({ ...prev, [field]: value }))
@@ -21,12 +23,8 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
     setVisibility(prev => ({ ...prev, [field]: !prev[field] }))
   }
 
-  const showSnackbar = (message) => {
-    setSnackbar({ message, visible: true })
-  }
-
   const handleResetPassword = () => {
-    const { email } = credentials
+    const { email, newPassword, confirmPassword } = credentials
     if (!email || !newPassword || !confirmPassword) {
       return showSnackbar('All fields are required.')
     }
@@ -37,19 +35,56 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
     onClose()
   }
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     const { email, password } = credentials
     if (!email || !password) {
       return showSnackbar('Email and password are required.')
     }
-    console.log('Login Creds:', { email, password })
-
-    if (email.includes('@admin')) navigation.navigate('AdminDrawer')
-    else if (email.includes('@delivery')) navigation.navigate('DeliveryDrawer')
-    else if (email.includes('@airline')) navigation.navigate('AirlineDrawer')
-
+  
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  
+    if (error) {
+      return showSnackbar(error.message)
+    }
+  
+    const user = data.user
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+  
+    if (profileError) {
+      return showSnackbar('Login successful, but profile not found.')
+    }
+  
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ last_sign_in_at: new Date().toISOString() })
+      .eq('id', user.id)
+  
+    if (updateError) {
+      console.warn('Failed to update last_login:', updateError.message)
+    }
+  
+  
+    switch (profile.role || true) {
+      case 'Administrator':
+        navigation.navigate('AdminDrawer')
+        break
+      case 'Delivery Personnel':
+        navigation.navigate('DeliveryDrawer')
+        break
+      case 'Airline Staff':
+        navigation.navigate('AirlineDrawer')
+        break
+      default:
+        return showSnackbar('Unauthorized role or unknown user.')
+    }
+  
     onClose()
   }
+  
 
   const renderPasswordInput = (label, valueKey, visibilityKey) => (
     <TextInput
@@ -110,18 +145,7 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
         </>
       )}
 
-      <Portal>
-        <Snackbar
-          visible={snackbar.visible}
-          onDismiss={() => setSnackbar(prev => ({ ...prev, visible: false }))}
-          duration={3000}
-          style={[styles.snackbar, { backgroundColor: colors.error }]}
-        >
-          <Text style={[fonts.default, styles.snackbarText]}>
-            {snackbar.message}
-          </Text>
-        </Snackbar>
-      </Portal>
+      {SnackbarElement}
     </ScrollView>
   )
 }
@@ -144,16 +168,6 @@ const styles = StyleSheet.create({
     width: '85%',
     height: 50,
     justifyContent: 'center',
-  },
-  snackbar: {
-    borderRadius: 8,
-    width: 'auto',
-    marginHorizontal: '10%',
-    marginBottom: '20%',
-  },
-  snackbarText: {
-    textAlign: 'center',
-    color: 'white',
   },
 })
 
