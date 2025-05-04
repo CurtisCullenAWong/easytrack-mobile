@@ -5,7 +5,6 @@ import StackNavigator from './components/navigator/StackNavigator'
 import lightTheme from './components/themes/lightTheme'
 import darkTheme from './components/themes/darkTheme'
 import { ThemeContext } from './components/themes/themeContext'
-import Test from './test'
 const App = () => {
   const [theme, setTheme] = useState(lightTheme)
   const [fontsLoaded, setFontsLoaded] = useState(false)

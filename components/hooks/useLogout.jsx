@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { CommonActions, useNavigation } from '@react-navigation/native'
 import { Portal, Dialog, Button, Text, useTheme } from 'react-native-paper'
-import { supabase } from '../../lib/supabase' // Adjust path based on your structure
+import { supabase } from '../../lib/supabase'
 
 const useLogout = () => {
   const navigation = useNavigation()

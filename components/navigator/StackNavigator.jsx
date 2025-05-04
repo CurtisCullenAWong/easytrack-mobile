@@ -97,11 +97,7 @@ const DeliveryDrawer = () => (
 const StackNavigator = () => (
   <NavigationContainer>
     <Stack.Navigator>
-      <Stack.Screen
-        name="AdminDrawer"
-        component={AdminDrawer}
-        options={{ headerShown: false }}
-      />
+      
       {/* Login Screen */}
       <Stack.Screen
         name="Login"
@@ -109,13 +105,17 @@ const StackNavigator = () => (
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="SignUp"
+        name="Sign Up"
         component={SignUpSubScreen}
         options={{ headerShown: true }}
       />
 
       {/* Admin Drawer (no headers shown inside) */}
-      
+      <Stack.Screen
+        name="AdminDrawer"
+        component={AdminDrawer}
+        options={{ headerShown: false }}
+      />
 
       {/* Delivery Drawer (no headers shown inside) */}
       <Stack.Screen

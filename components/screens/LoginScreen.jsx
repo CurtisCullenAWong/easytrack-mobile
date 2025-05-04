@@ -1,13 +1,16 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { View, Image, Text, StyleSheet } from 'react-native'
 import { Button, useTheme } from 'react-native-paper'
 import BottomModal from '../customComponents/BottomModal'
 import LoginModalContent from '../customComponents/LoginModalContent'
+import { supabase } from '../../lib/supabase'
+import useSnackbar from '../hooks/useSnackbar'
 
 const LoginScreen = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const [modalVisible, setModalVisible] = useState(false)
   const [isResetPasswordModal, setIsResetPasswordModal] = useState(false)
+  const { showSnackbar } = useSnackbar()
 
   const showModal = () => setModalVisible(true)
   const hideModal = () => setModalVisible(false)
@@ -22,11 +25,48 @@ const LoginScreen = ({ navigation }) => {
     showModal()
   }
 
+  const routeUserByRole = async (user) => {
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (error) return showSnackbar('Logged in, but no profile found.')
+
+    await supabase
+      .from('profiles')
+      .update({ last_sign_in_at: new Date().toISOString() })
+      .eq('id', user.id)
+
+    const routeMap = {
+      Administrator: 'AdminDrawer',
+      'Delivery Personnel': 'DeliveryDrawer',
+      'Airline Staff': 'AirlineDrawer',
+    }
+
+    const targetRoute = routeMap[profile?.role]
+    if (!targetRoute) return showSnackbar('Unauthorized role or unknown user.')
+
+    navigation.navigate(targetRoute)
+  }
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data, error } = await supabase.auth.getSession()
+      const session = data?.session
+      if (session?.user) {
+        routeUserByRole(session.user)
+      }
+    }
+    checkSession()
+  }, [])
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Image source={require('../../assets/banner.png')} style={styles.bannerImage} />
       <Text style={[styles.title, { color: colors.primary, ...fonts.displayLarge }]}>
-          EasyTrack
+        EasyTrack
       </Text>
       <Text style={[styles.subtitle, { color: colors.onBackground, ...fonts.titleMedium }]}>
         For your luggage contracting and tracking needs. Keep track of your luggage location in real-time.
@@ -51,7 +91,7 @@ const LoginScreen = ({ navigation }) => {
       </Button>
       <Button
         mode="text"
-        onPress={() => navigation.navigate('SignUp')}
+        onPress={() => navigation.navigate('Sign Up')}
         labelStyle={[styles.buttonLabel, { color: colors.primary }]}
       >
         Don't have an account? Sign Up
