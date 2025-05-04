@@ -11,11 +11,12 @@ import BookingHistory from '../screens/BookingHistory'
 import PerformanceStatistics from '../screens/PerformanceStatistics'
 import TransactionHistory from '../screens/TransactionHistory'
 import SignUpSubScreen from '../SignUpSubsceen'
+
 // Admin Screens
 import AdminHome from '../screens/admin/AdminHome'
 import UserManagement from '../screens/admin/UserManagement'
 import AdminTrackLuggage from '../screens/admin/AdminTrackLuggage'
-
+import EditAccount from '../screens/admin/subscreen/EditAccountScreen'
 // Airline Screens
 import AirlineHome from '../screens/airline/AirlineHome'
 import TrackLuggage from '../screens/airline/AirlineTrackLuggage'
@@ -115,6 +116,11 @@ const StackNavigator = () => (
         name="AdminDrawer"
         component={AdminDrawer}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Edit Account"
+        component={EditAccount}
+        options={{ headerShown: true }}
       />
 
       {/* Delivery Drawer (no headers shown inside) */}

@@ -1,11 +1,14 @@
 import React, { useState, useContext, useEffect } from 'react'
 import { Image, ScrollView, View, StyleSheet, BackHandler } from 'react-native'
-import { Text, List, Surface, Dialog, Portal, Button, IconButton, Switch, Divider } from 'react-native-paper'
+import { Text, List, Surface, IconButton, Switch, Divider } from 'react-native-paper'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { ThemeContext } from '../themes/themeContext'
 import { useTheme } from 'react-native-paper'
 import useLogout from '../hooks/useLogout'
 
-const AirlineNavigator = ({ navigation }) => {
+const THEME_TOGGLE_KEY = 'THEME_TOGGLE_STATE'
+
+const AdminNavigator = ({ navigation }) => {
   const { toggleTheme } = useContext(ThemeContext)
   const { colors, fonts } = useTheme()
 
@@ -15,12 +18,29 @@ const AirlineNavigator = ({ navigation }) => {
     results: true,
     help: true,
   })
-  const [isSwitchOn, setIsSwitchOn] = useState(false)
+  const [isSwitchOn, setIsSwitchOn] = useState(THEME_TOGGLE_KEY)
   const { handleLogout, LogoutDialog } = useLogout(navigation)
+  useEffect(() => {
+    const loadToggleState = async () => {
+      const storedState = await AsyncStorage.getItem(THEME_TOGGLE_KEY)
+      const toggleState = storedState === 'true'
+      setIsSwitchOn(toggleState)
+      if (toggleState) toggleTheme()
+    }
+    loadToggleState()
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleLogout()
+      return true
+    })
 
-  const handleThemeSwitch = () => {
+    return () => backHandler.remove()
+  }, [])
+
+  const handleThemeSwitch = async () => {
+    const newSwitchState = !isSwitchOn
+    setIsSwitchOn(newSwitchState)
     toggleTheme()
-    setIsSwitchOn(!isSwitchOn)
+    await AsyncStorage.setItem(THEME_TOGGLE_KEY, newSwitchState.toString())
   }
 
   const toggleSection = (section) =>
@@ -38,10 +58,9 @@ const AirlineNavigator = ({ navigation }) => {
     />
   )
 
-
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      handleLogout() 
+      handleLogout()
       return true
     })
     return () => backHandler.remove()
@@ -56,6 +75,7 @@ const AirlineNavigator = ({ navigation }) => {
         </Text>
       </Surface>
       <Divider style={styles.divider} />
+
       {renderSection('My Account', 'account', 'account', [
         { icon: 'home-outline', label: 'Home', screen: 'AirlineHome' },
         { icon: 'card-account-details-outline', label: 'Profile', screen: 'Profile' },
@@ -91,7 +111,6 @@ const AirlineNavigator = ({ navigation }) => {
       </View>
 
       {LogoutDialog}
-
     </ScrollView>
   )
 }
@@ -160,4 +179,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default AirlineNavigator
+export default AdminNavigator

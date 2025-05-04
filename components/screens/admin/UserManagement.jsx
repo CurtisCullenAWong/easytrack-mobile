@@ -28,7 +28,9 @@ const UserManagement = ({ navigation }) => {
   const [loading, setLoading] = useState(true)
 
   const handleSort = (column) => {
-    setSortDirection(prev => sortColumn === column && prev === 'ascending' ? 'descending' : 'ascending')
+    setSortDirection(prev =>
+      sortColumn === column && prev === 'ascending' ? 'descending' : 'ascending'
+    )
     setSortColumn(column)
   }
 
@@ -43,7 +45,6 @@ const UserManagement = ({ navigation }) => {
       .order('created_at', { ascending: true })
 
     if (error) {
-      console.error('Error fetching users:', error)
       setLoading(false)
       return
     }
@@ -53,10 +54,12 @@ const UserManagement = ({ navigation }) => {
       name: user.full_name || user.username || 'N/A',
       email: user.email,
       role: user.role || 'N/A',
-      status: 'Active',
-      dateCreated: user.created_at ? new Date(user.created_at).toLocaleString() : 'N/A',
-      lastLogin: user.last_login || user.last_sign_in_at
-        ? new Date(user.last_sign_in_at).toLocaleString()
+      status: user.user_status || 'Unknown',
+      dateCreated: user.created_at
+        ? new Date(user.created_at).toLocaleString()
+        : 'N/A',
+      lastLogin: user.last_sign_in_at
+        ? new Date( user.last_sign_in_at).toLocaleString()
         : 'Never',
       avatar: (user.full_name || 'N')[0].toUpperCase(),
       avatarUrl: user.avatar_url || null,
@@ -69,9 +72,14 @@ const UserManagement = ({ navigation }) => {
   useEffect(() => { fetchUsers() }, [])
 
   const filteredAndSortedUsers = users
-    .filter(user => user[searchColumn]?.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter(user =>
+      String(user[searchColumn] || '')
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase())
+    )
     .sort((a, b) => {
-      const valA = a[sortColumn], valB = b[sortColumn]
+      const valA = a[sortColumn]
+      const valB = b[sortColumn]
       if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
       if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
       return 0
@@ -97,16 +105,14 @@ const UserManagement = ({ navigation }) => {
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>
       <Header navigation={navigation} title="Manage Users" />
 
-      <View style={styles.searchContainer}>
+      <View style={styles.searchActionsRow}>
         <Searchbar
           placeholder={`Search by ${filterOptions.find(opt => opt.value === searchColumn)?.label}`}
           onChangeText={setSearchQuery}
           value={searchQuery}
           style={[styles.searchbar, { backgroundColor: colors.surface }]}
         />
-      </View>
 
-      <View style={styles.actionsContainer}>
         <Menu
           visible={menuVisible}
           onDismiss={() => setMenuVisible(false)}
@@ -115,12 +121,13 @@ const UserManagement = ({ navigation }) => {
               mode="outlined"
               icon="filter-variant"
               onPress={() => setMenuVisible(true)}
-              style={[styles.actionButton, { borderColor: colors.primary }]}
-              labelStyle={{ color: colors.primary }}
+              style={[styles.filterButton, { borderColor: colors.primary }]}
+              labelStyle={[{ color: colors.primary }, fonts.labelLarge]}
             >
-              Filter by {filterOptions.find(opt => opt.value === searchColumn)?.label}
+              {filterOptions.find(opt => opt.value === searchColumn)?.label}
             </Button>
           }
+          contentStyle={{ backgroundColor: colors.surface }}
         >
           {filterOptions.map(option => (
             <Menu.Item
@@ -130,10 +137,21 @@ const UserManagement = ({ navigation }) => {
                 setMenuVisible(false)
               }}
               title={option.label}
+              titleStyle={[
+                {
+                  color: searchColumn === option.value
+                    ? colors.primary
+                    : colors.onSurface,
+                },
+                fonts.bodyLarge,
+              ]}
+              leadingIcon={searchColumn === option.value ? 'check' : undefined}
             />
           ))}
         </Menu>
+      </View>
 
+      <View style={styles.actionsContainer}>
         <Button
           mode="outlined"
           icon="refresh"
@@ -151,7 +169,7 @@ const UserManagement = ({ navigation }) => {
         </Text>
       ) : (
         <ScrollView horizontal>
-          <DataTable style={[styles.table, { backgroundColor: colors.surface }]}> 
+          <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
             <DataTable.Header>
               <DataTable.Title style={{ width: AVATAR_COLUMN_WIDTH, justifyContent: 'center' }}>
                 <Text style={[{ color: colors.onSurface }, fonts.labelMedium]}>Avatar</Text>
@@ -176,7 +194,9 @@ const UserManagement = ({ navigation }) => {
             {filteredAndSortedUsers.length === 0 ? (
               <DataTable.Row>
                 <DataTable.Cell style={styles.noDataCell}>
-                  <Text style={[{ color: colors.onSurface, textAlign: 'center' }, fonts.bodyMedium]}>No users available</Text>
+                  <Text style={[{ color: colors.onSurface, textAlign: 'center' }, fonts.bodyMedium]}>
+                    No users available
+                  </Text>
                 </DataTable.Cell>
               </DataTable.Row>
             ) : (
@@ -209,7 +229,7 @@ const UserManagement = ({ navigation }) => {
                       mode="outlined"
                       icon="eye"
                       compact
-                      onPress={() => navigation.navigate('EditAccount', { userId: user.id })}
+                      onPress={() => navigation.navigate('Edit Account', { userId: user.id })}
                       style={styles.viewButton}
                       labelStyle={{ color: colors.primary }}
                     >
@@ -227,17 +247,25 @@ const UserManagement = ({ navigation }) => {
 }
 
 const styles = StyleSheet.create({
-  searchContainer: {
-    padding: 16,
+  searchActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginTop: 16,
+    gap: 10,
+  },
+  searchbar: {
+    flex: 1,
+  },
+  filterButton: {
+    height: 56,
+    justifyContent: 'center',
   },
   actionsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     paddingHorizontal: 16,
     gap: 10,
-  },
-  searchbar: {
-    flex: 1,
   },
   actionButton: {
     marginVertical: 8,

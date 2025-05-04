@@ -14,6 +14,7 @@ const SignUpSubScreen = ({ navigation, onClose }) => {
     confirmPassword: '',
     full_name: '',
     role: '',
+    user_status: '',
   })
 
   const [visibility, setVisibility] = useState({
@@ -56,6 +57,7 @@ const SignUpSubScreen = ({ navigation, onClose }) => {
           username: email.split('@')[0],
           full_name,
           role,
+          user_status:'Pending'
         })
 
       if (profileError) {

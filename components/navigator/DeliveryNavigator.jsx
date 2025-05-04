@@ -1,11 +1,14 @@
 import React, { useState, useContext, useEffect } from 'react'
 import { Image, ScrollView, View, StyleSheet, BackHandler } from 'react-native'
 import { Text, List, Surface, IconButton, Switch, Divider } from 'react-native-paper'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { ThemeContext } from '../themes/themeContext'
 import { useTheme } from 'react-native-paper'
 import useLogout from '../hooks/useLogout'
 
-const DeliveryNavigator = ({ navigation }) => {
+const THEME_TOGGLE_KEY = 'THEME_TOGGLE_STATE'
+
+const AdminNavigator = ({ navigation }) => {
   const { toggleTheme } = useContext(ThemeContext)
   const { colors, fonts } = useTheme()
 
@@ -15,13 +18,29 @@ const DeliveryNavigator = ({ navigation }) => {
     results: true,
     help: true,
   })
-  const [isSwitchOn, setIsSwitchOn] = useState(false)
-
+  const [isSwitchOn, setIsSwitchOn] = useState(THEME_TOGGLE_KEY)
   const { handleLogout, LogoutDialog } = useLogout(navigation)
+  useEffect(() => {
+    const loadToggleState = async () => {
+      const storedState = await AsyncStorage.getItem(THEME_TOGGLE_KEY)
+      const toggleState = storedState === 'true'
+      setIsSwitchOn(toggleState)
+      if (toggleState) toggleTheme()
+    }
+    loadToggleState()
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleLogout()
+      return true
+    })
 
-  const handleThemeSwitch = () => {
+    return () => backHandler.remove()
+  }, [])
+
+  const handleThemeSwitch = async () => {
+    const newSwitchState = !isSwitchOn
+    setIsSwitchOn(newSwitchState)
     toggleTheme()
-    setIsSwitchOn(!isSwitchOn)
+    await AsyncStorage.setItem(THEME_TOGGLE_KEY, newSwitchState.toString())
   }
 
   const toggleSection = (section) =>
@@ -156,4 +175,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default DeliveryNavigator
+export default AdminNavigator
