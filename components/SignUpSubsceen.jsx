@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
-import { View, Text, StyleSheet } from 'react-native'
-import { TextInput, Button, useTheme } from 'react-native-paper'
+import { StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
+import { TextInput, Button, useTheme, Appbar } from 'react-native-paper'
 import { supabase } from '../lib/supabase'
 import useSnackbar from './hooks/useSnackbar'
 
 const SignUpSubScreen = ({ navigation, onClose }) => {
-  const { colors, fonts } = useTheme()
+  const { colors } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
   const [form, setForm] = useState({
@@ -14,7 +14,6 @@ const SignUpSubScreen = ({ navigation, onClose }) => {
     confirmPassword: '',
     full_name: '',
     role: '',
-    user_status: '',
   })
 
   const [visibility, setVisibility] = useState({
@@ -42,7 +41,6 @@ const SignUpSubScreen = ({ navigation, onClose }) => {
     }
 
     const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
-
     if (signUpError) {
       return showSnackbar(signUpError.message)
     }
@@ -57,7 +55,7 @@ const SignUpSubScreen = ({ navigation, onClose }) => {
           username: email.split('@')[0],
           full_name,
           role,
-          user_status:'Pending'
+          user_status: 'Pending',
         })
 
       if (profileError) {
@@ -72,100 +70,112 @@ const SignUpSubScreen = ({ navigation, onClose }) => {
     }, 2500)
   }
 
+  const _goBack = () => navigation.goBack()
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.header, { color: colors.primary, ...fonts.headlineMedium }]}>
-        Create an Account
-      </Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>      
+      <Appbar.Header>
+        <Appbar.BackAction onPress={_goBack} />
+        <Appbar.Content title="Create an Account" />
+      </Appbar.Header>
 
-      <TextInput
-        label="Full Name"
-        value={form.full_name}
-        onChangeText={(text) => handleChange('full_name', text)}
-        mode="outlined"
-        style={styles.input}
-      />
-
-      <TextInput
-        label="Email"
-        value={form.email}
-        onChangeText={(text) => handleChange('email', text)}
-        mode="outlined"
-        style={styles.input}
-      />
-
-      <TextInput
-        label="Role (Administrator / Airline Staff / Delivery Personnel)"
-        value={form.role}
-        onChangeText={(text) => handleChange('role', text)}
-        mode="outlined"
-        style={styles.input}
-      />
-
-      <TextInput
-        label="Password"
-        value={form.password}
-        onChangeText={(text) => handleChange('password', text)}
-        secureTextEntry={!visibility.password}
-        mode="outlined"
-        style={styles.input}
-        right={
-          <TextInput.Icon
-            icon={visibility.password ? 'eye' : 'eye-off'}
-            iconColor={colors.primary}
-            onPress={() => toggleVisibility('password')}
-          />
-        }
-      />
-
-      <TextInput
-        label="Confirm Password"
-        value={form.confirmPassword}
-        onChangeText={(text) => handleChange('confirmPassword', text)}
-        secureTextEntry={!visibility.confirmPassword}
-        mode="outlined"
-        style={styles.input}
-        right={
-          <TextInput.Icon
-            icon={visibility.confirmPassword ? 'eye' : 'eye-off'}
-            iconColor={colors.primary}
-            onPress={() => toggleVisibility('confirmPassword')}
-          />
-        }
-      />
-
-      <Button
-        mode="contained"
-        onPress={handleSignUp}
-        style={[styles.button, { backgroundColor: colors.primary }]}
-        labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
       >
-        Sign Up
-      </Button>
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          <TextInput
+            label="Full Name"
+            value={form.full_name}
+            onChangeText={text => handleChange('full_name', text)}
+            mode="outlined"
+            style={styles.input}
+          />
 
-      <Button
-        mode="text"
-        onPress={() => navigation.navigate('Login')}
-        style={styles.cancelButton}
-        labelStyle={{ color: colors.primary }}
-      >
-        Cancel
-      </Button>
+          <TextInput
+            label="Email"
+            value={form.email}
+            onChangeText={text => handleChange('email', text)}
+            mode="outlined"
+            style={styles.input}
+          />
 
-      {SnackbarElement}
-    </View>
+          <TextInput
+            label="Role (Administrator / Airline Staff / Delivery Personnel)"
+            value={form.role}
+            onChangeText={text => handleChange('role', text)}
+            mode="outlined"
+            style={styles.input}
+          />
+
+          <TextInput
+            label="Password"
+            value={form.password}
+            onChangeText={text => handleChange('password', text)}
+            secureTextEntry={!visibility.password}
+            mode="outlined"
+            style={styles.input}
+            right={
+              <TextInput.Icon
+                icon={visibility.password ? 'eye' : 'eye-off'}
+                iconColor={colors.primary}
+                onPress={() => toggleVisibility('password')}
+              />
+            }
+          />
+
+          <TextInput
+            label="Confirm Password"
+            value={form.confirmPassword}
+            onChangeText={text => handleChange('confirmPassword', text)}
+            secureTextEntry={!visibility.confirmPassword}
+            mode="outlined"
+            style={styles.input}
+            right={
+              <TextInput.Icon
+                icon={visibility.confirmPassword ? 'eye' : 'eye-off'}
+                iconColor={colors.primary}
+                onPress={() => toggleVisibility('confirmPassword')}
+              />
+            }
+          />
+
+          <Button
+            mode="contained"
+            onPress={handleSignUp}
+            style={[styles.button, { backgroundColor: colors.primary }]}
+            labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
+          >
+            Sign Up
+          </Button>
+
+          <Button
+            mode="text"
+            onPress={() => navigation.navigate('Login')}
+            style={styles.cancelButton}
+            labelStyle={{ color: colors.primary }}
+          >
+            Cancel
+          </Button>
+
+          {SnackbarElement}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    justifyContent: 'center',
     flex: 1,
   },
-  header: {
-    textAlign: 'center',
-    marginBottom: 24,
+  scrollContainer: {
+    flexGrow: 1,
+    padding: 20,
+    justifyContent: 'center',
   },
   input: {
     marginBottom: 16,

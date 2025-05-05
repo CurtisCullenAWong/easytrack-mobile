@@ -27,16 +27,6 @@ const UserManagement = ({ navigation }) => {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const handleSort = (column) => {
-    setSortDirection(prev =>
-      sortColumn === column && prev === 'ascending' ? 'descending' : 'ascending'
-    )
-    setSortColumn(column)
-  }
-
-  const getSortIcon = (column) =>
-    sortColumn === column ? (sortDirection === 'ascending' ? '▲' : '▼') : ''
-
   const fetchUsers = async () => {
     setLoading(true)
     const { data, error } = await supabase
@@ -71,19 +61,35 @@ const UserManagement = ({ navigation }) => {
 
   useEffect(() => { fetchUsers() }, [])
 
-  const filteredAndSortedUsers = users
-    .filter(user =>
-      String(user[searchColumn] || '')
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase())
+  const handleSort = (column) => {
+    setSortDirection(prev =>
+      sortColumn === column && prev === 'ascending' ? 'descending' : 'ascending'
     )
-    .sort((a, b) => {
-      const valA = a[sortColumn]
-      const valB = b[sortColumn]
-      if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
-      if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
-      return 0
-    })
+    setSortColumn(column)
+  }
+
+  const getSortIcon = (column) =>
+    sortColumn === column ? (sortDirection === 'ascending' ? '▲' : '▼') : ''
+
+  const filteredAndSortedUsers = users
+  .filter(user =>
+    String(user[searchColumn] || '')
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase())
+  )
+  .sort((a, b) => {
+    const valA = a[sortColumn]
+    const valB = b[sortColumn]
+    if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
+    if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
+    return 0
+  })
+  const filterOptions = [
+      { label: 'Name', value: 'name' },
+      { label: 'Email', value: 'email' },
+      { label: 'Role', value: 'role' },
+      { label: 'Status', value: 'status' },
+  ]
 
   const columns = [
     { key: 'name', label: 'Name' },
@@ -94,12 +100,6 @@ const UserManagement = ({ navigation }) => {
     { key: 'lastLogin', label: 'Last Login' },
   ]
 
-  const filterOptions = [
-    { label: 'Name', value: 'name' },
-    { label: 'Email', value: 'email' },
-    { label: 'Role', value: 'role' },
-    { label: 'Status', value: 'status' },
-  ]
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -269,6 +269,7 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     marginVertical: 8,
+    width:'100%',
   },
   table: {
     paddingHorizontal: 16,

@@ -24,7 +24,7 @@ import AirlineBookingManagement from '../screens/airline/BookingManagement'
 
 // Delivery Screens
 import DeliveryHome from '../screens/delivery/DeliveryHome'
-import CheckLocation from '../screens/CheckLocation'
+// import CheckLocation from '../screens/CheckLocation'
 import DeliveryBookingManagement from '../screens/delivery/BookingManagement'
 
 // Import Navigators
@@ -81,7 +81,6 @@ const DeliveryDrawer = () => (
       screenOptions={{ headerShown: false }}
   >
       <Drawer.Screen name="DeliveryHome" component={DeliveryHome} />
-      <Drawer.Screen name="CheckLocation" component={CheckLocation} />
       <Drawer.Screen name="BookingManagement" component={DeliveryBookingManagement} />
 
       {/* SHARED SCREENS */}
@@ -108,7 +107,7 @@ const StackNavigator = () => (
       <Stack.Screen
         name="Sign Up"
         component={SignUpSubScreen}
-        options={{ headerShown: true }}
+        options={{ headerShown: false }}
       />
 
       {/* Admin Drawer (no headers shown inside) */}
@@ -120,7 +119,7 @@ const StackNavigator = () => (
       <Stack.Screen
         name="Edit Account"
         component={EditAccount}
-        options={{ headerShown: true }}
+        options={{ headerShown: false }}
       />
 
       {/* Delivery Drawer (no headers shown inside) */}
@@ -138,11 +137,7 @@ const StackNavigator = () => (
       />
 
       {/* SUBSCREENS */}
-      {/* <Stack.Screen
-        name="AddNewAccount"
-        component={}
-        options={{ headerShown: true, title: 'Add New Account' }}
-      /> */}
+
     </Stack.Navigator>
 
   </NavigationContainer>

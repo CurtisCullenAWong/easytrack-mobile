@@ -11,7 +11,7 @@ const LoginScreen = ({ navigation }) => {
   const [modalVisible, setModalVisible] = useState(false)
   const [isResetPasswordModal, setIsResetPasswordModal] = useState(false)
   const { showSnackbar } = useSnackbar()
-
+  // MODAL VISIBILITY MODES //
   const showModal = () => setModalVisible(true)
   const hideModal = () => setModalVisible(false)
 
@@ -24,7 +24,7 @@ const LoginScreen = ({ navigation }) => {
     setIsResetPasswordModal(false)
     showModal()
   }
-
+  // LOGIN ROLE-BASED ROUTING //
   const routeUserByRole = async (user) => {
     const { data: profile, error } = await supabase
       .from('profiles')
@@ -50,7 +50,7 @@ const LoginScreen = ({ navigation }) => {
 
     navigation.navigate(targetRoute)
   }
-
+  // AUTO LOGIN FUNCTION //
   useEffect(() => {
     const checkSession = async () => {
       const { data, error } = await supabase.auth.getSession()
