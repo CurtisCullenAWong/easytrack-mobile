@@ -1,13 +1,10 @@
-import React, { useState, useEffect } from 'react'
-import { ScrollView, StyleSheet, View } from 'react-native'
+import React, { useState } from 'react'
+import { ScrollView, StyleSheet } from 'react-native'
 import { TextInput, Button, useTheme, Text } from 'react-native-paper'
-import { supabase } from '../../lib/supabase'
-import useSnackbar from '../hooks/useSnackbar'
-
+import useAuth from '../hooks/useAuth'
 const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
   const { colors, fonts } = useTheme()
-  const { showSnackbar, SnackbarElement } = useSnackbar()
-
+  const { login, resetPassword, SnackbarElement } = useAuth(navigation, onClose)
   const [credentials, setCredentials] = useState({ email: '', password: '' })
   const [visibility, setVisibility] = useState({ password: false })
 
@@ -37,54 +34,12 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
     />
   )
 
-  const routeUserByRole = async (user) => {
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (error) return showSnackbar('Logged in, but no profile found.')
-
-    await supabase
-      .from('profiles')
-      .update({ last_sign_in_at: new Date().toISOString() })
-      .eq('id', user.id)
-
-    const routeMap = {
-      Administrator: 'AdminDrawer',
-      'Delivery Personnel': 'DeliveryDrawer',
-      'Airline Staff': 'AirlineDrawer',
-    }
-
-    const targetRoute = routeMap[profile?.role]
-    if (!targetRoute) return showSnackbar('Unauthorized role or unknown user.')
-
-    navigation.navigate(targetRoute)
-    onClose?.()
+  const handleResetPassword = () => {
+    resetPassword(credentials.email)
   }
 
-  const handleResetPassword = async () => {
-    if (!credentials.email) return showSnackbar('Email is required.')
-
-    const { error } = await supabase.auth.resetPasswordForEmail(credentials.email, {
-      redirectTo: 'myapp://reset-password',
-    })
-
-    if (error) return showSnackbar(error.message)
-    showSnackbar('Password reset email sent.', 'success')
-    onClose?.()
-  }
-
-  const handleLogin = async () => {
-    const { email, password } = credentials
-    if (!email || !password) return showSnackbar('Email and password are required.')
-
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-
-    if (error) return showSnackbar(error.message)
-
-    routeUserByRole(data.user)
+  const handleLogin = () => {
+    login(credentials)
   }
 
   return (
@@ -92,7 +47,7 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
       <Text style={[fonts.headlineSmall, styles.headerText]}>
         {isResetPasswordModal ? 'Reset Password' : 'Login'}
       </Text>
-
+      {SnackbarElement}
       <TextInput
         label="Email Address"
         value={credentials.email}
@@ -115,7 +70,6 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
       ) : (
         <>
           {renderPasswordInput()}
-
           <Button
             mode="contained"
             onPress={handleLogin}
@@ -126,8 +80,6 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
           </Button>
         </>
       )}
-
-      {SnackbarElement}
     </ScrollView>
   )
 }

@@ -3,15 +3,14 @@ import { View, Image, Text, StyleSheet } from 'react-native'
 import { Button, useTheme } from 'react-native-paper'
 import BottomModal from '../customComponents/BottomModal'
 import LoginModalContent from '../customComponents/LoginModalContent'
-import { supabase } from '../../lib/supabase'
-import useSnackbar from '../hooks/useSnackbar'
+import useAuth from '../hooks/useAuth'
 
 const LoginScreen = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const [modalVisible, setModalVisible] = useState(false)
   const [isResetPasswordModal, setIsResetPasswordModal] = useState(false)
-  const { showSnackbar } = useSnackbar()
-  // MODAL VISIBILITY MODES //
+  const { checkSession } = useAuth(navigation)
+
   const showModal = () => setModalVisible(true)
   const hideModal = () => setModalVisible(false)
 
@@ -24,41 +23,8 @@ const LoginScreen = ({ navigation }) => {
     setIsResetPasswordModal(false)
     showModal()
   }
-  // LOGIN ROLE-BASED ROUTING //
-  const routeUserByRole = async (user) => {
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
 
-    if (error) return showSnackbar('Logged in, but no profile found.')
-
-    await supabase
-      .from('profiles')
-      .update({ last_sign_in_at: new Date().toISOString() })
-      .eq('id', user.id)
-
-    const routeMap = {
-      Administrator: 'AdminDrawer',
-      'Delivery Personnel': 'DeliveryDrawer',
-      'Airline Staff': 'AirlineDrawer',
-    }
-
-    const targetRoute = routeMap[profile?.role]
-    if (!targetRoute) return showSnackbar('Unauthorized role or unknown user.')
-
-    navigation.navigate(targetRoute)
-  }
-  // AUTO LOGIN FUNCTION //
   useEffect(() => {
-    const checkSession = async () => {
-      const { data, error } = await supabase.auth.getSession()
-      const session = data?.session
-      if (session?.user) {
-        routeUserByRole(session.user)
-      }
-    }
     checkSession()
   }, [])
 
@@ -89,6 +55,7 @@ const LoginScreen = ({ navigation }) => {
       >
         Forgot Password?
       </Button>
+
       <Button
         mode="text"
         onPress={() => navigation.navigate('Sign Up')}

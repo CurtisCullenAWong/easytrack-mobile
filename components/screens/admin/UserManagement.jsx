@@ -32,7 +32,7 @@ const UserManagement = ({ navigation }) => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .order('created_at', { ascending: true })
+      .order('first_name', { ascending: true })
 
     if (error) {
       setLoading(false)
@@ -41,10 +41,10 @@ const UserManagement = ({ navigation }) => {
 
     const formatted = data.map(user => ({
       id: user.id,
-      name: user.full_name || user.username || 'N/A',
+      name: user.first_name || 'N/A',
       email: user.email,
-      role: user.role || 'N/A',
-      status: user.user_status || 'Unknown',
+      role: user.role_id || 'N/A',
+      status: user.user_status_id || 'Unknown',
       dateCreated: user.created_at
         ? new Date(user.created_at).toLocaleString()
         : 'N/A',
