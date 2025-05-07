@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   content: {
-    flex: 9, // ensures content expands to fill space and doesn't center
+    flex: 9,
   },
 });
 
