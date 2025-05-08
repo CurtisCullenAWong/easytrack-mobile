@@ -11,8 +11,50 @@ import { DatePickerModal, en, registerTranslation } from 'react-native-paper-dat
 import { supabase } from '../../lib/supabase'
 import useSnackbar from '../hooks/useSnackbar'
 
-// Register the English locale
 registerTranslation('en', en)
+
+// Validation patterns
+const VALIDATION_PATTERNS = {
+  name: /^[a-zA-Z\s'-]{2,50}$/,
+  middleInitial: /^[a-zA-Z]$/,
+  phone: /^(\+63|0)[0-9]{10}$/,
+}
+
+// Validation messages
+const VALIDATION_MESSAGES = {
+  required: 'This field is required',
+  invalidName: 'Name should only contain letters, spaces, hyphens, and apostrophes (2-50 characters)',
+  invalidMiddleInitial: 'Middle initial should be a single letter',
+  invalidPhone: 'Please enter a valid Philippine phone number (e.g., +639123456789 or 09123456789)',
+  invalidBirthDate: 'Birth date cannot be in the future',
+}
+
+// Phone number formatting function
+const formatPhoneNumber = (value) => {
+  // Remove all non-digit characters
+  const digits = value.replace(/\D/g, '')
+  
+  // If empty, return empty string
+  if (!digits) return ''
+  
+  // If starts with 63, convert to +63
+  if (digits.startsWith('63')) {
+    return `+63${digits.slice(2)}`
+  }
+  
+  // If starts with 0, keep it
+  if (digits.startsWith('0')) {
+    return digits
+  }
+  
+  // If starts with 9, add 0
+  if (digits.startsWith('9')) {
+    return `0${digits}`
+  }
+  
+  // If none of the above, add 0
+  return `0${digits}`
+}
 
 const EditProfileSubScreen = ({ navigation, onClose }) => {
   const { colors, fonts } = useTheme()
@@ -28,17 +70,56 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
     emergency_contact_number: '',
   })
 
+  const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
 
+  // Validation functions
+  const validateField = (field, value) => {
+    switch (field) {
+      case 'first_name':
+      case 'last_name':
+      case 'emergency_contact_name':
+        return !value ? VALIDATION_MESSAGES.required :
+          !VALIDATION_PATTERNS.name.test(value) ? VALIDATION_MESSAGES.invalidName : ''
+      case 'middle_initial':
+        return value && !VALIDATION_PATTERNS.middleInitial.test(value) ? VALIDATION_MESSAGES.invalidMiddleInitial : ''
+      case 'contact_number':
+      case 'emergency_contact_number':
+        return !value ? VALIDATION_MESSAGES.required :
+          !VALIDATION_PATTERNS.phone.test(value) ? VALIDATION_MESSAGES.invalidPhone : ''
+      case 'birth_date':
+        return !value ? VALIDATION_MESSAGES.required :
+          value > new Date() ? VALIDATION_MESSAGES.invalidBirthDate : ''
+      default:
+        return ''
+    }
+  }
+
+  // Sanitization functions
+  const sanitizeInput = (field, value) => {
+    switch (field) {
+      case 'first_name':
+      case 'last_name':
+      case 'emergency_contact_name':
+        return value.trim().replace(/\s+/g, ' ')
+      case 'middle_initial':
+        return value.trim().toUpperCase()
+      case 'contact_number':
+      case 'emergency_contact_number':
+        return formatPhoneNumber(value)
+      default:
+        return value
+    }
+  }
+
   const handleDateConfirm = useCallback(({ date }) => {
     if (date) {
-      // Validate that the date is not in the future
-      const today = new Date()
-      if (date > today) {
-        showSnackbar('Birth date cannot be in the future')
+      const error = validateField('birth_date', date)
+      if (error) {
+        showSnackbar(error)
         return
       }
       handleChange('birth_date', date)
@@ -54,7 +135,22 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
     setShowDatePicker(true)
   }, [])
 
+  const validateForm = () => {
+    const newErrors = {}
+    Object.keys(form).forEach(field => {
+      const error = validateField(field, form[field])
+      if (error) newErrors[field] = error
+    })
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
   const saveProfile = async () => {
+    if (!validateForm()) {
+      showSnackbar('Please fix the errors before saving')
+      return
+    }
+
     try {
       setSaving(true)
       const { data: { user } } = await supabase.auth.getUser()
@@ -134,7 +230,11 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
   }, [])
 
   const handleChange = (field, value) => {
-    setForm(prev => ({ ...prev, [field]: value }))
+    const sanitizedValue = sanitizeInput(field, value)
+    const error = validateField(field, sanitizedValue)
+    
+    setForm(prev => ({ ...prev, [field]: sanitizedValue }))
+    setErrors(prev => ({ ...prev, [field]: error }))
   }
 
   if (loading) {
@@ -180,6 +280,8 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
               left={<TextInput.Icon icon="account" />}
               theme={{ colors: { primary: colors.primary } }}
               disabled={saving}
+              error={!!errors.first_name}
+              helperText={errors.first_name}
             />
 
             <TextInput
@@ -192,6 +294,8 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
               left={<TextInput.Icon icon="account" />}
               theme={{ colors: { primary: colors.primary } }}
               disabled={saving}
+              error={!!errors.middle_initial}
+              helperText={errors.middle_initial}
             />
 
             <TextInput
@@ -203,6 +307,8 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
               left={<TextInput.Icon icon="account" />}
               theme={{ colors: { primary: colors.primary } }}
               disabled={saving}
+              error={!!errors.last_name}
+              helperText={errors.last_name}
             />
 
             <Divider style={styles.divider} />
@@ -214,9 +320,12 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
               mode="outlined"
               style={styles.input}
               keyboardType="phone-pad"
-              left={<TextInput.Icon icon="phone" />}
+              left={<TextInput.Affix text="+63" />}
               theme={{ colors: { primary: colors.primary } }}
               disabled={saving}
+              error={!!errors.contact_number}
+              helperText={errors.contact_number}
+              maxLength={13}
             />
 
             <TextInput
@@ -225,10 +334,11 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
               editable={false}
               mode="outlined"
               style={styles.input}
-              left={<TextInput.Icon icon="calendar" />}
-              right={<TextInput.Icon icon="calendar" onPress={openDatePicker} />}
+              left={<TextInput.Icon icon="calendar" onPress={openDatePicker} />}
               theme={{ colors: { primary: colors.primary } }}
               disabled={saving}
+              error={!!errors.birth_date}
+              helperText={errors.birth_date}
             />
 
             <Divider style={styles.divider} />
@@ -242,6 +352,8 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
               left={<TextInput.Icon icon="account" />}
               theme={{ colors: { primary: colors.primary } }}
               disabled={saving}
+              error={!!errors.emergency_contact_name}
+              helperText={errors.emergency_contact_name}
             />
 
             <TextInput
@@ -251,9 +363,12 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
               mode="outlined"
               style={styles.input}
               keyboardType="phone-pad"
-              left={<TextInput.Icon icon="phone" />}
+              left={<TextInput.Affix text="+63" />}
               theme={{ colors: { primary: colors.primary } }}
               disabled={saving}
+              error={!!errors.emergency_contact_number}
+              helperText={errors.emergency_contact_number}
+              maxLength={13}
             />
           </Surface>
         </ScrollView>
@@ -271,8 +386,12 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
           presentationStyle="formSheet"
           saveLabel="Select"
           label="Enter the birth date"
-          startYear={1925}
+          startYear={1935}
           endYear={new Date().getFullYear()}
+          validRange={{
+            startDate: new Date(1935, 0, 1),
+            endDate: new Date().getFullYear(),
+          }}
         />
       </Portal>
 
@@ -307,6 +426,7 @@ const styles = StyleSheet.create({
   surface: {
     padding: 16,
     borderRadius: 8,
+    marginBottom: 16,
   },
   avatarContainer: {
     alignItems: 'center',
@@ -315,7 +435,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   input: { 
-    marginBottom: 16 
+    marginBottom: 16
   },
   divider: {
     marginVertical: 16,

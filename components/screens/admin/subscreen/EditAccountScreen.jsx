@@ -26,6 +26,53 @@ import useSnackbar from '../../../../components/hooks/useSnackbar'
 // Register the English locale
 registerTranslation('en', en)
 
+// Validation patterns
+const VALIDATION_PATTERNS = {
+  name: /^[a-zA-Z\s'-]{2,50}$/,
+  middleInitial: /^[a-zA-Z]$/,
+  phone: /^(\+63|0)[0-9]{10}$/,
+  email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+}
+
+// Validation messages
+const VALIDATION_MESSAGES = {
+  required: 'This field is required',
+  invalidName: 'Name should only contain letters, spaces, hyphens, and apostrophes (2-50 characters)',
+  invalidMiddleInitial: 'Middle initial should be a single letter',
+  invalidPhone: 'Please enter a valid Philippine phone number (e.g., +639123456789 or 09123456789)',
+  invalidEmail: 'Please enter a valid email address',
+  invalidBirthDate: 'Birth date cannot be in the future',
+  invalidRole: 'Please select a valid role',
+  invalidStatus: 'Please select a valid status',
+}
+
+// Phone number formatting function
+const formatPhoneNumber = (value) => {
+  // Remove all non-digit characters
+  const digits = value.replace(/\D/g, '')
+  
+  // If empty, return empty string
+  if (!digits) return ''
+  
+  // If starts with 63, convert to +63
+  if (digits.startsWith('63')) {
+    return `+63${digits.slice(2)}`
+  }
+  
+  // If starts with 0, keep it
+  if (digits.startsWith('0')) {
+    return digits
+  }
+  
+  // If starts with 9, add 0
+  if (digits.startsWith('9')) {
+    return `0${digits}`
+  }
+  
+  // If none of the above, add 0
+  return `0${digits}`
+}
+
 // Memoized Menu Item component
 const MemoizedMenuItem = React.memo(({ item, selected, onPress, colors, fonts }) => (
   <Menu.Item
@@ -51,6 +98,7 @@ const EditAccount = ({ route, navigation }) => {
   const [saving, setSaving] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
+  const [errors, setErrors] = useState({})
 
   const [roleMenuVisible, setRoleMenuVisible] = useState(false)
   const [statusMenuVisible, setStatusMenuVisible] = useState(false)
@@ -58,12 +106,59 @@ const EditAccount = ({ route, navigation }) => {
   const [roleOptions, setRoleOptions] = useState([])
   const [statusOptions, setStatusOptions] = useState([])
 
+  // Validation functions
+  const validateField = (field, value) => {
+    switch (field) {
+      case 'first_name':
+      case 'last_name':
+      case 'emergency_contact_name':
+        return !value ? VALIDATION_MESSAGES.required :
+          !VALIDATION_PATTERNS.name.test(value) ? VALIDATION_MESSAGES.invalidName : ''
+      case 'middle_initial':
+        return value && !VALIDATION_PATTERNS.middleInitial.test(value) ? VALIDATION_MESSAGES.invalidMiddleInitial : ''
+      case 'email':
+        return !value ? VALIDATION_MESSAGES.required :
+          !VALIDATION_PATTERNS.email.test(value) ? VALIDATION_MESSAGES.invalidEmail : ''
+      case 'contact_number':
+      case 'emergency_contact_number':
+        return !value ? VALIDATION_MESSAGES.required :
+          !VALIDATION_PATTERNS.phone.test(value) ? VALIDATION_MESSAGES.invalidPhone : ''
+      case 'birth_date':
+        return !value ? VALIDATION_MESSAGES.required :
+          value > new Date() ? VALIDATION_MESSAGES.invalidBirthDate : ''
+      case 'role':
+        return !value ? VALIDATION_MESSAGES.invalidRole : ''
+      case 'user_status':
+        return !value ? VALIDATION_MESSAGES.invalidStatus : ''
+      default:
+        return ''
+    }
+  }
+
+  // Sanitization functions
+  const sanitizeInput = (field, value) => {
+    switch (field) {
+      case 'first_name':
+      case 'last_name':
+      case 'emergency_contact_name':
+        return value.trim().replace(/\s+/g, ' ')
+      case 'middle_initial':
+        return value.trim().toUpperCase()
+      case 'email':
+        return value.trim().toLowerCase()
+      case 'contact_number':
+      case 'emergency_contact_number':
+        return formatPhoneNumber(value)
+      default:
+        return value
+    }
+  }
+
   const handleDateConfirm = useCallback(({ date }) => {
     if (date) {
-      // Validate that the date is not in the future
-      const today = new Date()
-      if (date > today) {
-        showSnackbar('Birth date cannot be in the future')
+      const error = validateField('birth_date', date)
+      if (error) {
+        showSnackbar(error)
         return
       }
       handleChange('birth_date', date)
@@ -79,7 +174,22 @@ const EditAccount = ({ route, navigation }) => {
     setShowDatePicker(true)
   }, [])
 
+  const validateForm = () => {
+    const newErrors = {}
+    Object.keys(user).forEach(field => {
+      const error = validateField(field, user[field])
+      if (error) newErrors[field] = error
+    })
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
   const saveUser = async () => {
+    if (!validateForm()) {
+      showSnackbar('Please fix the errors before saving')
+      return
+    }
+
     try {
       setSaving(true)
 
@@ -174,7 +284,11 @@ const EditAccount = ({ route, navigation }) => {
   }, [userId])
 
   const handleChange = (field, value) => {
-    setUser(prev => ({ ...prev, [field]: value }))
+    const sanitizedValue = sanitizeInput(field, value)
+    const error = validateField(field, sanitizedValue)
+    
+    setUser(prev => ({ ...prev, [field]: sanitizedValue }))
+    setErrors(prev => ({ ...prev, [field]: error }))
   }
 
   // Memoize the role menu items
@@ -258,6 +372,8 @@ const EditAccount = ({ route, navigation }) => {
               style={styles.input}
               mode="outlined"
               left={<TextInput.Icon icon="account" />}
+              error={!!errors.first_name}
+              helperText={errors.first_name}
             />
 
             <TextInput
@@ -268,6 +384,8 @@ const EditAccount = ({ route, navigation }) => {
               mode="outlined"
               maxLength={1}
               left={<TextInput.Icon icon="account" />}
+              error={!!errors.middle_initial}
+              helperText={errors.middle_initial}
             />
 
             <TextInput
@@ -277,6 +395,8 @@ const EditAccount = ({ route, navigation }) => {
               style={styles.input}
               mode="outlined"
               left={<TextInput.Icon icon="account" />}
+              error={!!errors.last_name}
+              helperText={errors.last_name}
             />
 
             <Divider style={styles.divider} />
@@ -290,6 +410,8 @@ const EditAccount = ({ route, navigation }) => {
               keyboardType="email-address"
               autoCapitalize="none"
               left={<TextInput.Icon icon="email" />}
+              error={!!errors.email}
+              helperText={errors.email}
             />
 
             <TextInput
@@ -299,7 +421,10 @@ const EditAccount = ({ route, navigation }) => {
               style={styles.input}
               mode="outlined"
               keyboardType="phone-pad"
-              left={<TextInput.Icon icon="phone" />}
+              left={<TextInput.Affix text="+63" />}
+              error={!!errors.contact_number}
+              helperText={errors.contact_number}
+              maxLength={13}
             />
 
             <TextInput
@@ -310,6 +435,8 @@ const EditAccount = ({ route, navigation }) => {
               style={styles.input}
               left={<TextInput.Icon icon="calendar" />}
               right={<TextInput.Icon icon="calendar" onPress={openDatePicker} />}
+              error={!!errors.birth_date}
+              helperText={errors.birth_date}
             />
 
             <Divider style={styles.divider} />
@@ -321,6 +448,8 @@ const EditAccount = ({ route, navigation }) => {
               style={styles.input}
               mode="outlined"
               left={<TextInput.Icon icon="account" />}
+              error={!!errors.emergency_contact_name}
+              helperText={errors.emergency_contact_name}
             />
 
             <TextInput
@@ -330,7 +459,10 @@ const EditAccount = ({ route, navigation }) => {
               style={styles.input}
               mode="outlined"
               keyboardType="phone-pad"
-              left={<TextInput.Icon icon="phone" />}
+              left={<TextInput.Affix text="+63" />}
+              error={!!errors.emergency_contact_number}
+              helperText={errors.emergency_contact_number}
+              maxLength={13}
             />
 
             <Divider style={styles.divider} />
@@ -347,6 +479,8 @@ const EditAccount = ({ route, navigation }) => {
                   style={styles.input}
                   left={<TextInput.Icon icon="account-cog" />}
                   right={<TextInput.Icon icon="menu-down" onPress={() => setRoleMenuVisible(true)} />}
+                  error={!!errors.role}
+                  helperText={errors.role}
                 />
               }
               contentStyle={{ backgroundColor: colors.surface }}
@@ -366,6 +500,8 @@ const EditAccount = ({ route, navigation }) => {
                   style={styles.input}
                   left={<TextInput.Icon icon="account-check" />}
                   right={<TextInput.Icon icon="menu-down" onPress={() => setStatusMenuVisible(true)} />}
+                  error={!!errors.user_status}
+                  helperText={errors.user_status}
                 />
               }
               contentStyle={{ backgroundColor: colors.surface }}
@@ -389,8 +525,12 @@ const EditAccount = ({ route, navigation }) => {
           presentationStyle="formSheet"
           saveLabel="Select"
           label="Enter the birth date"
-          startYear={1925}
+          startYear={1935}
           endYear={new Date().getFullYear()}
+          validRange={{
+            startDate: new Date(1935, 0, 1),
+            endDate: new Date().getFullYear(),
+          }}
         />
       </Portal>
 
@@ -425,6 +565,7 @@ const styles = StyleSheet.create({
   surface: {
     padding: 16,
     borderRadius: 8,
+    marginBottom: 16,
   },
   avatarContainer: {
     alignItems: 'center',

@@ -8,6 +8,7 @@ import {
   Text,
   useTheme,
   Menu,
+  Divider,
 } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabase'
@@ -27,6 +28,8 @@ const UserManagement = ({ navigation }) => {
   const [sortDirection, setSortDirection] = useState('ascending')
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(0)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   const fetchUsers = async () => {
     setLoading(true)
@@ -96,6 +99,10 @@ const UserManagement = ({ navigation }) => {
       return 0
     })
 
+  const from = page * itemsPerPage
+  const to = Math.min((page + 1) * itemsPerPage, filteredAndSortedUsers.length)
+  const paginatedUsers = filteredAndSortedUsers.slice(from, to)
+
   const filterOptions = [
     { label: 'Full Name', value: 'full_name' },
     { label: 'Email', value: 'email' },
@@ -127,7 +134,19 @@ const UserManagement = ({ navigation }) => {
           value={searchQuery}
           style={[styles.searchbar, { backgroundColor: colors.surface }]}
         />
+      </View>
 
+      <View style={styles.buttonContainer}>
+        <Button
+          mode="contained"
+          icon="refresh"
+          onPress={fetchUsers}
+          style={[styles.button, { borderColor: colors.primary }]}
+          contentStyle={styles.buttonContent}
+          labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
+        >
+          Refresh
+        </Button>
         <Menu
           visible={menuVisible}
           onDismiss={() => setMenuVisible(false)}
@@ -167,100 +186,119 @@ const UserManagement = ({ navigation }) => {
         </Menu>
       </View>
 
-      <View style={styles.actionsContainer}>
-        <Button
-          mode="contained"
-          icon="refresh"
-          onPress={fetchUsers}
-          style={[styles.button, { borderColor: colors.primary }]}
-          contentStyle={styles.buttonContent}
-          labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
-        >
-          Refresh
-        </Button>
-      </View>
-
       {loading ? (
         <Text style={[styles.loadingText, { color: colors.onSurface }, fonts.bodyMedium]}>
           Loading users...
         </Text>
       ) : (
-        <ScrollView horizontal>
-          <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
-            <DataTable.Header>
-              <DataTable.Title style={{ width: AVATAR_COLUMN_WIDTH, justifyContent: 'center' }}>
-                <Text style={[{ color: colors.onSurface }, fonts.labelMedium]}>Avatar</Text>
-              </DataTable.Title>
-              {columns.map(({ key, label, width }) => (
-                <DataTable.Title
-                  key={key}
-                  style={{ width: width || COLUMN_WIDTH, justifyContent: 'center' }}
-                  onPress={() => handleSort(key)}
-                >
-                  <View style={styles.sortableHeader}>
-                    <Text style={[{ color: colors.onSurface }, fonts.labelMedium]}>{label}</Text>
-                    <Text style={[styles.sortIcon, { color: colors.onSurface }]}>{getSortIcon(key)}</Text>
-                  </View>
+        <View style={styles.tableContainer}>
+          <ScrollView horizontal>
+            <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
+              <DataTable.Header style={[styles.table, { backgroundColor: colors.surfaceVariant }]}>
+                <DataTable.Title style={{ width: AVATAR_COLUMN_WIDTH, justifyContent: 'center' }}>
+                  <Text style={[{ color: colors.onSurface }, fonts.labelMedium]}>Avatar</Text>
                 </DataTable.Title>
-              ))}
-              <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center' }} numeric>
-                <Text style={[{ color: colors.onSurface }, fonts.labelMedium]}>Actions</Text>
-              </DataTable.Title>
-            </DataTable.Header>
+                {columns.map(({ key, label, width }) => (
+                  <DataTable.Title
+                    key={key}
+                    style={{ width: width || COLUMN_WIDTH, justifyContent: 'center' }}
+                    onPress={() => handleSort(key)}
+                  >
+                    <View style={styles.sortableHeader}>
+                      <Text style={[{ color: colors.onSurface }, fonts.labelMedium]}>{label}</Text>
+                      <Text style={[styles.sortIcon, { color: colors.onSurface }]}>{getSortIcon(key)}</Text>
+                    </View>
+                  </DataTable.Title>
+                ))}
+                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center' }} numeric>
+                  <Text style={[{ color: colors.onSurface }, fonts.labelMedium]}>Actions</Text>
+                </DataTable.Title>
+              </DataTable.Header>
 
-            {filteredAndSortedUsers.length === 0 ? (
-              <DataTable.Row>
-                <DataTable.Cell style={styles.noDataCell}>
-                  <Text style={[{ color: colors.onSurface, textAlign: 'center' }, fonts.bodyMedium]}>
-                    No users available
-                  </Text>
-                </DataTable.Cell>
-              </DataTable.Row>
-            ) : (
-              filteredAndSortedUsers.map(user => (
-                <DataTable.Row key={user.id}>
-                  <DataTable.Cell style={{ width: AVATAR_COLUMN_WIDTH, justifyContent: 'center' }}>
-                    {user.avatarUrl ? (
-                      <Avatar.Image size={40} source={{ uri: user.avatarUrl }} />
-                    ) : (
-                      <Avatar.Text size={40} label={user.avatar} />
-                    )}
-                  </DataTable.Cell>
-                  {[
-                    { value: user.full_name, width: FULL_NAME_WIDTH },
-                    { value: user.email, width: EMAIL_COLUMN_WIDTH },
-                    { value: user.contact_number, width: COLUMN_WIDTH },
-                    { value: user.birth_date, width: COLUMN_WIDTH },
-                    { value: user.role, width: COLUMN_WIDTH },
-                    { value: user.status, width: COLUMN_WIDTH },
-                    { value: user.dateCreated, width: COLUMN_WIDTH },
-                    { value: user.lastLogin, width: COLUMN_WIDTH },
-                    { value: user.lastUpdated, width: COLUMN_WIDTH },
-                  ].map(({ value, width }, idx) => (
-                    <DataTable.Cell
-                      key={idx}
-                      style={{ width, justifyContent: 'center', paddingVertical: 8 }}
-                    >
-                      <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>{value}</Text>
-                    </DataTable.Cell>
-                  ))}
-                  <DataTable.Cell numeric style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 8 }}>
-                    <Button
-                      mode="outlined"
-                      icon="account-edit"
-                      onPress={() => navigation.navigate('EditAccount', { userId: user.id })}
-                      style={[styles.button, { borderColor: colors.primary, width: 'auto' }]}
-                      contentStyle={styles.buttonContent}
-                      labelStyle={[styles.buttonLabel, { color: colors.primary }]}
-                    >
-                      Edit
-                    </Button>
+              {filteredAndSortedUsers.length === 0 ? (
+                <DataTable.Row>
+                  <DataTable.Cell style={styles.noDataCell}>
+                    <Text style={[{ color: colors.onSurface, textAlign: 'center' }, fonts.bodyMedium]}>
+                      No users available
+                    </Text>
                   </DataTable.Cell>
                 </DataTable.Row>
-              ))
-            )}
-          </DataTable>
-        </ScrollView>
+              ) : (
+                paginatedUsers.map(user => (
+                  <DataTable.Row key={user.id}>
+                    <DataTable.Cell style={{ width: AVATAR_COLUMN_WIDTH, justifyContent: 'center' }}>
+                      {user.avatarUrl ? (
+                        <Avatar.Image size={40} source={{ uri: user.avatarUrl }} />
+                      ) : (
+                        <Avatar.Text size={40} label={user.avatar} />
+                      )}
+                    </DataTable.Cell>
+                    {[
+                      { value: user.full_name, width: FULL_NAME_WIDTH },
+                      { value: user.email, width: EMAIL_COLUMN_WIDTH },
+                      { value: user.contact_number, width: COLUMN_WIDTH },
+                      { value: user.birth_date, width: COLUMN_WIDTH },
+                      { value: user.role, width: COLUMN_WIDTH },
+                      { value: user.status, width: COLUMN_WIDTH },
+                      { value: user.dateCreated, width: COLUMN_WIDTH },
+                      { value: user.lastLogin, width: COLUMN_WIDTH },
+                      { value: user.lastUpdated, width: COLUMN_WIDTH },
+                    ].map(({ value, width }, idx) => (
+                      <DataTable.Cell
+                        key={idx}
+                        style={{ width, justifyContent: 'center', paddingVertical: 8 }}
+                      >
+                        <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>{value}</Text>
+                      </DataTable.Cell>
+                    ))}
+                    <DataTable.Cell numeric style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 8 }}>
+                      <Button
+                        mode="outlined"
+                        icon="account-edit"
+                        onPress={() => navigation.navigate('EditAccount', { userId: user.id })}
+                        style={[styles.editButton, { borderColor: colors.primary, width: 'auto' }]}
+                        contentStyle={styles.buttonContent}
+                        labelStyle={[styles.buttonLabel, { color: colors.primary }]}
+                      >
+                        Edit
+                      </Button>
+                    </DataTable.Cell>
+                  </DataTable.Row>
+                ))
+              )}
+            </DataTable>
+          </ScrollView>
+
+          <View style={[styles.paginationContainer, { backgroundColor: colors.surface }]}>
+            <DataTable.Pagination
+              page={page}
+              numberOfPages={Math.ceil(filteredAndSortedUsers.length / itemsPerPage)}
+              onPageChange={page => setPage(page)}
+              label={`${from + 1}-${to} of ${filteredAndSortedUsers.length}`}
+              labelStyle={[{ color: colors.onSurface }, fonts.bodyMedium]}
+              showFirstPageButton
+              showLastPageButton
+              numberOfItemsPerPageList={[5, 10, 20, 50]}
+              numberOfItemsPerPage={itemsPerPage}
+              onItemsPerPageChange={setItemsPerPage}
+              selectPageDropdownLabel={'Rows per page'}
+              style={[styles.pagination, { backgroundColor: colors.surfaceVariant }]}
+              theme={{
+                colors: {
+                  onSurface: colors.onSurface,
+                  text: colors.onSurface,
+                  elevation: {
+                    level2: colors.surface,
+                  },
+                },
+                fonts: {
+                  bodyMedium: fonts.bodyMedium,
+                  labelMedium: fonts.labelMedium,
+                },
+              }}
+            />
+          </View>
+        </View>
       )}
     </ScrollView>
   )
@@ -270,8 +308,7 @@ const styles = StyleSheet.create({
   searchActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    marginTop: 16,
+    margin: 16,
     gap: 10,
   },
   searchbar: {
@@ -281,17 +318,17 @@ const styles = StyleSheet.create({
     height: 56,
     justifyContent: 'center',
   },
-  actionsContainer: {
+  buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
+    justifyContent: 'space-evenly',
+    padding: 16,
     gap: 10,
   },
   button: {
     marginVertical: 6,
     height: 48,
     borderRadius: 8,
-    width: '100%',
+    minWidth: '40%',
   },
   buttonContent: {
     height: 48,
@@ -300,8 +337,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  tableContainer: {
+    flex: 1,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
   table: {
-    paddingHorizontal: 16,
+    flex: 1,
   },
   sortableHeader: {
     flexDirection: 'row',
@@ -310,8 +354,9 @@ const styles = StyleSheet.create({
   sortIcon: {
     marginLeft: 4,
   },
-  viewButton: {
+  editButton: {
     borderRadius: 8,
+    maxWidth: 100,
   },
   noDataCell: {
     justifyContent: 'center',
@@ -322,6 +367,14 @@ const styles = StyleSheet.create({
   loadingText: {
     textAlign: 'center',
     marginTop: 20,
+  },
+  paginationContainer: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.12)',
+  },
+  pagination: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.12)',
   },
 })
 

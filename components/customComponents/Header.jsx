@@ -1,18 +1,42 @@
-import React from 'react'
-import { Image, StyleSheet, TouchableOpacity, Text, View } from 'react-native'
-import { Appbar, IconButton } from 'react-native-paper'
+import React, { useEffect, useState } from 'react'
+import { StyleSheet, TouchableOpacity, Text, View } from 'react-native'
+import { Appbar, IconButton, Avatar } from 'react-native-paper'
 import { useTheme } from 'react-native-paper'
+import { supabase } from '../../lib/supabase'
 
 const Header = ({ navigation, title }) => {
-    const userProfileImage =
-        ''
-        // 'https://cdn.prod.website-files.com/62d84e447b4f9e7263d31e94/6399a4d27711a5ad2c9bf5cd_ben-sweet-2LowviVHZ-E-unsplash-1.jpeg'
+    const { colors, fonts } = useTheme()
+    const [firstName, setFirstName] = useState('')
+
+    const fetchUserProfile = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return
+
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('first_name')
+                .eq('id', user.id)
+                .single()
+
+            if (error) {
+                console.error('Error fetching profile:', error)
+                return
+            }
+
+            setFirstName(data?.first_name || '')
+        } catch (error) {
+            console.error('Error in fetchUserProfile:', error)
+        }
+    }
+
+    useEffect(() => {
+        fetchUserProfile()
+    }, [])
 
     const handleProfilePress = () => {
         navigation.navigate('Profile')
     }
-
-    const { colors, fonts } = useTheme()  // Destructure `colors` from the theme
 
     return (
         <View style={styles.container}>
@@ -25,22 +49,14 @@ const Header = ({ navigation, title }) => {
                     onPress={() => navigation.openDrawer()}
                 />
                 <Text style={[styles.title, fonts.headlineSmall, {color:colors.onBackground, fontWeight: 'bold' }]}>{title}</Text>
-                {/* Conditional rendering for profile picture or account icon */}
-                {userProfileImage ? (
-                    <TouchableOpacity onPress={handleProfilePress}>
-                        <Image
-                            source={{ uri: userProfileImage }}
-                            style={styles.profileImage}
-                        />
-                    </TouchableOpacity>
-                ) : (
-                    <IconButton
-                        icon="account-circle"
-                        size={30}
-                        iconColor={colors.primary}
-                        onPress={handleProfilePress}
+                <TouchableOpacity onPress={handleProfilePress}>
+                    <Avatar.Text 
+                        size={40} 
+                        label={firstName ? firstName[0].toUpperCase() : 'U'}
+                        style={{ backgroundColor: colors.primary }}
+                        labelStyle={{ color: colors.onPrimary }}
                     />
-                )}
+                </TouchableOpacity>
             </Appbar.Header>
             {/* Header */}
         </View>
@@ -57,18 +73,11 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 10,
         paddingVertical: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: '#EAEAEA',
     },
     logo: {
         resizeMode: 'contain',
         width: 50,
         height: 50,
-    },
-    profileImage: {
-        width: 50,
-        height: 50,
-        borderRadius: 50,
     },
 })
 

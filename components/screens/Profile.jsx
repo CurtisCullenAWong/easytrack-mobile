@@ -85,13 +85,20 @@ const Profile = ({ navigation }) => {
       {/* User Info Card */}
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
         <Card.Content style={styles.cardContent}>
-          <Avatar.Image
-            size={80}
-            source={{
-              uri: profile?.avatar_url || 'https://randomuser.me/api/portraits/men/10.jpg'
-            }}
-            style={[styles.avatar, { borderColor: colors.background }]}
-          />
+          {profile?.avatar_url ? (
+            <Avatar.Image
+              size={60}
+              source={{ uri: profile.avatar_url }}
+              style={[styles.avatar, { borderColor: colors.background }]}
+            />
+          ) : (
+            <Avatar.Text
+              size={60}
+              label={profile?.first_name ? profile.first_name[0].toUpperCase() : 'U'}
+              style={[styles.avatar, { backgroundColor: colors.primary }]}
+              labelStyle={{ color: colors.onPrimary }}
+            />
+          )}
           <View style={styles.cardTextContainer}>
             <Title style={[{ color: colors.onSurface, ...fonts.titleLarge }]}>
               {fullName || 'No Name Available'}
@@ -183,13 +190,12 @@ const Profile = ({ navigation }) => {
         >
           Edit Profile
         </Button>
+        
       </View>
-      
-      <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
-
       {/* Logout Button */}
       <View style={styles.logoutContainer}>
-        <Button
+      <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
+      <Button
           icon="logout"
           mode="contained"
           style={[styles.button, { backgroundColor: colors.error }]}
@@ -199,6 +205,8 @@ const Profile = ({ navigation }) => {
           Logout
         </Button>
       </View>
+
+      
 
       {LogoutDialog}
     </ScrollView>
@@ -232,13 +240,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   buttonContainer: {
-    margin: 16,
+    flexDirection:'row',
+    marginHorizontal: 16,
     gap: 16,
   },
   logoutContainer: {
     margin: 16,
-    marginVertical: 50,
     gap: 16,
+    marginBottom: 32
   },
   button: {
     flex: 1,
