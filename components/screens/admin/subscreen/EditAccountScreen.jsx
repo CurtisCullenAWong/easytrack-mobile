@@ -38,6 +38,58 @@ const EditAccount = ({ route, navigation }) => {
   const [roleOptions, setRoleOptions] = useState([])
   const [statusOptions, setStatusOptions] = useState([])
 
+  const saveUser = async () => {
+    try {
+      setSaving(true)
+
+      // First get the role_id and user_status_id based on the selected names
+      const [{ data: roleData }, { data: statusData }] = await Promise.all([
+        supabase
+          .from('profiles_roles')
+          .select('id')
+          .eq('role_name', user.role)
+          .single(),
+        supabase
+          .from('profiles_status')
+          .select('id')
+          .eq('status_name', user.user_status)
+          .single()
+      ])
+
+      if (!roleData || !statusData) {
+        showSnackbar('Error: Invalid role or status selected')
+        return
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          first_name: user.first_name,
+          middle_initial: user.middle_initial,
+          last_name: user.last_name,
+          email: user.email,
+          contact_number: user.contact_number,
+          birth_date: user.birth_date,
+          role_id: roleData.id,
+          user_status_id: statusData.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', userId)
+
+      if (error) {
+        showSnackbar('Error updating user: ' + error.message)
+        return
+      }
+
+      showSnackbar('User updated successfully', true)
+      navigation.navigate('UserManagement')
+    } catch (error) {
+      showSnackbar('Error updating user')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
@@ -53,7 +105,7 @@ const EditAccount = ({ route, navigation }) => {
             .eq('id', userId)
             .single(),
           supabase.from('profiles_roles').select('role_name'),
-          supabase.from('profiles_status').select('status_name'),
+          supabase.from('profiles_status').select('status_name').in('id', [2, 4, 5]),
         ])
 
         if (userError) {
@@ -271,6 +323,7 @@ const EditAccount = ({ route, navigation }) => {
             <Button onPress={() => setShowConfirmDialog(false)} disabled={saving}>Cancel</Button>
             <Button onPress={() => {
               setShowConfirmDialog(false)
+              saveUser()
             }} loading={saving} disabled={saving}>Save</Button>
           </Dialog.Actions>
         </Dialog>

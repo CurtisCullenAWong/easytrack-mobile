@@ -117,6 +117,12 @@ const Profile = ({ navigation }) => {
           <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
             Birth Date: {profile?.birth_date || 'N/A'}
           </Text>
+          <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+            Emergency Contact Name: {profile?.emergency_contact_name || 'N/A'}
+          </Text>
+          <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+            Emergency Contact Number: {profile?.emergency_contact_number || 'N/A'}
+          </Text>
         </Card.Content>
       </Card>
 
@@ -144,12 +150,15 @@ const Profile = ({ navigation }) => {
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
         <Card.Title 
           title="Recent Activity" 
-          titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} 
+          titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]}
         />
         <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
         <Card.Content>
           <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
             Last Login: {formatDateTime(profile?.last_sign_in_at)}
+          </Text>
+          <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+            Last Updated: {formatDateTime(profile?.updated_at)}
           </Text>
         </Card.Content>
       </Card>

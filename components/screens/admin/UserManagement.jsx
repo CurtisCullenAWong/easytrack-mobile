@@ -59,6 +59,9 @@ const UserManagement = ({ navigation }) => {
       lastLogin: user.last_sign_in_at
         ? new Date(user.last_sign_in_at).toLocaleString()
         : 'Never',
+      lastUpdated: user.updated_at
+        ? new Date(user.updated_at).toLocaleString()
+        : 'Never',  
       avatar: (user.first_name || 'N')[0].toUpperCase(),
       avatarUrl: user.avatar_url || null,
     }))
@@ -110,6 +113,7 @@ const UserManagement = ({ navigation }) => {
     { key: 'status', label: 'Status', width: COLUMN_WIDTH },
     { key: 'dateCreated', label: 'Date Created', width: COLUMN_WIDTH },
     { key: 'lastLogin', label: 'Last Login', width: COLUMN_WIDTH },
+    { key: 'lastUpdated', label: 'Last Updated', width: COLUMN_WIDTH },
   ]
 
   return (
@@ -231,6 +235,7 @@ const UserManagement = ({ navigation }) => {
                     { value: user.status, width: COLUMN_WIDTH },
                     { value: user.dateCreated, width: COLUMN_WIDTH },
                     { value: user.lastLogin, width: COLUMN_WIDTH },
+                    { value: user.lastUpdated, width: COLUMN_WIDTH },
                   ].map(({ value, width }, idx) => (
                     <DataTable.Cell
                       key={idx}

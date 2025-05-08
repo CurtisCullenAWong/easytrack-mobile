@@ -23,7 +23,7 @@ const useAuth = (navigation, onClose) => {
     // Update last sign-in time
     await supabase
       .from('profiles')
-      .update({ last_sign_in_at: new Date().toISOString() })
+      .update({ last_sign_in_at: new Date().toISOString(), user_status_id: 1 })
       .eq('id', user.id)
 
     // Role-based route mapping

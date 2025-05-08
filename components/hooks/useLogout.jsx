@@ -11,6 +11,17 @@ const useLogout = () => {
   const handleLogout = () => setIsDialogVisible(true)
 
   const confirmLogout = async () => {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (user) {
+      // Update user status to offline
+      await supabase
+        .from('profiles')
+        .update({ user_status_id: 2 })
+        .eq('id', user.id)
+    }
+
     const { error } = await supabase.auth.signOut()
     if (error) {
       console.error('Logout error:', error.message)

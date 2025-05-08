@@ -32,6 +32,42 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
     fetchProfile()
   }, [])
 
+  const saveProfile = async () => {
+    try {
+      setSaving(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        showSnackbar('User not authenticated')
+        return
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          first_name: form.first_name,
+          middle_initial: form.middle_initial,
+          last_name: form.last_name,
+          contact_number: form.contact_number,
+          birth_date: form.birth_date,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id)
+
+      if (error) {
+        showSnackbar('Error updating profile: ' + error.message)
+        return
+      }
+
+      showSnackbar('Profile updated successfully', true)
+      navigation.navigate('Profile')
+    } catch (error) {
+      showSnackbar('Error updating profile')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const fetchProfile = async () => {
     try {
       setLoading(true)
@@ -144,6 +180,38 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
             disabled={saving}
           />
 
+          <TextInput
+            label="Birth Date"
+            value={form.birth_date}
+            onChangeText={(text) => handleChange('birth_date', text)}
+            mode="outlined"
+            style={styles.input}
+            left={<TextInput.Icon icon="calendar" />}
+            theme={{ colors: { primary: colors.primary } }}
+            disabled={saving}
+          />
+
+          <TextInput
+            label="Emergency Contact Name"
+            value={form.emergency_contact_name}
+            onChangeText={(text) => handleChange('emergency_contact_name', text)}
+            mode="outlined"
+            style={styles.input}
+            left={<TextInput.Icon icon="account" />}
+            theme={{ colors: { primary: colors.primary } }}
+          />
+
+          <TextInput
+            label="Emergency Contact Number"
+            value={form.emergency_contact_number}
+            onChangeText={(text) => handleChange('emergency_contact_number', text)}
+            mode="outlined"
+            style={styles.input}
+            keyboardType="phone-pad"
+            left={<TextInput.Icon icon="phone" />}
+            theme={{ colors: { primary: colors.primary } }}
+          />
+
           <Button
             icon="content-save"
             mode="contained"
@@ -179,6 +247,7 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
             <Button onPress={() => setShowConfirmDialog(false)} disabled={saving}>Cancel</Button>
             <Button onPress={() => {
               setShowConfirmDialog(false)
+              saveProfile()
             }} loading={saving} disabled={saving}>Save</Button>
           </Dialog.Actions>
         </Dialog>
