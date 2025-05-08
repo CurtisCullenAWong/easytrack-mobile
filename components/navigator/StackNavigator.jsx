@@ -11,7 +11,7 @@ import BookingHistory from '../screens/BookingHistory'
 import PerformanceStatistics from '../screens/PerformanceStatistics'
 import TransactionHistory from '../screens/TransactionHistory'
 import SignUpSubScreen from '../SignUpSubsceen'
-
+import EditProfileSubScreen from '../EditProfileSubScreen'
 // Admin Screens
 import AdminHome from '../screens/admin/AdminHome'
 import UserManagement from '../screens/admin/UserManagement'
@@ -44,7 +44,11 @@ const AdminDrawer = () => (
       <Drawer.Screen name="AdminHome" component={AdminHome} />
       <Drawer.Screen name="UserManagement" component={UserManagement} />
       <Drawer.Screen name="AdminTrackLuggage" component={AdminTrackLuggage} />
-
+      <Drawer.Screen
+        name="EditProfile"
+        component={EditProfileSubScreen}
+        options={{ headerShown: false }}
+      />
       {/* SHARED SCREENS */}
       <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />
       <Drawer.Screen name="BookingHistory" component={BookingHistory} />
@@ -64,7 +68,6 @@ const AirlineDrawer = () => (
       <Drawer.Screen name="AirlineHome" component={AirlineHome} />
       <Drawer.Screen name="AirlineTrackLuggage" component={TrackLuggage} />
       <Drawer.Screen name="BookingManagement" component={AirlineBookingManagement} />
-
       {/* SHARED SCREENS */}
       <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />
       <Drawer.Screen name="BookingHistory" component={BookingHistory} />

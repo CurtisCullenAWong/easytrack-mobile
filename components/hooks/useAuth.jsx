@@ -76,10 +76,10 @@ const useAuth = (navigation, onClose) => {
     const { data } = await supabase.auth.getSession()
     const session = data?.session
     if (session?.user) {
-      handleLogin(session.user)
-    } else {
-      showSnackbar('No active session found.')
+      await handleLogin(session.user)
+      return true
     }
+    return false
   }
 
   return {

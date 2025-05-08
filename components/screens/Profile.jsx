@@ -12,34 +12,40 @@ const Profile = ({ navigation }) => {
 
   const { handleLogout, LogoutDialog } = useLogout(navigation)
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const {
-        data: { user },
-        error: authError
-      } = await supabase.auth.getUser()
+  const fetchProfile = async () => {
+    setLoading(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
 
-      if (authError || !user) {
-        console.error('User not authenticated:', authError)
+      if (!user) {
+        console.error('User not authenticated')
         return navigation.navigate('Login')
       }
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          *,
+          profile_status:user_status_id (status_name),
+          profile_roles:role_id (role_name)
+        `)
         .eq('id', user.id)
         .single()
 
       if (error) {
         console.error('Error fetching profile:', error)
-        setLoading(false)
         return
       }
 
       setProfile(data)
+    } catch (error) {
+      console.error('Error in fetchProfile:', error)
+    } finally {
       setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchProfile()
   }, [])
 
@@ -64,9 +70,18 @@ const Profile = ({ navigation }) => {
     )
   }
 
+  const fullName = `${profile?.first_name || ''} ${profile?.middle_initial || ''} ${profile?.last_name || ''}`.trim()
+
   return (
     <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
-      <Header navigation={navigation} title="Profile" />
+      <Header 
+        navigation={navigation} 
+        title="Profile"
+        rightAction={{
+          icon: 'refresh',
+          onPress: fetchProfile
+        }}
+      />
 
       {/* User Info Card */}
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
@@ -80,7 +95,7 @@ const Profile = ({ navigation }) => {
           />
           <View style={styles.cardTextContainer}>
             <Title style={[{ color: colors.onSurface, ...fonts.titleLarge }]}>
-              {profile?.full_name || 'No Username Available'}
+              {fullName || 'No Name Available'}
             </Title>
             <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
               {profile?.email}
@@ -89,12 +104,31 @@ const Profile = ({ navigation }) => {
         </Card.Content>
       </Card>
 
+      {/* Personal Information */}
+      <Card style={[styles.card, { backgroundColor: colors.surface }]}>
+        <Card.Title title="Personal Information" titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} />
+        <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
+        <Card.Content>
+          <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+            Contact Number: {profile?.contact_number || 'N/A'}
+          </Text>
+          <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+            Birth Date: {profile?.birth_date || 'N/A'}
+          </Text>
+        </Card.Content>
+      </Card>
+
       {/* Account Info */}
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
         <Card.Title title="Account Info" titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} />
         <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
         <Card.Content>
-          <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>Role: {profile?.role || 'N/A'}</Text>
+          <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+            Role: {profile?.profile_roles?.role_name || 'N/A'}
+          </Text>
+          <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+            Status: {profile?.profile_status?.status_name || 'N/A'}
+          </Text>
           <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
             Date Created: {formatDateTime(profile?.created_at)}
           </Text>
@@ -109,11 +143,22 @@ const Profile = ({ navigation }) => {
           <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
             Last Login: {formatDateTime(profile?.last_sign_in_at)}
           </Text>
-          <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-            Deliveries Made: {profile?.deliveries_made || 0}
-          </Text>
         </Card.Content>
       </Card>
+
+      {/* Edit Profile Button */}
+      <View style={styles.buttonContainer}>
+        <Button
+          icon="account-edit"
+          mode="contained"
+          style={[styles.editButton, { backgroundColor: colors.primary }]}
+          contentStyle={styles.editButtonContent}
+          onPress={() => navigation.navigate('EditProfile')}
+          labelStyle={[styles.editButtonLabel, { color: colors.onPrimary }]}
+        >
+          Edit Profile
+        </Button>
+      </View>
 
       {/* Logout Button */}
       <View style={styles.logoutContainer}>
@@ -158,6 +203,20 @@ const styles = StyleSheet.create({
   divider: {
     height: 1.5,
     marginHorizontal: 16,
+  },
+  buttonContainer: {
+    marginHorizontal: 16,
+    marginTop: 8,
+  },
+  editButton: {
+    marginVertical: 6,
+  },
+  editButtonContent: {
+    height: 48,
+  },
+  editButtonLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   logoutContainer: {
     marginBottom: 32,

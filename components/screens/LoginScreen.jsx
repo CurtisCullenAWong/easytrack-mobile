@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { View, Image, Text, StyleSheet } from 'react-native'
+import { View, Image, Text, StyleSheet, ActivityIndicator } from 'react-native'
 import { Button, useTheme } from 'react-native-paper'
 import BottomModal from '../customComponents/BottomModal'
 import LoginModalContent from '../customComponents/LoginModalContent'
@@ -9,7 +9,35 @@ const LoginScreen = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const [modalVisible, setModalVisible] = useState(false)
   const [isResetPasswordModal, setIsResetPasswordModal] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [showLoginUI, setShowLoginUI] = useState(false)
   const { checkSession } = useAuth(navigation)
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const hasSession = await checkSession()
+        setShowLoginUI(!hasSession)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    checkAuth()
+  }, [])
+
+  // Show loading screen while checking session
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    )
+  }
+
+  // Don't render anything if we're not showing the login UI
+  if (!showLoginUI) {
+    return null
+  }
 
   const showModal = () => setModalVisible(true)
   const hideModal = () => setModalVisible(false)
@@ -23,10 +51,6 @@ const LoginScreen = ({ navigation }) => {
     setIsResetPasswordModal(false)
     showModal()
   }
-
-  useEffect(() => {
-    checkSession()
-  }, [])
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

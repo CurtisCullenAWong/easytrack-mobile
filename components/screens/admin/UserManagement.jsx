@@ -12,17 +12,18 @@ import {
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabase'
 
-const COLUMN_WIDTH = 120
+const COLUMN_WIDTH = 150
 const EMAIL_COLUMN_WIDTH = 200
 const AVATAR_COLUMN_WIDTH = 80
+const FULL_NAME_WIDTH = 200
 
 const UserManagement = ({ navigation }) => {
   const { colors, fonts } = useTheme()
 
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchColumn, setSearchColumn] = useState('name')
+  const [searchColumn, setSearchColumn] = useState('full_name')
   const [menuVisible, setMenuVisible] = useState(false)
-  const [sortColumn, setSortColumn] = useState('name')
+  const [sortColumn, setSortColumn] = useState('full_name')
   const [sortDirection, setSortDirection] = useState('ascending')
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -31,27 +32,34 @@ const UserManagement = ({ navigation }) => {
     setLoading(true)
     const { data, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select(`
+        *,
+        profile_status:user_status_id (status_name),
+        profile_roles:role_id (role_name)
+      `)
       .order('first_name', { ascending: true })
 
     if (error) {
+      console.error('Error fetching users:', error)
       setLoading(false)
       return
     }
 
     const formatted = data.map(user => ({
       id: user.id,
-      name: user.first_name || 'N/A',
       email: user.email,
-      role: user.role_id || 'N/A',
-      status: user.user_status_id || 'Unknown',
+      full_name: `${user.first_name || ''} ${user.middle_initial || ''} ${user.last_name || ''}`.trim(),
+      contact_number: user.contact_number || 'N/A',
+      birth_date: user.birth_date || 'N/A',
+      status: user.profile_status?.status_name || 'Unknown',
+      role: user.profile_roles?.role_name || 'N/A',
       dateCreated: user.created_at
         ? new Date(user.created_at).toLocaleString()
         : 'N/A',
       lastLogin: user.last_sign_in_at
-        ? new Date( user.last_sign_in_at).toLocaleString()
+        ? new Date(user.last_sign_in_at).toLocaleString()
         : 'Never',
-      avatar: (user.full_name || 'N')[0].toUpperCase(),
+      avatar: (user.first_name || 'N')[0].toUpperCase(),
       avatarUrl: user.avatar_url || null,
     }))
 
@@ -72,34 +80,37 @@ const UserManagement = ({ navigation }) => {
     sortColumn === column ? (sortDirection === 'ascending' ? '▲' : '▼') : ''
 
   const filteredAndSortedUsers = users
-  .filter(user =>
-    String(user[searchColumn] || '')
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase())
-  )
-  .sort((a, b) => {
-    const valA = a[sortColumn]
-    const valB = b[sortColumn]
-    if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
-    if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
-    return 0
-  })
+    .filter(user =>
+      String(user[searchColumn] || '')
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      const valA = a[sortColumn]
+      const valB = b[sortColumn]
+      if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
+      if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
+      return 0
+    })
+
   const filterOptions = [
-      { label: 'Name', value: 'name' },
-      { label: 'Email', value: 'email' },
-      { label: 'Role', value: 'role' },
-      { label: 'Status', value: 'status' },
+    { label: 'Full Name', value: 'full_name' },
+    { label: 'Email', value: 'email' },
+    { label: 'Role', value: 'role' },
+    { label: 'Status', value: 'status' },
+    { label: 'Contact', value: 'contact_number' },
   ]
 
   const columns = [
-    { key: 'name', label: 'Name' },
+    { key: 'full_name', label: 'Full Name', width: FULL_NAME_WIDTH },
     { key: 'email', label: 'Email', width: EMAIL_COLUMN_WIDTH },
-    { key: 'role', label: 'Role' },
-    { key: 'status', label: 'Status' },
-    { key: 'dateCreated', label: 'Date Created' },
-    { key: 'lastLogin', label: 'Last Login' },
+    { key: 'contact_number', label: 'Contact Number', width: COLUMN_WIDTH },
+    { key: 'birth_date', label: 'Birth Date', width: COLUMN_WIDTH },
+    { key: 'role', label: 'Role', width: COLUMN_WIDTH },
+    { key: 'status', label: 'Status', width: COLUMN_WIDTH },
+    { key: 'dateCreated', label: 'Date Created', width: COLUMN_WIDTH },
+    { key: 'lastLogin', label: 'Last Login', width: COLUMN_WIDTH },
   ]
-
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -210,8 +221,10 @@ const UserManagement = ({ navigation }) => {
                     )}
                   </DataTable.Cell>
                   {[
-                    { value: user.name, width: COLUMN_WIDTH },
+                    { value: user.full_name, width: FULL_NAME_WIDTH },
                     { value: user.email, width: EMAIL_COLUMN_WIDTH },
+                    { value: user.contact_number, width: COLUMN_WIDTH },
+                    { value: user.birth_date, width: COLUMN_WIDTH },
                     { value: user.role, width: COLUMN_WIDTH },
                     { value: user.status, width: COLUMN_WIDTH },
                     { value: user.dateCreated, width: COLUMN_WIDTH },
@@ -229,7 +242,7 @@ const UserManagement = ({ navigation }) => {
                       mode="outlined"
                       icon="eye"
                       compact
-                      onPress={() => navigation.navigate('Edit Account', { userId: user.id })}
+                      onPress={() => navigation.navigate('EditProfile', { userId: user.id })}
                       style={styles.viewButton}
                       labelStyle={{ color: colors.primary }}
                     >
@@ -269,7 +282,7 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     marginVertical: 8,
-    width:'100%',
+    width: '100%',
   },
   table: {
     paddingHorizontal: 16,

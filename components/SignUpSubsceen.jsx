@@ -29,20 +29,18 @@ const SignUpSubScreen = ({ navigation, onClose }) => {
   const toggleVisibility = (field) => setVisibility(prev => ({ ...prev, [field]: !prev[field] }))
 
   const handleSignUp = async () => {
-    const { email, password, first_name, middle_initial, last_name, contact_number, birth_date, role } = form;
+    const { email, password, first_name, middle_initial, last_name, contact_number, birth_date, role } = form
   
-    // Sign up user using Supabase auth
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+    const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
   
     if (signUpError) {
-      return showSnackbar(signUpError.message);
+      return showSnackbar(signUpError.message)
     }
   
-    const user = data.user;
+    const user = data.user
     
     if (user) {
       try {
-        // Wait for the profile insertion after user is created
         const { error: profileError } = await supabase
           .from('profiles')
           .insert({
@@ -54,29 +52,29 @@ const SignUpSubScreen = ({ navigation, onClose }) => {
             contact_number: contact_number,
             birth_date: birth_date,
             role_id: role,
-            user_status_id: 3, // Ensure this is a valid status ID
-          });
+            user_status_id: 3, // PENDING STATUS
+          })
   
         if (profileError) {
-          return showSnackbar('Profile creation failed: ' + profileError.message);
+          return showSnackbar('Profile creation failed: ' + profileError.message)
         }
   
         // If everything is successful, notify the user
-        showSnackbar('Account created! Check your email to verify.', true);
+        showSnackbar('Account created! Check your email to verify.', true)
         setTimeout(() => {
-          onClose?.();
-          navigation.navigate('Login');
-        }, 2500);
+          onClose?.()
+          navigation.navigate('Login')
+        }, 2500)
   
       } catch (error) {
         // Handle any other errors
-        console.error("Error creating profile:", error);
-        showSnackbar('Something went wrong while creating the profile.');
+        console.error("Error creating profile:", error)
+        showSnackbar('Something went wrong while creating the profile.')
       }
     } else {
-      showSnackbar('User creation failed.');
+      showSnackbar('User creation failed.')
     }
-  };
+  }
   
 
   return (
