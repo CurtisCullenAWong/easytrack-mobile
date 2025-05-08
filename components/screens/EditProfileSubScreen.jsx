@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { 
   StyleSheet, 
   SafeAreaView, 
-  KeyboardAvoidingView, 
-  Platform, 
   ScrollView, 
   View, 
   ActivityIndicator 
@@ -160,11 +158,6 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
         <Appbar.Content title="Edit Profile" />
         <Appbar.Action icon="content-save" onPress={() => setShowConfirmDialog(true)} />
       </Appbar.Header>
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
-      >
         <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
           <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
             <View style={styles.avatarContainer}>
@@ -264,7 +257,6 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
             />
           </Surface>
         </ScrollView>
-      </KeyboardAvoidingView>
 
       <Portal>
         <DatePickerModal
