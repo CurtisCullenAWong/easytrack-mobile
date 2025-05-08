@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
 import { TextInput, Button, useTheme, Appbar } from 'react-native-paper'
-import { supabase } from '../lib/supabase'
-import useSnackbar from './hooks/useSnackbar'
+import { supabase } from '../../lib/supabase'
+import useSnackbar from '../hooks/useSnackbar'
 
 const SignUpSubScreen = ({ navigation, onClose }) => {
   const { colors } = useTheme()

@@ -9,8 +9,8 @@ import {
   ActivityIndicator 
 } from 'react-native'
 import { TextInput, Button, useTheme, Appbar, Text, Portal, Dialog } from 'react-native-paper'
-import { supabase } from '../lib/supabase'
-import useSnackbar from './hooks/useSnackbar'
+import { supabase } from '../../lib/supabase'
+import useSnackbar from '../hooks/useSnackbar'
 
 const EditProfileSubScreen = ({ navigation, onClose }) => {
   const { colors, fonts } = useTheme()
