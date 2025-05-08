@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { 
   StyleSheet, 
   SafeAreaView, 
@@ -8,9 +8,13 @@ import {
   View, 
   ActivityIndicator 
 } from 'react-native'
-import { TextInput, Button, useTheme, Appbar, Text, Portal, Dialog } from 'react-native-paper'
+import { TextInput, Button, useTheme, Appbar, Text, Portal, Dialog, Avatar, Surface, Divider } from 'react-native-paper'
+import { DatePickerModal, en, registerTranslation } from 'react-native-paper-dates'
 import { supabase } from '../../lib/supabase'
 import useSnackbar from '../hooks/useSnackbar'
+
+// Register the English locale
+registerTranslation('en', en)
 
 const EditProfileSubScreen = ({ navigation, onClose }) => {
   const { colors, fonts } = useTheme()
@@ -22,14 +26,34 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
     last_name: '',
     contact_number: '',
     birth_date: null,
+    emergency_contact_name: '',
+    emergency_contact_number: '',
   })
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [showDatePicker, setShowDatePicker] = useState(false)
 
-  useEffect(() => {
-    fetchProfile()
+  const handleDateConfirm = useCallback(({ date }) => {
+    if (date) {
+      // Validate that the date is not in the future
+      const today = new Date()
+      if (date > today) {
+        showSnackbar('Birth date cannot be in the future')
+        return
+      }
+      handleChange('birth_date', date)
+    }
+    setShowDatePicker(false)
+  }, [showSnackbar])
+
+  const handleDateDismiss = useCallback(() => {
+    setShowDatePicker(false)
+  }, [])
+
+  const openDatePicker = useCallback(() => {
+    setShowDatePicker(true)
   }, [])
 
   const saveProfile = async () => {
@@ -50,6 +74,8 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
           last_name: form.last_name,
           contact_number: form.contact_number,
           birth_date: form.birth_date,
+          emergency_contact_name: form.emergency_contact_name,
+          emergency_contact_number: form.emergency_contact_number,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id)
@@ -95,6 +121,8 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
         last_name: data.last_name || '',
         contact_number: data.contact_number || '',
         birth_date: data.birth_date ? new Date(data.birth_date) : null,
+        emergency_contact_name: data.emergency_contact_name || '',
+        emergency_contact_number: data.emergency_contact_number || '',
       })
     } catch (error) {
       showSnackbar('Error loading profile')
@@ -102,6 +130,10 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchProfile()
+  }, [])
 
   const handleChange = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -134,108 +166,123 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-          <TextInput
-            label="First Name"
-            value={form.first_name}
-            onChangeText={(text) => handleChange('first_name', text)}
-            mode="outlined"
-            style={styles.input}
-            left={<TextInput.Icon icon="account" />}
-            theme={{ colors: { primary: colors.primary } }}
-            disabled={saving}
-          />
+          <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
+            <View style={styles.avatarContainer}>
+              {form.avatar_url ? (
+                <Avatar.Image size={80} source={{ uri: form.avatar_url }} />
+              ) : (
+                <Avatar.Text size={80} label={(form.first_name || 'N')[0].toUpperCase()} />
+              )}
+              <Text variant="bodyLarge" style={[styles.avatarText, { color: colors.onSurface }]}>Profile Picture</Text>
+            </View>
 
-          <TextInput
-            label="Middle Initial"
-            value={form.middle_initial}
-            onChangeText={(text) => handleChange('middle_initial', text)}
-            mode="outlined"
-            style={styles.input}
-            maxLength={1}
-            left={<TextInput.Icon icon="account" />}
-            theme={{ colors: { primary: colors.primary } }}
-            disabled={saving}
-          />
+            <Divider style={styles.divider} />
 
-          <TextInput
-            label="Last Name"
-            value={form.last_name}
-            onChangeText={(text) => handleChange('last_name', text)}
-            mode="outlined"
-            style={styles.input}
-            left={<TextInput.Icon icon="account" />}
-            theme={{ colors: { primary: colors.primary } }}
-            disabled={saving}
-          />
+            <TextInput
+              label="First Name"
+              value={form.first_name}
+              onChangeText={(text) => handleChange('first_name', text)}
+              mode="outlined"
+              style={styles.input}
+              left={<TextInput.Icon icon="account" />}
+              theme={{ colors: { primary: colors.primary } }}
+              disabled={saving}
+            />
 
-          <TextInput
-            label="Contact Number"
-            value={form.contact_number}
-            onChangeText={(text) => handleChange('contact_number', text)}
-            mode="outlined"
-            style={styles.input}
-            keyboardType="phone-pad"
-            left={<TextInput.Icon icon="phone" />}
-            theme={{ colors: { primary: colors.primary } }}
-            disabled={saving}
-          />
+            <TextInput
+              label="Middle Initial"
+              value={form.middle_initial}
+              onChangeText={(text) => handleChange('middle_initial', text)}
+              mode="outlined"
+              style={styles.input}
+              maxLength={1}
+              left={<TextInput.Icon icon="account" />}
+              theme={{ colors: { primary: colors.primary } }}
+              disabled={saving}
+            />
 
-          <TextInput
-            label="Birth Date"
-            value={form.birth_date}
-            onChangeText={(text) => handleChange('birth_date', text)}
-            mode="outlined"
-            style={styles.input}
-            left={<TextInput.Icon icon="calendar" />}
-            theme={{ colors: { primary: colors.primary } }}
-            disabled={saving}
-          />
+            <TextInput
+              label="Last Name"
+              value={form.last_name}
+              onChangeText={(text) => handleChange('last_name', text)}
+              mode="outlined"
+              style={styles.input}
+              left={<TextInput.Icon icon="account" />}
+              theme={{ colors: { primary: colors.primary } }}
+              disabled={saving}
+            />
 
-          <TextInput
-            label="Emergency Contact Name"
-            value={form.emergency_contact_name}
-            onChangeText={(text) => handleChange('emergency_contact_name', text)}
-            mode="outlined"
-            style={styles.input}
-            left={<TextInput.Icon icon="account" />}
-            theme={{ colors: { primary: colors.primary } }}
-          />
+            <Divider style={styles.divider} />
 
-          <TextInput
-            label="Emergency Contact Number"
-            value={form.emergency_contact_number}
-            onChangeText={(text) => handleChange('emergency_contact_number', text)}
-            mode="outlined"
-            style={styles.input}
-            keyboardType="phone-pad"
-            left={<TextInput.Icon icon="phone" />}
-            theme={{ colors: { primary: colors.primary } }}
-          />
+            <TextInput
+              label="Contact Number"
+              value={form.contact_number}
+              onChangeText={(text) => handleChange('contact_number', text)}
+              mode="outlined"
+              style={styles.input}
+              keyboardType="phone-pad"
+              left={<TextInput.Icon icon="phone" />}
+              theme={{ colors: { primary: colors.primary } }}
+              disabled={saving}
+            />
 
-          <Button
-            icon="content-save"
-            mode="contained"
-            onPress={() => setShowConfirmDialog(true)}
-            style={[styles.button, { backgroundColor: colors.primary }]}
-            labelStyle={[{ color: colors.onPrimary, ...fonts.labelLarge }]}
-            loading={saving}
-            disabled={saving}
-          >
-            Update Profile
-          </Button>
-          <Button
-            icon="close"
-            mode="outlined"
-            onPress={() => navigation.navigate('Profile')}
-            style={[styles.cancelButton, { borderColor: colors.primary }]}
-            labelStyle={[{ color: colors.primary, ...fonts.labelLarge }]}
-            disabled={saving}
-          >
-            Cancel
-          </Button>
-          {SnackbarElement}
+            <TextInput
+              label="Birth Date"
+              value={form.birth_date ? form.birth_date.toLocaleDateString() : ''}
+              editable={false}
+              mode="outlined"
+              style={styles.input}
+              left={<TextInput.Icon icon="calendar" />}
+              right={<TextInput.Icon icon="calendar" onPress={openDatePicker} />}
+              theme={{ colors: { primary: colors.primary } }}
+              disabled={saving}
+            />
+
+            <Divider style={styles.divider} />
+
+            <TextInput
+              label="Emergency Contact Name"
+              value={form.emergency_contact_name}
+              onChangeText={(text) => handleChange('emergency_contact_name', text)}
+              mode="outlined"
+              style={styles.input}
+              left={<TextInput.Icon icon="account" />}
+              theme={{ colors: { primary: colors.primary } }}
+              disabled={saving}
+            />
+
+            <TextInput
+              label="Emergency Contact Number"
+              value={form.emergency_contact_number}
+              onChangeText={(text) => handleChange('emergency_contact_number', text)}
+              mode="outlined"
+              style={styles.input}
+              keyboardType="phone-pad"
+              left={<TextInput.Icon icon="phone" />}
+              theme={{ colors: { primary: colors.primary } }}
+              disabled={saving}
+            />
+          </Surface>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Portal>
+        <DatePickerModal
+          locale="en"
+          mode="single"
+          visible={showDatePicker}
+          onDismiss={handleDateDismiss}
+          date={form.birth_date}
+          onConfirm={handleDateConfirm}
+          title="Select Birth Date"
+          animationType="slide"
+          presentationStyle="formSheet"
+          saveLabel="Select"
+          label="Enter the birth date"
+          startYear={1925}
+          endYear={new Date().getFullYear()}
+        />
+      </Portal>
 
       <Portal>
         <Dialog visible={showConfirmDialog} onDismiss={() => setShowConfirmDialog(false)} style={{ backgroundColor: colors.surface }}>
@@ -252,6 +299,7 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+      {SnackbarElement}
     </SafeAreaView>
   )
 }
@@ -264,16 +312,21 @@ const styles = StyleSheet.create({
     flexGrow: 1, 
     padding: 16
   },
+  surface: {
+    padding: 16,
+    borderRadius: 8,
+  },
+  avatarContainer: {
+    alignItems: 'center',
+  },
+  avatarText: {
+    marginTop: 8,
+  },
   input: { 
     marginBottom: 16 
   },
-  button: {
-    marginTop: 12,
-    width: '100%',
-  },
-  cancelButton: {
-    marginTop: 8,
-    width: '100%',
+  divider: {
+    marginVertical: 16,
   },
   loadingContainer: {
     flex: 1,

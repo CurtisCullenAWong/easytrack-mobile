@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   View,
   ScrollView,
@@ -19,8 +19,27 @@ import {
   Portal,
   Dialog,
 } from 'react-native-paper'
+import { DatePickerModal, en, registerTranslation } from 'react-native-paper-dates'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../../components/hooks/useSnackbar'
+
+// Register the English locale
+registerTranslation('en', en)
+
+// Memoized Menu Item component
+const MemoizedMenuItem = React.memo(({ item, selected, onPress, colors, fonts }) => (
+  <Menu.Item
+    onPress={onPress}
+    title={item}
+    titleStyle={[
+      fonts.bodyLarge,
+      {
+        color: selected ? colors.primary : colors.onSurface,
+      },
+    ]}
+    leadingIcon={selected ? 'check' : undefined}
+  />
+))
 
 const EditAccount = ({ route, navigation }) => {
   const { userId } = route.params
@@ -31,12 +50,34 @@ const EditAccount = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [showDatePicker, setShowDatePicker] = useState(false)
 
   const [roleMenuVisible, setRoleMenuVisible] = useState(false)
   const [statusMenuVisible, setStatusMenuVisible] = useState(false)
 
   const [roleOptions, setRoleOptions] = useState([])
   const [statusOptions, setStatusOptions] = useState([])
+
+  const handleDateConfirm = useCallback(({ date }) => {
+    if (date) {
+      // Validate that the date is not in the future
+      const today = new Date()
+      if (date > today) {
+        showSnackbar('Birth date cannot be in the future')
+        return
+      }
+      handleChange('birth_date', date)
+    }
+    setShowDatePicker(false)
+  }, [showSnackbar])
+
+  const handleDateDismiss = useCallback(() => {
+    setShowDatePicker(false)
+  }, [])
+
+  const openDatePicker = useCallback(() => {
+    setShowDatePicker(true)
+  }, [])
 
   const saveUser = async () => {
     try {
@@ -136,6 +177,38 @@ const EditAccount = ({ route, navigation }) => {
     setUser(prev => ({ ...prev, [field]: value }))
   }
 
+  // Memoize the role menu items
+  const roleMenuItems = useMemo(() => 
+    roleOptions.map(role => (
+      <MemoizedMenuItem
+        key={role}
+        item={role}
+        selected={user?.role === role}
+        onPress={() => {
+          handleChange('role', role)
+          setRoleMenuVisible(false)
+        }}
+        colors={colors}
+        fonts={fonts}
+      />
+    )), [roleOptions, user?.role, colors, fonts])
+
+  // Memoize the status menu items
+  const statusMenuItems = useMemo(() => 
+    statusOptions.map(status => (
+      <MemoizedMenuItem
+        key={status}
+        item={status}
+        selected={user?.user_status === status}
+        onPress={() => {
+          handleChange('user_status', status)
+          setStatusMenuVisible(false)
+        }}
+        colors={colors}
+        fonts={fonts}
+      />
+    )), [statusOptions, user?.user_status, colors, fonts])
+
   if (loading) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
@@ -173,6 +246,7 @@ const EditAccount = ({ route, navigation }) => {
               ) : (
                 <Avatar.Text size={80} label={(user.first_name || 'N')[0].toUpperCase()} />
               )}
+              <Text variant="bodyLarge" style={[styles.avatarText, { color: colors.onSurface }]}>Profile Picture</Text>
             </View>
 
             <Divider style={styles.divider} />
@@ -235,7 +309,28 @@ const EditAccount = ({ route, navigation }) => {
               mode="outlined"
               style={styles.input}
               left={<TextInput.Icon icon="calendar" />}
-              right={<TextInput.Icon icon="calendar" />}
+              right={<TextInput.Icon icon="calendar" onPress={openDatePicker} />}
+            />
+
+            <Divider style={styles.divider} />
+
+            <TextInput
+              label="Emergency Contact Name"
+              value={user.emergency_contact_name || ''}
+              onChangeText={text => handleChange('emergency_contact_name', text)}
+              style={styles.input}
+              mode="outlined"
+              left={<TextInput.Icon icon="account" />}
+            />
+
+            <TextInput
+              label="Emergency Contact Number"
+              value={user.emergency_contact_number || ''}
+              onChangeText={text => handleChange('emergency_contact_number', text)}
+              style={styles.input}
+              mode="outlined"
+              keyboardType="phone-pad"
+              left={<TextInput.Icon icon="phone" />}
             />
 
             <Divider style={styles.divider} />
@@ -246,7 +341,7 @@ const EditAccount = ({ route, navigation }) => {
               anchor={
                 <TextInput
                   label="Role"
-                  value={user.role || ''}
+                  value={user?.role || ''}
                   editable={false}
                   mode="outlined"
                   style={styles.input}
@@ -256,23 +351,7 @@ const EditAccount = ({ route, navigation }) => {
               }
               contentStyle={{ backgroundColor: colors.surface }}
             >
-              {roleOptions.map(role => (
-                <Menu.Item
-                  key={role}
-                  onPress={() => {
-                    handleChange('role', role)
-                    setRoleMenuVisible(false)
-                  }}
-                  title={role}
-                  titleStyle={[
-                    fonts.bodyLarge,
-                    {
-                      color: user.role === role ? colors.primary : colors.onSurface,
-                    },
-                  ]}
-                  leadingIcon={user.role === role ? 'check' : undefined}
-                />
-              ))}
+              {roleMenuItems}
             </Menu>
 
             <Menu
@@ -281,7 +360,7 @@ const EditAccount = ({ route, navigation }) => {
               anchor={
                 <TextInput
                   label="Status"
-                  value={user.user_status || ''}
+                  value={user?.user_status || ''}
                   editable={false}
                   mode="outlined"
                   style={styles.input}
@@ -291,27 +370,29 @@ const EditAccount = ({ route, navigation }) => {
               }
               contentStyle={{ backgroundColor: colors.surface }}
             >
-              {statusOptions.map(status => (
-                <Menu.Item
-                  key={status}
-                  onPress={() => {
-                    handleChange('user_status', status)
-                    setStatusMenuVisible(false)
-                  }}
-                  title={status}
-                  titleStyle={[
-                    fonts.bodyLarge,
-                    {
-                      color: user.user_status === status ? colors.primary : colors.onSurface,
-                    },
-                  ]}
-                  leadingIcon={user.user_status === status ? 'check' : undefined}
-                />
-              ))}
+              {statusMenuItems}
             </Menu>
           </Surface>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Portal>
+        <DatePickerModal
+          locale="en"
+          mode="single"
+          visible={showDatePicker}
+          onDismiss={handleDateDismiss}
+          date={user.birth_date}
+          onConfirm={handleDateConfirm}
+          title="Select Birth Date"
+          animationType="slide"
+          presentationStyle="formSheet"
+          saveLabel="Select"
+          label="Enter the birth date"
+          startYear={1925}
+          endYear={new Date().getFullYear()}
+        />
+      </Portal>
 
       <Portal>
         <Dialog visible={showConfirmDialog} onDismiss={() => setShowConfirmDialog(false)} style={{ backgroundColor: colors.surface }}>
@@ -347,7 +428,9 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+  },
+  avatarText: {
+    marginTop: 8,
   },
   input: {
     marginBottom: 16,

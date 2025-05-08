@@ -184,9 +184,11 @@ const Profile = ({ navigation }) => {
           Edit Profile
         </Button>
       </View>
+      
+      <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
 
       {/* Logout Button */}
-      <View style={styles.buttonContainer}>
+      <View style={styles.logoutContainer}>
         <Button
           icon="logout"
           mode="contained"
@@ -231,6 +233,11 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     margin: 16,
+    gap: 16,
+  },
+  logoutContainer: {
+    margin: 16,
+    marginVertical: 50,
     gap: 16,
   },
   button: {
