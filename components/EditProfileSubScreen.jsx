@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react'
-import { StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, View, ActivityIndicator } from 'react-native'
-import { TextInput, Button, useTheme, Appbar } from 'react-native-paper'
+import { 
+  StyleSheet, 
+  SafeAreaView, 
+  KeyboardAvoidingView, 
+  Platform, 
+  ScrollView, 
+  View, 
+  ActivityIndicator 
+} from 'react-native'
+import { TextInput, Button, useTheme, Appbar, Text, Portal, Dialog } from 'react-native-paper'
 import { supabase } from '../lib/supabase'
 import useSnackbar from './hooks/useSnackbar'
 
 const EditProfileSubScreen = ({ navigation, onClose }) => {
-  const { colors } = useTheme()
+  const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
   const [form, setForm] = useState({
@@ -13,10 +21,12 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
     middle_initial: '',
     last_name: '',
     contact_number: '',
-    birth_date: '',
+    birth_date: null,
   })
 
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
   useEffect(() => {
     fetchProfile()
@@ -24,6 +34,7 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
 
   const fetchProfile = async () => {
     try {
+      setLoading(true)
       const { data: { user } } = await supabase.auth.getUser()
       
       if (!user) {
@@ -47,7 +58,7 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
         middle_initial: data.middle_initial || '',
         last_name: data.last_name || '',
         contact_number: data.contact_number || '',
-        birth_date: data.birth_date || '',
+        birth_date: data.birth_date ? new Date(data.birth_date) : null,
       })
     } catch (error) {
       showSnackbar('Error loading profile')
@@ -56,49 +67,16 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
     }
   }
 
-  const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }))
-
-  const handleUpdate = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        showSnackbar('User not authenticated')
-        return
-      }
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          first_name: form.first_name,
-          middle_initial: form.middle_initial,
-          last_name: form.last_name,
-          contact_number: form.contact_number,
-          birth_date: form.birth_date,
-        })
-        .eq('id', user.id)
-
-      if (error) {
-        showSnackbar('Error updating profile: ' + error.message)
-        return
-      }
-
-      showSnackbar('Profile updated successfully!', true)
-      setTimeout(() => {
-        onClose?.()
-        navigation.goBack()
-      }, 1500)
-    } catch (error) {
-      showSnackbar('Error updating profile')
-    }
+  const handleChange = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }))
   }
 
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <Appbar.Header>
-          <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="Edit Profile" />
+          <Appbar.BackAction onPress={() => navigation.navigate('Profile')} />
+          <Appbar.Content title="Edit Profile" titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} />
         </Appbar.Header>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -110,8 +88,9 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Appbar.Header>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
+        <Appbar.BackAction onPress={() => navigation.navigate('Profile')} />
         <Appbar.Content title="Edit Profile" />
+        <Appbar.Action icon="content-save" onPress={() => setShowConfirmDialog(true)} />
       </Appbar.Header>
 
       <KeyboardAvoidingView
@@ -125,66 +104,108 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
             onChangeText={(text) => handleChange('first_name', text)}
             mode="outlined"
             style={styles.input}
+            left={<TextInput.Icon icon="account" />}
+            theme={{ colors: { primary: colors.primary } }}
+            disabled={saving}
           />
+
           <TextInput
             label="Middle Initial"
             value={form.middle_initial}
             onChangeText={(text) => handleChange('middle_initial', text)}
             mode="outlined"
             style={styles.input}
+            maxLength={1}
+            left={<TextInput.Icon icon="account" />}
+            theme={{ colors: { primary: colors.primary } }}
+            disabled={saving}
           />
+
           <TextInput
             label="Last Name"
             value={form.last_name}
             onChangeText={(text) => handleChange('last_name', text)}
             mode="outlined"
             style={styles.input}
+            left={<TextInput.Icon icon="account" />}
+            theme={{ colors: { primary: colors.primary } }}
+            disabled={saving}
           />
+
           <TextInput
-            label="Contact Number (Philippines)"
+            label="Contact Number"
             value={form.contact_number}
             onChangeText={(text) => handleChange('contact_number', text)}
             mode="outlined"
             style={styles.input}
             keyboardType="phone-pad"
+            left={<TextInput.Icon icon="phone" />}
+            theme={{ colors: { primary: colors.primary } }}
+            disabled={saving}
           />
-          <TextInput
-            label="Birth Date (YYYY-MM-DD)"
-            value={form.birth_date}
-            onChangeText={(text) => handleChange('birth_date', text)}
-            mode="outlined"
-            style={styles.input}
-          />
+
           <Button
+            icon="content-save"
             mode="contained"
-            onPress={handleUpdate}
+            onPress={() => setShowConfirmDialog(true)}
             style={[styles.button, { backgroundColor: colors.primary }]}
-            labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
+            labelStyle={[{ color: colors.onPrimary, ...fonts.labelLarge }]}
+            loading={saving}
+            disabled={saving}
           >
             Update Profile
           </Button>
           <Button
-            mode="text"
-            onPress={() => navigation.goBack()}
-            style={styles.cancelButton}
-            labelStyle={{ color: colors.primary }}
+            icon="close"
+            mode="outlined"
+            onPress={() => navigation.navigate('Profile')}
+            style={[styles.cancelButton, { borderColor: colors.primary }]}
+            labelStyle={[{ color: colors.primary, ...fonts.labelLarge }]}
+            disabled={saving}
           >
             Cancel
           </Button>
           {SnackbarElement}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Portal>
+        <Dialog visible={showConfirmDialog} onDismiss={() => setShowConfirmDialog(false)} style={{ backgroundColor: colors.surface }}>
+          <Dialog.Title>Save Changes</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">Are you sure you want to save these changes?</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setShowConfirmDialog(false)} disabled={saving}>Cancel</Button>
+            <Button onPress={() => {
+              setShowConfirmDialog(false)
+            }} loading={saving} disabled={saving}>Save</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContainer: { flexGrow: 1, padding: 20, justifyContent: 'center', paddingBottom: 'auto' },
-  input: { marginBottom: 16 },
-  button: { marginTop: 12, height: 50, justifyContent: 'center', borderRadius: 8 },
-  buttonLabel: { fontWeight: 'bold' },
-  cancelButton: { marginTop: 8, alignSelf: 'center' },
+  container: { 
+    flex: 1 
+  },
+  scrollContainer: { 
+    flexGrow: 1, 
+    padding: 16
+  },
+  input: { 
+    marginBottom: 16 
+  },
+  button: {
+    marginTop: 12,
+    width: '100%',
+  },
+  cancelButton: {
+    marginTop: 8,
+    width: '100%',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',

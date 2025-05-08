@@ -24,7 +24,7 @@ import AirlineBookingManagement from '../screens/airline/BookingManagement'
 
 // Delivery Screens
 import DeliveryHome from '../screens/delivery/DeliveryHome'
-// import CheckLocation from '../screens/CheckLocation'
+
 import DeliveryBookingManagement from '../screens/delivery/BookingManagement'
 
 // Import Navigators
@@ -45,8 +45,8 @@ const AdminDrawer = () => (
       <Drawer.Screen name="UserManagement" component={UserManagement} />
       <Drawer.Screen name="AdminTrackLuggage" component={AdminTrackLuggage} />
       <Drawer.Screen
-        name="EditProfile"
-        component={EditProfileSubScreen}
+        name="EditAccount"
+        component={EditAccount}
         options={{ headerShown: false }}
       />
       {/* SHARED SCREENS */}
@@ -54,6 +54,7 @@ const AdminDrawer = () => (
       <Drawer.Screen name="BookingHistory" component={BookingHistory} />
       <Drawer.Screen name="TransactionHistory" component={TransactionHistory} />
       <Drawer.Screen name="Profile" component={Profile} />
+      <Drawer.Screen name="EditProfile" component={EditProfileSubScreen} />
       <Drawer.Screen name="MessageCenter" component={MessageCenter} />
   </Drawer.Navigator>
 )
@@ -73,6 +74,7 @@ const AirlineDrawer = () => (
       <Drawer.Screen name="BookingHistory" component={BookingHistory} />
       <Drawer.Screen name="TransactionHistory" component={TransactionHistory} />
       <Drawer.Screen name="Profile" component={Profile} />
+      <Drawer.Screen name="EditProfile" component={EditProfileSubScreen} />
       <Drawer.Screen name="MessageCenter" component={MessageCenter} />
   </Drawer.Navigator>
 )
@@ -91,6 +93,7 @@ const DeliveryDrawer = () => (
       <Drawer.Screen name="BookingHistory" component={BookingHistory} />
       <Drawer.Screen name="TransactionHistory" component={TransactionHistory} />
       <Drawer.Screen name="Profile" component={Profile} />
+      <Drawer.Screen name="EditProfile" component={EditProfileSubScreen} />
       <Drawer.Screen name="MessageCenter" component={MessageCenter} />
   </Drawer.Navigator>
 )

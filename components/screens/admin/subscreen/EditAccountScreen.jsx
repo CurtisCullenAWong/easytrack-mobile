@@ -5,28 +5,32 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
-  TouchableOpacity,
 } from 'react-native'
 import {
   TextInput,
   Button,
   Text,
   useTheme,
-  HelperText,
   Appbar,
   Menu,
+  Avatar,
+  Surface,
+  Divider,
+  Portal,
+  Dialog,
 } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
+import useSnackbar from '../../../../components/hooks/useSnackbar'
 
 const EditAccount = ({ route, navigation }) => {
   const { userId } = route.params
   const { colors, fonts } = useTheme()
+  const { showSnackbar, SnackbarElement } = useSnackbar()
 
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(null)
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
   const [roleMenuVisible, setRoleMenuVisible] = useState(false)
   const [statusMenuVisible, setStatusMenuVisible] = useState(false)
@@ -37,22 +41,40 @@ const EditAccount = ({ route, navigation }) => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
-      const [{ data: userData, error: userError }, { data: roles }, { data: statuses }] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', userId).single(),
-        supabase.from('profiles_roles').select('role_name'),
-        supabase.from('profiles_status').select('status_name'),
-      ])
+      try {
+        const [{ data: userData, error: userError }, { data: roles }, { data: statuses }] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select(`
+              *,
+              profile_status:user_status_id (status_name),
+              profile_roles:role_id (role_name)
+            `)
+            .eq('id', userId)
+            .single(),
+          supabase.from('profiles_roles').select('role_name'),
+          supabase.from('profiles_status').select('status_name'),
+        ])
 
-      if (userError) {
-        setError(userError.message)
-      } else {
-        setUser(userData)
+        if (userError) {
+          showSnackbar('Error loading user data: ' + userError.message)
+          return
+        }
+
+        setUser({
+          ...userData,
+          role: userData.profile_roles?.role_name,
+          user_status: userData.profile_status?.status_name,
+          birth_date: userData.birth_date ? new Date(userData.birth_date) : null,
+        })
+
+        if (roles) setRoleOptions(roles.map(r => r.role_name))
+        if (statuses) setStatusOptions(statuses.map(s => s.status_name))
+      } catch (error) {
+        showSnackbar('Error loading user data')
+      } finally {
+        setLoading(false)
       }
-
-      if (roles) setRoleOptions(roles.map(r => r.role_name))
-      if (statuses) setStatusOptions(statuses.map(s => s.status_name))
-
-      setLoading(false)
     }
 
     fetchData()
@@ -62,46 +84,28 @@ const EditAccount = ({ route, navigation }) => {
     setUser(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleSave = async () => {
-    if (!user) return
-    setSaving(true)
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        full_name: user.full_name,
-        role: user.role,
-        user_status: user.user_status,
-      })
-      .eq('id', user.id)
-
-    setSaving(false)
-    if (error) setError(error.message)
-    else navigation.goBack()
-  }
-
   if (loading) {
     return (
-      <SafeAreaView style={[styles.centered, { backgroundColor: colors.background }]}>
-        <Text style={[fonts.bodyLarge, { color: colors.onSurface }]}>Loading user...</Text>
-      </SafeAreaView>
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <Text variant="bodyLarge" style={{ color: colors.onSurface }}>Loading user...</Text>
+      </View>
     )
   }
 
   if (!user) {
     return (
-      <SafeAreaView style={[styles.centered, { backgroundColor: colors.background }]}>
-        <Text style={[fonts.bodyLarge, { color: colors.error }]}>User not found.</Text>
-        {error && <HelperText type="error">{error}</HelperText>}
-      </SafeAreaView>
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <Text variant="bodyLarge" style={{ color: colors.error }}>User not found.</Text>
+      </View>
     )
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Appbar.Header>
-        <Appbar.BackAction onPress={navigation.goBack} />
+        <Appbar.BackAction onPress={() => navigation.navigate('UserManagement')} />
         <Appbar.Content title="Edit User Account" />
+        <Appbar.Action icon="content-save" onPress={() => setShowConfirmDialog(true)} />
       </Appbar.Header>
 
       <KeyboardAvoidingView
@@ -110,31 +114,93 @@ const EditAccount = ({ route, navigation }) => {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <TextInput
-            label="Full Name"
-            value={user.full_name || ''}
-            onChangeText={text => handleChange('full_name', text)}
-            style={[styles.input, { backgroundColor: colors.surface }]}
-            mode="outlined"
-          />
+          <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
+            <View style={styles.avatarContainer}>
+              {user.avatar_url ? (
+                <Avatar.Image size={80} source={{ uri: user.avatar_url }} />
+              ) : (
+                <Avatar.Text size={80} label={(user.first_name || 'N')[0].toUpperCase()} />
+              )}
+            </View>
 
-          {/* Role Menu */}
-          <View style={styles.menuWrapper}>
+            <Divider style={styles.divider} />
+
+            <TextInput
+              label="First Name"
+              value={user.first_name || ''}
+              onChangeText={text => handleChange('first_name', text)}
+              style={styles.input}
+              mode="outlined"
+              left={<TextInput.Icon icon="account" />}
+            />
+
+            <TextInput
+              label="Middle Initial"
+              value={user.middle_initial || ''}
+              onChangeText={text => handleChange('middle_initial', text)}
+              style={styles.input}
+              mode="outlined"
+              maxLength={1}
+              left={<TextInput.Icon icon="account" />}
+            />
+
+            <TextInput
+              label="Last Name"
+              value={user.last_name || ''}
+              onChangeText={text => handleChange('last_name', text)}
+              style={styles.input}
+              mode="outlined"
+              left={<TextInput.Icon icon="account" />}
+            />
+
+            <Divider style={styles.divider} />
+
+            <TextInput
+              label="Email"
+              value={user.email || ''}
+              onChangeText={text => handleChange('email', text)}
+              style={styles.input}
+              mode="outlined"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              left={<TextInput.Icon icon="email" />}
+            />
+
+            <TextInput
+              label="Contact Number"
+              value={user.contact_number || ''}
+              onChangeText={text => handleChange('contact_number', text)}
+              style={styles.input}
+              mode="outlined"
+              keyboardType="phone-pad"
+              left={<TextInput.Icon icon="phone" />}
+            />
+
+            <TextInput
+              label="Birth Date"
+              value={user.birth_date ? user.birth_date.toLocaleDateString() : ''}
+              editable={false}
+              mode="outlined"
+              style={styles.input}
+              left={<TextInput.Icon icon="calendar" />}
+              right={<TextInput.Icon icon="calendar" />}
+            />
+
+            <Divider style={styles.divider} />
+
             <Menu
               visible={roleMenuVisible}
               onDismiss={() => setRoleMenuVisible(false)}
               anchor={
-                <TouchableOpacity onPress={() => setRoleMenuVisible(true)}>
-                  <TextInput
-                    label="Role"
-                    value={user.role || ''}
-                    editable={false}
-                    mode="outlined"
-                    style={[styles.input, { backgroundColor: colors.surface }]}
-                    pointerEvents="none"
-                    right={<TextInput.Icon icon="menu-down" />}
-                  />
-                </TouchableOpacity>
+                <TextInput
+                  label="Role"
+                  value={user.role || ''}
+                  editable={false}
+                  mode="outlined"
+                  style={styles.input}
+                  left={<TextInput.Icon icon="account-cog" />}
+                  right={<TextInput.Icon icon="menu-down" onPress={() => setRoleMenuVisible(true)} />}
+                />
               }
               contentStyle={{ backgroundColor: colors.surface }}
             >
@@ -156,26 +222,20 @@ const EditAccount = ({ route, navigation }) => {
                 />
               ))}
             </Menu>
-          </View>
 
-
-          {/* Status Menu */}
-          <View style={styles.menuWrapper}>
             <Menu
               visible={statusMenuVisible}
               onDismiss={() => setStatusMenuVisible(false)}
               anchor={
-                <TouchableOpacity onPress={() => setStatusMenuVisible(true)}>
-                  <TextInput
-                    label="Status"
-                    value={user.user_status || ''}
-                    editable={false}
-                    mode="outlined"
-                    style={[styles.input, { backgroundColor: colors.surface }]}
-                    pointerEvents="none"
-                    right={<TextInput.Icon icon="menu-down" />}
-                  />
-                </TouchableOpacity>
+                <TextInput
+                  label="Status"
+                  value={user.user_status || ''}
+                  editable={false}
+                  mode="outlined"
+                  style={styles.input}
+                  left={<TextInput.Icon icon="account-check" />}
+                  right={<TextInput.Icon icon="menu-down" onPress={() => setStatusMenuVisible(true)} />}
+                />
               }
               contentStyle={{ backgroundColor: colors.surface }}
             >
@@ -197,24 +257,26 @@ const EditAccount = ({ route, navigation }) => {
                 />
               ))}
             </Menu>
-          </View>
-
-
-          <Button
-            mode="contained"
-            onPress={handleSave}
-            loading={saving}
-            disabled={saving}
-            style={styles.saveButton}
-            labelStyle={fonts.titleMedium}
-          >
-            Save Changes
-          </Button>
-
-          {error && <HelperText type="error">{error}</HelperText>}
+          </Surface>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+
+      <Portal>
+        <Dialog visible={showConfirmDialog} onDismiss={() => setShowConfirmDialog(false)} style={{ backgroundColor: colors.surface }}>
+          <Dialog.Title>Save Changes</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">Are you sure you want to save these changes?</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setShowConfirmDialog(false)} disabled={saving}>Cancel</Button>
+            <Button onPress={() => {
+              setShowConfirmDialog(false)
+            }} loading={saving} disabled={saving}>Save</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+      {SnackbarElement}
+    </View>
   )
 }
 
@@ -223,26 +285,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    padding: 16,
     flexGrow: 1,
-    justifyContent: 'flex-start',
+  },
+  surface: {
+    padding: 16,
+    borderRadius: 8,
+  },
+  avatarContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
   },
   input: {
     marginBottom: 16,
   },
-  saveButton: {
-    marginTop: 16,
-    height: 50,
-    justifyContent: 'center',
+  divider: {
+    marginVertical: 16,
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-  },
-  menuWrapper: {
-    marginBottom: 16,
   },
 })
 

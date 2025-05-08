@@ -64,8 +64,8 @@ const Profile = ({ navigation }) => {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator animating color={colors.primary} />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -82,7 +82,6 @@ const Profile = ({ navigation }) => {
           onPress: fetchProfile
         }}
       />
-
       {/* User Info Card */}
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
         <Card.Content style={styles.cardContent}>
@@ -106,7 +105,10 @@ const Profile = ({ navigation }) => {
 
       {/* Personal Information */}
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Card.Title title="Personal Information" titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} />
+        <Card.Title 
+          title="Personal Information" 
+          titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} 
+        />
         <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
         <Card.Content>
           <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
@@ -120,7 +122,10 @@ const Profile = ({ navigation }) => {
 
       {/* Account Info */}
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Card.Title title="Account Info" titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} />
+        <Card.Title 
+          title="Account Info" 
+          titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} 
+        />
         <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
         <Card.Content>
           <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
@@ -137,8 +142,11 @@ const Profile = ({ navigation }) => {
 
       {/* Recent Activity */}
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Card.Title title="Recent Activity" titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} />
-        <Divider style={styles.divider} />
+        <Card.Title 
+          title="Recent Activity" 
+          titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} 
+        />
+        <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
         <Card.Content>
           <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
             Last Login: {formatDateTime(profile?.last_sign_in_at)}
@@ -149,26 +157,33 @@ const Profile = ({ navigation }) => {
       {/* Edit Profile Button */}
       <View style={styles.buttonContainer}>
         <Button
+          icon="refresh"
+          mode="contained"
+          style={[styles.button, { backgroundColor: colors.primary }]}
+          onPress={fetchProfile}
+          labelStyle={[{ color: colors.onPrimary, ...fonts.labelLarge }]}
+        >
+          Refresh
+        </Button>
+        <Button
           icon="account-edit"
           mode="contained"
-          style={[styles.editButton, { backgroundColor: colors.primary }]}
-          contentStyle={styles.editButtonContent}
+          style={[styles.button, { backgroundColor: colors.primary }]}
           onPress={() => navigation.navigate('EditProfile')}
-          labelStyle={[styles.editButtonLabel, { color: colors.onPrimary }]}
+          labelStyle={[{ color: colors.onPrimary, ...fonts.labelLarge }]}
         >
           Edit Profile
         </Button>
       </View>
 
       {/* Logout Button */}
-      <View style={styles.logoutContainer}>
+      <View style={styles.buttonContainer}>
         <Button
           icon="logout"
           mode="contained"
-          style={[styles.logoutButton, { backgroundColor: colors.error }]}
-          contentStyle={styles.logoutContent}
+          style={[styles.button, { backgroundColor: colors.error }]}
           onPress={handleLogout}
-          labelStyle={[styles.logoutLabel, { color: colors.onError }]}
+          labelStyle={[{ color: colors.onError, ...fonts.labelLarge }]}
         >
           Logout
         </Button>
@@ -180,16 +195,17 @@ const Profile = ({ navigation }) => {
 }
 
 const styles = StyleSheet.create({
-  scrollView: { flex: 1 },
+  scrollView: { 
+    flex: 1 
+  },
   card: {
     margin: 16,
-    borderRadius: 12,
-    elevation: 3,
   },
   cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 20,
+    paddingHorizontal: 16,
   },
   avatar: {
     marginRight: 16,
@@ -205,33 +221,16 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   buttonContainer: {
-    marginHorizontal: 16,
-    marginTop: 8,
+    margin: 16,
+    gap: 16,
   },
-  editButton: {
-    marginVertical: 6,
+  button: {
+    flex: 1,
   },
-  editButtonContent: {
-    height: 48,
-  },
-  editButtonLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  logoutContainer: {
-    marginBottom: 32,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  logoutButton: {
-    marginVertical: 6,
-    width: '90%',
-  },
-  logoutContent: {
-    height: 48,
-  },
-  logoutLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 })
 

@@ -12,7 +12,7 @@ import {
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabase'
 
-const COLUMN_WIDTH = 150
+const COLUMN_WIDTH = 180
 const EMAIL_COLUMN_WIDTH = 200
 const AVATAR_COLUMN_WIDTH = 80
 const FULL_NAME_WIDTH = 200
@@ -129,11 +129,12 @@ const UserManagement = ({ navigation }) => {
           onDismiss={() => setMenuVisible(false)}
           anchor={
             <Button
-              mode="outlined"
+              mode="contained"
               icon="filter-variant"
               onPress={() => setMenuVisible(true)}
-              style={[styles.filterButton, { borderColor: colors.primary }]}
-              labelStyle={[{ color: colors.primary }, fonts.labelLarge]}
+              style={[styles.button, { borderColor: colors.primary }]}
+              contentStyle={styles.buttonContent}
+              labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
             >
               {filterOptions.find(opt => opt.value === searchColumn)?.label}
             </Button>
@@ -164,11 +165,12 @@ const UserManagement = ({ navigation }) => {
 
       <View style={styles.actionsContainer}>
         <Button
-          mode="outlined"
+          mode="contained"
           icon="refresh"
           onPress={fetchUsers}
-          style={[styles.actionButton, { borderColor: colors.primary }]}
-          labelStyle={{ color: colors.primary }}
+          style={[styles.button, { borderColor: colors.primary }]}
+          contentStyle={styles.buttonContent}
+          labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
         >
           Refresh
         </Button>
@@ -240,13 +242,13 @@ const UserManagement = ({ navigation }) => {
                   <DataTable.Cell numeric style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 8 }}>
                     <Button
                       mode="outlined"
-                      icon="eye"
-                      compact
-                      onPress={() => navigation.navigate('EditProfile', { userId: user.id })}
-                      style={styles.viewButton}
-                      labelStyle={{ color: colors.primary }}
+                      icon="account-edit"
+                      onPress={() => navigation.navigate('EditAccount', { userId: user.id })}
+                      style={[styles.button, { borderColor: colors.primary, width: 'auto' }]}
+                      contentStyle={styles.buttonContent}
+                      labelStyle={[styles.buttonLabel, { color: colors.primary }]}
                     >
-                      View
+                      Edit
                     </Button>
                   </DataTable.Cell>
                 </DataTable.Row>
@@ -280,9 +282,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 10,
   },
-  actionButton: {
-    marginVertical: 8,
+  button: {
+    marginVertical: 6,
+    height: 48,
+    borderRadius: 8,
     width: '100%',
+  },
+  buttonContent: {
+    height: 48,
+  },
+  buttonLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   table: {
     paddingHorizontal: 16,
@@ -295,7 +306,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   viewButton: {
-    borderRadius: 4,
+    borderRadius: 8,
   },
   noDataCell: {
     justifyContent: 'center',
