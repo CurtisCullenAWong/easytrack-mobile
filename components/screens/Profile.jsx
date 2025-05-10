@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { ScrollView, View, StyleSheet } from 'react-native'
-import { Avatar, Card, Title, Text, Divider, Button, useTheme, ActivityIndicator } from 'react-native-paper'
+import { Avatar, Card, Text, Divider, Button, useTheme, ActivityIndicator } from 'react-native-paper'
 import Header from '../customComponents/Header'
 import { supabase } from '../../lib/supabase'
 import useLogout from '../hooks/useLogout'
@@ -27,13 +27,17 @@ const Profile = ({ navigation }) => {
         .select(`
           *,
           profile_status:user_status_id (status_name),
-          profile_roles:role_id (role_name)
+          profile_roles:role_id (role_name),
+          verify_info:verify_info_id(
+            *,
+            id_type:gov_id_type (id_type_name)
+          )
         `)
         .eq('id', user.id)
         .single()
 
       if (error) {
-        console.error('Error fetching profile:', error)
+        console.log('Error fetching profile:', error)
         return
       }
 
@@ -71,6 +75,8 @@ const Profile = ({ navigation }) => {
   }
 
   const fullName = `${profile?.first_name || ''} ${profile?.middle_initial || ''} ${profile?.last_name || ''}`.trim()
+  
+  console.log('gov_id_type:', profile?.verify_info?.gov_id_type);
 
   return (
     <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
@@ -100,9 +106,9 @@ const Profile = ({ navigation }) => {
             />
           )}
           <View style={styles.cardTextContainer}>
-            <Title style={[{ color: colors.onSurface, ...fonts.titleLarge }]}>
+            <Text style={[{ color: colors.onSurface, ...fonts.titleLarge }]}>
               {fullName || 'No Name Available'}
-            </Title>
+            </Text>
             <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
               {profile?.email}
             </Text>
@@ -170,6 +176,70 @@ const Profile = ({ navigation }) => {
         </Card.Content>
       </Card>
 
+      {/* Verification Status */}
+      <Card style={[styles.card, { backgroundColor: colors.surface }]}>
+        <Card.Title 
+          title="Verification Status" 
+          titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]}
+        />
+        <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
+        <Card.Content>
+          <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+            Status: {profile?.verify_info?.id ? 'Verified' : 'Not Verified'}
+          </Text>
+          
+          {profile?.verify_info?.id ? (
+            <>
+              <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+                ID Type: {profile?.verify_info?.id_type?.id_type_name || 'N/A'}
+              </Text>
+              <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+                ID Number: {profile?.verify_info?.gov_id_number || 'N/A'}
+              </Text>
+              {profile?.verify_info?.gov_id_proof && (
+                <View style={styles.imageContainer}>
+                  <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+                    ID Proof:
+                  </Text>
+                  <Avatar.Image
+                    size={100}
+                    source={{ uri: profile.verify_info.gov_id_proof }}
+                    style={styles.verificationImage}
+                  />
+                </View>
+              )}
+              <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+                Vehicle Description: {profile?.verify_info?.vehicle_info || 'N/A'}
+              </Text>
+              <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+                Plate Number: {profile?.verify_info?.vehicle_plate_number || 'N/A'}
+              </Text>
+              {profile?.verify_info?.vehicle_or_cr && (
+                <View style={styles.imageContainer}>
+                  <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+                    OR/CR Document:
+                  </Text>
+                  <Avatar.Image
+                    size={100}
+                    source={{ uri: profile.verify_info.vehicle_or_cr }}
+                    style={styles.verificationImage}
+                  />
+                </View>
+              )}
+            </>
+          ) : (
+            <Button
+              icon="check-circle"
+              mode="contained"
+              style={[styles.button, { backgroundColor: colors.primary, marginTop: 16 }]}
+              onPress={() => navigation.navigate('Verification')}
+              labelStyle={[{ color: colors.onPrimary, ...fonts.labelLarge }]}
+            >
+              Verify Account
+            </Button>
+          )}
+        </Card.Content>
+      </Card>
       {/* Edit Profile Button */}
       <View style={styles.buttonContainer}>
         <Button
@@ -256,6 +326,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  imageContainer: {
+    marginVertical: 8,
+  },
+  verificationImage: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
   },
 })
 
