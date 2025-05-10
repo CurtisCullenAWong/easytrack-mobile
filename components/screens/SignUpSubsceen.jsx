@@ -52,7 +52,8 @@ const SignUpSubScreen = ({ navigation, onClose }) => {
             contact_number: contact_number,
             birth_date: birth_date,
             role_id: role,
-            user_status_id: 3, // PENDING STATUS
+            user_status_id: 3,
+            verify_info_id: user.id,
           })
   
         if (profileError) {

@@ -12,6 +12,7 @@ import PerformanceStatistics from '../screens/PerformanceStatistics'
 import TransactionHistory from '../screens/TransactionHistory'
 import SignUpSubScreen from '../screens/SignUpSubsceen'
 import EditProfileSubScreen from '../screens/EditProfileSubScreen'
+import Verification from '../screens/ProfileVerification'
 // Admin Screens
 import AdminHome from '../screens/admin/AdminHome'
 import UserManagement from '../screens/admin/UserManagement'
@@ -55,6 +56,7 @@ const AdminDrawer = () => (
       <Drawer.Screen name="TransactionHistory" component={TransactionHistory} />
       <Drawer.Screen name="Profile" component={Profile} />
       <Drawer.Screen name="EditProfile" component={EditProfileSubScreen} />
+      <Drawer.Screen name="Verification" component={Verification} />
       <Drawer.Screen name="MessageCenter" component={MessageCenter} />
   </Drawer.Navigator>
 )
@@ -75,6 +77,7 @@ const AirlineDrawer = () => (
       <Drawer.Screen name="TransactionHistory" component={TransactionHistory} />
       <Drawer.Screen name="Profile" component={Profile} />
       <Drawer.Screen name="EditProfile" component={EditProfileSubScreen} />
+      <Drawer.Screen name="Verification" component={Verification} />
       <Drawer.Screen name="MessageCenter" component={MessageCenter} />
   </Drawer.Navigator>
 )
@@ -94,6 +97,7 @@ const DeliveryDrawer = () => (
       <Drawer.Screen name="TransactionHistory" component={TransactionHistory} />
       <Drawer.Screen name="Profile" component={Profile} />
       <Drawer.Screen name="EditProfile" component={EditProfileSubScreen} />
+      <Drawer.Screen name="Verification" component={Verification} />
       <Drawer.Screen name="MessageCenter" component={MessageCenter} />
   </Drawer.Navigator>
 )
@@ -143,6 +147,11 @@ const StackNavigator = () => (
       />
 
       {/* SUBSCREENS */}
+      <Stack.Screen
+        name="Verification"
+        component={Verification}
+        options={{ headerShown: false }}
+      />
 
     </Stack.Navigator>
 

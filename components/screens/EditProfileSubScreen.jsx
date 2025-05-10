@@ -4,12 +4,14 @@ import {
   SafeAreaView, 
   ScrollView, 
   View, 
-  ActivityIndicator 
+  ActivityIndicator,
+  Image 
 } from 'react-native'
-import { TextInput, Button, useTheme, Appbar, Text, Portal, Dialog, Avatar, Surface, Divider } from 'react-native-paper'
+import { TextInput, Button, useTheme, Appbar, Text, Portal, Dialog, Avatar, Surface, Divider, IconButton } from 'react-native-paper'
 import { DatePickerModal, en, registerTranslation } from 'react-native-paper-dates'
 import { supabase } from '../../lib/supabase'
 import useSnackbar from '../hooks/useSnackbar'
+import * as ImagePicker from 'expo-image-picker'
 
 registerTranslation('en', en)
 
@@ -68,6 +70,7 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
     birth_date: null,
     emergency_contact_name: '',
     emergency_contact_number: '',
+    avatar_url: null,
   })
 
   const [errors, setErrors] = useState({})
@@ -75,6 +78,7 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
   const [saving, setSaving] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
+  const [showImageSourceDialog, setShowImageSourceDialog] = useState(false)
 
   // Validation functions
   const validateField = (field, value) => {
@@ -217,6 +221,7 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
         birth_date: data.birth_date ? new Date(data.birth_date) : null,
         emergency_contact_name: data.emergency_contact_name || '',
         emergency_contact_number: data.emergency_contact_number || '',
+        avatar_url: data.avatar_url || null,
       })
     } catch (error) {
       showSnackbar('Error loading profile')
@@ -235,6 +240,55 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
     
     setForm(prev => ({ ...prev, [field]: sanitizedValue }))
     setErrors(prev => ({ ...prev, [field]: error }))
+  }
+
+  const handleImageSource = async (source) => {
+    setShowImageSourceDialog(false)
+    
+    try {
+      const options = { 
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 1,
+        aspect: [1, 1],
+      }
+
+      const result = source === 'camera' 
+        ? await ImagePicker.launchCameraAsync(options)
+        : await ImagePicker.launchImageLibraryAsync(options)
+
+      if (!result.canceled) {
+        // TODO: Replace with actual backend upload
+        // For now, just store the local URI
+        handleChange('avatar_url', result.assets[0].uri)
+        
+        // Placeholder for backend upload
+        console.log('Image would be uploaded to backend:', result.assets[0].uri)
+        
+      }
+    } catch (error) {
+      showSnackbar('Error picking image: ' + error.message)
+    }
+  }
+
+  const ImagePreview = ({ uri, onRemove }) => {
+    if (!uri) return null
+    return (
+      <View style={styles.imagePreviewContainer}>
+        <Image 
+          source={{ uri }} 
+          style={styles.imagePreview}
+          resizeMode="cover"
+        />
+        <IconButton
+          icon="close-circle"
+          size={20}
+          iconColor={colors.error}
+          style={[styles.removeImageButton, { backgroundColor: colors.surface }]}
+          onPress={onRemove}
+        />
+      </View>
+    )
   }
 
   if (loading) {
@@ -256,122 +310,137 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.navigate('Profile')} />
         <Appbar.Content title="Edit Profile" />
-        <Appbar.Action icon="content-save" onPress={() => setShowConfirmDialog(true)} />
+        <Appbar.Action 
+          icon="content-save" 
+          onPress={() => setShowConfirmDialog(true)} 
+          disabled={loading}
+          color={colors.primary}
+        />
       </Appbar.Header>
-        <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-          <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
-            <View style={styles.avatarContainer}>
-              {form.avatar_url ? (
-                <Avatar.Image size={80} source={{ uri: form.avatar_url }} />
-              ) : (
-                <Avatar.Text size={80} label={(form.first_name || 'N')[0].toUpperCase()} />
-              )}
-              <Text variant="bodyLarge" style={[styles.avatarText, { color: colors.onSurface }]}>Profile Picture</Text>
-            </View>
-
-            <Divider style={styles.divider} />
-
-            <TextInput
-              label="First Name"
-              value={form.first_name}
-              onChangeText={(text) => handleChange('first_name', text)}
+      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+        <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
+          <View style={styles.avatarContainer}>
+            {form.avatar_url ? (
+              <ImagePreview 
+                uri={form.avatar_url} 
+                onRemove={() => handleChange('avatar_url', null)} 
+              />
+            ) : (
+              <Avatar.Text size={80} label={(form.first_name || 'N')[0].toUpperCase()} />
+            )}
+            <Button
               mode="outlined"
-              style={styles.input}
-              left={<TextInput.Icon icon="account" />}
-              theme={{ colors: { primary: colors.primary } }}
-              disabled={saving}
-              error={!!errors.first_name}
-              helperText={errors.first_name}
-            />
+              onPress={() => setShowImageSourceDialog(true)}
+              style={styles.avatarButton}
+              textColor={colors.primary}
+            >
+              {form.avatar_url ? 'Change Profile Picture' : 'Upload Profile Picture'}
+            </Button>
+          </View>
 
-            <TextInput
-              label="Middle Initial"
-              value={form.middle_initial}
-              onChangeText={(text) => handleChange('middle_initial', text)}
-              mode="outlined"
-              style={styles.input}
-              maxLength={1}
-              left={<TextInput.Icon icon="account" />}
-              theme={{ colors: { primary: colors.primary } }}
-              disabled={saving}
-              error={!!errors.middle_initial}
-              helperText={errors.middle_initial}
-            />
+          <Divider style={styles.divider} />
 
-            <TextInput
-              label="Last Name"
-              value={form.last_name}
-              onChangeText={(text) => handleChange('last_name', text)}
-              mode="outlined"
-              style={styles.input}
-              left={<TextInput.Icon icon="account" />}
-              theme={{ colors: { primary: colors.primary } }}
-              disabled={saving}
-              error={!!errors.last_name}
-              helperText={errors.last_name}
-            />
+          <TextInput
+            label="First Name"
+            value={form.first_name}
+            onChangeText={(text) => handleChange('first_name', text)}
+            mode="outlined"
+            style={styles.input}
+            left={<TextInput.Icon icon="account" />}
+            theme={{ colors: { primary: colors.primary } }}
+            disabled={saving}
+            error={!!errors.first_name}
+            helperText={errors.first_name}
+          />
 
-            <Divider style={styles.divider} />
+          <TextInput
+            label="Middle Initial"
+            value={form.middle_initial}
+            onChangeText={(text) => handleChange('middle_initial', text)}
+            mode="outlined"
+            style={styles.input}
+            maxLength={1}
+            left={<TextInput.Icon icon="account" />}
+            theme={{ colors: { primary: colors.primary } }}
+            disabled={saving}
+            error={!!errors.middle_initial}
+            helperText={errors.middle_initial}
+          />
 
-            <TextInput
-              label="Contact Number"
-              value={form.contact_number}
-              onChangeText={(text) => handleChange('contact_number', text)}
-              mode="outlined"
-              style={styles.input}
-              keyboardType="phone-pad"
-              left={<TextInput.Affix text="+63" />}
-              theme={{ colors: { primary: colors.primary } }}
-              disabled={saving}
-              error={!!errors.contact_number}
-              helperText={errors.contact_number}
-              maxLength={13}
-            />
+          <TextInput
+            label="Last Name"
+            value={form.last_name}
+            onChangeText={(text) => handleChange('last_name', text)}
+            mode="outlined"
+            style={styles.input}
+            left={<TextInput.Icon icon="account" />}
+            theme={{ colors: { primary: colors.primary } }}
+            disabled={saving}
+            error={!!errors.last_name}
+            helperText={errors.last_name}
+          />
 
-            <TextInput
-              label="Birth Date"
-              value={form.birth_date ? form.birth_date.toLocaleDateString() : ''}
-              editable={false}
-              mode="outlined"
-              style={styles.input}
-              left={<TextInput.Icon icon="calendar" onPress={openDatePicker} />}
-              theme={{ colors: { primary: colors.primary } }}
-              disabled={saving}
-              error={!!errors.birth_date}
-              helperText={errors.birth_date}
-            />
+          <Divider style={styles.divider} />
 
-            <Divider style={styles.divider} />
+          <TextInput
+            label="Contact Number"
+            value={form.contact_number}
+            onChangeText={(text) => handleChange('contact_number', text)}
+            mode="outlined"
+            style={styles.input}
+            keyboardType="phone-pad"
+            left={<TextInput.Affix text="+63" />}
+            theme={{ colors: { primary: colors.primary } }}
+            disabled={saving}
+            error={!!errors.contact_number}
+            helperText={errors.contact_number}
+            maxLength={13}
+          />
 
-            <TextInput
-              label="Emergency Contact Name"
-              value={form.emergency_contact_name}
-              onChangeText={(text) => handleChange('emergency_contact_name', text)}
-              mode="outlined"
-              style={styles.input}
-              left={<TextInput.Icon icon="account" />}
-              theme={{ colors: { primary: colors.primary } }}
-              disabled={saving}
-              error={!!errors.emergency_contact_name}
-              helperText={errors.emergency_contact_name}
-            />
+          <TextInput
+            label="Birth Date"
+            value={form.birth_date ? form.birth_date.toLocaleDateString() : ''}
+            editable={false}
+            mode="outlined"
+            style={styles.input}
+            left={<TextInput.Icon icon="calendar" onPress={openDatePicker} />}
+            theme={{ colors: { primary: colors.primary } }}
+            disabled={saving}
+            error={!!errors.birth_date}
+            helperText={errors.birth_date}
+          />
 
-            <TextInput
-              label="Emergency Contact Number"
-              value={form.emergency_contact_number}
-              onChangeText={(text) => handleChange('emergency_contact_number', text)}
-              mode="outlined"
-              style={styles.input}
-              keyboardType="phone-pad"
-              left={<TextInput.Affix text="+63" />}
-              theme={{ colors: { primary: colors.primary } }}
-              disabled={saving}
-              error={!!errors.emergency_contact_number}
-              helperText={errors.emergency_contact_number}
-              maxLength={13}
-            />
-          </Surface>
-        </ScrollView>
+          <Divider style={styles.divider} />
+
+          <TextInput
+            label="Emergency Contact Name"
+            value={form.emergency_contact_name}
+            onChangeText={(text) => handleChange('emergency_contact_name', text)}
+            mode="outlined"
+            style={styles.input}
+            left={<TextInput.Icon icon="account" />}
+            theme={{ colors: { primary: colors.primary } }}
+            disabled={saving}
+            error={!!errors.emergency_contact_name}
+            helperText={errors.emergency_contact_name}
+          />
+
+          <TextInput
+            label="Emergency Contact Number"
+            value={form.emergency_contact_number}
+            onChangeText={(text) => handleChange('emergency_contact_number', text)}
+            mode="outlined"
+            style={styles.input}
+            keyboardType="phone-pad"
+            left={<TextInput.Affix text="+63" />}
+            theme={{ colors: { primary: colors.primary } }}
+            disabled={saving}
+            error={!!errors.emergency_contact_number}
+            helperText={errors.emergency_contact_number}
+            maxLength={13}
+          />
+        </Surface>
+      </ScrollView>
 
       <Portal>
         <DatePickerModal
@@ -393,6 +462,34 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
             endDate: new Date().getFullYear(),
           }}
         />
+      </Portal>
+
+      <Portal>
+        <Dialog
+          visible={showImageSourceDialog}
+          onDismiss={() => setShowImageSourceDialog(false)}
+          style={{ backgroundColor: colors.surface }}
+        >
+          <Dialog.Title style={{ color: colors.onSurface, ...fonts.titleLarge }}>
+            Choose Image Source
+          </Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ color: colors.onSurfaceVariant, ...fonts.bodyMedium }}>
+              Select where you want to get the image from
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => handleImageSource('camera')} textColor={colors.primary}>
+              Camera
+            </Button>
+            <Button onPress={() => handleImageSource('gallery')} textColor={colors.primary}>
+              Gallery
+            </Button>
+            <Button onPress={() => setShowImageSourceDialog(false)} textColor={colors.error}>
+              Cancel
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
 
       <Portal>
@@ -444,6 +541,28 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  imagePreviewContainer: {
+    marginVertical: 8,
+    position: 'relative',
+    alignSelf: 'center',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    overflow: 'hidden',
+  },
+  imagePreview: {
+    width: '100%',
+    height: '100%',
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    zIndex: 1000
+  },
+  avatarButton: {
+    marginTop: 8,
   },
 })
 
