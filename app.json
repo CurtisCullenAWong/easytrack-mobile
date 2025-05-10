@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F1F8E9"
     },
     "ios": {
       "supportsTablet": true,
@@ -22,7 +22,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#F1F8E9"
       },
       "package": "com.hahatrashboat.EasyTrack"
     },
@@ -35,7 +35,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "f2135978-32e1-4b2d-963a-32c5bcd044ca"
+        "projectId": "58eeebf8-4019-4509-947c-2185c24313a8"
       }
     },
     "owner": "hahatrashboat"
