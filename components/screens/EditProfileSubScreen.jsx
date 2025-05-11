@@ -12,7 +12,8 @@ import { DatePickerModal, en, registerTranslation } from 'react-native-paper-dat
 import { supabase } from '../../lib/supabase'
 import useSnackbar from '../hooks/useSnackbar'
 import * as ImagePicker from 'expo-image-picker'
-
+import * as FileSystem from 'expo-file-system'
+import { decode } from 'base64-arraybuffer'
 registerTranslation('en', en)
 
 // Validation patterns
@@ -61,7 +62,7 @@ const formatPhoneNumber = (value) => {
 const EditProfileSubScreen = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
-
+  const [image, setImage] = useState(null)
   const [form, setForm] = useState({
     first_name: '',
     middle_initial: '',
@@ -70,7 +71,7 @@ const EditProfileSubScreen = ({ navigation }) => {
     birth_date: null,
     emergency_contact_name: '',
     emergency_contact_number: '',
-    avatar_url: null,
+    profile_picture: null,
   })
 
   const [errors, setErrors] = useState({})
@@ -149,6 +150,116 @@ const EditProfileSubScreen = ({ navigation }) => {
     return Object.keys(newErrors).length === 0
   }
 
+  const handleImageSource = async (source) => {
+    setShowImageSourceDialog(false)
+    
+    try {
+      const options = { 
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 1,
+        aspect: [1, 1],
+      }
+
+      const result = source === 'camera' 
+        ? await ImagePicker.launchCameraAsync(options)
+        : await ImagePicker.launchImageLibraryAsync(options)
+
+      if (!result.canceled) {
+        setImage(result.assets[0].uri)
+        handleChange('profile_picture', result.assets[0].uri)
+      }
+    } catch (error) {
+      showSnackbar('Error picking image: ' + error.message)
+    }
+  }
+
+  const uploadImage = async () => {
+    if (!image?.startsWith('file://')) {
+      return null
+    }
+  
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        throw new Error('User not authenticated')
+      }
+
+      // Get user's role from profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('role_id')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError) {
+        throw profileError
+      }
+
+      // Determine folder based on role_id
+      let folder
+      switch (profileData.role_id) {
+        case 1:
+          folder = 'admin'
+          break
+        case 2:
+          folder = 'airlines'
+          break
+        case 3:
+          folder = 'delivery'
+          break
+        default:
+          throw new Error('Invalid role')
+      }
+
+      // Delete existing file for this user
+      const existingFilePath = `${folder}/${user.id}.png`
+      const { error: deleteError } = await supabase.storage
+        .from('profile-images')
+        .remove([existingFilePath])
+
+      // Ignore delete error if file doesn't exist
+      if (deleteError && !deleteError.message.includes('not found')) {
+        console.error('Error deleting existing file:', deleteError)
+      }
+
+      const base64 = await FileSystem.readAsStringAsync(image, {
+        encoding: FileSystem.EncodingType.Base64,
+      })
+
+      // Use user ID as filename
+      const filePath = existingFilePath
+      const contentType = 'image/png'
+      
+      const { data, error } = await supabase.storage
+        .from('profile-images')
+        .upload(filePath, decode(base64), { 
+          contentType,
+          upsert: true // This will overwrite if file exists
+        })
+    
+      if (error) {
+        throw error
+      }
+
+      // Get a signed URL that's valid for a long time (e.g., 1 year)
+      const { data: { signedUrl }, error: signedUrlError } = await supabase.storage
+        .from('profile-images')
+        .createSignedUrl(filePath, 31536000) // 1 year in seconds
+        console.log(signedUrl)
+      if (signedUrlError) {
+        throw signedUrlError
+      }
+
+      return signedUrl
+    } catch (error) {
+      console.error('Upload error:', error)
+      showSnackbar('Error uploading image: ' + error.message)
+      return null
+    }
+  }
+
   const saveProfile = async () => {
     if (!validateForm()) {
       showSnackbar('Please fix the errors before saving')
@@ -164,6 +275,52 @@ const EditProfileSubScreen = ({ navigation }) => {
         return
       }
 
+      // Get current profile data including role_id and profile_picture
+      const { data: currentProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role_id, profile_picture')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError) {
+        throw profileError
+      }
+
+      let profile_picture = null
+
+      if (image) {
+        // Upload new image if one is selected
+        const uploadedUrl = await uploadImage()
+        if (uploadedUrl) {
+          profile_picture = uploadedUrl
+        }
+      } else if (currentProfile.profile_picture) {
+        // If no new image and there's an existing one, delete it
+        let folder
+        switch (currentProfile.role_id) {
+          case 1:
+            folder = 'admin'
+            break
+          case 2:
+            folder = 'airlines'
+            break
+          case 3:
+            folder = 'delivery'
+            break
+        }
+
+        if (folder) {
+          const existingFilePath = `${folder}/${user.id}.png`
+          const { error: deleteError } = await supabase.storage
+            .from('profile-images')
+            .remove([existingFilePath])
+
+          if (deleteError && !deleteError.message.includes('not found')) {
+            console.error('Error deleting existing file:', deleteError)
+          }
+        }
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -174,6 +331,7 @@ const EditProfileSubScreen = ({ navigation }) => {
           birth_date: form.birth_date,
           emergency_contact_name: form.emergency_contact_name,
           emergency_contact_number: form.emergency_contact_number,
+          profile_picture: profile_picture,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id)
@@ -221,7 +379,7 @@ const EditProfileSubScreen = ({ navigation }) => {
         birth_date: data.birth_date ? new Date(data.birth_date) : null,
         emergency_contact_name: data.emergency_contact_name || '',
         emergency_contact_number: data.emergency_contact_number || '',
-        avatar_url: data.avatar_url || null,
+        profile_picture: data.profile_picture || null,
       })
     } catch (error) {
       showSnackbar('Error loading profile')
@@ -240,33 +398,6 @@ const EditProfileSubScreen = ({ navigation }) => {
     
     setForm(prev => ({ ...prev, [field]: sanitizedValue }))
     setErrors(prev => ({ ...prev, [field]: error }))
-  }
-
-  const handleImageSource = async (source) => {
-    setShowImageSourceDialog(false)
-    
-    try {
-      const options = { 
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        quality: 1,
-        aspect: [1, 1],
-      }
-
-      const result = source === 'camera' 
-        ? await ImagePicker.launchCameraAsync(options)
-        : await ImagePicker.launchImageLibraryAsync(options)
-
-      if (!result.canceled) {
-        // For now, just store the local URI
-        handleChange('avatar_url', result.assets[0].uri)
-        
-        // Placeholder for backend upload
-        console.log('Image would be uploaded to backend:', result.assets[0].uri)
-      }
-    } catch (error) {
-      showSnackbar('Error picking image: ' + error.message)
-    }
   }
 
   const ImagePreview = ({ uri, onRemove }) => {
@@ -318,10 +449,10 @@ const EditProfileSubScreen = ({ navigation }) => {
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
           <View style={styles.avatarContainer}>
-            {form.avatar_url ? (
+            {form.profile_picture ? (
               <ImagePreview 
-                uri={form.avatar_url} 
-                onRemove={() => handleChange('avatar_url', null)} 
+                uri={form.profile_picture} 
+                onRemove={() => handleChange('profile_picture', null)} 
               />
             ) : (
               <Avatar.Text size={80} label={(form.first_name || 'N')[0].toUpperCase()} />
@@ -332,7 +463,7 @@ const EditProfileSubScreen = ({ navigation }) => {
               style={styles.avatarButton}
               textColor={colors.primary}
             >
-              {form.avatar_url ? 'Change Profile Picture' : 'Upload Profile Picture'}
+              {form.profile_picture ? 'Change Profile Picture' : 'Upload Profile Picture'}
             </Button>
           </View>
 

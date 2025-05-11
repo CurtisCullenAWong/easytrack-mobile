@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase'
 const Header = ({ navigation, title }) => {
     const { colors, fonts } = useTheme()
     const [firstName, setFirstName] = useState('')
+    const [profilePicture, setProfilePicture] = useState(null)
 
     const fetchUserProfile = async () => {
         try {
@@ -15,7 +16,7 @@ const Header = ({ navigation, title }) => {
 
             const { data, error } = await supabase
                 .from('profiles')
-                .select('first_name')
+                .select('first_name, profile_picture')
                 .eq('id', user.id)
                 .single()
 
@@ -25,6 +26,7 @@ const Header = ({ navigation, title }) => {
             }
 
             setFirstName(data?.first_name || '')
+            setProfilePicture(data?.profile_picture || null)
         } catch (error) {
             console.error('Error in fetchUserProfile:', error)
         }
@@ -50,12 +52,20 @@ const Header = ({ navigation, title }) => {
                 />
                 <Text style={[styles.title, fonts.headlineSmall, {color:colors.onBackground, fontWeight: 'bold' }]}>{title}</Text>
                 <TouchableOpacity onPress={handleProfilePress}>
-                    <Avatar.Text 
-                        size={40} 
-                        label={firstName ? firstName[0].toUpperCase() : 'U'}
-                        style={{ backgroundColor: colors.primary }}
-                        labelStyle={{ color: colors.onPrimary }}
-                    />
+                    {profilePicture ? (
+                        <Avatar.Image 
+                            size={40} 
+                            source={{ uri: profilePicture }}
+                            style={{ backgroundColor: colors.primary }}
+                        />
+                    ) : (
+                        <Avatar.Text 
+                            size={40} 
+                            label={firstName ? firstName[0].toUpperCase() : 'U'}
+                            style={{ backgroundColor: colors.primary }}
+                            labelStyle={{ color: colors.onPrimary }}
+                        />
+                    )}
                 </TouchableOpacity>
             </Appbar.Header>
             {/* Header */}

@@ -11,6 +11,7 @@ const Profile = ({ navigation }) => {
   const [loading, setLoading] = useState(true)
 
   const { handleLogout, LogoutDialog } = useLogout(navigation)
+
   const fetchProfile = async () => {
     setLoading(true)
     try {
@@ -34,7 +35,7 @@ const Profile = ({ navigation }) => {
         .single()
 
       if (error) {
-        console.log('Error fetching profile:', error)
+        console.error('Error fetching profile:', error)
         return
       }
 
@@ -72,7 +73,6 @@ const Profile = ({ navigation }) => {
   }
 
   const fullName = `${profile?.first_name || ''} ${profile?.middle_initial || ''} ${profile?.last_name || ''}`.trim()
-  
 
   return (
     <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
@@ -87,10 +87,13 @@ const Profile = ({ navigation }) => {
       {/* User Info Card */}
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
         <Card.Content style={styles.cardContent}>
-          {profile?.avatar_url ? (
+          {profile?.profile_picture ? (
             <Avatar.Image
               size={60}
-              source={{ uri: profile.avatar_url }}
+              source={{ 
+                uri: profile.profile_picture,
+                cache: 'reload'
+              }}
               style={[styles.avatar, { borderColor: colors.background }]}
             />
           ) : (

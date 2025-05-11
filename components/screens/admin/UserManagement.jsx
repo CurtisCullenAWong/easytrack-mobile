@@ -68,7 +68,7 @@ const UserManagement = ({ navigation }) => {
         ? new Date(user.updated_at).toLocaleString()
         : 'Never',  
       avatar: (user.first_name || 'N')[0].toUpperCase(),
-      avatarUrl: user.avatar_url || null,
+      profile_picture: user.profile_picture || null,
     }))
 
     setUsers(formatted)
@@ -230,8 +230,8 @@ const UserManagement = ({ navigation }) => {
                 paginatedUsers.map(user => (
                   <DataTable.Row key={user.id}>
                     <DataTable.Cell style={{ width: AVATAR_COLUMN_WIDTH, justifyContent: 'center' }}>
-                      {user.avatarUrl ? (
-                        <Avatar.Image size={40} source={{ uri: user.avatarUrl }} />
+                      {user.profile_picture ? (
+                        <Avatar.Image size={40} source={{ uri: user.profile_picture }} />
                       ) : (
                         <Avatar.Text size={40} label={user.avatar} />
                       )}
