@@ -11,7 +11,6 @@ const Profile = ({ navigation }) => {
   const [loading, setLoading] = useState(true)
 
   const { handleLogout, LogoutDialog } = useLogout(navigation)
-
   const fetchProfile = async () => {
     setLoading(true)
     try {
@@ -192,7 +191,9 @@ const Profile = ({ navigation }) => {
           </Text>
         </Card.Content>
       </Card>
-
+      {/* CHECK FOR DELIVERY PERSONNEL AND AIRLINE ROLE */}
+      {profile?.role_id === 2 || profile?.role_id === 3 ? (
+      <>
       {/* Verification Status */}
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
         <Card.Title 
@@ -257,6 +258,10 @@ const Profile = ({ navigation }) => {
           )}
         </Card.Content>
       </Card>
+      </>
+      ) : (
+        <></>
+      )}
       {/* Logout Button */}
       <View style={styles.logoutContainer}>
       <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />

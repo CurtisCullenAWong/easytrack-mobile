@@ -256,7 +256,7 @@ const EditAccount = ({ route, navigation }) => {
             .eq('id', userId)
             .single(),
           supabase.from('profiles_roles').select('role_name'),
-          supabase.from('profiles_status').select('status_name').in('id', [2, 4, 5]),
+          supabase.from('profiles_status').select('status_name').in('id', [4, 5]),
         ])
 
         if (userError) {
@@ -343,10 +343,14 @@ const EditAccount = ({ route, navigation }) => {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.navigate('UserManagement')} />
-        <Appbar.Content title="Edit User Account" />
-        <Appbar.Action icon="content-save" onPress={() => setShowConfirmDialog(true)} />
+        <Appbar.Content title="Edit Profile" />
+        <Appbar.Action 
+          icon="content-save" 
+          onPress={() => setShowConfirmDialog(true)} 
+          disabled={loading}
+          color={colors.primary}
+        />
       </Appbar.Header>
-
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -371,7 +375,7 @@ const EditAccount = ({ route, navigation }) => {
               onChangeText={text => handleChange('first_name', text)}
               style={styles.input}
               mode="outlined"
-              left={<TextInput.Icon icon="account" />}
+              right={<TextInput.Icon icon="account" />}
               error={!!errors.first_name}
               helperText={errors.first_name}
             />
@@ -383,7 +387,7 @@ const EditAccount = ({ route, navigation }) => {
               style={styles.input}
               mode="outlined"
               maxLength={1}
-              left={<TextInput.Icon icon="account" />}
+              right={<TextInput.Icon icon="account" />}
               error={!!errors.middle_initial}
               helperText={errors.middle_initial}
             />
@@ -394,7 +398,7 @@ const EditAccount = ({ route, navigation }) => {
               onChangeText={text => handleChange('last_name', text)}
               style={styles.input}
               mode="outlined"
-              left={<TextInput.Icon icon="account" />}
+              right={<TextInput.Icon icon="account" />}
               error={!!errors.last_name}
               helperText={errors.last_name}
             />
@@ -409,7 +413,7 @@ const EditAccount = ({ route, navigation }) => {
               mode="outlined"
               keyboardType="email-address"
               autoCapitalize="none"
-              left={<TextInput.Icon icon="email" />}
+              right={<TextInput.Icon icon="email" />}
               error={!!errors.email}
               helperText={errors.email}
             />
@@ -422,6 +426,7 @@ const EditAccount = ({ route, navigation }) => {
               mode="outlined"
               keyboardType="phone-pad"
               left={<TextInput.Affix text="+63" />}
+              right={<TextInput.Icon icon="phone" />}
               error={!!errors.contact_number}
               helperText={errors.contact_number}
               maxLength={13}
@@ -433,7 +438,6 @@ const EditAccount = ({ route, navigation }) => {
               editable={false}
               mode="outlined"
               style={styles.input}
-              left={<TextInput.Icon icon="calendar" />}
               right={<TextInput.Icon icon="calendar" onPress={openDatePicker} />}
               error={!!errors.birth_date}
               helperText={errors.birth_date}
@@ -447,7 +451,7 @@ const EditAccount = ({ route, navigation }) => {
               onChangeText={text => handleChange('emergency_contact_name', text)}
               style={styles.input}
               mode="outlined"
-              left={<TextInput.Icon icon="account" />}
+              right={<TextInput.Icon icon="account" />}
               error={!!errors.emergency_contact_name}
               helperText={errors.emergency_contact_name}
             />
@@ -460,6 +464,7 @@ const EditAccount = ({ route, navigation }) => {
               mode="outlined"
               keyboardType="phone-pad"
               left={<TextInput.Affix text="+63" />}
+              right={<TextInput.Icon icon="phone" />}
               error={!!errors.emergency_contact_number}
               helperText={errors.emergency_contact_number}
               maxLength={13}
@@ -477,8 +482,7 @@ const EditAccount = ({ route, navigation }) => {
                   editable={false}
                   mode="outlined"
                   style={styles.input}
-                  left={<TextInput.Icon icon="account-cog" />}
-                  right={<TextInput.Icon icon="menu-down" onPress={() => setRoleMenuVisible(true)} />}
+                  right={<TextInput.Icon icon="account-cog" onPress={() => setRoleMenuVisible(true)} />}
                   error={!!errors.role}
                   helperText={errors.role}
                 />
@@ -498,8 +502,7 @@ const EditAccount = ({ route, navigation }) => {
                   editable={false}
                   mode="outlined"
                   style={styles.input}
-                  left={<TextInput.Icon icon="account-check" />}
-                  right={<TextInput.Icon icon="menu-down" onPress={() => setStatusMenuVisible(true)} />}
+                  right={<TextInput.Icon icon="account-check" onPress={() => setStatusMenuVisible(true)} />}
                   error={!!errors.user_status}
                   helperText={errors.user_status}
                 />

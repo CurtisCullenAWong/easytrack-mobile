@@ -58,7 +58,7 @@ const formatPhoneNumber = (value) => {
   return `0${digits}`
 }
 
-const EditProfileSubScreen = ({ navigation, onClose }) => {
+const EditProfileSubScreen = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
@@ -258,13 +258,11 @@ const EditProfileSubScreen = ({ navigation, onClose }) => {
         : await ImagePicker.launchImageLibraryAsync(options)
 
       if (!result.canceled) {
-        // TODO: Replace with actual backend upload
         // For now, just store the local URI
         handleChange('avatar_url', result.assets[0].uri)
         
         // Placeholder for backend upload
         console.log('Image would be uploaded to backend:', result.assets[0].uri)
-        
       }
     } catch (error) {
       showSnackbar('Error picking image: ' + error.message)

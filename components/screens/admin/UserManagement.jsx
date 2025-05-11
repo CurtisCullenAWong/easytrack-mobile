@@ -38,7 +38,8 @@ const UserManagement = ({ navigation }) => {
       .select(`
         *,
         profile_status:user_status_id (status_name),
-        profile_roles:role_id (role_name)
+        profile_roles:role_id (role_name),
+        verify_status:verify_status_id (status_name)
       `)
       .order('first_name', { ascending: true })
 
@@ -56,6 +57,7 @@ const UserManagement = ({ navigation }) => {
       birth_date: user.birth_date || 'N/A',
       status: user.profile_status?.status_name || 'Unknown',
       role: user.profile_roles?.role_name || 'N/A',
+      verify_status: user.verify_status?.status_name || 'N/A',
       dateCreated: user.created_at
         ? new Date(user.created_at).toLocaleString()
         : 'N/A',
@@ -107,7 +109,7 @@ const UserManagement = ({ navigation }) => {
     { label: 'Full Name', value: 'full_name' },
     { label: 'Email', value: 'email' },
     { label: 'Role', value: 'role' },
-    { label: 'Status', value: 'status' },
+    { label: 'Account Status', value: 'status' },
     { label: 'Contact', value: 'contact_number' },
   ]
 
@@ -117,7 +119,8 @@ const UserManagement = ({ navigation }) => {
     { key: 'contact_number', label: 'Contact Number', width: COLUMN_WIDTH },
     { key: 'birth_date', label: 'Birth Date', width: COLUMN_WIDTH },
     { key: 'role', label: 'Role', width: COLUMN_WIDTH },
-    { key: 'status', label: 'Status', width: COLUMN_WIDTH },
+    { key: 'status', label: 'Account Status', width: COLUMN_WIDTH },
+    { key: 'verify_status', label: 'Verification Status', width: COLUMN_WIDTH },
     { key: 'dateCreated', label: 'Date Created', width: COLUMN_WIDTH },
     { key: 'lastLogin', label: 'Last Login', width: COLUMN_WIDTH },
     { key: 'lastUpdated', label: 'Last Updated', width: COLUMN_WIDTH },
@@ -240,6 +243,7 @@ const UserManagement = ({ navigation }) => {
                       { value: user.birth_date, width: COLUMN_WIDTH },
                       { value: user.role, width: COLUMN_WIDTH },
                       { value: user.status, width: COLUMN_WIDTH },
+                      { value: user.verify_status, width: COLUMN_WIDTH },
                       { value: user.dateCreated, width: COLUMN_WIDTH },
                       { value: user.lastLogin, width: COLUMN_WIDTH },
                       { value: user.lastUpdated, width: COLUMN_WIDTH },
@@ -278,6 +282,7 @@ const UserManagement = ({ navigation }) => {
               labelStyle={[{ color: colors.onSurface }, fonts.bodyMedium]}
               showFirstPageButton
               showLastPageButton
+              showFastPaginationControls
               numberOfItemsPerPageList={[5, 10, 20, 50]}
               numberOfItemsPerPage={itemsPerPage}
               onItemsPerPageChange={setItemsPerPage}
@@ -308,7 +313,8 @@ const styles = StyleSheet.create({
   searchActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    margin: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
     gap: 10,
   },
   searchbar: {
@@ -373,6 +379,7 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(0, 0, 0, 0.12)',
   },
   pagination: {
+    justifyContent: 'space-evenly',
     borderTopWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.12)',
   },
