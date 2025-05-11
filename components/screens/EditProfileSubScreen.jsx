@@ -214,10 +214,10 @@ const EditProfileSubScreen = ({ navigation }) => {
       }
 
       // Delete existing file for this user
-      const existingFilePath = `${folder}/${user.id}.png`
+      const filePath = `${folder}/${user.id}.png`
       const { error: deleteError } = await supabase.storage
         .from('profile-images')
-        .remove([existingFilePath])
+        .remove([filePath])
 
       // Ignore delete error if file doesn't exist
       if (deleteError && !deleteError.message.includes('not found')) {
@@ -228,8 +228,6 @@ const EditProfileSubScreen = ({ navigation }) => {
         encoding: FileSystem.EncodingType.Base64,
       })
 
-      // Use user ID as filename
-      const filePath = existingFilePath
       const contentType = 'image/png'
       
       const { data, error } = await supabase.storage
@@ -247,7 +245,7 @@ const EditProfileSubScreen = ({ navigation }) => {
       const { data: { signedUrl }, error: signedUrlError } = await supabase.storage
         .from('profile-images')
         .createSignedUrl(filePath, 31536000) // 1 year in seconds
-        console.log(signedUrl)
+
       if (signedUrlError) {
         throw signedUrlError
       }
@@ -310,10 +308,36 @@ const EditProfileSubScreen = ({ navigation }) => {
         }
 
         if (folder) {
-          const existingFilePath = `${folder}/${user.id}.png`
+          const filePath = `${folder}/${user.id}.png`
           const { error: deleteError } = await supabase.storage
             .from('profile-images')
-            .remove([existingFilePath])
+            .remove([filePath])
+
+          if (deleteError && !deleteError.message.includes('not found')) {
+            console.error('Error deleting existing file:', deleteError)
+          }
+        }
+      }
+
+      if (!form.profile_picture && currentProfile.profile_picture) {
+        let folder
+        switch (currentProfile.role_id) {
+          case 1:
+            folder = 'admin'
+            break
+          case 2:
+            folder = 'airlines'
+            break
+          case 3:
+            folder = 'delivery'
+            break
+        }
+
+        if (folder) {
+          const filePath = `${folder}/${user.id}.png`
+          const { error: deleteError } = await supabase.storage
+            .from('profile-images')
+            .remove([filePath])
 
           if (deleteError && !deleteError.message.includes('not found')) {
             console.error('Error deleting existing file:', deleteError)
@@ -331,7 +355,7 @@ const EditProfileSubScreen = ({ navigation }) => {
           birth_date: form.birth_date,
           emergency_contact_name: form.emergency_contact_name,
           emergency_contact_number: form.emergency_contact_number,
-          profile_picture: profile_picture,
+          profile_picture: form.profile_picture,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id)
@@ -448,7 +472,7 @@ const EditProfileSubScreen = ({ navigation }) => {
       </Appbar.Header>
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
-          <View style={styles.avatarContainer}>
+          <View style={styles.profileContainer}>
             {form.profile_picture ? (
               <ImagePreview 
                 uri={form.profile_picture} 
@@ -460,8 +484,9 @@ const EditProfileSubScreen = ({ navigation }) => {
             <Button
               mode="outlined"
               onPress={() => setShowImageSourceDialog(true)}
-              style={styles.avatarButton}
+              style={styles.profilePictureButton}
               textColor={colors.primary}
+              disabled={saving}
             >
               {form.profile_picture ? 'Change Profile Picture' : 'Upload Profile Picture'}
             </Button>
@@ -597,8 +622,7 @@ const EditProfileSubScreen = ({ navigation }) => {
         <Dialog
           visible={showImageSourceDialog}
           onDismiss={() => setShowImageSourceDialog(false)}
-          style={{ backgroundColor: colors.surface }}
-        >
+          style={{ backgroundColor: colors.surface }}>
           <Dialog.Title style={{ color: colors.onSurface, ...fonts.titleLarge }}>
             Choose Image Source
           </Dialog.Title>
@@ -622,7 +646,10 @@ const EditProfileSubScreen = ({ navigation }) => {
       </Portal>
 
       <Portal>
-        <Dialog visible={showConfirmDialog} onDismiss={() => setShowConfirmDialog(false)} style={{ backgroundColor: colors.surface }}>
+        <Dialog
+          visible={showConfirmDialog}
+          onDismiss={() => setShowConfirmDialog(false)}
+          style={{ backgroundColor: colors.surface }}>
           <Dialog.Title>Save Changes</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium">Are you sure you want to save these changes?</Text>
@@ -654,7 +681,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 16,
   },
-  avatarContainer: {
+  profileContainer: {
     alignItems: 'center',
   },
   avatarText: {
@@ -690,7 +717,7 @@ const styles = StyleSheet.create({
     right: -8,
     zIndex: 1000
   },
-  avatarButton: {
+  profile: {
     marginTop: 8,
   },
 })

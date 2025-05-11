@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { ScrollView, View, StyleSheet } from 'react-native'
 import { Avatar, Card, Text, Divider, Button, useTheme, ActivityIndicator } from 'react-native-paper'
 import Header from '../customComponents/Header'
 import { supabase } from '../../lib/supabase'
 import useLogout from '../hooks/useLogout'
+import { useFocusEffect } from '@react-navigation/native'
 
 const Profile = ({ navigation }) => {
   const { colors, fonts } = useTheme()
@@ -47,9 +48,11 @@ const Profile = ({ navigation }) => {
     }
   }
 
-  useEffect(() => {
-    fetchProfile()
-  }, [])
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile()
+    }, [])
+  )
 
   const formatDateTime = (dateString) => {
     if (!dateString) return 'N/A'
@@ -94,13 +97,13 @@ const Profile = ({ navigation }) => {
                 uri: profile.profile_picture,
                 cache: 'reload'
               }}
-              style={[styles.avatar, { borderColor: colors.background }]}
+              style={[styles.profile, { borderColor: colors.background }]}
             />
           ) : (
             <Avatar.Text
               size={60}
               label={profile?.first_name ? profile.first_name[0].toUpperCase() : 'U'}
-              style={[styles.avatar, { backgroundColor: colors.primary }]}
+              style={[styles.profile, { backgroundColor: colors.primary }]}
               labelStyle={{ color: colors.onPrimary }}
             />
           )}
@@ -267,7 +270,6 @@ const Profile = ({ navigation }) => {
       )}
       {/* Logout Button */}
       <View style={styles.logoutContainer}>
-      <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
       <Button
           icon="logout"
           mode="contained"
@@ -298,7 +300,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 16,
   },
-  avatar: {
+  profile: {
     marginRight: 16,
   },
   cardTextContainer: {
