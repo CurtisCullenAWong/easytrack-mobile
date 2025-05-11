@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { ScrollView, View, StyleSheet, Image } from 'react-native'
-import { Text, Card, Button, TextInput, useTheme, Portal, Dialog, IconButton, Appbar } from 'react-native-paper'
+import { Text, Card, Button, TextInput, useTheme, Portal, Dialog, IconButton, Appbar, Menu } from 'react-native-paper'
 import { supabase } from '../../lib/supabase'
 import * as ImagePicker from 'expo-image-picker'
 
@@ -13,8 +13,11 @@ const Verification = ({ navigation }) => {
   const [showImageSourceDialog, setShowImageSourceDialog] = useState(false)
   const [showPermissionDialog, setShowPermissionDialog] = useState(false)
   const [currentImageType, setCurrentImageType] = useState(null)
+  const [idTypeMenuVisible, setIdTypeMenuVisible] = useState(false)
+  const [idTypes, setIdTypes] = useState([])
   const [formData, setFormData] = useState({
     gov_id_type: '',
+    gov_id_type_id: null,
     gov_id_number: '',
     gov_id_proof: null,
     vehicle_info: '',
@@ -22,10 +25,25 @@ const Verification = ({ navigation }) => {
     vehicle_or_cr: null
   })
 
-  // Check verification status on mount
+  // Check verification status and fetch ID types on mount
   useEffect(() => {
     checkVerificationStatus()
+    fetchIdTypes()
   }, [])
+
+  const fetchIdTypes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('verify_info_type')
+        .select('id, id_type_name')
+        .order('id_type_name')
+
+      if (error) throw error
+      setIdTypes(data || [])
+    } catch (error) {
+      console.error('Error fetching ID types:', error)
+    }
+  }
 
   const checkVerificationStatus = async () => {
     try {
@@ -44,7 +62,6 @@ const Verification = ({ navigation }) => {
       console.error('Error checking verification status:', error)
     }
   }
-
 
   const handleImageSource = async (source) => {
     setShowImageSourceDialog(false)
@@ -103,30 +120,23 @@ const Verification = ({ navigation }) => {
       console.log('ID Proof would be uploaded to backend:', formData.gov_id_proof)
       console.log('OR/CR would be uploaded to backend:', formData.vehicle_or_cr)
 
-      // Insert verification info
-      const { error } = await supabase
-        .from('profiles')
-        .insert({
-          user_id: user.id,
-          gov_id_type: formData.gov_id_type,
-          gov_id_number: formData.gov_id_number,
-          gov_id_proof: formData.gov_id_proof, // Store local URI for now
-          vehicle_info: formData.vehicle_info,
-          vehicle_plate_number: formData.vehicle_plate_number,
-          vehicle_or_cr: formData.vehicle_or_cr // Store local URI for now
-        })
-
-      if (error) throw error
-
       // Update verification status
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ verify_status_id: 1 })
+        .update({ 
+          verify_status_id: 3,
+          gov_id_type: formData.gov_id_type_id,
+          gov_id_number: formData.gov_id_number,
+          gov_id_proof: formData.gov_id_proof,
+          vehicle_info: formData.vehicle_info,
+          vehicle_plate_number: formData.vehicle_plate_number,
+          vehicle_or_cr: formData.vehicle_or_cr
+        })
         .eq('id', user.id)
-
+      console.log(formData)
       if (updateError) throw updateError
 
-      navigation.goBack()
+      navigation.navigate('Profile')
     } catch (error) {
       console.error('Error submitting verification:', error)
     } finally {
@@ -177,7 +187,7 @@ const Verification = ({ navigation }) => {
                 Account Verified
               </Text>
               <Text style={[styles.verifiedSubtext, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-                Your account has been verified. You can now access all features of the application.
+                Your account has been verified.
               </Text>
             </View>
           </Card.Content>
@@ -209,14 +219,44 @@ const Verification = ({ navigation }) => {
             Government ID Information
           </Text>
           
-          <TextInput
-            label="ID Type"
-            value={formData.gov_id_type}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, gov_id_type: text }))}
-            style={styles.input}
-            mode="outlined"
-            theme={{ colors: { primary: colors.primary } }}
-          />
+          <Menu
+            visible={idTypeMenuVisible}
+            onDismiss={() => setIdTypeMenuVisible(false)}
+            anchor={
+              <TextInput
+                label="ID Type"
+                value={formData.gov_id_type}
+                editable={false}
+                style={styles.input}
+                mode="outlined"
+                right={<TextInput.Icon icon="chevron-down" onPress={() => setIdTypeMenuVisible(true)} />}
+                theme={{ colors: { primary: colors.primary } }}
+              />
+            }
+            contentStyle={{ backgroundColor: colors.surface }}
+          >
+            {idTypes.map((type) => (
+              <Menu.Item
+                key={type.id}
+                onPress={() => {
+                  setFormData(prev => ({ 
+                    ...prev, 
+                    gov_id_type: type.id_type_name,
+                    gov_id_type_id: type.id 
+                  }))
+                  setIdTypeMenuVisible(false)
+                }}
+                title={type.id_type_name}
+                titleStyle={[
+                  fonts.bodyLarge,
+                  {
+                    color: formData.gov_id_type === type.id_type_name ? colors.primary : colors.onSurface,
+                  },
+                ]}
+                leadingIcon={formData.gov_id_type === type.id_type_name ? 'check' : undefined}
+              />
+            ))}
+          </Menu>
           
           <TextInput
             label="ID Number"

@@ -71,7 +71,7 @@ const EditProfileSubScreen = ({ navigation }) => {
     birth_date: null,
     emergency_contact_name: '',
     emergency_contact_number: '',
-    profile_picture: null,
+    pfp_id: null,
   })
 
   const [errors, setErrors] = useState({})
@@ -167,7 +167,7 @@ const EditProfileSubScreen = ({ navigation }) => {
 
       if (!result.canceled) {
         setImage(result.assets[0].uri)
-        handleChange('profile_picture', result.assets[0].uri)
+        handleChange('pfp_id', result.assets[0].uri)
       }
     } catch (error) {
       showSnackbar('Error picking image: ' + error.message)
@@ -273,10 +273,10 @@ const EditProfileSubScreen = ({ navigation }) => {
         return
       }
 
-      // Get current profile data including role_id and profile_picture
+      // Get current profile data including role_id and pfp_id
       const { data: currentProfile, error: profileError } = await supabase
         .from('profiles')
-        .select('role_id, profile_picture')
+        .select('role_id, pfp_id')
         .eq('id', user.id)
         .single()
 
@@ -284,15 +284,15 @@ const EditProfileSubScreen = ({ navigation }) => {
         throw profileError
       }
 
-      let profile_picture = null
+      let pfp_id = null
 
       if (image) {
         // Upload new image if one is selected
         const uploadedUrl = await uploadImage()
         if (uploadedUrl) {
-          profile_picture = uploadedUrl
+          pfp_id = uploadedUrl
         }
-      } else if (currentProfile.profile_picture) {
+      } else if (currentProfile.pfp_id) {
         // If no new image and there's an existing one, delete it
         let folder
         switch (currentProfile.role_id) {
@@ -319,7 +319,7 @@ const EditProfileSubScreen = ({ navigation }) => {
         }
       }
 
-      if (!form.profile_picture && currentProfile.profile_picture) {
+      if (!form.pfp_id && currentProfile.pfp_id) {
         let folder
         switch (currentProfile.role_id) {
           case 1:
@@ -355,7 +355,7 @@ const EditProfileSubScreen = ({ navigation }) => {
           birth_date: form.birth_date,
           emergency_contact_name: form.emergency_contact_name,
           emergency_contact_number: form.emergency_contact_number,
-          profile_picture: form.profile_picture,
+          pfp_id: form.pfp_id,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id)
@@ -403,7 +403,7 @@ const EditProfileSubScreen = ({ navigation }) => {
         birth_date: data.birth_date ? new Date(data.birth_date) : null,
         emergency_contact_name: data.emergency_contact_name || '',
         emergency_contact_number: data.emergency_contact_number || '',
-        profile_picture: data.profile_picture || null,
+        pfp_id: data.pfp_id || null,
       })
     } catch (error) {
       showSnackbar('Error loading profile')
@@ -473,10 +473,10 @@ const EditProfileSubScreen = ({ navigation }) => {
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
           <View style={styles.profileContainer}>
-            {form.profile_picture ? (
+            {form.pfp_id ? (
               <ImagePreview 
-                uri={form.profile_picture} 
-                onRemove={() => handleChange('profile_picture', null)} 
+                uri={form.pfp_id} 
+                onRemove={() => handleChange('pfp_id', null)} 
               />
             ) : (
               <Avatar.Text size={80} label={(form.first_name || 'N')[0].toUpperCase()} />
@@ -488,7 +488,7 @@ const EditProfileSubScreen = ({ navigation }) => {
               textColor={colors.primary}
               disabled={saving}
             >
-              {form.profile_picture ? 'Change Profile Picture' : 'Upload Profile Picture'}
+              {form.pfp_id ? 'Change Profile Picture' : 'Upload Profile Picture'}
             </Button>
           </View>
 
@@ -717,7 +717,7 @@ const styles = StyleSheet.create({
     right: -8,
     zIndex: 1000
   },
-  profile: {
+  profilePictureButton: {
     marginTop: 8,
   },
 })

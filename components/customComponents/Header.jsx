@@ -16,7 +16,7 @@ const Header = ({ navigation, title }) => {
 
             const { data, error } = await supabase
                 .from('profiles')
-                .select('first_name, profile_picture')
+                .select('first_name, pfp_id')
                 .eq('id', user.id)
                 .single()
 
@@ -26,7 +26,7 @@ const Header = ({ navigation, title }) => {
             }
 
             setFirstName(data?.first_name || '')
-            setProfilePicture(data?.profile_picture || null)
+            setProfilePicture(data?.pfp_id || null)
         } catch (error) {
             console.error('Error in fetchUserProfile:', error)
         }

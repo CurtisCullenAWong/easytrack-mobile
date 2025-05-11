@@ -90,11 +90,11 @@ const Profile = ({ navigation }) => {
       {/* User Info Card */}
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
         <Card.Content style={styles.cardContent}>
-          {profile?.profile_picture ? (
+          {profile?.pfp_id ? (
             <Avatar.Image
               size={60}
               source={{ 
-                uri: profile.profile_picture,
+                uri: profile.pfp_id,
                 cache: 'reload'
               }}
               style={[styles.profile, { borderColor: colors.background }]}
@@ -209,7 +209,7 @@ const Profile = ({ navigation }) => {
         <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
         <Card.Content>
           <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-            Status: {profile?.verify_status_id === 1 ? 'Verified' : 'Not Verified'}
+            Status: {profile?.verify_status?.status_name || 'N/A'}
           </Text>
           
           {profile?.verify_status_id === 1 ? (
@@ -252,6 +252,8 @@ const Profile = ({ navigation }) => {
               )}
             </>
           ) : (
+            <>
+            {profile?.verify_status_id === 3 ? (<></>):(
             <Button
               icon="check-circle"
               mode="contained"
@@ -261,6 +263,8 @@ const Profile = ({ navigation }) => {
             >
               Verify Account
             </Button>
+            )}
+            </> 
           )}
         </Card.Content>
       </Card>

@@ -23,13 +23,14 @@ const UserManagement = ({ navigation }) => {
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchColumn, setSearchColumn] = useState('full_name')
-  const [menuVisible, setMenuVisible] = useState(false)
+  const [filterMenuVisible, setFilterMenuVisible] = useState(false)
   const [sortColumn, setSortColumn] = useState('full_name')
   const [sortDirection, setSortDirection] = useState('ascending')
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [actionMenuVisible, setActionMenuVisible] = useState(null)
 
   const fetchUsers = async () => {
     setLoading(true)
@@ -57,7 +58,8 @@ const UserManagement = ({ navigation }) => {
       birth_date: user.birth_date || 'N/A',
       status: user.profile_status?.status_name || 'Unknown',
       role: user.profile_roles?.role_name || 'N/A',
-      verify_status: user.verify_status?.status_name || 'N/A',
+      verify_status: user.verify_status?.status_name || 'Unverified',
+      verify_status_id: user.verify_status_id,
       dateCreated: user.created_at
         ? new Date(user.created_at).toLocaleString()
         : 'N/A',
@@ -68,7 +70,7 @@ const UserManagement = ({ navigation }) => {
         ? new Date(user.updated_at).toLocaleString()
         : 'Never',  
       avatar: (user.first_name || 'N')[0].toUpperCase(),
-      profile_picture: user.profile_picture || null,
+      pfp_id: user.pfp_id || null,
     }))
 
     setUsers(formatted)
@@ -88,11 +90,23 @@ const UserManagement = ({ navigation }) => {
     sortColumn === column ? (sortDirection === 'ascending' ? '▲' : '▼') : ''
 
   const filteredAndSortedUsers = users
-    .filter(user =>
-      String(user[searchColumn] || '')
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase())
-    )
+    .filter(user => {
+      const searchValue = String(user[searchColumn] || '').toLowerCase()
+      const query = searchQuery.toLowerCase()
+      
+      // Special handling for verification status
+      if (searchColumn === 'verify_status') {
+        if (query === 'verified') {
+          return user.verify_status_id === 1
+        } else if (query === 'unverified') {
+          return user.verify_status_id === 2
+        } else if (query === 'pending') {
+          return user.verify_status_id === 3
+        }
+      }
+      
+      return searchValue.includes(query)
+    })
     .sort((a, b) => {
       const valA = a[sortColumn]
       const valB = b[sortColumn]
@@ -110,6 +124,7 @@ const UserManagement = ({ navigation }) => {
     { label: 'Email', value: 'email' },
     { label: 'Role', value: 'role' },
     { label: 'Account Status', value: 'status' },
+    { label: 'Verification Status', value: 'verify_status' },
     { label: 'Contact', value: 'contact_number' },
   ]
 
@@ -151,13 +166,13 @@ const UserManagement = ({ navigation }) => {
           Refresh
         </Button>
         <Menu
-          visible={menuVisible}
-          onDismiss={() => setMenuVisible(false)}
+          visible={filterMenuVisible}
+          onDismiss={() => setFilterMenuVisible(false)}
           anchor={
             <Button
               mode="contained"
               icon="filter-variant"
-              onPress={() => setMenuVisible(true)}
+              onPress={() => setFilterMenuVisible(true)}
               style={[styles.button, { borderColor: colors.primary }]}
               contentStyle={styles.buttonContent}
               labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
@@ -172,7 +187,7 @@ const UserManagement = ({ navigation }) => {
               key={option.value}
               onPress={() => {
                 setSearchColumn(option.value)
-                setMenuVisible(false)
+                setFilterMenuVisible(false)
               }}
               title={option.label}
               titleStyle={[
@@ -230,8 +245,8 @@ const UserManagement = ({ navigation }) => {
                 paginatedUsers.map(user => (
                   <DataTable.Row key={user.id}>
                     <DataTable.Cell style={{ width: AVATAR_COLUMN_WIDTH, justifyContent: 'center' }}>
-                      {user.profile_picture ? (
-                        <Avatar.Image size={40} source={{ uri: user.profile_picture }} />
+                      {user.pfp_id ? (
+                        <Avatar.Image size={40} source={{ uri: user.pfp_id }} />
                       ) : (
                         <Avatar.Text size={40} label={user.avatar} />
                       )}
@@ -256,16 +271,52 @@ const UserManagement = ({ navigation }) => {
                       </DataTable.Cell>
                     ))}
                     <DataTable.Cell numeric style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 8 }}>
-                      <Button
-                        mode="outlined"
-                        icon="account-edit"
-                        onPress={() => navigation.navigate('EditAccount', { userId: user.id })}
-                        style={[styles.editButton, { borderColor: colors.primary, width: 'auto' }]}
-                        contentStyle={styles.buttonContent}
-                        labelStyle={[styles.buttonLabel, { color: colors.primary }]}
+                      <Menu
+                        visible={actionMenuVisible === user.id}
+                        onDismiss={() => setActionMenuVisible(null)}
+                        anchor={
+                          <Button
+                            mode="outlined"
+                            icon="dots-vertical"
+                            onPress={() => setActionMenuVisible(user.id)}
+                            style={[styles.actionButton, { borderColor: colors.primary }]}
+                            contentStyle={styles.buttonContent}
+                            labelStyle={[styles.buttonLabel, { color: colors.primary }]}
+                          >
+                            Actions
+                          </Button>
+                        }
+                        contentStyle={{ backgroundColor: colors.surface }}
                       >
-                        Edit
-                      </Button>
+                        <Menu.Item
+                          onPress={() => {
+                            setActionMenuVisible(null)
+                            navigation.navigate('ViewProfile', { userId: user.id })
+                          }}
+                          title="View Profile"
+                          leadingIcon="eye"
+                          titleStyle={[
+                            {
+                              color: colors.onSurface,
+                            },
+                            fonts.bodyLarge,
+                          ]}
+                        />
+                        <Menu.Item
+                          onPress={() => {
+                            setActionMenuVisible(null)
+                            navigation.navigate('EditAccount', { userId: user.id })
+                          }}
+                          title="Edit Profile"
+                          leadingIcon="account-edit"
+                          titleStyle={[
+                            {
+                              color: colors.onSurface,
+                            },
+                            fonts.bodyLarge,
+                          ]}
+                        />
+                      </Menu>
                     </DataTable.Cell>
                   </DataTable.Row>
                 ))
@@ -360,9 +411,9 @@ const styles = StyleSheet.create({
   sortIcon: {
     marginLeft: 4,
   },
-  editButton: {
+  actionButton: {
     borderRadius: 8,
-    maxWidth: 100,
+    minWidth: 100,
   },
   noDataCell: {
     justifyContent: 'center',

@@ -102,9 +102,11 @@ const EditAccount = ({ route, navigation }) => {
 
   const [roleMenuVisible, setRoleMenuVisible] = useState(false)
   const [statusMenuVisible, setStatusMenuVisible] = useState(false)
+  const [verifyStatusMenuVisible, setVerifyStatusMenuVisible] = useState(false)
 
   const [roleOptions, setRoleOptions] = useState([])
   const [statusOptions, setStatusOptions] = useState([])
+  const [verifyStatusOptions, setVerifyStatusOptions] = useState([])
 
   // Validation functions
   const validateField = (field, value) => {
@@ -129,6 +131,8 @@ const EditAccount = ({ route, navigation }) => {
       case 'role':
         return !value ? VALIDATION_MESSAGES.invalidRole : ''
       case 'user_status':
+        return !value ? VALIDATION_MESSAGES.invalidStatus : ''
+      case 'verify_status':
         return !value ? VALIDATION_MESSAGES.invalidStatus : ''
       default:
         return ''
@@ -193,8 +197,8 @@ const EditAccount = ({ route, navigation }) => {
     try {
       setSaving(true)
 
-      // First get the role_id and user_status_id based on the selected names
-      const [{ data: roleData }, { data: statusData }] = await Promise.all([
+      // First get the role_id, user_status_id, and verify_status_id based on the selected names
+      const [{ data: roleData }, { data: statusData }, { data: verifyStatusData }] = await Promise.all([
         supabase
           .from('profiles_roles')
           .select('id')
@@ -204,11 +208,16 @@ const EditAccount = ({ route, navigation }) => {
           .from('profiles_status')
           .select('id')
           .eq('status_name', user.user_status)
+          .single(),
+        supabase
+          .from('verify_status')
+          .select('id')
+          .eq('status_name', user.verify_status)
           .single()
       ])
 
-      if (!roleData || !statusData) {
-        showSnackbar('Error: Invalid role or status selected')
+      if (!roleData || !statusData || !verifyStatusData) {
+        showSnackbar('Error: Invalid role, status, or verification status selected')
         return
       }
 
@@ -223,10 +232,11 @@ const EditAccount = ({ route, navigation }) => {
           birth_date: user.birth_date,
           role_id: roleData.id,
           user_status_id: statusData.id,
+          verify_status_id: verifyStatusData.id,
           updated_at: new Date().toISOString(),
         })
         .eq('id', userId)
-
+        console.log(verifyStatusData.id)
       if (error) {
         showSnackbar('Error updating user: ' + error.message)
         return
@@ -245,18 +255,20 @@ const EditAccount = ({ route, navigation }) => {
     const fetchData = async () => {
       setLoading(true)
       try {
-        const [{ data: userData, error: userError }, { data: roles }, { data: statuses }] = await Promise.all([
+        const [{ data: userData, error: userError }, { data: roles }, { data: statuses }, { data: verifyStatuses }] = await Promise.all([
           supabase
             .from('profiles')
             .select(`
               *,
               profile_status:user_status_id (status_name),
-              profile_roles:role_id (role_name)
+              profile_roles:role_id (role_name),
+              verify_status:verify_status_id (status_name)
             `)
             .eq('id', userId)
             .single(),
           supabase.from('profiles_roles').select('role_name'),
           supabase.from('profiles_status').select('status_name').in('id', [4, 5]),
+          supabase.from('verify_status').select('status_name').in('id', [1, 4])
         ])
 
         if (userError) {
@@ -268,11 +280,13 @@ const EditAccount = ({ route, navigation }) => {
           ...userData,
           role: userData.profile_roles?.role_name,
           user_status: userData.profile_status?.status_name,
+          verify_status: userData.verify_status?.status_name,
           birth_date: userData.birth_date ? new Date(userData.birth_date) : null,
         })
 
         if (roles) setRoleOptions(roles.map(r => r.role_name))
         if (statuses) setStatusOptions(statuses.map(s => s.status_name))
+        if (verifyStatuses) setVerifyStatusOptions(verifyStatuses.map(s => s.status_name))
       } catch (error) {
         showSnackbar('Error loading user data')
       } finally {
@@ -322,6 +336,22 @@ const EditAccount = ({ route, navigation }) => {
         fonts={fonts}
       />
     )), [statusOptions, user?.user_status, colors, fonts])
+
+  // Memoize the verification status menu items
+  const verifyStatusMenuItems = useMemo(() => 
+    verifyStatusOptions.map(status => (
+      <MemoizedMenuItem
+        key={status}
+        item={status}
+        selected={user?.verify_status === status}
+        onPress={() => {
+          handleChange('verify_status', status)
+          setVerifyStatusMenuVisible(false)
+        }}
+        colors={colors}
+        fonts={fonts}
+      />
+    )), [verifyStatusOptions, user?.verify_status, colors, fonts])
 
   if (loading) {
     return (
@@ -510,6 +540,26 @@ const EditAccount = ({ route, navigation }) => {
               contentStyle={{ backgroundColor: colors.surface }}
             >
               {statusMenuItems}
+            </Menu>
+
+            <Menu
+              visible={verifyStatusMenuVisible}
+              onDismiss={() => setVerifyStatusMenuVisible(false)}
+              anchor={
+                <TextInput
+                  label="Verification Status"
+                  value={user?.verify_status || ''}
+                  editable={false}
+                  mode="outlined"
+                  style={styles.input}
+                  right={<TextInput.Icon icon="shield-check" onPress={() => setVerifyStatusMenuVisible(true)} />}
+                  error={!!errors.verify_status}
+                  helperText={errors.verify_status}
+                />
+              }
+              contentStyle={{ backgroundColor: colors.surface }}
+            >
+              {verifyStatusMenuItems}
             </Menu>
           </Surface>
         </ScrollView>
