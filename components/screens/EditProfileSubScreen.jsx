@@ -284,40 +284,14 @@ const EditProfileSubScreen = ({ navigation }) => {
         throw profileError
       }
 
-      if (image) {
-        // Upload new image if one is selected
-        // const uploadedUrl = await uploadImage()
-        // if (uploadedUrl) {
-        //   let pfp_id = uploadedUrl
-        // }
-      } else if (currentProfile['pfp-id']) {
-        // If no new image and there's an existing one, delete it
-        let folder
-        switch (currentProfile.role_id) {
-          case 1:
-            folder = 'admin'
-            break
-          case 2:
-            folder = 'airlines'
-            break
-          case 3:
-            folder = 'delivery'
-            break
-        }
-
-        if (folder) {
-          const filePath = `${folder}/${user.id}.png`
-          const { error: deleteError } = await supabase.storage
-            .from('profile-images')
-            .remove([filePath])
-
-          if (deleteError && !deleteError.message.includes('not found')) {
-            console.error('Error deleting existing file:', deleteError)
-          }
-        }
+      // If there's a new image, upload it and get the signed URL
+      let newPfpId = form['pfp-id']
+      if (image?.startsWith('file://')) {
+        newPfpId = await uploadImage()
       }
 
-      if (!form['pfp-id'] && currentProfile['pfp-id']) {
+      // If no new image and there's an existing one, delete it
+      if (!newPfpId && currentProfile['pfp-id']) {
         let folder
         switch (currentProfile.role_id) {
           case 1:
@@ -353,7 +327,7 @@ const EditProfileSubScreen = ({ navigation }) => {
           birth_date: form.birth_date,
           emergency_contact_name: form.emergency_contact_name,
           emergency_contact_number: form.emergency_contact_number,
-          'pfp-id': form['pfp-id'],
+          'pfp-id': newPfpId,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id)

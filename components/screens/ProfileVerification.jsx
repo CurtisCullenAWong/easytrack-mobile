@@ -68,7 +68,9 @@ const Verification = ({ navigation }) => {
 
       // If verification data exists, load it into the form
       if (data) {
-        setFormData({
+        console.log('Loaded verification data:', data) // Debug log
+        setFormData(prev => ({
+          ...prev,
           gov_id_type: data.verify_info_type?.id_type_name || '',
           gov_id_type_id: data.gov_id_type || null,
           gov_id_number: data.gov_id_number || '',
@@ -76,7 +78,7 @@ const Verification = ({ navigation }) => {
           vehicle_info: data.vehicle_info || '',
           vehicle_plate_number: data.vehicle_plate_number || '',
           vehicle_or_cr: data.vehicle_or_cr || null
-        })
+        }))
       }
     } catch (error) {
       console.error('Error checking verification status:', error)
