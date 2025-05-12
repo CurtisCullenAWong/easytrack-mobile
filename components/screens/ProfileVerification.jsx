@@ -266,7 +266,7 @@ const Verification = ({ navigation }) => {
           >
             {formData.gov_id_proof ? 'Change ID Proof' : 'Upload ID Proof'}
           </Button>
-
+          {formData?.role_id === 3 ? (<></>):(<>
           {/* Vehicle Information Section */}
           <Text style={[styles.label, { color: colors.onSurface, ...fonts.titleMedium, marginTop: 20 }]}>
             Vehicle Information
@@ -288,7 +288,7 @@ const Verification = ({ navigation }) => {
             style={styles.input}
             mode="outlined"
             theme={{ colors: { primary: colors.primary } }}
-          />
+          />  
 
           <ImagePreview 
             uri={formData.vehicle_or_cr} 
@@ -303,6 +303,7 @@ const Verification = ({ navigation }) => {
           >
             {formData.vehicle_or_cr ? 'Change OR/CR Document' : 'Upload OR/CR Document'}
           </Button>
+          </>)}
         </Card.Content>
       </Card>
 
