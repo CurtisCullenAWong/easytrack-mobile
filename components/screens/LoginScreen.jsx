@@ -9,36 +9,26 @@ const LoginScreen = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const [modalVisible, setModalVisible] = useState(false)
   const [isResetPasswordModal, setIsResetPasswordModal] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
   const [showLoginUI, setShowLoginUI] = useState(false)
   const { checkSession } = useAuth(navigation)
 
   useEffect(() => {
     const checkAuth = async () => {
-      try {
-        const hasSession = await checkSession()
-        setShowLoginUI(!hasSession)
-      } finally {
-        setIsLoading(false)
-      }
+
+      const hasSession = await checkSession()
+      setShowLoginUI(!hasSession)
+      
     }
     checkAuth()
   }, [])
 
-  // Show loading screen while checking session
-  if (isLoading) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    )
-  }
 
   // Don't render anything if we're not showing the login UI
   if (!showLoginUI) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center' }]}>
-        <Text>Credentials are invalid, please clear app data and try again.</Text>
+        <Text style={{ color: colors.primary, ...fonts.titleMedium }}>Please wait while we check your session.</Text>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -108,6 +98,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   bannerImage: {
     alignSelf: 'center',

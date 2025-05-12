@@ -232,6 +232,7 @@ const Profile = ({ navigation }) => {
                   />
                 </View>
               )}
+              {profile?.role_id === 3 ? (<></>):(<>
               <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
                 Vehicle Description: {profile?.vehicle_info || 'N/A'}
               </Text>
@@ -250,6 +251,7 @@ const Profile = ({ navigation }) => {
                   />
                 </View>
               )}
+              </>)}
               <Button
                     icon="check-circle"
                     mode="contained"

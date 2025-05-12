@@ -4,6 +4,7 @@ import useSnackbar from './useSnackbar'
 const useAuth = (navigation, onClose) => {
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
+  // Verify user login
   const handleLogin = async (user) => {
     const { data: profile, error } = await supabase
       .from('profiles')
@@ -41,6 +42,7 @@ const useAuth = (navigation, onClose) => {
     onClose?.()
   }
 
+  // Login user
   const login = async ({ email, password }) => {
     if (!email || !password) {
       return showSnackbar('Email and password are required.')
@@ -54,7 +56,7 @@ const useAuth = (navigation, onClose) => {
 
     handleLogin(data.user)
   }
-
+// Send password reset email
   const resetPassword = async (email) => {
     if (!email) {
       return showSnackbar('Email is required for password reset.')
@@ -72,6 +74,7 @@ const useAuth = (navigation, onClose) => {
     onClose?.()
   }
 
+  // Check if user is logged in
   const checkSession = async () => {
     const { data } = await supabase.auth.getSession()
     const session = data?.session

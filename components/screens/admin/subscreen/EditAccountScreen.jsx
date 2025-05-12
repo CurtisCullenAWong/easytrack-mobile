@@ -23,7 +23,6 @@ import { DatePickerModal, en, registerTranslation } from 'react-native-paper-dat
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../../components/hooks/useSnackbar'
 
-// Register the English locale
 registerTranslation('en', en)
 
 // Validation patterns
@@ -541,26 +540,27 @@ const EditAccount = ({ route, navigation }) => {
             >
               {statusMenuItems}
             </Menu>
-
-            <Menu
-              visible={verifyStatusMenuVisible}
-              onDismiss={() => setVerifyStatusMenuVisible(false)}
-              anchor={
-                <TextInput
-                  label="Verification Status"
-                  value={user?.verify_status || ''}
-                  editable={false}
-                  mode="outlined"
-                  style={styles.input}
-                  right={<TextInput.Icon icon="shield-check" onPress={() => setVerifyStatusMenuVisible(true)} />}
-                  error={!!errors.verify_status}
-                  helperText={errors.verify_status}
-                />
-              }
-              contentStyle={{ backgroundColor: colors.surface }}
-            >
-              {verifyStatusMenuItems}
-            </Menu>
+            {user.role_id === 2 || user.role_id === 3 ? (<>
+              <Menu
+                visible={verifyStatusMenuVisible}
+                onDismiss={() => setVerifyStatusMenuVisible(false)}
+                anchor={
+                  <TextInput
+                    label="Verification Status"
+                    value={user?.verify_status || ''}
+                    editable={false}
+                    mode="outlined"
+                    style={styles.input}
+                    right={<TextInput.Icon icon="shield-check" onPress={() => setVerifyStatusMenuVisible(true)} />}
+                    error={!!errors.verify_status}
+                    helperText={errors.verify_status}
+                  />
+                }
+                contentStyle={{ backgroundColor: colors.surface }}
+              >
+                {verifyStatusMenuItems}
+              </Menu>
+            </>):(<></>)}
           </Surface>
         </ScrollView>
       </KeyboardAvoidingView>

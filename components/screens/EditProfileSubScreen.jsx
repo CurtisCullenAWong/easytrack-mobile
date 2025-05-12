@@ -230,15 +230,16 @@ const EditProfileSubScreen = ({ navigation }) => {
 
       const contentType = 'image/png'
       
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('profile-images')
         .upload(filePath, decode(base64), { 
           contentType,
-          upsert: true // This will overwrite if file exists
+          upsert: true
         })
     
       if (error) {
-        throw error
+        showSnackbar('Error uploading image: ' + error.message)
+        return null
       }
 
       // Get a signed URL that's valid for a long time (e.g., 1 year)
@@ -396,25 +397,6 @@ const EditProfileSubScreen = ({ navigation }) => {
     setErrors(prev => ({ ...prev, [field]: error }))
   }
 
-  const ImagePreview = ({ uri, onRemove }) => {
-    if (!uri) return null
-    return (
-      <View style={styles.imagePreviewContainer}>
-        <Image 
-          source={{ uri }} 
-          style={styles.imagePreview}
-          resizeMode="cover"
-        />
-        <IconButton
-          icon="close-circle"
-          size={20}
-          iconColor={colors.error}
-          style={[styles.removeImageButton, { backgroundColor: colors.surface }]}
-          onPress={onRemove}
-        />
-      </View>
-    )
-  }
 
   if (loading) {
     return (
@@ -446,10 +428,22 @@ const EditProfileSubScreen = ({ navigation }) => {
         <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
           <View style={styles.profileContainer}>
             {form['pfp-id'] ? (
-              <ImagePreview 
-                uri={form['pfp-id']} 
-                onRemove={() => handleChange('pfp-id', null)} 
-              />
+              <>
+              <View style={styles.imagePreviewContainer}>
+                <Image 
+                  source={{ uri: form['pfp-id'] }} 
+                  style={styles.imagePreview}
+                  resizeMode="cover"
+                />
+                <IconButton
+                  icon="close-circle"
+                  size={20}
+                  iconColor={colors.error}
+                  style={[styles.removeImageButton, { backgroundColor: colors.surface }]}
+                  onPress={() => handleChange('pfp-id', null)}
+                />
+              </View>
+              </>
             ) : (
               <Avatar.Text size={80} label={(form.first_name || 'N')[0].toUpperCase()} />
             )}

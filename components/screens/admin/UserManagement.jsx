@@ -112,11 +112,11 @@ const UserManagement = ({ navigation }) => {
       const valB = b[sortColumn]
 
       // Special handling for date columns
-      if (['dateCreated', 'lastLogin', 'lastUpdated'].includes(sortColumn)) {
+      if (['birth_date','dateCreated', 'lastLogin', 'lastUpdated'].includes(sortColumn)) {
         // If either value is 'Never', handle special case
-        if (valA === 'Never' && valB === 'Never') return 0
-        if (valA === 'Never') return -1
-        if (valB === 'Never') return 1
+        if (valA === 'Never' && valB === 'Never' || valA === 'N/A' && valB === 'N/A') return 0
+        if (valA === 'Never' || valA === 'N/A') return -1
+        if (valB === 'Never' || valB === 'N/A') return 1
         
         // For actual dates, compare them normally
         if (valA < valB) return sortDirection === 'ascending' ? -1 : 1

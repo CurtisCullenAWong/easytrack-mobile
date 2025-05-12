@@ -23,6 +23,7 @@ const Verification = ({ navigation }) => {
     vehicle_plate_number: '',
     vehicle_or_cr: null
   })
+  const [roleId, setRoleId] = useState(null)
 
   // Check verification status and fetch ID types on mount
   useEffect(() => {
@@ -59,16 +60,18 @@ const Verification = ({ navigation }) => {
           vehicle_info,
           vehicle_plate_number,
           vehicle_or_cr,
+          role_id,
           verify_info_type:gov_id_type (id_type_name)
         `)
         .eq('id', user.id)
         .single()
+        setRoleId(data?.role_id)
 
       if (error) throw error
 
       // If verification data exists, load it into the form
       if (data) {
-        console.log('Loaded verification data:', data) // Debug log
+        console.log('\nLoaded verification data:', data) // Debug log
         setFormData(prev => ({
           ...prev,
           gov_id_type: data.verify_info_type?.id_type_name || '',
@@ -266,7 +269,7 @@ const Verification = ({ navigation }) => {
           >
             {formData.gov_id_proof ? 'Change ID Proof' : 'Upload ID Proof'}
           </Button>
-          {formData?.role_id === 3 ? (<></>):(<>
+          {roleId === 3 ? (<></>):(<>
           {/* Vehicle Information Section */}
           <Text style={[styles.label, { color: colors.onSurface, ...fonts.titleMedium, marginTop: 20 }]}>
             Vehicle Information

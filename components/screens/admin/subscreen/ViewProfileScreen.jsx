@@ -253,34 +253,36 @@ const ViewProfileScreen = ({ route, navigation }) => {
                     </View>
                   </View>
                 )}
-                <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-                  Vehicle Description: {user.vehicle_info || 'N/A'}
-                </Text>
-                <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-                  Plate Number: {user.vehicle_plate_number || 'N/A'}
-                </Text>
-                {user.vehicle_or_cr ? (
-                  <View style={styles.imageContainer}>
-                    <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-                      OR/CR Document:
-                    </Text>
-                    <Image
-                      source={{ uri: user.vehicle_or_cr }}
-                      style={[styles.verificationImage, { aspectRatio: 16/9 }]}
-                      resizeMode="contain"
-                    />
-                  </View>
-                ) : (
-                  <View style={styles.imageContainer}>
-                    <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-                      OR/CR Document:
-                    </Text>
-                    <View style={[styles.placeholderImage, { backgroundColor: colors.surfaceVariant }]}>
-                      <Text style={[styles.placeholderText, { color: colors.onSurfaceVariant }]}>No OR/CR Uploaded</Text>
+                {user.role_id === 3 ? (<></>):(<>
+                  <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+                    Vehicle Description: {user.vehicle_info || 'N/A'}
+                  </Text>
+                  <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+                    Plate Number: {user.vehicle_plate_number || 'N/A'}
+                  </Text>
+                  {user.vehicle_or_cr ? (
+                    <View style={styles.imageContainer}>
+                      <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+                        OR/CR Document:
+                      </Text>
+                      <Image
+                        source={{ uri: user.vehicle_or_cr }}
+                        style={[styles.verificationImage, { aspectRatio: 16/9 }]}
+                        resizeMode="contain"
+                      />
                     </View>
-                  </View>
-                )}
-              </>
+                  ) : (
+                    <View style={styles.imageContainer}>
+                      <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+                        OR/CR Document:
+                      </Text>
+                      <View style={[styles.placeholderImage, { backgroundColor: colors.surfaceVariant }]}>
+                        <Text style={[styles.placeholderText, { color: colors.onSurfaceVariant }]}>No OR/CR Uploaded</Text>
+                      </View>
+                    </View>
+                  )}
+                  </>)}
+                </>
             ) : (
                 <></>
             )}
