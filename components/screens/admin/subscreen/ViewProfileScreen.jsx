@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ScrollView, View, StyleSheet } from 'react-native'
+import { ScrollView, View, StyleSheet, Image } from 'react-native'
 import {
   Text,
   useTheme,
@@ -126,10 +126,10 @@ const ViewProfileScreen = ({ route, navigation }) => {
       {/* User Info Card */}
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
         <Card.Content style={styles.cardContent}>
-          {user.pfp_id ? (
+          {user['pfp-id'] ? (
             <Avatar.Image
               size={60}
-              source={{ uri: user.pfp_id }}
+              source={{ uri: user['pfp-id'] }}
               style={[styles.profile, { borderColor: colors.background }]}
             />
           ) : (
@@ -237,10 +237,10 @@ const ViewProfileScreen = ({ route, navigation }) => {
                     <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
                       ID Proof:
                     </Text>
-                    <Avatar.Image
-                      size={150}
+                    <Image
                       source={{ uri: user.gov_id_proof }}
                       style={[styles.verificationImage, { aspectRatio: 16/9 }]}
+                      resizeMode="contain"
                     />
                   </View>
                 ) : (
@@ -264,10 +264,10 @@ const ViewProfileScreen = ({ route, navigation }) => {
                     <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
                       OR/CR Document:
                     </Text>
-                    <Avatar.Image
-                      size={150}
+                    <Image
                       source={{ uri: user.vehicle_or_cr }}
                       style={[styles.verificationImage, { aspectRatio: 16/9 }]}
+                      resizeMode="contain"
                     />
                   </View>
                 ) : (

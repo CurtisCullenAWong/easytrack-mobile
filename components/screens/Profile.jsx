@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { ScrollView, View, StyleSheet } from 'react-native'
+import { ScrollView, View, StyleSheet, Image } from 'react-native'
 import { Avatar, Card, Text, Divider, Button, useTheme, ActivityIndicator } from 'react-native-paper'
 import Header from '../customComponents/Header'
 import { supabase } from '../../lib/supabase'
@@ -90,11 +90,11 @@ const Profile = ({ navigation }) => {
       {/* User Info Card */}
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
         <Card.Content style={styles.cardContent}>
-          {profile?.pfp_id ? (
+          {profile?.['pfp-id'] ? (
             <Avatar.Image
               size={60}
               source={{ 
-                uri: profile.pfp_id,
+                uri: profile['pfp-id'],
                 cache: 'reload'
               }}
               style={[styles.profile, { borderColor: colors.background }]}
@@ -225,10 +225,10 @@ const Profile = ({ navigation }) => {
                   <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
                     ID Proof:
                   </Text>
-                  <Avatar.Image
-                    size={100}
-                    source={{ uri: profile.verify_status.gov_id_proof }}
-                    style={styles.verificationImage}
+                  <Image
+                    source={{ uri: profile.gov_id_proof }}
+                    style={[styles.verificationImage, { aspectRatio: 16/9 }]}
+                    resizeMode="contain"
                   />
                 </View>
               )}
@@ -243,17 +243,26 @@ const Profile = ({ navigation }) => {
                   <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
                     OR/CR Document:
                   </Text>
-                  <Avatar.Image
-                    size={100}
-                    source={{ uri: profile.verify_status.vehicle_or_cr }}
-                    style={styles.verificationImage}
+                  <Image
+                    source={{ uri: profile.vehicle_or_cr }}
+                    style={[styles.verificationImage, { aspectRatio: 16/9 }]}
+                    resizeMode="contain"
                   />
                 </View>
               )}
+              <Button
+                    icon="check-circle"
+                    mode="contained"
+                    style={[styles.button, { backgroundColor: colors.primary, marginTop: 16 }]}
+                    onPress={() => navigation.navigate('Verification')}
+                    labelStyle={[{ color: colors.onPrimary, ...fonts.labelLarge }]}
+                  >
+                    Reverify Account
+              </Button>
             </>
           ) : (
             <>
-            {profile?.verify_status_id === 3 ? (<></>):(
+            {profile?.verify_status_id === 2 || profile?.verify_status_id === 4 ? (
             <Button
               icon="check-circle"
               mode="contained"
@@ -263,6 +272,8 @@ const Profile = ({ navigation }) => {
             >
               Verify Account
             </Button>
+            ):(
+            <></>
             )}
             </> 
           )}
@@ -337,10 +348,13 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     marginVertical: 8,
+    alignItems: 'center',
   },
   verificationImage: {
     marginTop: 8,
-    alignSelf: 'center',
+    width: '100%',
+    height: undefined,
+    borderRadius: 8,
   },
 })
 

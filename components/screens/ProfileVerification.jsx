@@ -9,7 +9,6 @@ const Verification = ({ navigation }) => {
   
   // State management
   const [loading, setLoading] = useState(false)
-  const [verifyStatus, setVerifyStatus] = useState(null)
   const [showImageSourceDialog, setShowImageSourceDialog] = useState(false)
   const [showPermissionDialog, setShowPermissionDialog] = useState(false)
   const [currentImageType, setCurrentImageType] = useState(null)
@@ -52,12 +51,33 @@ const Verification = ({ navigation }) => {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('verify_status_id')
+        .select(`
+          verify_status_id,
+          gov_id_type,
+          gov_id_number,
+          gov_id_proof,
+          vehicle_info,
+          vehicle_plate_number,
+          vehicle_or_cr,
+          verify_info_type:gov_id_type (id_type_name)
+        `)
         .eq('id', user.id)
         .single()
 
       if (error) throw error
-      setVerifyStatus(data.verify_status_id)
+
+      // If verification data exists, load it into the form
+      if (data) {
+        setFormData({
+          gov_id_type: data.verify_info_type?.id_type_name || '',
+          gov_id_type_id: data.gov_id_type || null,
+          gov_id_number: data.gov_id_number || '',
+          gov_id_proof: data.gov_id_proof || null,
+          vehicle_info: data.vehicle_info || '',
+          vehicle_plate_number: data.vehicle_plate_number || '',
+          vehicle_or_cr: data.vehicle_or_cr || null
+        })
+      }
     } catch (error) {
       console.error('Error checking verification status:', error)
     }
@@ -102,11 +122,6 @@ const Verification = ({ navigation }) => {
   }
 
   const handleSubmit = async () => {
-    if (verifyStatus === 1) {
-      showSnackbar('Your account is already verified')
-      return
-    }
-
     setLoading(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -164,37 +179,6 @@ const Verification = ({ navigation }) => {
     )
   }
 
-  // Show verified state if already verified
-  if (verifyStatus === 1) {
-    return (
-      <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
-        <Appbar.Header>
-          <Appbar.BackAction onPress={() => navigation.navigate('Profile')} />
-          <Appbar.Content 
-            title="Account Verification" 
-            titleStyle={[{ color: colors.onSurface, ...fonts.titleLarge }]}
-          />
-        </Appbar.Header>
-        <Card style={[styles.card, { backgroundColor: colors.surface }]}>
-          <Card.Content>
-            <View style={styles.verifiedContainer}>
-              <IconButton
-                icon="check-circle"
-                size={64}
-                iconColor={colors.primary}
-              />
-              <Text style={[styles.verifiedText, { color: colors.onSurface, ...fonts.headlineMedium }]}>
-                Account Verified
-              </Text>
-              <Text style={[styles.verifiedSubtext, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-                Your account has been verified.
-              </Text>
-            </View>
-          </Card.Content>
-        </Card>
-      </ScrollView>
-    )
-  }
 
   return (
     <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
@@ -408,7 +392,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     alignSelf: 'center',
     width: '100%',
-    aspectRatio: 4/3,
+    aspectRatio: 16/9,
     backgroundColor: '#f0f0f0',
     borderRadius: 8,
     overflow: 'hidden',

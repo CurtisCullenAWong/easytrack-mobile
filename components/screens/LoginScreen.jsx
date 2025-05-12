@@ -36,7 +36,11 @@ const LoginScreen = ({ navigation }) => {
 
   // Don't render anything if we're not showing the login UI
   if (!showLoginUI) {
-    return null
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center' }]}>
+        <Text>Credentials are invalid, please clear app data and try again.</Text>
+      </View>
+    )
   }
 
   const showModal = () => setModalVisible(true)

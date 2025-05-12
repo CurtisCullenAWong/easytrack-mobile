@@ -389,8 +389,8 @@ const EditAccount = ({ route, navigation }) => {
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
             <View style={styles.avatarContainer}>
-              {user.avatar_url ? (
-                <Avatar.Image size={80} source={{ uri: user.avatar_url }} />
+              {user['pfp-id'] ? (
+                <Avatar.Image size={80} source={{ uri: user['pfp-id'] }} />
               ) : (
                 <Avatar.Text size={80} label={(user.first_name || 'N')[0].toUpperCase()} />
               )}
