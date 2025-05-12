@@ -110,6 +110,21 @@ const UserManagement = ({ navigation }) => {
     .sort((a, b) => {
       const valA = a[sortColumn]
       const valB = b[sortColumn]
+
+      // Special handling for date columns
+      if (['dateCreated', 'lastLogin', 'lastUpdated'].includes(sortColumn)) {
+        // If either value is 'Never', handle special case
+        if (valA === 'Never' && valB === 'Never') return 0
+        if (valA === 'Never') return -1
+        if (valB === 'Never') return 1
+        
+        // For actual dates, compare them normally
+        if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
+        if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
+        return 0
+      }
+
+      // Default sorting for non-date columns
       if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
       if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
       return 0
