@@ -7,7 +7,7 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
   const { login, resetPassword, SnackbarElement } = useAuth(navigation, onClose)
   const [credentials, setCredentials] = useState({ email: '', password: '' })
   const [visibility, setVisibility] = useState({ password: false })
-
+  const [isLoading, setIsLoading] = useState(false)
   const handleChange = (field, value) => {
     setCredentials(prev => ({ ...prev, [field]: value }))
   }
@@ -39,7 +39,9 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
   }
 
   const handleLogin = () => {
+    setIsLoading(true)
     login(credentials)
+    setIsLoading(false)
   }
 
   return (
@@ -64,6 +66,7 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
           onPress={handleResetPassword}
           style={[styles.button, { backgroundColor: colors.primary }]}
           labelStyle={[fonts.titleMedium, { color: colors.onPrimary }]}
+          loading={isLoading}
         >
           Send Reset Email
         </Button>
@@ -75,6 +78,7 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
             onPress={handleLogin}
             style={[styles.button, { backgroundColor: colors.primary }]}
             labelStyle={[fonts.titleMedium, { color: colors.onPrimary }]}
+            loading={isLoading}
           >
             Login
           </Button>

@@ -63,7 +63,7 @@ const InfoCard = React.memo(({ title, data, colors, fonts }) => (
 
 // Verification Card Component
 const VerificationCard = React.memo(({ profile, colors, fonts, navigation }) => {
-  if (!profile || (profile.role_id !== 2 && profile.role_id !== 3)) return null
+  if (!profile || profile.verify_status_id === 5 || (profile.role_id !== 2 && profile.role_id !== 3 )) return null
 
   const renderVerificationContent = () => {
     if (profile.verify_status_id === 1) {

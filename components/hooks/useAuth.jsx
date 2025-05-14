@@ -17,7 +17,7 @@ const useAuth = (navigation, onClose) => {
     }
 
     // Check for account status if pending or deactivated
-    if (profile.user_status_id === 3 || profile.user_status_id === 4) {
+    if (profile.user_status_id === 3 || profile.user_status_id === 5) {
       return showSnackbar('Your account is not active. Please contact support.')
     }
 

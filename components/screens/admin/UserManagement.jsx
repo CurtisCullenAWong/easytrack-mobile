@@ -55,7 +55,6 @@ const UserManagement = ({ navigation }) => {
       email: user.email,
       full_name: `${user.first_name || ''} ${user.middle_initial || ''} ${user.last_name || ''}`.trim(),
       contact_number: user.contact_number || 'N/A',
-      birth_date: user.birth_date || 'N/A',
       status: user.profile_status?.status_name || 'Unknown',
       role: user.profile_roles?.role_name || 'N/A',
       verify_status: user.verify_status?.status_name || 'Unverified',
@@ -116,7 +115,7 @@ const UserManagement = ({ navigation }) => {
       const valB = b[sortColumn]
 
       // Special handling for date columns
-      if (['birth_date','dateCreated', 'lastLogin', 'lastUpdated'].includes(sortColumn)) {
+      if (['dateCreated', 'lastLogin', 'lastUpdated'].includes(sortColumn)) {
         // If either value is 'Never' or 'N/A', handle special case
         if (valA === 'Never' || valA === 'N/A') {
           return sortDirection === 'ascending' ? -1 : 1;
@@ -154,7 +153,6 @@ const UserManagement = ({ navigation }) => {
     { key: 'full_name', label: 'Full Name', width: FULL_NAME_WIDTH },
     { key: 'email', label: 'Email', width: EMAIL_COLUMN_WIDTH },
     { key: 'contact_number', label: 'Contact Number', width: COLUMN_WIDTH },
-    { key: 'birth_date', label: 'Birth Date', width: COLUMN_WIDTH },
     { key: 'role', label: 'Role', width: COLUMN_WIDTH },
     { key: 'status', label: 'Account Status', width: COLUMN_WIDTH },
     { key: 'verify_status', label: 'Verification Status', width: COLUMN_WIDTH },
@@ -277,7 +275,6 @@ const UserManagement = ({ navigation }) => {
                       { value: user.full_name, width: FULL_NAME_WIDTH },
                       { value: user.email, width: EMAIL_COLUMN_WIDTH },
                       { value: user.contact_number, width: COLUMN_WIDTH },
-                      { value: user.birth_date, width: COLUMN_WIDTH },
                       { value: user.role, width: COLUMN_WIDTH },
                       { value: user.status, width: COLUMN_WIDTH },
                       { value: user.verify_status, width: COLUMN_WIDTH },

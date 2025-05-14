@@ -27,69 +27,70 @@ import useSnackbar from '../../../hooks/useSnackbar'
 import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system'
 import { decode } from 'base64-arraybuffer'
-import { validateProfileForm, handleTextChange } from '../../../../utils/profileValidation'
 
 registerTranslation('en', en)
 
 const EditProfileSubScreen = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
-  const [image, setImage] = useState(null)
-  const [form, setFormData] = useState({
-    first_name: '',
-    middle_initial: '',
-    last_name: '',
-    name_suffix: '',
-    contact_number: '',
-    birth_date: null,
-    emergency_contact_name: '',
-    emergency_contact_number: '',
-    pfp_id: null,
+  
+  // Combined state
+  const [state, setState] = useState({
+    loading: true,
+    saving: false,
+    image: null,
+    form: {
+      first_name: '',
+      middle_initial: '',
+      last_name: '',
+      name_suffix: '',
+      contact_number: '',
+      birth_date: null,
+      emergency_contact_name: '',
+      emergency_contact_number: '',
+      pfp_id: null,
+    },
+    inputValues: {
+      first_name: '',
+      middle_initial: '',
+      last_name: '',
+      name_suffix: '',
+      contact_number: '',
+      emergency_contact_name: '',
+      emergency_contact_number: '',
+    },
+    dialogs: {
+      confirm: false,
+      datePicker: false,
+      imageSource: false,
+    }
   })
 
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
-  const [showDatePicker, setShowDatePicker] = useState(false)
-  const [showImageSourceDialog, setShowImageSourceDialog] = useState(false)
+  // Simplified handlers
+  const updateState = (updates) => setState(prev => ({ ...prev, ...updates }))
+  const updateForm = (updates) => setState(prev => ({ ...prev, form: { ...prev.form, ...updates } }))
+  const updateInput = (updates) => setState(prev => ({ ...prev, inputValues: { ...prev.inputValues, ...updates } }))
+  const updateDialog = (dialog, value) => setState(prev => ({ ...prev, dialogs: { ...prev.dialogs, [dialog]: value } }))
+
+  const handleChange = (field, value) => {
+    updateForm({ [field]: value })
+    updateInput({ [field]: value })
+  }
 
   const handleDateConfirm = useCallback(({ date }) => {
-    if (date) {
-      const age = new Date().getFullYear() - date.getFullYear()
-      if (age < 18) {
-        showSnackbar('Must be at least 18 years old')
-        return
-      }
-      handleChange('birth_date', date)
-    }
-    setShowDatePicker(false)
-  }, [])
-
-  const handleDateDismiss = useCallback(() => {
-    setShowDatePicker(false)
-  }, [])
-
-  const openDatePicker = useCallback(() => {
-    setShowDatePicker(true)
+    if (date) handleChange('birth_date', date)
+    updateDialog('datePicker', false)
   }, [])
 
   const handleImageSource = async (source) => {
-    setShowImageSourceDialog(false)
-
+    updateDialog('imageSource', false)
     try {
-      const options = { 
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        quality: 1,
-        aspect: [1, 1],
-      }
-
       const result = source === 'camera' 
-        ? await ImagePicker.launchCameraAsync(options)
-        : await ImagePicker.launchImageLibraryAsync(options)
+        ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], allowsEditing: true, quality: 1, aspect: [1, 1] })
+        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, quality: 1, aspect: [1, 1] })
 
       if (!result.canceled) {
-        setImage(result.assets[0].uri)
+        updateState({ image: result.assets[0].uri })
         handleChange('pfp_id', result.assets[0].uri)
       }
     } catch (error) {
@@ -98,16 +99,11 @@ const EditProfileSubScreen = ({ navigation }) => {
   }
 
   const uploadImage = async () => {
-    if (!image?.startsWith('file://')) {
-      return null
-    }
+    if (!state.image?.startsWith('file://')) return null
   
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        throw new Error('User not authenticated')
-      }
+      if (!user) throw new Error('User not authenticated')
 
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -115,56 +111,31 @@ const EditProfileSubScreen = ({ navigation }) => {
         .eq('id', user.id)
         .single()
 
-      if (profileError) {
-        throw profileError
-      }
+      if (profileError) throw profileError
 
-      let folder
-      switch (profileData.role_id) {
-        case 1:
-          folder = 'admin'
-          break
-        case 2:
-          folder = 'airlines'
-          break
-        case 3:
-          folder = 'delivery'
-          break
-        default:
-          throw new Error('Invalid role')
-      }
+      const folder = {
+        1: 'admin',
+        2: 'airlines',
+        3: 'delivery'
+      }[profileData.role_id]
+
+      if (!folder) throw new Error('Invalid role')
 
       const filePath = `${folder}/${user.id}.png`
-      await supabase.storage
-        .from('profile-images')
-        .remove([filePath])
+      await supabase.storage.from('profile-images').remove([filePath])
 
-      const base64 = await FileSystem.readAsStringAsync(image, {
-        encoding: FileSystem.EncodingType.Base64,
-      })
-
-      const contentType = 'image/png'
-      
+      const base64 = await FileSystem.readAsStringAsync(state.image, { encoding: FileSystem.EncodingType.Base64 })
       const { error } = await supabase.storage
         .from('profile-images')
-        .upload(filePath, decode(base64), { 
-          contentType,
-          upsert: true
-        })
+        .upload(filePath, decode(base64), { contentType: 'image/png', upsert: true })
   
-      if (error) {
-        showSnackbar('Error uploading image: ' + error.message)
-        return null
-      }
+      if (error) throw error
 
       const { data: { signedUrl }, error: signedUrlError } = await supabase.storage
         .from('profile-images')
         .createSignedUrl(filePath, 31536000)
 
-      if (signedUrlError) {
-        	throw signedUrlError
-      }
-
+      if (signedUrlError) throw signedUrlError
       return signedUrl
     } catch (error) {
       console.error('Upload error:', error)
@@ -174,18 +145,10 @@ const EditProfileSubScreen = ({ navigation }) => {
   }
 
   const saveProfile = async () => {
-    if (!validateProfileForm(form, showSnackbar)) {
-      return
-    }
-
     try {
-      setSaving(true)
+      updateState({ saving: true })
       const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        showSnackbar('User not authenticated')
-        return
-      }
+      if (!user) throw new Error('User not authenticated')
 
       const { data: currentProfile, error: profileError } = await supabase
         .from('profiles')
@@ -193,28 +156,19 @@ const EditProfileSubScreen = ({ navigation }) => {
         .eq('id', user.id)
         .single()
 
-      if (profileError) {
-        throw profileError
-      }
+      if (profileError) throw profileError
 
-      let newPfpId = form.pfp_id
-      if (image?.startsWith('file://')) {
+      let newPfpId = state.form.pfp_id
+      if (state.image?.startsWith('file://')) {
         newPfpId = await uploadImage()
       }
 
       if (!newPfpId && currentProfile.pfp_id) {
-        let folder
-        switch (currentProfile.role_id) {
-          case 1:
-            folder = 'admin'
-            break
-          case 2:
-            folder = 'airlines'
-            break
-          case 3:
-            folder = 'delivery'
-            break
-        }
+        const folder = {
+          1: 'admin',
+          2: 'airlines',
+          3: 'delivery'
+        }[currentProfile.role_id]
 
         if (folder) {
           await supabase.storage
@@ -223,53 +177,37 @@ const EditProfileSubScreen = ({ navigation }) => {
         }
       }
 
-      // Format phone numbers with +63 prefix
-      const formattedContactNumber = form.contact_number ? `+63${form.contact_number}` : null
-      const formattedEmergencyNumber = form.emergency_contact_number ? `+63${form.emergency_contact_number}` : null
-
-      // Combine last name and suffix if suffix exists
-      const fullLastName = form.name_suffix 
-        ? `${form.last_name} ${form.name_suffix}`
-        : form.last_name
-
       const { error } = await supabase
         .from('profiles')
         .update({
-          first_name: form.first_name.trim(),
-          middle_initial: form.middle_initial.trim(),
-          last_name: fullLastName.trim(),
-          contact_number: formattedContactNumber,
-          birth_date: form.birth_date,
-          emergency_contact_name: form.emergency_contact_name.trim(),
-          emergency_contact_number: formattedEmergencyNumber,
+          first_name: state.form.first_name,
+          middle_initial: state.form.middle_initial,
+          last_name: state.form.name_suffix ? `${state.form.last_name} ${state.form.name_suffix}` : state.form.last_name,
+          contact_number: state.form.contact_number ? `+63${state.form.contact_number}` : null,
+          birth_date: state.form.birth_date,
+          emergency_contact_name: state.form.emergency_contact_name,
+          emergency_contact_number: state.form.emergency_contact_number ? `+63${state.form.emergency_contact_number}` : null,
           pfp_id: newPfpId,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id)
 
-      if (error) {
-        showSnackbar('Error updating profile: ' + error.message)
-        return
-      }
+      if (error) throw error
 
       showSnackbar('Profile updated successfully', true)
       navigation.navigate('Profile')
     } catch (error) {
-      showSnackbar('Error updating profile')
+      showSnackbar('Error updating profile: ' + error.message)
     } finally {
-      setSaving(false)
+      updateState({ saving: false })
     }
   }
 
   const fetchProfile = async () => {
     try {
-      setLoading(true)
+      updateState({ loading: true })
       const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        showSnackbar('User not authenticated')
-        return
-      }
+      if (!user) throw new Error('User not authenticated')
 
       const { data, error } = await supabase
         .from('profiles')
@@ -277,50 +215,35 @@ const EditProfileSubScreen = ({ navigation }) => {
         .eq('id', user.id)
         .single()
 
-      if (error) {
-        showSnackbar('Error fetching profile: ' + error.message)
-        return
-      }
+      if (error) throw error
 
-      // Extract suffix from last name if it exists
       const lastNameParts = data.last_name?.split(' ') || []
-      const lastName = lastNameParts[0] || ''
-      const nameSuffix = lastNameParts.slice(1).join(' ') || ''
-
-      setFormData({
+      const initialData = {
         first_name: data.first_name || '',
         middle_initial: data.middle_initial || '',
-        last_name: lastName,
-        name_suffix: nameSuffix,
+        last_name: lastNameParts[0] || '',
+        name_suffix: lastNameParts.slice(1).join(' ') || '',
         contact_number: data.contact_number?.replace('+63', '') || '',
         birth_date: data.birth_date ? new Date(data.birth_date) : null,
         emergency_contact_name: data.emergency_contact_name || '',
         emergency_contact_number: data.emergency_contact_number?.replace('+63', '') || '',
         pfp_id: data.pfp_id || null,
+      }
+
+      updateState({
+        form: initialData,
+        inputValues: { ...initialData },
+        loading: false
       })
     } catch (error) {
-      showSnackbar('Error loading profile')
-    } finally {
-      setLoading(false)
+      showSnackbar('Error loading profile: ' + error.message)
+      updateState({ loading: false })
     }
   }
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchProfile()
-    }, [])
-  )
+  useFocusEffect(useCallback(() => { fetchProfile() }, []))
 
-  const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
-
-  const handleInputChange = (field, value) => {
-    const sanitizedValue = handleTextChange(field, value)
-    handleChange(field, sanitizedValue)
-  }
-
-  if (loading) {
+  if (state.loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <Appbar.Header>
@@ -341,19 +264,19 @@ const EditProfileSubScreen = ({ navigation }) => {
         <Appbar.Content title='Edit Profile' />
         <Appbar.Action 
           icon='content-save' 
-          onPress={() => setShowConfirmDialog(true)} 
-          disabled={loading}
+          onPress={() => updateDialog('confirm', true)} 
+          disabled={state.loading}
           color={colors.primary}
         />
       </Appbar.Header>
+
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps='handled'>
         <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
           <View style={styles.profileContainer}>
-            {form.pfp_id ? (
-              <>
+            {state.form.pfp_id ? (
               <View style={styles.imagePreviewContainer}>
                 <Image 
-                  source={{ uri: form.pfp_id }} 
+                  source={{ uri: state.form.pfp_id }} 
                   style={styles.imagePreview}
                   resizeMode='cover'
                 />
@@ -365,18 +288,17 @@ const EditProfileSubScreen = ({ navigation }) => {
                   onPress={() => handleChange('pfp_id', null)}
                 />
               </View>
-              </>
             ) : (
-              <Avatar.Text size={80} label={(form.first_name || 'N')[0].toUpperCase()} />
+              <Avatar.Text size={80} label={(state.form.first_name || 'N')[0].toUpperCase()} />
             )}
             <Button
               mode='outlined'
-              onPress={() => setShowImageSourceDialog(true)}
+              onPress={() => updateDialog('imageSource', true)}
               style={styles.profilePictureButton}
               textColor={colors.primary}
-              disabled={saving}
+              disabled={state.saving}
             >
-              {form.pfp_id ? 'Change Profile Picture' : 'Upload Profile Picture'}
+              {state.form.pfp_id ? 'Change Profile Picture' : 'Upload Profile Picture'}
             </Button>
           </View>
 
@@ -384,52 +306,52 @@ const EditProfileSubScreen = ({ navigation }) => {
 
           <TextInput
             label='First Name and Second Name'
-            value={form.first_name}
-            onChangeText={(text) => handleInputChange('first_name', text)}
+            value={state.inputValues.first_name}
+            onChangeText={(text) => handleChange('first_name', text)}
             mode='outlined'
             style={styles.input}
             right={<TextInput.Icon icon='account' />}
             theme={{ colors: { primary: colors.primary } }}
-            disabled={saving}
+            disabled={state.saving}
             autoCapitalize='words'
             maxLength={35}
           />
 
           <TextInput
             label='Middle Initial'
-            value={form.middle_initial}
-            onChangeText={(text) => handleInputChange('middle_initial', text)}
+            value={state.inputValues.middle_initial}
+            onChangeText={(text) => handleChange('middle_initial', text)}
             mode='outlined'
             style={styles.input}
             maxLength={1}
             right={<TextInput.Icon icon='account' />}
             theme={{ colors: { primary: colors.primary } }}
-            disabled={saving}
+            disabled={state.saving}
             autoCapitalize='characters'
           />
 
           <TextInput
             label='Last Name'
-            value={form.last_name}
-            onChangeText={(text) => handleInputChange('last_name', text)}
+            value={state.inputValues.last_name}
+            onChangeText={(text) => handleChange('last_name', text)}
             mode='outlined'
             style={styles.input}
             right={<TextInput.Icon icon='account' />}
             theme={{ colors: { primary: colors.primary } }}
-            disabled={saving}
+            disabled={state.saving}
             autoCapitalize='words'
             maxLength={35}
           />
 
           <TextInput
             label='Name Suffix (e.g., Jr., Sr., III)'
-            value={form.name_suffix}
-            onChangeText={(text) => handleInputChange('name_suffix', text)}
+            value={state.inputValues.name_suffix}
+            onChangeText={(text) => handleChange('name_suffix', text)}
             mode='outlined'
             style={styles.input}
             right={<TextInput.Icon icon='account' />}
             theme={{ colors: { primary: colors.primary } }}
-            disabled={saving}
+            disabled={state.saving}
             autoCapitalize='characters'
             maxLength={10}
           />
@@ -438,53 +360,53 @@ const EditProfileSubScreen = ({ navigation }) => {
 
           <TextInput
             label='Contact Number'
-            value={form.contact_number}
-            onChangeText={(text) => handleInputChange('contact_number', text)}
+            value={state.inputValues.contact_number}
+            onChangeText={(text) => handleChange('contact_number', text)}
             mode='outlined'
             style={styles.input}
             keyboardType='phone-pad'
             left={<TextInput.Affix text='+63' />}
             theme={{ colors: { primary: colors.primary } }}
-            disabled={saving}
+            disabled={state.saving}
             maxLength={10}
           />
 
           <TextInput
             label='Birth Date'
-            value={form.birth_date ? form.birth_date.toLocaleDateString() : ''}
+            value={state.form.birth_date ? state.form.birth_date.toLocaleDateString() : ''}
             editable={false}
             mode='outlined'
             style={styles.input}
-            right={<TextInput.Icon icon='calendar' onPress={openDatePicker} />}
+            right={<TextInput.Icon icon='calendar' onPress={() => updateDialog('datePicker', true)} />}
             theme={{ colors: { primary: colors.primary } }}
-            disabled={saving}
+            disabled={state.saving}
           />
 
           <Divider style={styles.divider} />
 
           <TextInput
             label='Emergency Contact Name and Last Name'
-            value={form.emergency_contact_name}
-            onChangeText={(text) => handleInputChange('emergency_contact_name', text)}
+            value={state.inputValues.emergency_contact_name}
+            onChangeText={(text) => handleChange('emergency_contact_name', text)}
             mode='outlined'
             style={styles.input}
             right={<TextInput.Icon icon='account' />}
             theme={{ colors: { primary: colors.primary } }}
-            disabled={saving}
+            disabled={state.saving}
             autoCapitalize='words'
             maxLength={50}
           />
 
           <TextInput
             label='Emergency Contact Number'
-            value={form.emergency_contact_number}
-            onChangeText={(text) => handleInputChange('emergency_contact_number', text)}
+            value={state.inputValues.emergency_contact_number}
+            onChangeText={(text) => handleChange('emergency_contact_number', text)}
             mode='outlined'
             style={styles.input}
             keyboardType='phone-pad'
             left={<TextInput.Affix text='+63' />}
             theme={{ colors: { primary: colors.primary } }}
-            disabled={saving}
+            disabled={state.saving}
             maxLength={10}
           />
         </Surface>
@@ -494,9 +416,9 @@ const EditProfileSubScreen = ({ navigation }) => {
         <DatePickerModal
           locale='en'
           mode='single'
-          visible={showDatePicker}
-          onDismiss={handleDateDismiss}
-          date={form.birth_date}
+          visible={state.dialogs.datePicker}
+          onDismiss={() => updateDialog('datePicker', false)}
+          date={state.form.birth_date}
           onConfirm={handleDateConfirm}
           title='Select Birth Date'
           animationType='slide'
@@ -514,8 +436,8 @@ const EditProfileSubScreen = ({ navigation }) => {
 
       <Portal>
         <Dialog
-          visible={showImageSourceDialog}
-          onDismiss={() => setShowImageSourceDialog(false)}
+          visible={state.dialogs.imageSource}
+          onDismiss={() => updateDialog('imageSource', false)}
           style={{ backgroundColor: colors.surface }}>
           <Dialog.Title style={{ color: colors.onSurface, ...fonts.titleLarge }}>
             Choose Image Source
@@ -532,7 +454,7 @@ const EditProfileSubScreen = ({ navigation }) => {
             <Button onPress={() => handleImageSource('gallery')} textColor={colors.primary}>
               Gallery
             </Button>
-            <Button onPress={() => setShowImageSourceDialog(false)} textColor={colors.error}>
+            <Button onPress={() => updateDialog('imageSource', false)} textColor={colors.error}>
               Cancel
             </Button>
           </Dialog.Actions>
@@ -541,19 +463,19 @@ const EditProfileSubScreen = ({ navigation }) => {
 
       <Portal>
         <Dialog
-          visible={showConfirmDialog}
-          onDismiss={() => setShowConfirmDialog(false)}
+          visible={state.dialogs.confirm}
+          onDismiss={() => updateDialog('confirm', false)}
           style={{ backgroundColor: colors.surface }}>
           <Dialog.Title>Save Changes</Dialog.Title>
           <Dialog.Content>
             <Text variant='bodyMedium'>Are you sure you want to save these changes?</Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setShowConfirmDialog(false)} disabled={saving}>Cancel</Button>
+            <Button onPress={() => updateDialog('confirm', false)} disabled={state.saving}>Cancel</Button>
             <Button onPress={() => {
-              setShowConfirmDialog(false)
+              updateDialog('confirm', false)
               saveProfile()
-            }} loading={saving} disabled={saving}>Save</Button>
+            }} loading={state.saving} disabled={state.saving}>Save</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>

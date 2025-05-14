@@ -1,12 +1,10 @@
 import React, { useState, useCallback } from 'react'
-import { StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
+import { StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
 import { TextInput, Button, useTheme, Appbar, Text, Portal, Dialog, Surface, Divider } from 'react-native-paper'
 import { DatePickerModal, en, registerTranslation } from 'react-native-paper-dates'
 import { supabase } from '../../../lib/supabase'
 import useSnackbar from '../../hooks/useSnackbar'
-import { validateProfileForm, handleTextChange } from '../../../utils/profileValidation'
 
-// Register the English locale
 registerTranslation('en', en)
 
 const SignUpSubScreen = ({ navigation }) => {
@@ -25,11 +23,11 @@ const SignUpSubScreen = ({ navigation }) => {
     birth_date: null,
   })
 
-  const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [showRoleMenu, setShowRoleMenu] = useState(false)
+
   const [visibility, setVisibility] = useState({
     password: false,
     confirmPassword: false,
@@ -37,30 +35,11 @@ const SignUpSubScreen = ({ navigation }) => {
 
   const roleOptions = ['Administrator', 'Airline Staff', 'Delivery Personnel']
 
-  const validateField = (field, value) => {
-    switch (field) {
-      case 'email':
-        if (!value) return 'Email is required'
-        if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)) {
-          return 'Please enter a valid email address'
-        }
-        break
-      case 'password':
-        if (!value) return 'Password is required'
-        if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/.test(value)) {
-          return 'Password must be at least 6 characters long and contain at least one letter and one number'
-        }
-        break
-      case 'confirmPassword':
-        if (!value) return 'Please confirm your password'
-        if (value !== form.password) return 'Passwords do not match'
-        break
-      case 'role':
-        if (!value) return 'Please select a valid role'
-        break
-    }
-    return ''
+  const handleChange = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }))
   }
+
+  const toggleVisibility = (field) => setVisibility(prev => ({ ...prev, [field]: !prev[field] }))
 
   const handleDateConfirm = useCallback(({ date }) => {
     if (date) {
@@ -69,54 +48,15 @@ const SignUpSubScreen = ({ navigation }) => {
     setShowDatePicker(false)
   }, [])
 
-  const validateForm = () => {
-    const newErrors = {}
-    const validationMessages = []
-    
-    // Validate profile fields using profileValidation
-    if (!validateProfileForm(form, (message) => validationMessages.push(message))) {
-      return false
-    }
-    
-    // Validate remaining fields
-    Object.keys(form).forEach(field => {
-      if (!['first_name', 'last_name', 'middle_initial', 'contact_number', 'birth_date'].includes(field)) {
-        const error = validateField(field, form[field])
-        if (error) {
-          newErrors[field] = error
-          validationMessages.push(error)
-        }
-      }
-    })
-    
-    setErrors(newErrors)
-    
-    if (validationMessages.length > 0) {
-      validationMessages.forEach((message, index) => {
-        setTimeout(() => showSnackbar(message), index * 2000)
-      })
-      return false
-    }
-    
-    return true
-  }
+  const handleDateDismiss = useCallback(() => {
+    setShowDatePicker(false)
+  }, [])
 
-  const handleChange = (field, value) => {
-    let sanitizedValue = value
-    
-    if (['first_name', 'last_name', 'middle_initial', 'contact_number'].includes(field)) {
-      sanitizedValue = handleTextChange(field, value)
-    }
-    
-    const error = validateField(field, sanitizedValue)
-    
-    setForm(prev => ({ ...prev, [field]: sanitizedValue }))
-    setErrors(prev => ({ ...prev, [field]: error }))
-  }
+  const openDatePicker = useCallback(() => {
+    setShowDatePicker(true)
+  }, [])
 
   const handleSignUp = async () => {
-    if (!validateForm()) return
-
     try {
       setLoading(true)
       const { email, password, first_name, middle_initial, last_name, contact_number, birth_date, role } = form
@@ -131,6 +71,7 @@ const SignUpSubScreen = ({ navigation }) => {
       
       if (user) {
         try {
+          // Get role_id based on role name
           const { data: roleData, error: roleError } = await supabase
             .from('profiles_roles')
             .select('id')
@@ -146,11 +87,11 @@ const SignUpSubScreen = ({ navigation }) => {
             .insert({
               id: user.id,
               email: user.email,
-              first_name,
-              middle_initial,
-              last_name,
-              contact_number,
-              birth_date,
+              first_name: first_name,
+              middle_initial: middle_initial,
+              last_name: last_name,
+              contact_number: '+63'+contact_number,
+              birth_date: birth_date,
               role_id: roleData.id,
               user_status_id: 3, // Pending status
             })  
@@ -197,8 +138,9 @@ const SignUpSubScreen = ({ navigation }) => {
               mode="outlined"
               style={styles.input}
               right={<TextInput.Icon icon="account" />}
-              error={!!errors.first_name}
-              helperText={errors.first_name}
+              autoCapitalize="words"
+              maxLength={50}
+              theme={{ colors: { primary: colors.primary } }}
             />
             <TextInput
               label="Middle Initial"
@@ -208,8 +150,8 @@ const SignUpSubScreen = ({ navigation }) => {
               style={styles.input}
               maxLength={1}
               right={<TextInput.Icon icon="account" />}
-              error={!!errors.middle_initial}
-              helperText={errors.middle_initial}
+              autoCapitalize="characters"
+              theme={{ colors: { primary: colors.primary } }}
             />
             <TextInput
               label="Last Name"
@@ -218,8 +160,9 @@ const SignUpSubScreen = ({ navigation }) => {
               mode="outlined"
               style={styles.input}
               right={<TextInput.Icon icon="account" />}
-              error={!!errors.last_name}
-              helperText={errors.last_name}
+              autoCapitalize="words"
+              maxLength={50}
+              theme={{ colors: { primary: colors.primary } }}
             />
 
             <Divider style={styles.divider} />
@@ -232,9 +175,8 @@ const SignUpSubScreen = ({ navigation }) => {
               style={styles.input}
               keyboardType="phone-pad"
               left={<TextInput.Affix text="+63" />}
-              error={!!errors.contact_number}
-              helperText={errors.contact_number}
-              maxLength={11}
+              maxLength={10}
+              theme={{ colors: { primary: colors.primary } }}
             />
 
             <TextInput
@@ -243,9 +185,8 @@ const SignUpSubScreen = ({ navigation }) => {
               editable={false}
               mode="outlined"
               style={styles.input}
-              right={<TextInput.Icon icon="calendar" onPress={() => setShowDatePicker(true)} />}
-              error={!!errors.birth_date}
-              helperText={errors.birth_date}
+              right={<TextInput.Icon icon="calendar" onPress={openDatePicker} />}
+              theme={{ colors: { primary: colors.primary } }}
             />
 
             <Divider style={styles.divider} />
@@ -259,8 +200,7 @@ const SignUpSubScreen = ({ navigation }) => {
               keyboardType="email-address"
               autoCapitalize="none"
               right={<TextInput.Icon icon="email" />}
-              error={!!errors.email}
-              helperText={errors.email}
+              theme={{ colors: { primary: colors.primary } }}
             />
 
             <TextInput
@@ -273,11 +213,10 @@ const SignUpSubScreen = ({ navigation }) => {
               right={
                 <TextInput.Icon
                   icon={visibility.password ? 'eye' : 'eye-off'}
-                  onPress={() => setVisibility(prev => ({ ...prev, password: !prev.password }))}
+                  onPress={() => toggleVisibility('password')}
                 />
               }
-              error={!!errors.password}
-              helperText={errors.password}
+              theme={{ colors: { primary: colors.primary } }}
             />
 
             <TextInput
@@ -290,11 +229,10 @@ const SignUpSubScreen = ({ navigation }) => {
               right={
                 <TextInput.Icon
                   icon={visibility.confirmPassword ? 'eye' : 'eye-off'}
-                  onPress={() => setVisibility(prev => ({ ...prev, confirmPassword: !prev.confirmPassword }))}
+                  onPress={() => toggleVisibility('confirmPassword')}
                 />
               }
-              error={!!errors.confirmPassword}
-              helperText={errors.confirmPassword}
+              theme={{ colors: { primary: colors.primary } }}
             />
 
             <TextInput
@@ -304,8 +242,7 @@ const SignUpSubScreen = ({ navigation }) => {
               mode="outlined"
               style={styles.input}
               right={<TextInput.Icon icon="account-cog" onPress={() => setShowRoleMenu(true)} />}
-              error={!!errors.role}
-              helperText={errors.role}
+              theme={{ colors: { primary: colors.primary } }}
             />
 
             <Button
@@ -337,7 +274,7 @@ const SignUpSubScreen = ({ navigation }) => {
           locale="en"
           mode="single"
           visible={showDatePicker}
-          onDismiss={() => setShowDatePicker(false)}
+          onDismiss={handleDateDismiss}
           date={form.birth_date}
           onConfirm={handleDateConfirm}
           title="Select Birth Date"

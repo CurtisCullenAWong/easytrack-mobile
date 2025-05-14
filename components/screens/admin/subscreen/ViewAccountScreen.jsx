@@ -7,7 +7,6 @@ import {
   Avatar,
   Card,
   Divider,
-  ActivityIndicator,
 } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 
@@ -249,7 +248,7 @@ const ViewProfileScreen = ({ route, navigation }) => {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.navigate('UserManagement')} />
-          <Appbar.Content title="View Profile" />
+          <Appbar.Content title="View Account" />
         </Appbar.Header>
         <View style={styles.loadingContainer}>
           <Text style={[styles.errorText, { color: colors.error }]}>User not found</Text>
@@ -262,7 +261,7 @@ const ViewProfileScreen = ({ route, navigation }) => {
     <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.navigate('UserManagement')} />
-        <Appbar.Content title="View Profile" />
+        <Appbar.Content title="View Account" />
         <Appbar.Action 
           icon="refresh" 
           onPress={fetchAccount}
@@ -277,7 +276,7 @@ const ViewProfileScreen = ({ route, navigation }) => {
       {renderSection(PROFILE_SECTIONS.PERSONAL, renderPersonalInfo())}
       {renderSection(PROFILE_SECTIONS.ACCOUNT, renderAccountInfo())}
       {renderSection(PROFILE_SECTIONS.ACTIVITY, renderActivityInfo())}
-      {(user.role_id === 2 || user.role_id === 3) && 
+      {(user.role_id === 2 || user.role_id === 3 || !user.verify_status_id === 5) && 
         renderSection(PROFILE_SECTIONS.VERIFICATION, renderVerificationInfo())}
     </ScrollView>
   )
