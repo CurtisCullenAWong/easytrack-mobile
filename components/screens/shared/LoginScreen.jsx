@@ -48,7 +48,7 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Image source={require('../../assets/banner.png')} style={styles.bannerImage} />
+      <Image source={require('../../../assets/banner.png')} style={styles.bannerImage} />
       <Text style={[styles.title, { color: colors.primary, ...fonts.displayLarge }]}>
         EasyTrack
       </Text>

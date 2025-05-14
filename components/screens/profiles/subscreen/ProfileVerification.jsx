@@ -1,11 +1,16 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useCallback } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
 import { ScrollView, View, StyleSheet, Image } from 'react-native'
 import { Text, Card, Button, TextInput, useTheme, Portal, Dialog, IconButton, Appbar, Menu } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import * as ImagePicker from 'expo-image-picker'
+import * as FileSystem from 'expo-file-system'
+import { decode } from 'base64-arraybuffer'
+import useSnackbar from '../../../hooks/useSnackbar'
 
 const Verification = ({ navigation }) => {
   const { colors, fonts } = useTheme()
+  const { showSnackbar, SnackbarElement } = useSnackbar()
   
   // State management
   const [loading, setLoading] = useState(false)
@@ -15,21 +20,23 @@ const Verification = ({ navigation }) => {
   const [idTypeMenuVisible, setIdTypeMenuVisible] = useState(false)
   const [idTypes, setIdTypes] = useState([])
   const [formData, setFormData] = useState({
-    gov_id_type: '',
+    gov_id_type: null,
     gov_id_type_id: null,
-    gov_id_number: '',
+    gov_id_number: null,
     gov_id_proof: null,
-    vehicle_info: '',
-    vehicle_plate_number: '',
+    vehicle_info: null,
+    vehicle_plate_number: null,
     vehicle_or_cr: null
   })
   const [roleId, setRoleId] = useState(null)
 
   // Check verification status and fetch ID types on mount
-  useEffect(() => {
-    checkVerificationStatus()
-    fetchIdTypes()
-  }, [])
+  useFocusEffect(
+    useCallback(() => {
+      checkVerificationStatus()
+      fetchIdTypes()
+    }, [])
+  )
 
   const fetchIdTypes = async () => {
     try {
@@ -42,6 +49,7 @@ const Verification = ({ navigation }) => {
       setIdTypes(data || [])
     } catch (error) {
       console.error('Error fetching ID types:', error)
+      showSnackbar('Error fetching ID types')
     }
   }
 
@@ -71,7 +79,7 @@ const Verification = ({ navigation }) => {
 
       // If verification data exists, load it into the form
       if (data) {
-        console.log('\nLoaded verification data:', data) // Debug log
+        console.log('\nLoaded verification data:', data)
         setFormData(prev => ({
           ...prev,
           gov_id_type: data.verify_info_type?.id_type_name || '',
@@ -85,6 +93,77 @@ const Verification = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Error checking verification status:', error)
+      showSnackbar('Error loading verification data')
+    }
+  }
+
+  const uploadImage = async (imageUri, type) => {
+    if (!imageUri?.startsWith('file://')) {
+      return null
+    }
+  
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        throw new Error('User not authenticated')
+      }
+
+      // Determine bucket and folder based on role_id and image type
+      let bucket, folder
+      if (type === 'gov_id_proof') {
+        bucket = 'gov-id'
+        folder = roleId === 2 ? 'delivery' : 'airlines' // role_id 2 is delivery, 3 is airlines
+      } else if (type === 'vehicle_or_cr') {
+        bucket = 'or-cr'
+        folder = 'delivery'
+      } else {
+        throw new Error('Invalid image type')
+      }
+
+      // Delete existing file for this user
+      const filePath = `${folder}/${user.id}.png`
+      const { error: deleteError } = await supabase.storage
+        .from(bucket)
+        .remove([filePath])
+
+      // Ignore delete error if file doesn't exist
+      if (deleteError && !deleteError.message.includes('not found')) {
+        console.error('Error deleting existing file:', deleteError)
+      }
+
+      const base64 = await FileSystem.readAsStringAsync(imageUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      })
+
+      const contentType = 'image/png'
+      
+      const { error } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, decode(base64), { 
+          contentType,
+          upsert: true
+        })
+    
+      if (error) {
+        showSnackbar('Error uploading image: ' + error.message)
+        return null
+      }
+
+      // Get a signed URL that's valid for a long time (e.g., 1 year)
+      const { data: { signedUrl }, error: signedUrlError } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(filePath, 31536000) // 1 year in seconds
+
+      if (signedUrlError) {
+        throw signedUrlError
+      }
+
+      return signedUrl
+    } catch (error) {
+      console.error('Upload error:', error)
+      showSnackbar('Error uploading image: ' + error.message)
+      return null
     }
   }
 
@@ -104,13 +183,15 @@ const Verification = ({ navigation }) => {
         : await ImagePicker.launchImageLibraryAsync(options)
 
       if (!result.canceled) {
+        const imageUri = result.assets[0].uri
         setFormData(prev => ({
           ...prev,
-          [currentImageType]: result.assets[0].uri
+          [currentImageType]: imageUri
         }))
       }
     } catch (error) {
       console.error('Error picking image:', error)
+      showSnackbar('Error picking image: ' + error.message)
     }
   }
 
@@ -119,11 +200,40 @@ const Verification = ({ navigation }) => {
     setShowImageSourceDialog(true)
   }
 
-  const removeImage = (type) => {
-    setFormData(prev => ({
-      ...prev,
-      [type]: null
-    }))
+  const removeImage = async (type) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Determine bucket and folder based on role_id and image type
+      let bucket, folder
+      if (type === 'gov_id_proof') {
+        bucket = 'gov-id'
+        folder = roleId === 2 ? 'delivery' : 'airlines' // role_id 2 is delivery, 3 is airlines
+      } else if (type === 'vehicle_or_cr') {
+        bucket = 'or-cr'
+        folder = 'delivery'
+      }
+
+      if (bucket && folder) {
+        const filePath = `${folder}/${user.id}.png`
+        const { error: deleteError } = await supabase.storage
+          .from(bucket)
+          .remove([filePath])
+
+        if (deleteError && !deleteError.message.includes('not found')) {
+          console.error('Error deleting file:', deleteError)
+        }
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        [type]: null
+      }))
+    } catch (error) {
+      console.error('Error removing image:', error)
+      showSnackbar('Error removing image')
+    }
   }
 
   const handleSubmit = async () => {
@@ -131,35 +241,94 @@ const Verification = ({ navigation }) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        console.error('User not authenticated')
+        showSnackbar('User not authenticated')
         return navigation.navigate('Login')
       }
 
-      // TODO: Replace with actual backend upload
-      // For now, just store the local URIs
-      console.log('ID Proof would be uploaded to backend:', formData.gov_id_proof)
-      console.log('OR/CR would be uploaded to backend:', formData.vehicle_or_cr)
+      // Get current profile data including existing image URLs
+      const { data: currentProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('gov_id_proof, vehicle_or_cr')
+        .eq('id', user.id)
+        .single()
 
-      // Update verification status
+      if (profileError) {
+        throw profileError
+      }
+
+      // Upload images if they exist and are new
+      let govIdProofUrl = formData.gov_id_proof
+      let vehicleOrCrUrl = formData.vehicle_or_cr
+
+      if (formData.gov_id_proof?.startsWith('file://')) {
+        govIdProofUrl = await uploadImage(formData.gov_id_proof, 'gov_id_proof')
+        if (!govIdProofUrl) {
+          showSnackbar('Failed to upload government ID proof')
+          setLoading(false)
+          return
+        }
+      } else if (!formData.gov_id_proof && currentProfile.gov_id_proof) {
+        // If image was removed, delete from storage
+        const bucket = 'gov-id'
+        const folder = roleId === 2 ? 'delivery' : 'airlines' // role_id 2 is delivery, 3 is airlines
+        const filePath = `${folder}/${user.id}.png`
+        await supabase.storage
+          .from(bucket)
+          .remove([filePath])
+      }
+
+      if (formData.vehicle_or_cr?.startsWith('file://')) {
+        vehicleOrCrUrl = await uploadImage(formData.vehicle_or_cr, 'vehicle_or_cr')
+        if (!vehicleOrCrUrl) {
+          showSnackbar('Failed to upload OR/CR document')
+          setLoading(false)
+          return
+        }
+      } else if (!formData.vehicle_or_cr && currentProfile.vehicle_or_cr) {
+        // If image was removed, delete from storage
+        const bucket = 'or-cr'
+        const folder = 'delivery'
+        const filePath = `${folder}/${user.id}.png`
+        await supabase.storage
+          .from(bucket)
+          .remove([filePath])
+      }
+
+      // Validate required fields
+      if (!formData.gov_id_type_id || !formData.gov_id_number || !govIdProofUrl) {
+        showSnackbar('Please fill in all required government ID fields')
+        setLoading(false)
+        return
+      }
+
+      if (roleId === 2 && (!formData.vehicle_info || !formData.vehicle_plate_number || !vehicleOrCrUrl)) {
+        showSnackbar('Please fill in all required vehicle information fields')
+        setLoading(false)
+        return
+      }
+
+      // Update verification status with signed URLs
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ 
           verify_status_id: 3,
-          last_updated: Date.now(),
+          updated_at: new Date().toISOString(),
           gov_id_type: formData.gov_id_type_id,
           gov_id_number: formData.gov_id_number,
-          gov_id_proof: formData.gov_id_proof,
+          gov_id_proof: govIdProofUrl,
           vehicle_info: formData.vehicle_info,
           vehicle_plate_number: formData.vehicle_plate_number,
-          vehicle_or_cr: formData.vehicle_or_cr
+          vehicle_or_cr: vehicleOrCrUrl
         })
         .eq('id', user.id)
-      console.log(formData)
+
       if (updateError) throw updateError
 
+      showSnackbar('Verification submitted successfully', true)
       navigation.navigate('Profile')
     } catch (error) {
       console.error('Error submitting verification:', error)
+      showSnackbar('Error submitting verification')
     } finally {
       setLoading(false)
     }

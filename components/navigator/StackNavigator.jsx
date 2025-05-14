@@ -3,16 +3,19 @@ import { NavigationContainer } from '@react-navigation/native'
 import { createDrawerNavigator } from '@react-navigation/drawer'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 
-// Import Screens
-import LoginScreen from '../screens/LoginScreen'
-import Profile from '../screens/Profile'
+// Shared Screens
+import LoginScreen from '../screens/shared/LoginScreen'
+import SignUpSubScreen from '../screens/shared/SignUpSubsceen'
 import MessageCenter from '../screens/MessageCenter'
 import BookingHistory from '../screens/BookingHistory'
 import PerformanceStatistics from '../screens/PerformanceStatistics'
 import TransactionHistory from '../screens/TransactionHistory'
-import SignUpSubScreen from '../screens/SignUpSubsceen'
-import EditProfileSubScreen from '../screens/EditProfileSubScreen'
-import Verification from '../screens/ProfileVerification'
+
+// Profile Screens
+import Profile from '../screens/profiles/Profile'
+import EditProfileSubScreen from '../screens/profiles/subscreen/EditProfileSubScreen'
+import Verification from '../screens/profiles/subscreen/ProfileVerification'
+
 // Admin Screens
 import AdminHome from '../screens/admin/AdminHome'
 import UserManagement from '../screens/admin/UserManagement'

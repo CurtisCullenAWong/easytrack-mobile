@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useState, useCallback } from 'react'
 import { ScrollView, View, StyleSheet, Image } from 'react-native'
 import { Avatar, Card, Text, Divider, Button, useTheme, ActivityIndicator } from 'react-native-paper'
 import Header from '../../customComponents/Header'
