@@ -10,25 +10,33 @@ const LoginScreen = ({ navigation }) => {
   const [modalVisible, setModalVisible] = useState(false)
   const [isResetPasswordModal, setIsResetPasswordModal] = useState(false)
   const [showLoginUI, setShowLoginUI] = useState(false)
+  const [isCheckingSession, setIsCheckingSession] = useState(true)
   const { checkSession } = useAuth(navigation)
 
   useEffect(() => {
     const checkAuth = async () => {
-
-      const hasSession = await checkSession()
-      setShowLoginUI(!hasSession)
-      
+      try {
+        setIsCheckingSession(true)
+        const hasSession = await checkSession()
+        setShowLoginUI(!hasSession)
+      } catch (error) {
+        console.warn('Session check failed:', error)
+        setShowLoginUI(true)
+      } finally {
+        setIsCheckingSession(false)
+      }
     }
     checkAuth()
   }, [])
 
-
-  // Don't render anything if we're not showing the login UI
-  if (!showLoginUI) {
+  // Show loading state while checking session
+  if (isCheckingSession) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center' }]}>
-        <Text style={{ color: colors.primary, ...fonts.titleMedium }}>Please wait while we check your session.</Text>
         <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.subtitle, { color: colors.onBackground, ...fonts.titleMedium, marginTop: 16 }]}>
+          Checking session...
+        </Text>
       </View>
     )
   }

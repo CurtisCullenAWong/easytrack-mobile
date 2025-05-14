@@ -76,13 +76,30 @@ const useAuth = (navigation, onClose) => {
 
   // Check if user is logged in
   const checkSession = async () => {
-    const { data } = await supabase.auth.getSession()
-    const session = data?.session
-    if (session?.user) {
-      await handleLogin(session.user)
-      return true
+    try {
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Session check timeout')), 5000); // 5 second timeout
+      });
+
+      const sessionPromise = supabase.auth.getSession();
+      const { data } = await Promise.race([sessionPromise, timeoutPromise]);
+      
+      const session = data?.session;
+      if (!session) {
+        return false;
+      }
+
+      if (session.user) {
+        await handleLogin(session.user);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.warn('Session check failed:', error.message);
+      // Force sign out on timeout or error
+      await supabase.auth.signOut();
+      return false;
     }
-    return false
   }
 
   return {

@@ -241,6 +241,7 @@ const EditAccount = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [roleMenuVisible, setRoleMenuVisible] = useState(false)
   const [statusMenuVisible, setStatusMenuVisible] = useState(false)
@@ -320,6 +321,33 @@ const EditAccount = ({ route, navigation }) => {
       showSnackbar('Error updating user: ' + error.message)
     } finally {
       setSaving(false)
+    }
+  }
+
+  // Delete user account
+  const deleteUser = async () => {
+    try {
+      setSaving(true)
+
+      // Delete user from Supabase Auth
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId)
+      if (authError) throw authError
+
+      // Delete user's profile from profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId)
+
+      if (profileError) throw profileError
+
+      showSnackbar('User account deleted successfully', true)
+      navigation.navigate('UserManagement')
+    } catch (error) {
+      showSnackbar('Error deleting user account: ' + error.message)
+    } finally {
+      setSaving(false)
+      setShowDeleteDialog(false)
     }
   }
 
@@ -443,6 +471,12 @@ const EditAccount = ({ route, navigation }) => {
           onPress={() => setShowConfirmDialog(true)} 
           disabled={loading}
           color={colors.primary}
+        />
+        <Appbar.Action 
+          icon="delete" 
+          onPress={() => setShowDeleteDialog(true)} 
+          disabled={loading}
+          color={colors.error}
         />
       </Appbar.Header>
 
@@ -619,6 +653,19 @@ const EditAccount = ({ route, navigation }) => {
             endDate: new Date(),
           }}
         />
+      </Portal>
+
+      <Portal>
+        <Dialog visible={showDeleteDialog} onDismiss={() => setShowDeleteDialog(false)} style={{ backgroundColor: colors.surface }}>
+          <Dialog.Title>Delete Account</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">Are you sure you want to delete this user's account? This action cannot be undone.</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setShowDeleteDialog(false)} disabled={saving}>Cancel</Button>
+            <Button onPress={deleteUser} loading={saving} disabled={saving} textColor={colors.error}>Delete</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
 
       <Portal>

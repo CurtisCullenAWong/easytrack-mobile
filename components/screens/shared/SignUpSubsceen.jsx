@@ -14,7 +14,7 @@ const VALIDATION_PATTERNS = {
   middleInitial: /^[a-zA-Z]$/,
   phone: /^(\+63|0)[0-9]{10}$/,
   email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-  password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+  password: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/,
 }
 
 // Validation messages
@@ -25,7 +25,7 @@ const VALIDATION_MESSAGES = {
   invalidPhone: 'Please enter a valid Philippine phone number (e.g., +639123456789 or 09123456789)',
   invalidEmail: 'Please enter a valid email address',
   invalidBirthDate: 'Birth date cannot be in the future',
-  invalidPassword: 'Password must be at least 8 characters long and contain uppercase, lowercase, number, and special character',
+  invalidPassword: 'Password must be at least 6 characters long and contain at least one letter and one number',
   passwordMismatch: 'Passwords do not match',
   invalidRole: 'Please select a valid role',
 }
@@ -38,11 +38,6 @@ const formatPhoneNumber = (value) => {
   // If empty, return empty string
   if (!digits) return ''
   
-  // If starts with 63, convert to +63
-  if (digits.startsWith('63')) {
-    return `+63${digits.slice(2)}`
-  }
-  
   // If starts with 0, keep it
   if (digits.startsWith('0')) {
     return digits
@@ -54,11 +49,11 @@ const formatPhoneNumber = (value) => {
   }
   
   // If none of the above, add 0
-  return `0${digits}`
+  return `09${digits}`
 }
 
 const SignUpSubScreen = ({ navigation, onClose }) => {
-  const { colors, fonts } = useTheme()
+  const { colors } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
   const [form, setForm] = useState({
@@ -88,33 +83,63 @@ const SignUpSubScreen = ({ navigation, onClose }) => {
 
   // Validation functions
   const validateField = (field, value) => {
+    let error = '';
     switch (field) {
       case 'first_name':
       case 'last_name':
-        return !value ? VALIDATION_MESSAGES.required :
-          !VALIDATION_PATTERNS.name.test(value) ? VALIDATION_MESSAGES.invalidName : ''
+        if (!value) {
+          error = VALIDATION_MESSAGES.required;
+        } else if (!VALIDATION_PATTERNS.name.test(value)) {
+          error = VALIDATION_MESSAGES.invalidName;
+        }
+        break;
       case 'middle_initial':
-        return value && !VALIDATION_PATTERNS.middleInitial.test(value) ? VALIDATION_MESSAGES.invalidMiddleInitial : ''
+        if (value && !VALIDATION_PATTERNS.middleInitial.test(value)) {
+          error = VALIDATION_MESSAGES.invalidMiddleInitial;
+        }
+        break;
       case 'email':
-        return !value ? VALIDATION_MESSAGES.required :
-          !VALIDATION_PATTERNS.email.test(value) ? VALIDATION_MESSAGES.invalidEmail : ''
+        if (!value) {
+          error = VALIDATION_MESSAGES.required;
+        } else if (!VALIDATION_PATTERNS.email.test(value)) {
+          error = VALIDATION_MESSAGES.invalidEmail;
+        }
+        break;
       case 'password':
-        return !value ? VALIDATION_MESSAGES.required :
-          !VALIDATION_PATTERNS.password.test(value) ? VALIDATION_MESSAGES.invalidPassword : ''
+        if (!value) {
+          error = VALIDATION_MESSAGES.required;
+        } else if (!VALIDATION_PATTERNS.password.test(value)) {
+          error = VALIDATION_MESSAGES.invalidPassword;
+        }
+        break;
       case 'confirmPassword':
-        return !value ? VALIDATION_MESSAGES.required :
-          value !== form.password ? VALIDATION_MESSAGES.passwordMismatch : ''
+        if (!value) {
+          error = VALIDATION_MESSAGES.required;
+        } else if (value !== form.password) {
+          error = VALIDATION_MESSAGES.passwordMismatch;
+        }
+        break;
       case 'contact_number':
-        return !value ? VALIDATION_MESSAGES.required :
-          !VALIDATION_PATTERNS.phone.test(value) ? VALIDATION_MESSAGES.invalidPhone : ''
+        if (!value) {
+          error = VALIDATION_MESSAGES.required;
+        } else if (!VALIDATION_PATTERNS.phone.test(value)) {
+          error = VALIDATION_MESSAGES.invalidPhone;
+        }
+        break;
       case 'birth_date':
-        return !value ? VALIDATION_MESSAGES.required :
-          value > new Date() ? VALIDATION_MESSAGES.invalidBirthDate : ''
+        if (!value) {
+          error = VALIDATION_MESSAGES.required;
+        } else if (value > new Date()) {
+          error = VALIDATION_MESSAGES.invalidBirthDate;
+        }
+        break;
       case 'role':
-        return !value ? VALIDATION_MESSAGES.invalidRole : ''
-      default:
-        return ''
+        if (!value) {
+          error = VALIDATION_MESSAGES.invalidRole;
+        }
+        break;
     }
+    return error;
   }
 
   // Sanitization functions
@@ -156,12 +181,29 @@ const SignUpSubScreen = ({ navigation, onClose }) => {
 
   const validateForm = () => {
     const newErrors = {}
+    const validationMessages = []
+    
     Object.keys(form).forEach(field => {
       const error = validateField(field, form[field])
-      if (error) newErrors[field] = error
+      if (error) {
+        newErrors[field] = error
+        validationMessages.push(error)
+      }
     })
+    
     setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    
+    if (validationMessages.length > 0) {
+      // Show all validation messages in sequence
+      validationMessages.forEach((message, index) => {
+        setTimeout(() => {
+          showSnackbar(message)
+        }, index * 2000) // Show each message with a 2-second delay
+      })
+      return false
+    }
+    
+    return true
   }
 
   const handleChange = (field, value) => {
@@ -176,8 +218,7 @@ const SignUpSubScreen = ({ navigation, onClose }) => {
 
   const handleSignUp = async () => {
     if (!validateForm()) {
-      showSnackbar('Please fix the errors before signing up')
-      return
+      return null
     }
 
     try {
@@ -217,8 +258,7 @@ const SignUpSubScreen = ({ navigation, onClose }) => {
               birth_date: birth_date,
               role_id: roleData.id,
               user_status_id: 3, // Pending status
-              verify_info_id: user.id,
-            })
+            })  
   
           if (profileError) {
             return showSnackbar('Profile creation failed: ' + profileError.message)
@@ -302,7 +342,7 @@ const SignUpSubScreen = ({ navigation, onClose }) => {
               left={<TextInput.Affix text="+63" />}
               error={!!errors.contact_number}
               helperText={errors.contact_number}
-              maxLength={13}
+              maxLength={11}
             />
 
             <TextInput
