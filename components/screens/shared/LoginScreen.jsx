@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { View, Image, Text, StyleSheet, ActivityIndicator } from 'react-native'
 import { Button, useTheme } from 'react-native-paper'
-import BottomModal from '../customComponents/BottomModal'
-import LoginModalContent from '../customComponents/LoginModalContent'
-import useAuth from '../hooks/useAuth'
+import BottomModal from '../../customComponents/BottomModal'
+import LoginModalContent from '../../customComponents/LoginModalContent'
+import useAuth from '../../hooks/useAuth'
 
 const LoginScreen = ({ navigation }) => {
   const { colors, fonts } = useTheme()

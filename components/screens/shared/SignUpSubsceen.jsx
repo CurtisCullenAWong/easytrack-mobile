@@ -2,8 +2,8 @@ import React, { useState, useCallback } from 'react'
 import { StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
 import { TextInput, Button, useTheme, Appbar, Text, Portal, Dialog, Surface, Divider } from 'react-native-paper'
 import { DatePickerModal, en, registerTranslation } from 'react-native-paper-dates'
-import { supabase } from '../../lib/supabase'
-import useSnackbar from '../hooks/useSnackbar'
+import { supabase } from '../../../lib/supabase'
+import useSnackbar from '../../hooks/useSnackbar'
 
 // Register the English locale
 registerTranslation('en', en)

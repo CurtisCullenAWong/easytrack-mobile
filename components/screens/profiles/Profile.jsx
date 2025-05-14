@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { ScrollView, View, StyleSheet, Image } from 'react-native'
 import { Avatar, Card, Text, Divider, Button, useTheme, ActivityIndicator } from 'react-native-paper'
-import Header from '../customComponents/Header'
-import { supabase } from '../../lib/supabase'
-import useLogout from '../hooks/useLogout'
+import Header from '../../customComponents/Header'
+import { supabase } from '../../../lib/supabase'
+import useLogout from '../../hooks/useLogout'
 import { useFocusEffect } from '@react-navigation/native'
 
 const Profile = ({ navigation }) => {

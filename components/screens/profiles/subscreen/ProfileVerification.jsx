@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { ScrollView, View, StyleSheet, Image } from 'react-native'
 import { Text, Card, Button, TextInput, useTheme, Portal, Dialog, IconButton, Appbar, Menu } from 'react-native-paper'
-import { supabase } from '../../lib/supabase'
+import { supabase } from '../../../../lib/supabase'
 import * as ImagePicker from 'expo-image-picker'
 
 const Verification = ({ navigation }) => {
@@ -145,6 +145,7 @@ const Verification = ({ navigation }) => {
         .from('profiles')
         .update({ 
           verify_status_id: 3,
+          last_updated: Date.now(),
           gov_id_type: formData.gov_id_type_id,
           gov_id_number: formData.gov_id_number,
           gov_id_proof: formData.gov_id_proof,
