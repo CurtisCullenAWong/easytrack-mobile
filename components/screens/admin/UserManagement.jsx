@@ -306,9 +306,9 @@ const UserManagement = ({ navigation }) => {
                         <Menu.Item
                           onPress={() => {
                             setActionMenuVisible(null)
-                            navigation.navigate('ViewProfile', { userId: user.id })
+                            navigation.navigate('ViewAccount', { userId: user.id })
                           }}
-                          title="View Profile"
+                          title="View Account"
                           leadingIcon="eye"
                           titleStyle={[
                             {
@@ -322,7 +322,7 @@ const UserManagement = ({ navigation }) => {
                             setActionMenuVisible(null)
                             navigation.navigate('EditAccount', { userId: user.id })
                           }}
-                          title="Edit Profile"
+                          title="Edit Account"
                           leadingIcon="account-edit"
                           titleStyle={[
                             {

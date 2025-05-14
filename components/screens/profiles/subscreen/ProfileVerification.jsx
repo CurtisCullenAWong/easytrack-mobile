@@ -16,6 +16,7 @@ const Verification = ({ navigation }) => {
   const [loading, setLoading] = useState(false)
   const [showImageSourceDialog, setShowImageSourceDialog] = useState(false)
   const [showPermissionDialog, setShowPermissionDialog] = useState(false)
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [currentImageType, setCurrentImageType] = useState(null)
   const [idTypeMenuVisible, setIdTypeMenuVisible] = useState(false)
   const [idTypes, setIdTypes] = useState([])
@@ -236,6 +237,55 @@ const Verification = ({ navigation }) => {
     }
   }
 
+  const validateForm = () => {
+    if (!formData.gov_id_type_id) {
+      showSnackbar('Please select an ID type')
+      return false
+    }
+
+    if (!formData.gov_id_number?.trim()) {
+      showSnackbar('Please enter your ID number')
+      return false
+    }
+
+    if (!formData.gov_id_proof) {
+      showSnackbar('Please upload your ID proof')
+      return false
+    }
+
+    // Additional validation for delivery role (roleId === 2)
+    if (roleId === 2) {
+      if (!formData.vehicle_info?.trim()) {
+        showSnackbar('Please enter vehicle description')
+        return false
+      }
+
+      if (!formData.vehicle_plate_number?.trim()) {
+        showSnackbar('Please enter vehicle plate number')
+        return false
+      }
+
+      if (!formData.vehicle_or_cr) {
+        showSnackbar('Please upload OR/CR document')
+        return false
+      }
+    }
+
+    return true
+  }
+
+  const handleSubmitPress = () => {
+    if (!validateForm()) {
+      return
+    }
+    setShowConfirmDialog(true)
+  }
+
+  const handleConfirmSubmit = () => {
+    setShowConfirmDialog(false)
+    handleSubmit()
+  }
+
   const handleSubmit = async () => {
     setLoading(true)
     try {
@@ -292,19 +342,6 @@ const Verification = ({ navigation }) => {
         await supabase.storage
           .from(bucket)
           .remove([filePath])
-      }
-
-      // Validate required fields
-      if (!formData.gov_id_type_id || !formData.gov_id_number || !govIdProofUrl) {
-        showSnackbar('Please fill in all required government ID fields')
-        setLoading(false)
-        return
-      }
-
-      if (roleId === 2 && (!formData.vehicle_info || !formData.vehicle_plate_number || !vehicleOrCrUrl)) {
-        showSnackbar('Please fill in all required vehicle information fields')
-        setLoading(false)
-        return
       }
 
       // Update verification status with signed URLs
@@ -365,7 +402,7 @@ const Verification = ({ navigation }) => {
         />
         <Appbar.Action 
           icon="content-save" 
-          onPress={handleSubmit} 
+          onPress={handleSubmitPress} 
           disabled={loading}
           color={colors.primary}
         />
@@ -543,6 +580,41 @@ const Verification = ({ navigation }) => {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+      {/* Confirmation Dialog */}
+      <Portal>
+        <Dialog
+          visible={showConfirmDialog}
+          onDismiss={() => setShowConfirmDialog(false)}
+          style={{ backgroundColor: colors.surface }}
+        >
+          <Dialog.Title style={{ color: colors.onSurface, ...fonts.titleLarge }}>
+            Submit Verification
+          </Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ color: colors.onSurfaceVariant, ...fonts.bodyMedium }}>
+              Are you sure you want to submit your verification details?
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button
+              onPress={() => setShowConfirmDialog(false)}
+              textColor={colors.primary}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onPress={handleConfirmSubmit}
+              textColor={colors.primary}
+              loading={loading}
+              disabled={loading}
+            >
+              Submit
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+      {SnackbarElement}
     </ScrollView>
   )
 }

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useCallback } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
 import { 
   StyleSheet, 
   SafeAreaView, 
@@ -20,7 +21,7 @@ registerTranslation('en', en)
 const VALIDATION_PATTERNS = {
   name: /^[a-zA-Z\s'-]{2,50}$/,
   middleInitial: /^[a-zA-Z]$/,
-  phone: /^(\+63|0)[0-9]{10}$/,
+  phone: /^09[0-9]{9}$/,
 }
 
 // Validation messages
@@ -28,26 +29,64 @@ const VALIDATION_MESSAGES = {
   required: 'This field is required',
   invalidName: 'Name should only contain letters, spaces, hyphens, and apostrophes (2-50 characters)',
   invalidMiddleInitial: 'Middle initial should be a single letter',
-  invalidPhone: 'Please enter a valid Philippine phone number (e.g., +639123456789 or 09123456789)',
+  invalidPhone: 'Please enter a valid Philippine phone number starting with 09 (e.g., 09123456789)',
   invalidBirthDate: 'Birth date cannot be in the future',
+  blankField: 'All fields are required',
+}
+
+// Validation rules for each field
+const VALIDATION_RULES = {
+  first_name: {
+    required: true,
+    pattern: VALIDATION_PATTERNS.name,
+    errorMessage: VALIDATION_MESSAGES.invalidName,
+  },
+  last_name: {
+    required: true,
+    pattern: VALIDATION_PATTERNS.name,
+    errorMessage: VALIDATION_MESSAGES.invalidName,
+  },
+  middle_initial: {
+    required: true,
+    pattern: VALIDATION_PATTERNS.middleInitial,
+    errorMessage: VALIDATION_MESSAGES.invalidMiddleInitial,
+  },
+  contact_number: {
+    required: true,
+    pattern: VALIDATION_PATTERNS.phone,
+    errorMessage: VALIDATION_MESSAGES.invalidPhone,
+  },
+  emergency_contact_name: {
+    required: true,
+    pattern: VALIDATION_PATTERNS.name,
+    errorMessage: VALIDATION_MESSAGES.invalidName,
+  },
+  emergency_contact_number: {
+    required: true,
+    pattern: VALIDATION_PATTERNS.phone,
+    errorMessage: VALIDATION_MESSAGES.invalidPhone,
+  },
+  birth_date: {
+    required: true,
+    validate: (value) => value <= new Date(),
+    errorMessage: VALIDATION_MESSAGES.invalidBirthDate,
+  },
 }
 
 // Phone number formatting function
 const formatPhoneNumber = (value) => {
+  // Handle undefined or null
+  if (!value) return ''
+  
   // Remove all non-digit characters
   const digits = value.replace(/\D/g, '')
   
   // If empty, return empty string
   if (!digits) return ''
   
-  // If starts with 63, convert to +63
+  // If starts with 63, convert to 09
   if (digits.startsWith('63')) {
-    return `+63${digits.slice(2)}`
-  }
-  
-  // If starts with 0, keep it
-  if (digits.startsWith('0')) {
-    return digits
+    return `09${digits.slice(2)}`
   }
   
   // If starts with 9, add 0
@@ -55,8 +94,21 @@ const formatPhoneNumber = (value) => {
     return `0${digits}`
   }
   
-  // If none of the above, add 0
-  return `0${digits}`
+  // If starts with 0, keep it
+  if (digits.startsWith('0')) {
+    return digits
+  }
+  
+  // If none of the above, add 09
+  return `09${digits}`
+}
+
+// Display formatting function
+const formatDisplayNumber = (value) => {
+  // Handle undefined or null
+  if (!value) return ''
+  // Remove +63 and ensure it starts with 09
+  return value.replace('+63', '09')
 }
 
 const EditProfileSubScreen = ({ navigation }) => {
@@ -83,28 +135,59 @@ const EditProfileSubScreen = ({ navigation }) => {
 
   // Validation functions
   const validateField = (field, value) => {
-    switch (field) {
-      case 'first_name':
-      case 'last_name':
-      case 'emergency_contact_name':
-        return !value ? VALIDATION_MESSAGES.required :
-          !VALIDATION_PATTERNS.name.test(value) ? VALIDATION_MESSAGES.invalidName : ''
-      case 'middle_initial':
-        return value && !VALIDATION_PATTERNS.middleInitial.test(value) ? VALIDATION_MESSAGES.invalidMiddleInitial : ''
-      case 'contact_number':
-      case 'emergency_contact_number':
-        return !value ? VALIDATION_MESSAGES.required :
-          !VALIDATION_PATTERNS.phone.test(value) ? VALIDATION_MESSAGES.invalidPhone : ''
-      case 'birth_date':
-        return !value ? VALIDATION_MESSAGES.required :
-          value > new Date() ? VALIDATION_MESSAGES.invalidBirthDate : ''
-      default:
-        return ''
+    const rule = VALIDATION_RULES[field]
+    if (!rule) return ''
+
+    // Check if required
+    if (rule.required && (!value || (typeof value === 'string' && value.trim() === ''))) {
+      return VALIDATION_MESSAGES.required
     }
+
+    // Skip further validation if value is empty and not required
+    if (!value) return ''
+
+    // Check pattern if exists
+    if (rule.pattern && !rule.pattern.test(value)) {
+      return rule.errorMessage
+    }
+
+    // Check custom validation if exists
+    if (rule.validate && !rule.validate(value)) {
+      return rule.errorMessage
+    }
+
+    return ''
+  }
+
+  const validateForm = () => {
+    const newErrors = {}
+    let hasBlankFields = false
+
+    Object.keys(VALIDATION_RULES).forEach(field => {
+      const value = form[field]
+      if (!value || (typeof value === 'string' && value.trim() === '')) {
+        hasBlankFields = true
+        newErrors[field] = VALIDATION_MESSAGES.required
+      } else {
+        const error = validateField(field, value)
+        if (error) newErrors[field] = error
+      }
+    })
+
+    setErrors(newErrors)
+    
+    if (hasBlankFields) {
+      showSnackbar(VALIDATION_MESSAGES.blankField)
+      return false
+    }
+    
+    return Object.keys(newErrors).length === 0
   }
 
   // Sanitization functions
   const sanitizeInput = (field, value) => {
+    if (!value) return ''
+
     switch (field) {
       case 'first_name':
       case 'last_name':
@@ -139,16 +222,6 @@ const EditProfileSubScreen = ({ navigation }) => {
   const openDatePicker = useCallback(() => {
     setShowDatePicker(true)
   }, [])
-
-  const validateForm = () => {
-    const newErrors = {}
-    Object.keys(form).forEach(field => {
-      const error = validateField(field, form[field])
-      if (error) newErrors[field] = error
-    })
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
 
   const handleImageSource = async (source) => {
     setShowImageSourceDialog(false)
@@ -318,16 +391,20 @@ const EditProfileSubScreen = ({ navigation }) => {
         }
       }
 
+      // Format phone numbers for storage
+      const contactNumber = formatPhoneNumber(form.contact_number)
+      const emergencyContactNumber = formatPhoneNumber(form.emergency_contact_number)
+
       const { error } = await supabase
         .from('profiles')
         .update({
           first_name: form.first_name,
           middle_initial: form.middle_initial,
           last_name: form.last_name,
-          contact_number: form.contact_number,
+          contact_number: contactNumber,
           birth_date: form.birth_date,
           emergency_contact_name: form.emergency_contact_name,
-          emergency_contact_number: form.emergency_contact_number,
+          emergency_contact_number: emergencyContactNumber,
           pfp_id: newPfpId,
           updated_at: new Date().toISOString(),
         })
@@ -372,10 +449,10 @@ const EditProfileSubScreen = ({ navigation }) => {
         first_name: data.first_name || '',
         middle_initial: data.middle_initial || '',
         last_name: data.last_name || '',
-        contact_number: data.contact_number || '',
+        contact_number: formatDisplayNumber(data.contact_number) || '',
         birth_date: data.birth_date ? new Date(data.birth_date) : null,
         emergency_contact_name: data.emergency_contact_name || '',
-        emergency_contact_number: data.emergency_contact_number || '',
+        emergency_contact_number: formatDisplayNumber(data.emergency_contact_number) || '',
         pfp_id: data.pfp_id || null,
       })
     } catch (error) {
@@ -385,9 +462,11 @@ const EditProfileSubScreen = ({ navigation }) => {
     }
   }
 
-  useEffect(() => {
-    fetchProfile()
-  }, [])
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile()
+    }, [])
+  )
 
   const handleChange = (field, value) => {
     const sanitizedValue = sanitizeInput(field, value)
@@ -395,6 +474,11 @@ const EditProfileSubScreen = ({ navigation }) => {
     
     setForm(prev => ({ ...prev, [field]: sanitizedValue }))
     setErrors(prev => ({ ...prev, [field]: error }))
+
+    // Show snackbar for immediate feedback on blank fields
+    if (VALIDATION_RULES[field]?.required && (!sanitizedValue || (typeof sanitizedValue === 'string' && sanitizedValue.trim() === ''))) {
+      showSnackbar(VALIDATION_MESSAGES.required)
+    }
   }
 
 
@@ -466,7 +550,7 @@ const EditProfileSubScreen = ({ navigation }) => {
             onChangeText={(text) => handleChange('first_name', text)}
             mode="outlined"
             style={styles.input}
-            left={<TextInput.Icon icon="account" />}
+            right={<TextInput.Icon icon="account" />}
             theme={{ colors: { primary: colors.primary } }}
             disabled={saving}
             error={!!errors.first_name}
@@ -480,7 +564,7 @@ const EditProfileSubScreen = ({ navigation }) => {
             mode="outlined"
             style={styles.input}
             maxLength={1}
-            left={<TextInput.Icon icon="account" />}
+            right={<TextInput.Icon icon="account" />}
             theme={{ colors: { primary: colors.primary } }}
             disabled={saving}
             error={!!errors.middle_initial}
@@ -493,7 +577,7 @@ const EditProfileSubScreen = ({ navigation }) => {
             onChangeText={(text) => handleChange('last_name', text)}
             mode="outlined"
             style={styles.input}
-            left={<TextInput.Icon icon="account" />}
+            right={<TextInput.Icon icon="account" />}
             theme={{ colors: { primary: colors.primary } }}
             disabled={saving}
             error={!!errors.last_name}
@@ -514,7 +598,7 @@ const EditProfileSubScreen = ({ navigation }) => {
             disabled={saving}
             error={!!errors.contact_number}
             helperText={errors.contact_number}
-            maxLength={13}
+            maxLength={11}
           />
 
           <TextInput
@@ -523,7 +607,7 @@ const EditProfileSubScreen = ({ navigation }) => {
             editable={false}
             mode="outlined"
             style={styles.input}
-            left={<TextInput.Icon icon="calendar" onPress={openDatePicker} />}
+            right={<TextInput.Icon icon="calendar" onPress={openDatePicker} />}
             theme={{ colors: { primary: colors.primary } }}
             disabled={saving}
             error={!!errors.birth_date}
@@ -538,7 +622,7 @@ const EditProfileSubScreen = ({ navigation }) => {
             onChangeText={(text) => handleChange('emergency_contact_name', text)}
             mode="outlined"
             style={styles.input}
-            left={<TextInput.Icon icon="account" />}
+            right={<TextInput.Icon icon="account" />}
             theme={{ colors: { primary: colors.primary } }}
             disabled={saving}
             error={!!errors.emergency_contact_name}
@@ -557,7 +641,7 @@ const EditProfileSubScreen = ({ navigation }) => {
             disabled={saving}
             error={!!errors.emergency_contact_number}
             helperText={errors.emergency_contact_number}
-            maxLength={13}
+            maxLength={11}
           />
         </Surface>
       </ScrollView>

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
 import {
   View,
   ScrollView,
@@ -25,138 +26,233 @@ import useSnackbar from '../../../../components/hooks/useSnackbar'
 
 registerTranslation('en', en)
 
-// Validation patterns
-const VALIDATION_PATTERNS = {
-  name: /^[a-zA-Z\s'-]{2,50}$/,
-  middleInitial: /^[a-zA-Z]$/,
-  phone: /^(\+63|0)[0-9]{10}$/,
-  email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+// Constants
+const VALIDATION = {
+  PATTERNS: {
+    name: /^[a-zA-Z\s'-]{2,50}$/,
+    middleInitial: /^[a-zA-Z]$/,
+    phone: /^09[0-9]{9}$/,
+    email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+  },
+  MESSAGES: {
+    required: 'This field is required',
+    invalidName: 'Name should only contain letters, spaces, hyphens, and apostrophes (2-50 characters)',
+    invalidMiddleInitial: 'Middle initial should be a single letter',
+    invalidPhone: 'Please enter a valid Philippine phone number starting with 09 (e.g., 09123456789)',
+    invalidEmail: 'Please enter a valid email address',
+    invalidBirthDate: 'Birth date cannot be in the future',
+    invalidRole: 'Please select a valid role',
+    invalidStatus: 'Please select a valid status',
+    blankField: 'All fields are required',
+  },
+  RULES: {
+    first_name: {
+      required: true,
+      pattern: /^[a-zA-Z\s'-]{2,50}$/,
+      errorMessage: 'Name should only contain letters, spaces, hyphens, and apostrophes (2-50 characters)',
+    },
+    last_name: {
+      required: true,
+      pattern: /^[a-zA-Z\s'-]{2,50}$/,
+      errorMessage: 'Name should only contain letters, spaces, hyphens, and apostrophes (2-50 characters)',
+    },
+    middle_initial: {
+      required: true,
+      pattern: /^[a-zA-Z]$/,
+      errorMessage: 'Middle initial should be a single letter',
+    },
+    email: {
+      required: true,
+      pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+      errorMessage: 'Please enter a valid email address',
+    },
+    contact_number: {
+      required: true,
+      pattern: /^09[0-9]{9}$/,
+      errorMessage: 'Please enter a valid Philippine phone number starting with 09 (e.g., 09123456789)',
+    },
+    emergency_contact_name: {
+      required: true,
+      pattern: /^[a-zA-Z\s'-]{2,50}$/,
+      errorMessage: 'Name should only contain letters, spaces, hyphens, and apostrophes (2-50 characters)',
+    },
+    emergency_contact_number: {
+      required: true,
+      pattern: /^09[0-9]{9}$/,
+      errorMessage: 'Please enter a valid Philippine phone number starting with 09 (e.g., 09123456789)',
+    },
+    birth_date: {
+      required: true,
+      validate: (value) => value <= new Date(),
+      errorMessage: 'Birth date cannot be in the future',
+    },
+    role: {
+      required: true,
+      errorMessage: 'Please select a valid role',
+    },
+    user_status: {
+      required: true,
+      errorMessage: 'Please select a valid status',
+    },
+    verify_status: {
+      required: true,
+      errorMessage: 'Please select a valid status',
+    },
+  },
 }
 
-// Validation messages
-const VALIDATION_MESSAGES = {
-  required: 'This field is required',
-  invalidName: 'Name should only contain letters, spaces, hyphens, and apostrophes (2-50 characters)',
-  invalidMiddleInitial: 'Middle initial should be a single letter',
-  invalidPhone: 'Please enter a valid Philippine phone number (e.g., +639123456789 or 09123456789)',
-  invalidEmail: 'Please enter a valid email address',
-  invalidBirthDate: 'Birth date cannot be in the future',
-  invalidRole: 'Please select a valid role',
-  invalidStatus: 'Please select a valid status',
-}
-
-// Phone number formatting function
+// Utility functions
 const formatPhoneNumber = (value) => {
-  // Remove all non-digit characters
+  if (!value) return ''
   const digits = value.replace(/\D/g, '')
-  
-  // If empty, return empty string
   if (!digits) return ''
-  
-  // If starts with 63, convert to +63
-  if (digits.startsWith('63')) {
-    return `+63${digits.slice(2)}`
-  }
-  
-  // If starts with 0, keep it
-  if (digits.startsWith('0')) {
-    return digits
-  }
-  
-  // If starts with 9, add 0
-  if (digits.startsWith('9')) {
-    return `0${digits}`
-  }
-  
-  // If none of the above, add 0
-  return `0${digits}`
+  if (digits.startsWith('63')) return `09${digits.slice(2)}`
+  if (digits.startsWith('9')) return `0${digits}`
+  if (digits.startsWith('0')) return digits
+  return `09${digits}`
 }
 
-// Memoized Menu Item component
+const formatDisplayNumber = (value) => {
+  if (!value) return ''
+  return value.replace('+63', '09')
+}
+
+// Custom hooks
+const useFormValidation = (initialState) => {
+  const [errors, setErrors] = useState({})
+
+  const validateField = useCallback((field, value) => {
+    const rule = VALIDATION.RULES[field]
+    if (!rule) return ''
+
+    if (rule.required && (!value || (typeof value === 'string' && value.trim() === ''))) {
+      return VALIDATION.MESSAGES.required
+    }
+
+    if (!value) return ''
+
+    if (rule.pattern && !rule.pattern.test(value)) {
+      return rule.errorMessage
+    }
+
+    if (rule.validate && !rule.validate(value)) {
+      return rule.errorMessage
+    }
+
+    return ''
+  }, [])
+
+  const validateForm = useCallback((formData) => {
+    const newErrors = {}
+    let hasBlankFields = false
+
+    Object.keys(VALIDATION.RULES).forEach(field => {
+      const value = formData[field]
+      if (!value || (typeof value === 'string' && value.trim() === '')) {
+        hasBlankFields = true
+        newErrors[field] = VALIDATION.MESSAGES.required
+      } else {
+        const error = validateField(field, value)
+        if (error) newErrors[field] = error
+      }
+    })
+
+    setErrors(newErrors)
+    return { isValid: Object.keys(newErrors).length === 0, hasBlankFields }
+  }, [validateField])
+
+  return { errors, setErrors, validateField, validateForm }
+}
+
+const useFormData = (initialState) => {
+  const [formData, setFormData] = useState(initialState)
+
+  const handleChange = useCallback((field, value) => {
+    const sanitizedValue = (() => {
+      if (!value) return ''
+      switch (field) {
+        case 'first_name':
+        case 'last_name':
+        case 'emergency_contact_name':
+          return value.trim().replace(/\s+/g, ' ')
+        case 'middle_initial':
+          return value.trim().toUpperCase()
+        case 'email':
+          return value.trim().toLowerCase()
+        case 'contact_number':
+        case 'emergency_contact_number':
+          return formatPhoneNumber(value)
+        default:
+          return value
+      }
+    })()
+
+    setFormData(prev => ({ ...prev, [field]: sanitizedValue }))
+    return sanitizedValue
+  }, [])
+
+  return { formData, setFormData, handleChange }
+}
+
+// Reusable components
 const MemoizedMenuItem = React.memo(({ item, selected, onPress, colors, fonts }) => (
   <Menu.Item
     onPress={onPress}
     title={item}
     titleStyle={[
       fonts.bodyLarge,
-      {
-        color: selected ? colors.primary : colors.onSurface,
-      },
+      { color: selected ? colors.primary : colors.onSurface },
     ]}
     leadingIcon={selected ? 'check' : undefined}
   />
 ))
 
+const FormInput = React.memo(({ 
+  label, 
+  value, 
+  onChangeText, 
+  mode = 'outlined', 
+  right, 
+  left,
+  error, 
+  helperText,
+  ...props 
+}) => (
+  <TextInput
+    label={label}
+    value={value || ''}
+    onChangeText={onChangeText}
+    style={styles.input}
+    mode={mode}
+    right={right}
+    left={left}
+    error={!!error}
+    helperText={error}
+    {...props}
+  />
+))
+
+// Main component
 const EditAccount = ({ route, navigation }) => {
   const { userId } = route.params
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
-  const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
-  const [errors, setErrors] = useState({})
-
   const [roleMenuVisible, setRoleMenuVisible] = useState(false)
   const [statusMenuVisible, setStatusMenuVisible] = useState(false)
   const [verifyStatusMenuVisible, setVerifyStatusMenuVisible] = useState(false)
-
   const [roleOptions, setRoleOptions] = useState([])
   const [statusOptions, setStatusOptions] = useState([])
   const [verifyStatusOptions, setVerifyStatusOptions] = useState([])
 
-  // Validation functions
-  const validateField = (field, value) => {
-    switch (field) {
-      case 'first_name':
-      case 'last_name':
-      case 'emergency_contact_name':
-        return !value ? VALIDATION_MESSAGES.required :
-          !VALIDATION_PATTERNS.name.test(value) ? VALIDATION_MESSAGES.invalidName : ''
-      case 'middle_initial':
-        return value && !VALIDATION_PATTERNS.middleInitial.test(value) ? VALIDATION_MESSAGES.invalidMiddleInitial : ''
-      case 'email':
-        return !value ? VALIDATION_MESSAGES.required :
-          !VALIDATION_PATTERNS.email.test(value) ? VALIDATION_MESSAGES.invalidEmail : ''
-      case 'contact_number':
-      case 'emergency_contact_number':
-        return !value ? VALIDATION_MESSAGES.required :
-          !VALIDATION_PATTERNS.phone.test(value) ? VALIDATION_MESSAGES.invalidPhone : ''
-      case 'birth_date':
-        return !value ? VALIDATION_MESSAGES.required :
-          value > new Date() ? VALIDATION_MESSAGES.invalidBirthDate : ''
-      case 'role':
-        return !value ? VALIDATION_MESSAGES.invalidRole : ''
-      case 'user_status':
-        return !value ? VALIDATION_MESSAGES.invalidStatus : ''
-      case 'verify_status':
-        return !value ? VALIDATION_MESSAGES.invalidStatus : ''
-      default:
-        return ''
-    }
-  }
+  const { formData, setFormData, handleChange } = useFormData(null)
+  const { errors, setErrors, validateForm } = useFormValidation()
 
-  // Sanitization functions
-  const sanitizeInput = (field, value) => {
-    switch (field) {
-      case 'first_name':
-      case 'last_name':
-      case 'emergency_contact_name':
-        return value.trim().replace(/\s+/g, ' ')
-      case 'middle_initial':
-        return value.trim().toUpperCase()
-      case 'email':
-        return value.trim().toLowerCase()
-      case 'contact_number':
-      case 'emergency_contact_number':
-        return formatPhoneNumber(value)
-      default:
-        return value
-    }
-  }
-
+  // Date picker handlers
   const handleDateConfirm = useCallback(({ date }) => {
     if (date) {
       const error = validateField('birth_date', date)
@@ -173,46 +269,26 @@ const EditAccount = ({ route, navigation }) => {
     setShowDatePicker(false)
   }, [])
 
-  const openDatePicker = useCallback(() => {
-    setShowDatePicker(true)
-  }, [])
-
-  const validateForm = () => {
-    const newErrors = {}
-    Object.keys(user).forEach(field => {
-      const error = validateField(field, user[field])
-      if (error) newErrors[field] = error
-    })
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
+  // Save user data
   const saveUser = async () => {
-    if (!validateForm()) {
-      showSnackbar('Please fix the errors before saving')
+    const { isValid, hasBlankFields } = validateForm(formData)
+    
+    if (!isValid) {
+      if (hasBlankFields) {
+        showSnackbar(VALIDATION.MESSAGES.blankField)
+      } else {
+        showSnackbar('Please fix the errors before saving')
+      }
       return
     }
 
     try {
       setSaving(true)
 
-      // First get the role_id, user_status_id, and verify_status_id based on the selected names
       const [{ data: roleData }, { data: statusData }, { data: verifyStatusData }] = await Promise.all([
-        supabase
-          .from('profiles_roles')
-          .select('id')
-          .eq('role_name', user.role)
-          .single(),
-        supabase
-          .from('profiles_status')
-          .select('id')
-          .eq('status_name', user.user_status)
-          .single(),
-        supabase
-          .from('verify_status')
-          .select('id')
-          .eq('status_name', user.verify_status)
-          .single()
+        supabase.from('profiles_roles').select('id').eq('role_name', formData.role).single(),
+        supabase.from('profiles_status').select('id').eq('status_name', formData.user_status).single(),
+        supabase.from('verify_status').select('id').eq('status_name', formData.verify_status).single()
       ])
 
       if (!roleData || !statusData || !verifyStatusData) {
@@ -223,94 +299,85 @@ const EditAccount = ({ route, navigation }) => {
       const { error } = await supabase
         .from('profiles')
         .update({
-          first_name: user.first_name,
-          middle_initial: user.middle_initial,
-          last_name: user.last_name,
-          email: user.email,
-          contact_number: user.contact_number,
-          birth_date: user.birth_date,
+          first_name: formData.first_name,
+          middle_initial: formData.middle_initial,
+          last_name: formData.last_name,
+          email: formData.email,
+          contact_number: formData.contact_number,
+          birth_date: formData.birth_date,
           role_id: roleData.id,
           user_status_id: statusData.id,
           verify_status_id: verifyStatusData.id,
           updated_at: new Date().toISOString(),
         })
         .eq('id', userId)
-        console.log(verifyStatusData.id)
-      if (error) {
-        showSnackbar('Error updating user: ' + error.message)
-        return
-      }
+
+      if (error) throw error
 
       showSnackbar('User updated successfully', true)
       navigation.navigate('UserManagement')
     } catch (error) {
-      showSnackbar('Error updating user')
+      showSnackbar('Error updating user: ' + error.message)
     } finally {
       setSaving(false)
     }
   }
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
-      try {
-        const [{ data: userData, error: userError }, { data: roles }, { data: statuses }, { data: verifyStatuses }] = await Promise.all([
-          supabase
-            .from('profiles')
-            .select(`
-              *,
-              profile_status:user_status_id (status_name),
-              profile_roles:role_id (role_name),
-              verify_status:verify_status_id (status_name)
-            `)
-            .eq('id', userId)
-            .single(),
-          supabase.from('profiles_roles').select('role_name'),
-          supabase.from('profiles_status').select('status_name').in('id', [4, 5]),
-          supabase.from('verify_status').select('status_name').in('id', [1, 4])
-        ])
+  const fetchAccount = async () => {
+    setLoading(true)
+    try {
+      const [{ data: userData, error: userError }, { data: roles }, { data: statuses }, { data: verifyStatuses }] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select(`
+            *,
+            profile_status:user_status_id (status_name),
+            profile_roles:role_id (role_name),
+            verify_status:verify_status_id (status_name)
+          `)
+          .eq('id', userId)
+          .single(),
+        supabase.from('profiles_roles').select('role_name'),
+        supabase.from('profiles_status').select('status_name').in('id', [4, 5]),
+        supabase.from('verify_status').select('status_name').in('id', [1, 4])
+      ])
 
-        if (userError) {
-          showSnackbar('Error loading user data: ' + userError.message)
-          return
-        }
+      if (userError) throw userError
 
-        setUser({
-          ...userData,
-          role: userData.profile_roles?.role_name,
-          user_status: userData.profile_status?.status_name,
-          verify_status: userData.verify_status?.status_name,
-          birth_date: userData.birth_date ? new Date(userData.birth_date) : null,
-        })
+      setFormData({
+        ...userData,
+        role: userData.profile_roles?.role_name,
+        user_status: userData.profile_status?.status_name,
+        verify_status: userData.verify_status?.status_name,
+        birth_date: userData.birth_date ? new Date(userData.birth_date) : null,
+        contact_number: formatDisplayNumber(userData.contact_number),
+        emergency_contact_number: formatDisplayNumber(userData.emergency_contact_number),
+      })
 
-        if (roles) setRoleOptions(roles.map(r => r.role_name))
-        if (statuses) setStatusOptions(statuses.map(s => s.status_name))
-        if (verifyStatuses) setVerifyStatusOptions(verifyStatuses.map(s => s.status_name))
-      } catch (error) {
-        showSnackbar('Error loading user data')
-      } finally {
-        setLoading(false)
-      }
+      if (roles) setRoleOptions(roles.map(r => r.role_name))
+      if (statuses) setStatusOptions(statuses.map(s => s.status_name))
+      if (verifyStatuses) setVerifyStatusOptions(verifyStatuses.map(s => s.status_name))
+    } catch (error) {
+      showSnackbar('Error loading user data: ' + error.message)
+    } finally {
+      setLoading(false)
     }
-
-    fetchData()
-  }, [userId])
-
-  const handleChange = (field, value) => {
-    const sanitizedValue = sanitizeInput(field, value)
-    const error = validateField(field, sanitizedValue)
-    
-    setUser(prev => ({ ...prev, [field]: sanitizedValue }))
-    setErrors(prev => ({ ...prev, [field]: error }))
   }
 
-  // Memoize the role menu items
+  // Fetch initial data
+  useFocusEffect(
+    useCallback(() => {
+      fetchAccount()
+    }, [userId])
+  )
+
+  // Memoized menu items
   const roleMenuItems = useMemo(() => 
     roleOptions.map(role => (
       <MemoizedMenuItem
         key={role}
         item={role}
-        selected={user?.role === role}
+        selected={formData?.role === role}
         onPress={() => {
           handleChange('role', role)
           setRoleMenuVisible(false)
@@ -318,15 +385,14 @@ const EditAccount = ({ route, navigation }) => {
         colors={colors}
         fonts={fonts}
       />
-    )), [roleOptions, user?.role, colors, fonts])
+    )), [roleOptions, formData?.role, colors, fonts])
 
-  // Memoize the status menu items
   const statusMenuItems = useMemo(() => 
     statusOptions.map(status => (
       <MemoizedMenuItem
         key={status}
         item={status}
-        selected={user?.user_status === status}
+        selected={formData?.user_status === status}
         onPress={() => {
           handleChange('user_status', status)
           setStatusMenuVisible(false)
@@ -334,15 +400,14 @@ const EditAccount = ({ route, navigation }) => {
         colors={colors}
         fonts={fonts}
       />
-    )), [statusOptions, user?.user_status, colors, fonts])
+    )), [statusOptions, formData?.user_status, colors, fonts])
 
-  // Memoize the verification status menu items
   const verifyStatusMenuItems = useMemo(() => 
     verifyStatusOptions.map(status => (
       <MemoizedMenuItem
         key={status}
         item={status}
-        selected={user?.verify_status === status}
+        selected={formData?.verify_status === status}
         onPress={() => {
           handleChange('verify_status', status)
           setVerifyStatusMenuVisible(false)
@@ -350,7 +415,7 @@ const EditAccount = ({ route, navigation }) => {
         colors={colors}
         fonts={fonts}
       />
-    )), [verifyStatusOptions, user?.verify_status, colors, fonts])
+    )), [verifyStatusOptions, formData?.verify_status, colors, fonts])
 
   if (loading) {
     return (
@@ -360,7 +425,7 @@ const EditAccount = ({ route, navigation }) => {
     )
   }
 
-  if (!user) {
+  if (!formData) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
         <Text variant="bodyLarge" style={{ color: colors.error }}>User not found.</Text>
@@ -372,7 +437,7 @@ const EditAccount = ({ route, navigation }) => {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.navigate('UserManagement')} />
-        <Appbar.Content title="Edit Profile" />
+        <Appbar.Content title="Edit Account" />
         <Appbar.Action 
           icon="content-save" 
           onPress={() => setShowConfirmDialog(true)} 
@@ -380,6 +445,7 @@ const EditAccount = ({ route, navigation }) => {
           color={colors.primary}
         />
       </Appbar.Header>
+
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -388,115 +454,91 @@ const EditAccount = ({ route, navigation }) => {
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
             <View style={styles.avatarContainer}>
-              {user.pfp_id ? (
-                <Avatar.Image size={80} source={{ uri: user.pfp_id }} />
+              {formData.pfp_id ? (
+                <Avatar.Image size={80} source={{ uri: formData.pfp_id }} />
               ) : (
-                <Avatar.Text size={80} label={(user.first_name || 'N')[0].toUpperCase()} />
+                <Avatar.Text size={80} label={(formData.first_name || 'N')[0].toUpperCase()} />
               )}
               <Text variant="bodyLarge" style={[styles.avatarText, { color: colors.onSurface }]}>Profile Picture</Text>
             </View>
 
             <Divider style={styles.divider} />
 
-            <TextInput
+            <FormInput
               label="First Name"
-              value={user.first_name || ''}
+              value={formData.first_name}
               onChangeText={text => handleChange('first_name', text)}
-              style={styles.input}
-              mode="outlined"
               right={<TextInput.Icon icon="account" />}
-              error={!!errors.first_name}
-              helperText={errors.first_name}
+              error={errors.first_name}
             />
 
-            <TextInput
+            <FormInput
               label="Middle Initial"
-              value={user.middle_initial || ''}
+              value={formData.middle_initial}
               onChangeText={text => handleChange('middle_initial', text)}
-              style={styles.input}
-              mode="outlined"
               maxLength={1}
               right={<TextInput.Icon icon="account" />}
-              error={!!errors.middle_initial}
-              helperText={errors.middle_initial}
+              error={errors.middle_initial}
             />
 
-            <TextInput
+            <FormInput
               label="Last Name"
-              value={user.last_name || ''}
+              value={formData.last_name}
               onChangeText={text => handleChange('last_name', text)}
-              style={styles.input}
-              mode="outlined"
               right={<TextInput.Icon icon="account" />}
-              error={!!errors.last_name}
-              helperText={errors.last_name}
+              error={errors.last_name}
             />
 
             <Divider style={styles.divider} />
 
-            <TextInput
+            <FormInput
               label="Email"
-              value={user.email || ''}
+              value={formData.email}
               onChangeText={text => handleChange('email', text)}
-              style={styles.input}
-              mode="outlined"
               keyboardType="email-address"
               autoCapitalize="none"
               right={<TextInput.Icon icon="email" />}
-              error={!!errors.email}
-              helperText={errors.email}
+              error={errors.email}
             />
 
-            <TextInput
+            <FormInput
               label="Contact Number"
-              value={user.contact_number || ''}
+              value={formData.contact_number}
               onChangeText={text => handleChange('contact_number', text)}
-              style={styles.input}
-              mode="outlined"
               keyboardType="phone-pad"
               left={<TextInput.Affix text="+63" />}
               right={<TextInput.Icon icon="phone" />}
-              error={!!errors.contact_number}
-              helperText={errors.contact_number}
-              maxLength={13}
+              error={errors.contact_number}
+              maxLength={11}
             />
 
-            <TextInput
+            <FormInput
               label="Birth Date"
-              value={user.birth_date ? user.birth_date.toLocaleDateString() : ''}
+              value={formData.birth_date ? formData.birth_date.toLocaleDateString() : ''}
               editable={false}
-              mode="outlined"
-              style={styles.input}
-              right={<TextInput.Icon icon="calendar" onPress={openDatePicker} />}
-              error={!!errors.birth_date}
-              helperText={errors.birth_date}
+              right={<TextInput.Icon icon="calendar" onPress={() => setShowDatePicker(true)} />}
+              error={errors.birth_date}
             />
 
             <Divider style={styles.divider} />
 
-            <TextInput
+            <FormInput
               label="Emergency Contact Name"
-              value={user.emergency_contact_name || ''}
+              value={formData.emergency_contact_name}
               onChangeText={text => handleChange('emergency_contact_name', text)}
-              style={styles.input}
-              mode="outlined"
               right={<TextInput.Icon icon="account" />}
-              error={!!errors.emergency_contact_name}
-              helperText={errors.emergency_contact_name}
+              error={errors.emergency_contact_name}
             />
 
-            <TextInput
+            <FormInput
               label="Emergency Contact Number"
-              value={user.emergency_contact_number || ''}
+              value={formData.emergency_contact_number}
               onChangeText={text => handleChange('emergency_contact_number', text)}
-              style={styles.input}
-              mode="outlined"
               keyboardType="phone-pad"
               left={<TextInput.Affix text="+63" />}
               right={<TextInput.Icon icon="phone" />}
-              error={!!errors.emergency_contact_number}
-              helperText={errors.emergency_contact_number}
-              maxLength={13}
+              error={errors.emergency_contact_number}
+              maxLength={11}
             />
 
             <Divider style={styles.divider} />
@@ -505,15 +547,12 @@ const EditAccount = ({ route, navigation }) => {
               visible={roleMenuVisible}
               onDismiss={() => setRoleMenuVisible(false)}
               anchor={
-                <TextInput
+                <FormInput
                   label="Role"
-                  value={user?.role || ''}
+                  value={formData?.role}
                   editable={false}
-                  mode="outlined"
-                  style={styles.input}
                   right={<TextInput.Icon icon="account-cog" onPress={() => setRoleMenuVisible(true)} />}
-                  error={!!errors.role}
-                  helperText={errors.role}
+                  error={errors.role}
                 />
               }
               contentStyle={{ backgroundColor: colors.surface }}
@@ -525,42 +564,37 @@ const EditAccount = ({ route, navigation }) => {
               visible={statusMenuVisible}
               onDismiss={() => setStatusMenuVisible(false)}
               anchor={
-                <TextInput
+                <FormInput
                   label="Status"
-                  value={user?.user_status || ''}
+                  value={formData?.user_status}
                   editable={false}
-                  mode="outlined"
-                  style={styles.input}
                   right={<TextInput.Icon icon="account-check" onPress={() => setStatusMenuVisible(true)} />}
-                  error={!!errors.user_status}
-                  helperText={errors.user_status}
+                  error={errors.user_status}
                 />
               }
               contentStyle={{ backgroundColor: colors.surface }}
             >
               {statusMenuItems}
             </Menu>
-            {user.role_id === 2 || user.role_id === 3 ? (<>
+
+            {(formData.role_id === 2 || formData.role_id === 3) && (
               <Menu
                 visible={verifyStatusMenuVisible}
                 onDismiss={() => setVerifyStatusMenuVisible(false)}
                 anchor={
-                  <TextInput
+                  <FormInput
                     label="Verification Status"
-                    value={user?.verify_status || ''}
+                    value={formData?.verify_status}
                     editable={false}
-                    mode="outlined"
-                    style={styles.input}
                     right={<TextInput.Icon icon="shield-check" onPress={() => setVerifyStatusMenuVisible(true)} />}
-                    error={!!errors.verify_status}
-                    helperText={errors.verify_status}
+                    error={errors.verify_status}
                   />
                 }
                 contentStyle={{ backgroundColor: colors.surface }}
               >
                 {verifyStatusMenuItems}
               </Menu>
-            </>):(<></>)}
+            )}
           </Surface>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -571,7 +605,7 @@ const EditAccount = ({ route, navigation }) => {
           mode="single"
           visible={showDatePicker}
           onDismiss={handleDateDismiss}
-          date={user.birth_date}
+          date={formData.birth_date}
           onConfirm={handleDateConfirm}
           title="Select Birth Date"
           animationType="slide"
@@ -582,7 +616,7 @@ const EditAccount = ({ route, navigation }) => {
           endYear={new Date().getFullYear()}
           validRange={{
             startDate: new Date(1935, 0, 1),
-            endDate: new Date().getFullYear(),
+            endDate: new Date(),
           }}
         />
       </Portal>

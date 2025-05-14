@@ -21,7 +21,7 @@ import AdminHome from '../screens/admin/AdminHome'
 import UserManagement from '../screens/admin/UserManagement'
 import AdminTrackLuggage from '../screens/admin/AdminTrackLuggage'
 import EditAccount from '../screens/admin/subscreen/EditAccountScreen'
-import ViewProfileScreen from '../screens/admin/subscreen/ViewProfileScreen'
+import ViewAccountScreen from '../screens/admin/subscreen/ViewAccountScreen'
 // Airline Screens
 import AirlineHome from '../screens/airline/AirlineHome'
 import TrackLuggage from '../screens/airline/AirlineTrackLuggage'
@@ -55,8 +55,8 @@ const AdminDrawer = () => (
         options={{ headerShown: false }}
       />
       <Drawer.Screen
-        name="ViewProfile"
-        component={ViewProfileScreen}
+        name="ViewAccount"
+        component={ViewAccountScreen}
         options={{ headerShown: false }}
       />
       {/* SHARED SCREENS */}
