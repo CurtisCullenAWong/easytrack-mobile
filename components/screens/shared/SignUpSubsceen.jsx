@@ -108,7 +108,8 @@ const SignUpSubScreen = ({ navigation, onClose }) => {
       case 'password':
         if (!value) {
           error = VALIDATION_MESSAGES.required;
-        } else if (!VALIDATION_PATTERNS.password.test(value)) {
+        }
+        else if (!VALIDATION_PATTERNS.password.test(value)) {
           error = VALIDATION_MESSAGES.invalidPassword;
         }
         break;
@@ -265,10 +266,8 @@ const SignUpSubScreen = ({ navigation, onClose }) => {
           }
   
           showSnackbar('Account created! Check your email to verify.', true)
-          setTimeout(() => {
-            onClose?.()
-            navigation.navigate('Login')
-          }, 2500)
+          navigation.navigate('Login')
+
   
         } catch (error) {
           console.error("Error creating profile:", error)
