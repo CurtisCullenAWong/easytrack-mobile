@@ -27,6 +27,7 @@ import useSnackbar from '../../../hooks/useSnackbar'
 import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system'
 import { decode } from 'base64-arraybuffer'
+import { validateProfileForm, handleTextChange } from '../../../../utils/profileValidation'
 
 registerTranslation('en', en)
 
@@ -34,10 +35,11 @@ const EditProfileSubScreen = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   const [image, setImage] = useState(null)
-  const [form, setForm] = useState({
+  const [form, setFormData] = useState({
     first_name: '',
     middle_initial: '',
     last_name: '',
+    name_suffix: '',
     contact_number: '',
     birth_date: null,
     emergency_contact_name: '',
@@ -53,6 +55,11 @@ const EditProfileSubScreen = ({ navigation }) => {
 
   const handleDateConfirm = useCallback(({ date }) => {
     if (date) {
+      const age = new Date().getFullYear() - date.getFullYear()
+      if (age < 18) {
+        showSnackbar('Must be at least 18 years old')
+        return
+      }
       handleChange('birth_date', date)
     }
     setShowDatePicker(false)
@@ -167,6 +174,10 @@ const EditProfileSubScreen = ({ navigation }) => {
   }
 
   const saveProfile = async () => {
+    if (!validateProfileForm(form, showSnackbar)) {
+      return
+    }
+
     try {
       setSaving(true)
       const { data: { user } } = await supabase.auth.getUser()
@@ -212,16 +223,25 @@ const EditProfileSubScreen = ({ navigation }) => {
         }
       }
 
+      // Format phone numbers with +63 prefix
+      const formattedContactNumber = form.contact_number ? `+63${form.contact_number}` : null
+      const formattedEmergencyNumber = form.emergency_contact_number ? `+63${form.emergency_contact_number}` : null
+
+      // Combine last name and suffix if suffix exists
+      const fullLastName = form.name_suffix 
+        ? `${form.last_name} ${form.name_suffix}`
+        : form.last_name
+
       const { error } = await supabase
         .from('profiles')
         .update({
-          first_name: form.first_name,
-          middle_initial: form.middle_initial,
-          last_name: form.last_name,
-          contact_number: form.contact_number,
+          first_name: form.first_name.trim(),
+          middle_initial: form.middle_initial.trim(),
+          last_name: fullLastName.trim(),
+          contact_number: formattedContactNumber,
           birth_date: form.birth_date,
-          emergency_contact_name: form.emergency_contact_name,
-          emergency_contact_number: form.emergency_contact_number,
+          emergency_contact_name: form.emergency_contact_name.trim(),
+          emergency_contact_number: formattedEmergencyNumber,
           pfp_id: newPfpId,
           updated_at: new Date().toISOString(),
         })
@@ -262,14 +282,20 @@ const EditProfileSubScreen = ({ navigation }) => {
         return
       }
 
-      setForm({
+      // Extract suffix from last name if it exists
+      const lastNameParts = data.last_name?.split(' ') || []
+      const lastName = lastNameParts[0] || ''
+      const nameSuffix = lastNameParts.slice(1).join(' ') || ''
+
+      setFormData({
         first_name: data.first_name || '',
         middle_initial: data.middle_initial || '',
-        last_name: data.last_name || '',
-        contact_number: data.contact_number || '',
+        last_name: lastName,
+        name_suffix: nameSuffix,
+        contact_number: data.contact_number?.replace('+63', '') || '',
         birth_date: data.birth_date ? new Date(data.birth_date) : null,
         emergency_contact_name: data.emergency_contact_name || '',
-        emergency_contact_number: data.emergency_contact_number || '',
+        emergency_contact_number: data.emergency_contact_number?.replace('+63', '') || '',
         pfp_id: data.pfp_id || null,
       })
     } catch (error) {
@@ -286,7 +312,12 @@ const EditProfileSubScreen = ({ navigation }) => {
   )
 
   const handleChange = (field, value) => {
-    setForm(prev => ({ ...prev, [field]: value }))
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleInputChange = (field, value) => {
+    const sanitizedValue = handleTextChange(field, value)
+    handleChange(field, sanitizedValue)
   }
 
   if (loading) {
@@ -294,10 +325,10 @@ const EditProfileSubScreen = ({ navigation }) => {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.navigate('Profile')} />
-          <Appbar.Content title="Edit Profile" titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} />
+          <Appbar.Content title='Edit Profile' titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} />
         </Appbar.Header>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size='large' color={colors.primary} />
         </View>
       </SafeAreaView>
     )
@@ -307,15 +338,15 @@ const EditProfileSubScreen = ({ navigation }) => {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.navigate('Profile')} />
-        <Appbar.Content title="Edit Profile" />
+        <Appbar.Content title='Edit Profile' />
         <Appbar.Action 
-          icon="content-save" 
+          icon='content-save' 
           onPress={() => setShowConfirmDialog(true)} 
           disabled={loading}
           color={colors.primary}
         />
       </Appbar.Header>
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps='handled'>
         <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
           <View style={styles.profileContainer}>
             {form.pfp_id ? (
@@ -324,10 +355,10 @@ const EditProfileSubScreen = ({ navigation }) => {
                 <Image 
                   source={{ uri: form.pfp_id }} 
                   style={styles.imagePreview}
-                  resizeMode="cover"
+                  resizeMode='cover'
                 />
                 <IconButton
-                  icon="close-circle"
+                  icon='close-circle'
                   size={20}
                   iconColor={colors.error}
                   style={[styles.removeImageButton, { backgroundColor: colors.surface }]}
@@ -339,7 +370,7 @@ const EditProfileSubScreen = ({ navigation }) => {
               <Avatar.Text size={80} label={(form.first_name || 'N')[0].toUpperCase()} />
             )}
             <Button
-              mode="outlined"
+              mode='outlined'
               onPress={() => setShowImageSourceDialog(true)}
               style={styles.profilePictureButton}
               textColor={colors.primary}
@@ -352,61 +383,79 @@ const EditProfileSubScreen = ({ navigation }) => {
           <Divider style={styles.divider} />
 
           <TextInput
-            label="First Name"
+            label='First Name and Second Name'
             value={form.first_name}
-            onChangeText={(text) => handleChange('first_name', text)}
-            mode="outlined"
+            onChangeText={(text) => handleInputChange('first_name', text)}
+            mode='outlined'
             style={styles.input}
-            right={<TextInput.Icon icon="account" />}
+            right={<TextInput.Icon icon='account' />}
             theme={{ colors: { primary: colors.primary } }}
             disabled={saving}
+            autoCapitalize='words'
+            maxLength={35}
           />
 
           <TextInput
-            label="Middle Initial"
+            label='Middle Initial'
             value={form.middle_initial}
-            onChangeText={(text) => handleChange('middle_initial', text)}
-            mode="outlined"
+            onChangeText={(text) => handleInputChange('middle_initial', text)}
+            mode='outlined'
             style={styles.input}
             maxLength={1}
-            right={<TextInput.Icon icon="account" />}
+            right={<TextInput.Icon icon='account' />}
             theme={{ colors: { primary: colors.primary } }}
             disabled={saving}
+            autoCapitalize='characters'
           />
 
           <TextInput
-            label="Last Name"
+            label='Last Name'
             value={form.last_name}
-            onChangeText={(text) => handleChange('last_name', text)}
-            mode="outlined"
+            onChangeText={(text) => handleInputChange('last_name', text)}
+            mode='outlined'
             style={styles.input}
-            right={<TextInput.Icon icon="account" />}
+            right={<TextInput.Icon icon='account' />}
             theme={{ colors: { primary: colors.primary } }}
             disabled={saving}
+            autoCapitalize='words'
+            maxLength={35}
+          />
+
+          <TextInput
+            label='Name Suffix (e.g., Jr., Sr., III)'
+            value={form.name_suffix}
+            onChangeText={(text) => handleInputChange('name_suffix', text)}
+            mode='outlined'
+            style={styles.input}
+            right={<TextInput.Icon icon='account' />}
+            theme={{ colors: { primary: colors.primary } }}
+            disabled={saving}
+            autoCapitalize='characters'
+            maxLength={10}
           />
 
           <Divider style={styles.divider} />
 
           <TextInput
-            label="Contact Number"
+            label='Contact Number'
             value={form.contact_number}
-            onChangeText={(text) => handleChange('contact_number', text)}
-            mode="outlined"
+            onChangeText={(text) => handleInputChange('contact_number', text)}
+            mode='outlined'
             style={styles.input}
-            keyboardType="phone-pad"
-            left={<TextInput.Affix text="+63" />}
+            keyboardType='phone-pad'
+            left={<TextInput.Affix text='+63' />}
             theme={{ colors: { primary: colors.primary } }}
             disabled={saving}
-            maxLength={11}
+            maxLength={10}
           />
 
           <TextInput
-            label="Birth Date"
+            label='Birth Date'
             value={form.birth_date ? form.birth_date.toLocaleDateString() : ''}
             editable={false}
-            mode="outlined"
+            mode='outlined'
             style={styles.input}
-            right={<TextInput.Icon icon="calendar" onPress={openDatePicker} />}
+            right={<TextInput.Icon icon='calendar' onPress={openDatePicker} />}
             theme={{ colors: { primary: colors.primary } }}
             disabled={saving}
           />
@@ -414,44 +463,46 @@ const EditProfileSubScreen = ({ navigation }) => {
           <Divider style={styles.divider} />
 
           <TextInput
-            label="Emergency Contact Name"
+            label='Emergency Contact Name and Last Name'
             value={form.emergency_contact_name}
-            onChangeText={(text) => handleChange('emergency_contact_name', text)}
-            mode="outlined"
+            onChangeText={(text) => handleInputChange('emergency_contact_name', text)}
+            mode='outlined'
             style={styles.input}
-            right={<TextInput.Icon icon="account" />}
+            right={<TextInput.Icon icon='account' />}
             theme={{ colors: { primary: colors.primary } }}
             disabled={saving}
+            autoCapitalize='words'
+            maxLength={50}
           />
 
           <TextInput
-            label="Emergency Contact Number"
+            label='Emergency Contact Number'
             value={form.emergency_contact_number}
-            onChangeText={(text) => handleChange('emergency_contact_number', text)}
-            mode="outlined"
+            onChangeText={(text) => handleInputChange('emergency_contact_number', text)}
+            mode='outlined'
             style={styles.input}
-            keyboardType="phone-pad"
-            left={<TextInput.Affix text="+63" />}
+            keyboardType='phone-pad'
+            left={<TextInput.Affix text='+63' />}
             theme={{ colors: { primary: colors.primary } }}
             disabled={saving}
-            maxLength={11}
+            maxLength={10}
           />
         </Surface>
       </ScrollView>
 
       <Portal>
         <DatePickerModal
-          locale="en"
-          mode="single"
+          locale='en'
+          mode='single'
           visible={showDatePicker}
           onDismiss={handleDateDismiss}
           date={form.birth_date}
           onConfirm={handleDateConfirm}
-          title="Select Birth Date"
-          animationType="slide"
-          presentationStyle="formSheet"
-          saveLabel="Select"
-          label="Enter the birth date"
+          title='Select Birth Date'
+          animationType='slide'
+          presentationStyle='formSheet'
+          saveLabel='Select'
+          label='Enter the birth date'
           startYear={1935}
           endYear={new Date().getFullYear()}
           validRange={{
@@ -495,7 +546,7 @@ const EditProfileSubScreen = ({ navigation }) => {
           style={{ backgroundColor: colors.surface }}>
           <Dialog.Title>Save Changes</Dialog.Title>
           <Dialog.Content>
-            <Text variant="bodyMedium">Are you sure you want to save these changes?</Text>
+            <Text variant='bodyMedium'>Are you sure you want to save these changes?</Text>
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setShowConfirmDialog(false)} disabled={saving}>Cancel</Button>

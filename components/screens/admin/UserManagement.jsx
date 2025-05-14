@@ -117,15 +117,18 @@ const UserManagement = ({ navigation }) => {
 
       // Special handling for date columns
       if (['birth_date','dateCreated', 'lastLogin', 'lastUpdated'].includes(sortColumn)) {
-        // If either value is 'Never', handle special case
-        if (valA === 'Never' && valB === 'Never' || valA === 'N/A' && valB === 'N/A') return 0
-        if (valA === 'Never' || valA === 'N/A') return -1
-        if (valB === 'Never' || valB === 'N/A') return 1
+        // If either value is 'Never' or 'N/A', handle special case
+        if (valA === 'Never' || valA === 'N/A') {
+          return sortDirection === 'ascending' ? -1 : 1;
+        }
+        if (valB === 'Never' || valB === 'N/A') {
+          return sortDirection === 'ascending' ? 1 : -1;
+        }
         
         // For actual dates, compare them normally
-        if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
-        if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
-        return 0
+        if (valA < valB) return sortDirection === 'ascending' ? -1 : 1;
+        if (valA > valB) return sortDirection === 'ascending' ? 1 : -1;
+        return 0;
       }
 
       // Default sorting for non-date columns

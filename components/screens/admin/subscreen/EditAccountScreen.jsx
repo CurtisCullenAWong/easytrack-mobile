@@ -23,18 +23,119 @@ import {
 import { DatePickerModal, en, registerTranslation } from 'react-native-paper-dates'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../../components/hooks/useSnackbar'
+import { validateProfileForm, handleTextChange } from '../../../../utils/profileValidation'
+
+// Validation patterns
+const VALIDATION_PATTERNS = {
+  name: /^[a-zA-Z\s'-]{2,50}$/,
+  middleInitial: /^[a-zA-Z]$/,
+  phone: /^(\+63|0)[0-9]{10}$/,
+  email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+}
+
+// Validation messages
+const VALIDATION_MESSAGES = {
+  required: 'This field is required',
+  invalidName: 'Name should only contain letters, spaces, hyphens, and apostrophes (2-50 characters)',
+  invalidMiddleInitial: 'Middle initial should be a single letter',
+  invalidPhone: 'Please enter a valid Philippine phone number (e.g., +639123456789 or 09123456789)',
+  invalidEmail: 'Please enter a valid email address',
+  invalidBirthDate: 'Birth date cannot be in the future',
+  invalidRole: 'Please select a valid role',
+  invalidStatus: 'Please select a valid status',
+  invalidVerifyStatus: 'Please select a valid verification status',
+}
 
 registerTranslation('en', en)
 
-// Custom hook for form data only (no validation or formatting)
+
+// Custom hook for form data with validation
 const useFormData = (initialState) => {
   const [formData, setFormData] = useState(initialState)
+  const [errors, setErrors] = useState({})
+
+  const validateField = (field, value) => {
+    let error = ''
+    switch (field) {
+      case 'first_name':
+      case 'last_name':
+      case 'emergency_contact_name':
+        if (!value) {
+          error = 'This field is required'
+        }
+        break
+      case 'email':
+        if (!value) {
+          error = 'This field is required'
+        } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)) {
+          error = 'Please enter a valid email address'
+        }
+        break
+      case 'contact_number':
+      case 'emergency_contact_number':
+        if (!value) {
+          error = 'This field is required'
+        } else if (!/^9\d{9}$/.test(value)) {
+          error = 'Contact number must be in format: 9xxxxxxxxx'
+        }
+        break
+      case 'birth_date':
+        if (!value) {
+          error = 'This field is required'
+        } else if (value > new Date()) {
+          error = 'Birth date cannot be in the future'
+        } else {
+          const age = new Date().getFullYear() - value.getFullYear()
+          if (age < 18) {
+            error = 'Must be at least 18 years old'
+          }
+        }
+        break
+      case 'role':
+        if (!value) {
+          error = 'Please select a valid role'
+        }
+        break
+      case 'user_status':
+        if (!value) {
+          error = 'Please select a valid status'
+        }
+        break
+      case 'verify_status':
+        if (!value) {
+          error = 'Please select a valid verification status'
+        }
+        break
+    }
+    return error
+  }
 
   const handleChange = useCallback((field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    const sanitizedValue = handleTextChange(field, value)
+    const error = validateField(field, sanitizedValue)
+    
+    setFormData(prev => ({ ...prev, [field]: sanitizedValue }))
+    setErrors(prev => ({ ...prev, [field]: error }))
+    return sanitizedValue
   }, [])
 
-  return { formData, setFormData, handleChange }
+  const validateForm = () => {
+    const newErrors = {}
+    const validationMessages = []
+    
+    Object.keys(formData).forEach(field => {
+      const error = validateField(field, formData[field])
+      if (error) {
+        newErrors[field] = error
+        validationMessages.push(error)
+      }
+    })
+    
+    setErrors(newErrors)
+    return validationMessages
+  }
+
+  return { formData, setFormData, handleChange, errors, validateForm }
 }
 
 // Reusable components
@@ -54,6 +155,7 @@ const FormInput = React.memo(({
   mode = 'outlined', 
   right, 
   left,
+  error,
   ...props 
 }) => (
   <TextInput
@@ -64,6 +166,7 @@ const FormInput = React.memo(({
     mode={mode}
     right={right}
     left={left}
+    error={error}
     {...props}
   />
 ))
@@ -85,11 +188,16 @@ const EditAccount = ({ route, navigation }) => {
   const [statusOptions, setStatusOptions] = useState([])
   const [verifyStatusOptions, setVerifyStatusOptions] = useState([])
 
-  const { formData, setFormData, handleChange } = useFormData(null)
+  const { formData, setFormData, handleChange, errors, validateForm } = useFormData(null)
 
   // Date picker handlers
   const handleDateConfirm = useCallback(({ date }) => {
     if (date) {
+      const error = validateField('birth_date', date)
+      if (error) {
+        showSnackbar(error)
+        return
+      }
       handleChange('birth_date', date)
     }
     setShowDatePicker(false)
@@ -101,6 +209,17 @@ const EditAccount = ({ route, navigation }) => {
 
   // Save user data
   const saveUser = async () => {
+    const validationMessages = validateForm()
+    if (validationMessages.length > 0) {
+      // Show all validation messages in sequence
+      validationMessages.forEach((message, index) => {
+        setTimeout(() => {
+          showSnackbar(message)
+        }, index * 2000) // Show each message with a 2-second delay
+      })
+      return
+    }
+
     setSaving(true)
     try {
       const [{ data: roleData }, { data: statusData }, { data: verifyStatusData }] = await Promise.all([
@@ -114,17 +233,21 @@ const EditAccount = ({ route, navigation }) => {
         return
       }
 
+      // Format phone numbers with +63 prefix
+      const formattedContactNumber = formData.contact_number ? `+63${formData.contact_number}` : null
+      const formattedEmergencyNumber = formData.emergency_contact_number ? `+63${formData.emergency_contact_number}` : null
+
       const { error } = await supabase
         .from('profiles')
         .update({
-          first_name: formData.first_name,
-          middle_initial: formData.middle_initial,
-          last_name: formData.last_name,
+          first_name: formData.first_name.trim(),
+          middle_initial: formData.middle_initial.trim(),
+          last_name: formData.last_name.trim(),
           email: formData.email,
-          contact_number: formData.contact_number,
+          contact_number: formattedContactNumber,
           birth_date: formData.birth_date,
-          emergency_contact_name: formData.emergency_contact_name,
-          emergency_contact_number: formData.emergency_contact_number,
+          emergency_contact_name: formData.emergency_contact_name.trim(),
+          emergency_contact_number: formattedEmergencyNumber,
           role_id: roleData.id,
           user_status_id: statusData.id,
           verify_status_id: verifyStatusData.id,
@@ -170,9 +293,9 @@ const EditAccount = ({ route, navigation }) => {
         user_status: userData.profile_status?.status_name,
         verify_status: userData.verify_status?.status_name,
         birth_date: userData.birth_date ? new Date(userData.birth_date) : null,
-        contact_number: userData.contact_number || '',
+        contact_number: userData.contact_number?.replace('+63', '') || '',
         emergency_contact_name: userData.emergency_contact_name || '',
-        emergency_contact_number: userData.emergency_contact_number || '',
+        emergency_contact_number: userData.emergency_contact_number?.replace('+63', '') || '',
       })
 
       if (roles) setRoleOptions(roles.map(r => r.role_name))
@@ -240,7 +363,7 @@ const EditAccount = ({ route, navigation }) => {
 
   if (loading) {
     return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>        
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>       
         <Text variant="bodyLarge" style={{ color: colors.onSurface }}>Loading user...</Text>
       </View>
     )
@@ -290,6 +413,9 @@ const EditAccount = ({ route, navigation }) => {
               value={formData.first_name}
               onChangeText={text => handleChange('first_name', text)}
               right={<TextInput.Icon icon="account" />}
+              error={errors.first_name}
+              maxLength={50}
+              autoCapitalize="words"
             />
 
             <FormInput
@@ -298,6 +424,8 @@ const EditAccount = ({ route, navigation }) => {
               onChangeText={text => handleChange('middle_initial', text)}
               maxLength={1}
               right={<TextInput.Icon icon="account" />}
+              error={errors.middle_initial}
+              autoCapitalize="characters"
             />
 
             <FormInput
@@ -305,6 +433,9 @@ const EditAccount = ({ route, navigation }) => {
               value={formData.last_name}
               onChangeText={text => handleChange('last_name', text)}
               right={<TextInput.Icon icon="account" />}
+              error={errors.last_name}
+              maxLength={50}
+              autoCapitalize="words"
             />
 
             <Divider style={styles.divider} />
@@ -317,6 +448,7 @@ const EditAccount = ({ route, navigation }) => {
               autoCapitalize="none"
               disabled={true}
               right={<TextInput.Icon icon="email" />}
+              error={errors.email}
             />
 
             <FormInput
@@ -325,7 +457,9 @@ const EditAccount = ({ route, navigation }) => {
               onChangeText={text => handleChange('contact_number', text)}
               keyboardType="phone-pad"
               right={<TextInput.Icon icon="phone" />}
-              maxLength={20}
+              maxLength={10}
+              error={errors.contact_number}
+              left={<TextInput.Affix text="+63" />}
             />
 
             <FormInput
@@ -333,6 +467,7 @@ const EditAccount = ({ route, navigation }) => {
               value={formData.birth_date ? formData.birth_date.toLocaleDateString() : ''}
               editable={false}
               right={<TextInput.Icon icon="calendar" onPress={() => setShowDatePicker(true)} />}
+              error={errors.birth_date}
             />
 
             <Divider style={styles.divider} />
@@ -342,6 +477,9 @@ const EditAccount = ({ route, navigation }) => {
               value={formData.emergency_contact_name}
               onChangeText={text => handleChange('emergency_contact_name', text)}
               right={<TextInput.Icon icon="account" />}
+              error={errors.emergency_contact_name}
+              maxLength={50}
+              autoCapitalize="words"
             />
 
             <FormInput
@@ -350,7 +488,9 @@ const EditAccount = ({ route, navigation }) => {
               onChangeText={text => handleChange('emergency_contact_number', text)}
               keyboardType="phone-pad"
               right={<TextInput.Icon icon="phone" />}
-              maxLength={20}
+              maxLength={10}
+              error={errors.emergency_contact_number}
+              left={<TextInput.Affix text="+63" />}
             />
 
             <Divider style={styles.divider} />
@@ -364,6 +504,7 @@ const EditAccount = ({ route, navigation }) => {
                   value={formData?.role}
                   editable={false}
                   right={<TextInput.Icon icon="account-cog" onPress={() => setRoleMenuVisible(true)} />}
+                  error={errors.role}
                 />
               }
               contentStyle={{ backgroundColor: colors.surface }}
@@ -380,6 +521,7 @@ const EditAccount = ({ route, navigation }) => {
                   value={formData?.user_status}
                   editable={false}
                   right={<TextInput.Icon icon="account-check" onPress={() => setStatusMenuVisible(true)} />}
+                  error={errors.user_status}
                 />
               }
               contentStyle={{ backgroundColor: colors.surface }}
@@ -397,6 +539,7 @@ const EditAccount = ({ route, navigation }) => {
                     value={formData?.verify_status}
                     editable={false}
                     right={<TextInput.Icon icon="shield-check" onPress={() => setVerifyStatusMenuVisible(true)} />}
+                    error={errors.verify_status}
                   />
                 }
                 contentStyle={{ backgroundColor: colors.surface }}
