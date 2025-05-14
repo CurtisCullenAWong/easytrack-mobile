@@ -457,9 +457,11 @@ const Verification = ({ navigation }) => {
           <TextInput
             label="ID Number"
             value={formData.gov_id_number}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, gov_id_number: text }))}
+            onChangeText={(text) => setFormData(prev => ({ ...prev, gov_id_number: text.replace(/[^0-9]/g, '') }))}
             style={styles.input}
+            keyboardType="numeric"
             mode="outlined"
+            maxLength={12}
             theme={{ colors: { primary: colors.primary } }}
           />
 
@@ -489,13 +491,15 @@ const Verification = ({ navigation }) => {
             style={styles.input}
             mode="outlined"
             theme={{ colors: { primary: colors.primary } }}
+            maxLength={50}
           />
 
           <TextInput
             label="Plate Number"
             value={formData.vehicle_plate_number}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, vehicle_plate_number: text }))}
+            onChangeText={(text) => setFormData(prev => ({ ...prev, vehicle_plate_number: text.replace(/[^A-Z0-9-]/gi, '').toUpperCase()}))}
             style={styles.input}
+            maxLength={12}
             mode="outlined"
             theme={{ colors: { primary: colors.primary } }}
           />  
