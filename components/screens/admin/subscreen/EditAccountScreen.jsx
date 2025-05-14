@@ -26,169 +26,12 @@ import useSnackbar from '../../../../components/hooks/useSnackbar'
 
 registerTranslation('en', en)
 
-// Constants
-const VALIDATION = {
-  PATTERNS: {
-    name: /^[a-zA-Z\s'-]{2,50}$/,
-    middleInitial: /^[a-zA-Z]$/,
-    phone: /^09[0-9]{9}$/,
-    email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-  },
-  MESSAGES: {
-    required: 'This field is required',
-    invalidName: 'Name should only contain letters, spaces, hyphens, and apostrophes (2-50 characters)',
-    invalidMiddleInitial: 'Middle initial should be a single letter',
-    invalidPhone: 'Please enter a valid Philippine phone number starting with 09 (e.g., 09123456789)',
-    invalidEmail: 'Please enter a valid email address',
-    invalidBirthDate: 'Birth date cannot be in the future',
-    invalidRole: 'Please select a valid role',
-    invalidStatus: 'Please select a valid status',
-    blankField: 'All fields are required',
-  },
-  RULES: {
-    first_name: {
-      required: true,
-      pattern: /^[a-zA-Z\s'-]{2,50}$/,
-      errorMessage: 'Name should only contain letters, spaces, hyphens, and apostrophes (2-50 characters)',
-    },
-    last_name: {
-      required: true,
-      pattern: /^[a-zA-Z\s'-]{2,50}$/,
-      errorMessage: 'Name should only contain letters, spaces, hyphens, and apostrophes (2-50 characters)',
-    },
-    middle_initial: {
-      required: true,
-      pattern: /^[a-zA-Z]$/,
-      errorMessage: 'Middle initial should be a single letter',
-    },
-    email: {
-      required: true,
-      pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-      errorMessage: 'Please enter a valid email address',
-    },
-    contact_number: {
-      required: true,
-      pattern: /^09[0-9]{9}$/,
-      errorMessage: 'Please enter a valid Philippine phone number starting with 09 (e.g., 09123456789)',
-    },
-    emergency_contact_name: {
-      required: true,
-      pattern: /^[a-zA-Z\s'-]{2,50}$/,
-      errorMessage: 'Name should only contain letters, spaces, hyphens, and apostrophes (2-50 characters)',
-    },
-    emergency_contact_number: {
-      required: true,
-      pattern: /^09[0-9]{9}$/,
-      errorMessage: 'Please enter a valid Philippine phone number starting with 09 (e.g., 09123456789)',
-    },
-    birth_date: {
-      required: true,
-      validate: (value) => value <= new Date(),
-      errorMessage: 'Birth date cannot be in the future',
-    },
-    role: {
-      required: true,
-      errorMessage: 'Please select a valid role',
-    },
-    user_status: {
-      required: true,
-      errorMessage: 'Please select a valid status',
-    },
-    verify_status: {
-      required: true,
-      errorMessage: 'Please select a valid status',
-    },
-  },
-}
-
-// Utility functions
-const formatPhoneNumber = (value) => {
-  if (!value) return ''
-  const digits = value.replace(/\D/g, '')
-  if (!digits) return ''
-  if (digits.startsWith('63')) return `09${digits.slice(2)}`
-  if (digits.startsWith('9')) return `0${digits}`
-  if (digits.startsWith('0')) return digits
-  return `09${digits}`
-}
-
-const formatDisplayNumber = (value) => {
-  if (!value) return ''
-  return value.replace('+63', '09')
-}
-
-// Custom hooks
-const useFormValidation = (initialState) => {
-  const [errors, setErrors] = useState({})
-
-  const validateField = useCallback((field, value) => {
-    const rule = VALIDATION.RULES[field]
-    if (!rule) return ''
-
-    if (rule.required && (!value || (typeof value === 'string' && value.trim() === ''))) {
-      return VALIDATION.MESSAGES.required
-    }
-
-    if (!value) return ''
-
-    if (rule.pattern && !rule.pattern.test(value)) {
-      return rule.errorMessage
-    }
-
-    if (rule.validate && !rule.validate(value)) {
-      return rule.errorMessage
-    }
-
-    return ''
-  }, [])
-
-  const validateForm = useCallback((formData) => {
-    const newErrors = {}
-    let hasBlankFields = false
-
-    Object.keys(VALIDATION.RULES).forEach(field => {
-      const value = formData[field]
-      if (!value || (typeof value === 'string' && value.trim() === '')) {
-        hasBlankFields = true
-        newErrors[field] = VALIDATION.MESSAGES.required
-      } else {
-        const error = validateField(field, value)
-        if (error) newErrors[field] = error
-      }
-    })
-
-    setErrors(newErrors)
-    return { isValid: Object.keys(newErrors).length === 0, hasBlankFields }
-  }, [validateField])
-
-  return { errors, setErrors, validateField, validateForm }
-}
-
+// Custom hook for form data only (no validation or formatting)
 const useFormData = (initialState) => {
   const [formData, setFormData] = useState(initialState)
 
   const handleChange = useCallback((field, value) => {
-    const sanitizedValue = (() => {
-      if (!value) return ''
-      switch (field) {
-        case 'first_name':
-        case 'last_name':
-        case 'emergency_contact_name':
-          return value.trim().replace(/\s+/g, ' ')
-        case 'middle_initial':
-          return value.trim().toUpperCase()
-        case 'email':
-          return value.trim().toLowerCase()
-        case 'contact_number':
-        case 'emergency_contact_number':
-          return formatPhoneNumber(value)
-        default:
-          return value
-      }
-    })()
-
-    setFormData(prev => ({ ...prev, [field]: sanitizedValue }))
-    return sanitizedValue
+    setFormData(prev => ({ ...prev, [field]: value }))
   }, [])
 
   return { formData, setFormData, handleChange }
@@ -199,10 +42,7 @@ const MemoizedMenuItem = React.memo(({ item, selected, onPress, colors, fonts })
   <Menu.Item
     onPress={onPress}
     title={item}
-    titleStyle={[
-      fonts.bodyLarge,
-      { color: selected ? colors.primary : colors.onSurface },
-    ]}
+    titleStyle={[fonts.bodyLarge, { color: selected ? colors.primary : colors.onSurface }]}
     leadingIcon={selected ? 'check' : undefined}
   />
 ))
@@ -214,8 +54,6 @@ const FormInput = React.memo(({
   mode = 'outlined', 
   right, 
   left,
-  error, 
-  helperText,
   ...props 
 }) => (
   <TextInput
@@ -226,8 +64,6 @@ const FormInput = React.memo(({
     mode={mode}
     right={right}
     left={left}
-    error={!!error}
-    helperText={error}
     {...props}
   />
 ))
@@ -250,20 +86,14 @@ const EditAccount = ({ route, navigation }) => {
   const [verifyStatusOptions, setVerifyStatusOptions] = useState([])
 
   const { formData, setFormData, handleChange } = useFormData(null)
-  const { errors, setErrors, validateForm } = useFormValidation()
 
   // Date picker handlers
   const handleDateConfirm = useCallback(({ date }) => {
     if (date) {
-      const error = validateField('birth_date', date)
-      if (error) {
-        showSnackbar(error)
-        return
-      }
       handleChange('birth_date', date)
     }
     setShowDatePicker(false)
-  }, [showSnackbar])
+  }, [handleChange])
 
   const handleDateDismiss = useCallback(() => {
     setShowDatePicker(false)
@@ -271,20 +101,8 @@ const EditAccount = ({ route, navigation }) => {
 
   // Save user data
   const saveUser = async () => {
-    const { isValid, hasBlankFields } = validateForm(formData)
-    
-    if (!isValid) {
-      if (hasBlankFields) {
-        showSnackbar(VALIDATION.MESSAGES.blankField)
-      } else {
-        showSnackbar('Please fix the errors before saving')
-      }
-      return
-    }
-
+    setSaving(true)
     try {
-      setSaving(true)
-
       const [{ data: roleData }, { data: statusData }, { data: verifyStatusData }] = await Promise.all([
         supabase.from('profiles_roles').select('id').eq('role_name', formData.role).single(),
         supabase.from('profiles_status').select('id').eq('status_name', formData.user_status).single(),
@@ -305,6 +123,8 @@ const EditAccount = ({ route, navigation }) => {
           email: formData.email,
           contact_number: formData.contact_number,
           birth_date: formData.birth_date,
+          emergency_contact_name: formData.emergency_contact_name,
+          emergency_contact_number: formData.emergency_contact_number,
           role_id: roleData.id,
           user_status_id: statusData.id,
           verify_status_id: verifyStatusData.id,
@@ -318,32 +138,6 @@ const EditAccount = ({ route, navigation }) => {
       navigation.navigate('UserManagement')
     } catch (error) {
       showSnackbar('Error updating user: ' + error.message)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  // Delete user account
-  const deleteUser = async () => {
-    try {
-      setSaving(true)
-
-      // Delete user from Supabase Auth
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId)
-      if (authError) throw authError
-
-      // Delete user's profile from profiles table
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId)
-
-      if (profileError) throw profileError
-
-      showSnackbar('User account deleted successfully', true)
-      navigation.navigate('UserManagement')
-    } catch (error) {
-      showSnackbar('Error deleting user account: ' + error.message)
     } finally {
       setSaving(false)
     }
@@ -376,8 +170,9 @@ const EditAccount = ({ route, navigation }) => {
         user_status: userData.profile_status?.status_name,
         verify_status: userData.verify_status?.status_name,
         birth_date: userData.birth_date ? new Date(userData.birth_date) : null,
-        contact_number: formatDisplayNumber(userData.contact_number),
-        emergency_contact_number: formatDisplayNumber(userData.emergency_contact_number),
+        contact_number: userData.contact_number || '',
+        emergency_contact_name: userData.emergency_contact_name || '',
+        emergency_contact_number: userData.emergency_contact_number || '',
       })
 
       if (roles) setRoleOptions(roles.map(r => r.role_name))
@@ -394,7 +189,7 @@ const EditAccount = ({ route, navigation }) => {
   useFocusEffect(
     useCallback(() => {
       fetchAccount()
-    }, [userId])
+  }, [userId])
   )
 
   // Memoized menu items
@@ -445,7 +240,7 @@ const EditAccount = ({ route, navigation }) => {
 
   if (loading) {
     return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>        
         <Text variant="bodyLarge" style={{ color: colors.onSurface }}>Loading user...</Text>
       </View>
     )
@@ -453,14 +248,14 @@ const EditAccount = ({ route, navigation }) => {
 
   if (!formData) {
     return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>        
         <Text variant="bodyLarge" style={{ color: colors.error }}>User not found.</Text>
       </View>
     )
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>      
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.navigate('UserManagement')} />
         <Appbar.Content title="Edit Account" />
@@ -495,7 +290,6 @@ const EditAccount = ({ route, navigation }) => {
               value={formData.first_name}
               onChangeText={text => handleChange('first_name', text)}
               right={<TextInput.Icon icon="account" />}
-              error={errors.first_name}
             />
 
             <FormInput
@@ -504,7 +298,6 @@ const EditAccount = ({ route, navigation }) => {
               onChangeText={text => handleChange('middle_initial', text)}
               maxLength={1}
               right={<TextInput.Icon icon="account" />}
-              error={errors.middle_initial}
             />
 
             <FormInput
@@ -512,7 +305,6 @@ const EditAccount = ({ route, navigation }) => {
               value={formData.last_name}
               onChangeText={text => handleChange('last_name', text)}
               right={<TextInput.Icon icon="account" />}
-              error={errors.last_name}
             />
 
             <Divider style={styles.divider} />
@@ -523,8 +315,8 @@ const EditAccount = ({ route, navigation }) => {
               onChangeText={text => handleChange('email', text)}
               keyboardType="email-address"
               autoCapitalize="none"
+              disabled={true}
               right={<TextInput.Icon icon="email" />}
-              error={errors.email}
             />
 
             <FormInput
@@ -532,10 +324,8 @@ const EditAccount = ({ route, navigation }) => {
               value={formData.contact_number}
               onChangeText={text => handleChange('contact_number', text)}
               keyboardType="phone-pad"
-              left={<TextInput.Affix text="+63" />}
               right={<TextInput.Icon icon="phone" />}
-              error={errors.contact_number}
-              maxLength={11}
+              maxLength={20}
             />
 
             <FormInput
@@ -543,7 +333,6 @@ const EditAccount = ({ route, navigation }) => {
               value={formData.birth_date ? formData.birth_date.toLocaleDateString() : ''}
               editable={false}
               right={<TextInput.Icon icon="calendar" onPress={() => setShowDatePicker(true)} />}
-              error={errors.birth_date}
             />
 
             <Divider style={styles.divider} />
@@ -553,7 +342,6 @@ const EditAccount = ({ route, navigation }) => {
               value={formData.emergency_contact_name}
               onChangeText={text => handleChange('emergency_contact_name', text)}
               right={<TextInput.Icon icon="account" />}
-              error={errors.emergency_contact_name}
             />
 
             <FormInput
@@ -561,10 +349,8 @@ const EditAccount = ({ route, navigation }) => {
               value={formData.emergency_contact_number}
               onChangeText={text => handleChange('emergency_contact_number', text)}
               keyboardType="phone-pad"
-              left={<TextInput.Affix text="+63" />}
               right={<TextInput.Icon icon="phone" />}
-              error={errors.emergency_contact_number}
-              maxLength={11}
+              maxLength={20}
             />
 
             <Divider style={styles.divider} />
@@ -578,7 +364,6 @@ const EditAccount = ({ route, navigation }) => {
                   value={formData?.role}
                   editable={false}
                   right={<TextInput.Icon icon="account-cog" onPress={() => setRoleMenuVisible(true)} />}
-                  error={errors.role}
                 />
               }
               contentStyle={{ backgroundColor: colors.surface }}
@@ -595,7 +380,6 @@ const EditAccount = ({ route, navigation }) => {
                   value={formData?.user_status}
                   editable={false}
                   right={<TextInput.Icon icon="account-check" onPress={() => setStatusMenuVisible(true)} />}
-                  error={errors.user_status}
                 />
               }
               contentStyle={{ backgroundColor: colors.surface }}
@@ -613,7 +397,6 @@ const EditAccount = ({ route, navigation }) => {
                     value={formData?.verify_status}
                     editable={false}
                     right={<TextInput.Icon icon="shield-check" onPress={() => setVerifyStatusMenuVisible(true)} />}
-                    error={errors.verify_status}
                   />
                 }
                 contentStyle={{ backgroundColor: colors.surface }}

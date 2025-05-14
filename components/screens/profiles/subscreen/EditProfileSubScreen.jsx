@@ -1,115 +1,34 @@
 import React, { useState, useCallback } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
-import { 
-  StyleSheet, 
-  SafeAreaView, 
-  ScrollView, 
-  View, 
+import {
+  StyleSheet,
+  SafeAreaView,
+  ScrollView,
+  View,
   ActivityIndicator,
-  Image 
+  Image,
 } from 'react-native'
-import { TextInput, Button, useTheme, Appbar, Text, Portal, Dialog, Avatar, Surface, Divider, IconButton } from 'react-native-paper'
+import {
+  TextInput,
+  Button,
+  useTheme,
+  Appbar,
+  Text,
+  Portal,
+  Dialog,
+  Avatar,
+  Surface,
+  Divider,
+  IconButton,
+} from 'react-native-paper'
 import { DatePickerModal, en, registerTranslation } from 'react-native-paper-dates'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system'
 import { decode } from 'base64-arraybuffer'
+
 registerTranslation('en', en)
-
-// Validation patterns
-const VALIDATION_PATTERNS = {
-  name: /^[a-zA-Z\s'-]{2,50}$/,
-  middleInitial: /^[a-zA-Z]$/,
-  phone: /^09[0-9]{9}$/,
-}
-
-// Validation messages
-const VALIDATION_MESSAGES = {
-  required: 'This field is required',
-  invalidName: 'Name should only contain letters, spaces, hyphens, and apostrophes (2-50 characters)',
-  invalidMiddleInitial: 'Middle initial should be a single letter',
-  invalidPhone: 'Please enter a valid Philippine phone number starting with 09 (e.g., 09123456789)',
-  invalidBirthDate: 'Birth date cannot be in the future',
-  blankField: 'All fields are required',
-}
-
-// Validation rules for each field
-const VALIDATION_RULES = {
-  first_name: {
-    required: true,
-    pattern: VALIDATION_PATTERNS.name,
-    errorMessage: VALIDATION_MESSAGES.invalidName,
-  },
-  last_name: {
-    required: true,
-    pattern: VALIDATION_PATTERNS.name,
-    errorMessage: VALIDATION_MESSAGES.invalidName,
-  },
-  middle_initial: {
-    required: true,
-    pattern: VALIDATION_PATTERNS.middleInitial,
-    errorMessage: VALIDATION_MESSAGES.invalidMiddleInitial,
-  },
-  contact_number: {
-    required: true,
-    pattern: VALIDATION_PATTERNS.phone,
-    errorMessage: VALIDATION_MESSAGES.invalidPhone,
-  },
-  emergency_contact_name: {
-    required: true,
-    pattern: VALIDATION_PATTERNS.name,
-    errorMessage: VALIDATION_MESSAGES.invalidName,
-  },
-  emergency_contact_number: {
-    required: true,
-    pattern: VALIDATION_PATTERNS.phone,
-    errorMessage: VALIDATION_MESSAGES.invalidPhone,
-  },
-  birth_date: {
-    required: true,
-    validate: (value) => value <= new Date(),
-    errorMessage: VALIDATION_MESSAGES.invalidBirthDate,
-  },
-}
-
-// Phone number formatting function
-const formatPhoneNumber = (value) => {
-  // Handle undefined or null
-  if (!value) return ''
-  
-  // Remove all non-digit characters
-  const digits = value.replace(/\D/g, '')
-  
-  // If empty, return empty string
-  if (!digits) return ''
-  
-  // If starts with 63, convert to 09
-  if (digits.startsWith('63')) {
-    return `09${digits.slice(2)}`
-  }
-  
-  // If starts with 9, add 0
-  if (digits.startsWith('9')) {
-    return `0${digits}`
-  }
-  
-  // If starts with 0, keep it
-  if (digits.startsWith('0')) {
-    return digits
-  }
-  
-  // If none of the above, add 09
-  return `09${digits}`
-}
-
-// Display formatting function
-const formatDisplayNumber = (value) => {
-  // Handle undefined or null
-  if (!value) return ''
-  // Remove +63 and ensure it starts with 09
-  return value.replace('+63', '09')
-}
 
 const EditProfileSubScreen = ({ navigation }) => {
   const { colors, fonts } = useTheme()
@@ -126,94 +45,18 @@ const EditProfileSubScreen = ({ navigation }) => {
     pfp_id: null,
   })
 
-  const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [showImageSourceDialog, setShowImageSourceDialog] = useState(false)
 
-  // Validation functions
-  const validateField = (field, value) => {
-    const rule = VALIDATION_RULES[field]
-    if (!rule) return ''
-
-    // Check if required
-    if (rule.required && (!value || (typeof value === 'string' && value.trim() === ''))) {
-      return VALIDATION_MESSAGES.required
-    }
-
-    // Skip further validation if value is empty and not required
-    if (!value) return ''
-
-    // Check pattern if exists
-    if (rule.pattern && !rule.pattern.test(value)) {
-      return rule.errorMessage
-    }
-
-    // Check custom validation if exists
-    if (rule.validate && !rule.validate(value)) {
-      return rule.errorMessage
-    }
-
-    return ''
-  }
-
-  const validateForm = () => {
-    const newErrors = {}
-    let hasBlankFields = false
-
-    Object.keys(VALIDATION_RULES).forEach(field => {
-      const value = form[field]
-      if (!value || (typeof value === 'string' && value.trim() === '')) {
-        hasBlankFields = true
-        newErrors[field] = VALIDATION_MESSAGES.required
-      } else {
-        const error = validateField(field, value)
-        if (error) newErrors[field] = error
-      }
-    })
-
-    setErrors(newErrors)
-    
-    if (hasBlankFields) {
-      showSnackbar(VALIDATION_MESSAGES.blankField)
-      return false
-    }
-    
-    return Object.keys(newErrors).length === 0
-  }
-
-  // Sanitization functions
-  const sanitizeInput = (field, value) => {
-    if (!value) return ''
-
-    switch (field) {
-      case 'first_name':
-      case 'last_name':
-      case 'emergency_contact_name':
-        return value.trim().replace(/\s+/g, ' ')
-      case 'middle_initial':
-        return value.trim().toUpperCase()
-      case 'contact_number':
-      case 'emergency_contact_number':
-        return formatPhoneNumber(value)
-      default:
-        return value
-    }
-  }
-
   const handleDateConfirm = useCallback(({ date }) => {
     if (date) {
-      const error = validateField('birth_date', date)
-      if (error) {
-        showSnackbar(error)
-        return
-      }
       handleChange('birth_date', date)
     }
     setShowDatePicker(false)
-  }, [showSnackbar])
+  }, [])
 
   const handleDateDismiss = useCallback(() => {
     setShowDatePicker(false)
@@ -225,7 +68,7 @@ const EditProfileSubScreen = ({ navigation }) => {
 
   const handleImageSource = async (source) => {
     setShowImageSourceDialog(false)
-    
+
     try {
       const options = { 
         mediaTypes: ['images'],
@@ -259,7 +102,6 @@ const EditProfileSubScreen = ({ navigation }) => {
         throw new Error('User not authenticated')
       }
 
-      // Get user's role from profiles table
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('role_id')
@@ -270,7 +112,6 @@ const EditProfileSubScreen = ({ navigation }) => {
         throw profileError
       }
 
-      // Determine folder based on role_id
       let folder
       switch (profileData.role_id) {
         case 1:
@@ -286,16 +127,10 @@ const EditProfileSubScreen = ({ navigation }) => {
           throw new Error('Invalid role')
       }
 
-      // Delete existing file for this user
       const filePath = `${folder}/${user.id}.png`
-      const { error: deleteError } = await supabase.storage
+      await supabase.storage
         .from('profile-images')
         .remove([filePath])
-
-      // Ignore delete error if file doesn't exist
-      if (deleteError && !deleteError.message.includes('not found')) {
-        console.error('Error deleting existing file:', deleteError)
-      }
 
       const base64 = await FileSystem.readAsStringAsync(image, {
         encoding: FileSystem.EncodingType.Base64,
@@ -309,19 +144,18 @@ const EditProfileSubScreen = ({ navigation }) => {
           contentType,
           upsert: true
         })
-    
+  
       if (error) {
         showSnackbar('Error uploading image: ' + error.message)
         return null
       }
 
-      // Get a signed URL that's valid for a long time (e.g., 1 year)
       const { data: { signedUrl }, error: signedUrlError } = await supabase.storage
         .from('profile-images')
-        .createSignedUrl(filePath, 31536000) // 1 year in seconds
+        .createSignedUrl(filePath, 31536000)
 
       if (signedUrlError) {
-        throw signedUrlError
+        	throw signedUrlError
       }
 
       return signedUrl
@@ -333,11 +167,6 @@ const EditProfileSubScreen = ({ navigation }) => {
   }
 
   const saveProfile = async () => {
-    if (!validateForm()) {
-      showSnackbar('Please fix the errors before saving')
-      return
-    }
-
     try {
       setSaving(true)
       const { data: { user } } = await supabase.auth.getUser()
@@ -347,7 +176,6 @@ const EditProfileSubScreen = ({ navigation }) => {
         return
       }
 
-      // Get current profile data including role_id and pfp_id
       const { data: currentProfile, error: profileError } = await supabase
         .from('profiles')
         .select('role_id, pfp_id')
@@ -358,13 +186,11 @@ const EditProfileSubScreen = ({ navigation }) => {
         throw profileError
       }
 
-      // If there's a new image, upload it and get the signed URL
       let newPfpId = form.pfp_id
       if (image?.startsWith('file://')) {
         newPfpId = await uploadImage()
       }
 
-      // If no new image and there's an existing one, delete it
       if (!newPfpId && currentProfile.pfp_id) {
         let folder
         switch (currentProfile.role_id) {
@@ -380,20 +206,11 @@ const EditProfileSubScreen = ({ navigation }) => {
         }
 
         if (folder) {
-          const filePath = `${folder}/${user.id}.png`
-          const { error: deleteError } = await supabase.storage
+          await supabase.storage
             .from('profile-images')
-            .remove([filePath])
-
-          if (deleteError && !deleteError.message.includes('not found')) {
-            console.error('Error deleting existing file:', deleteError)
-          }
+            .remove([`${folder}/${user.id}.png`])
         }
       }
-
-      // Format phone numbers for storage
-      const contactNumber = formatPhoneNumber(form.contact_number)
-      const emergencyContactNumber = formatPhoneNumber(form.emergency_contact_number)
 
       const { error } = await supabase
         .from('profiles')
@@ -401,10 +218,10 @@ const EditProfileSubScreen = ({ navigation }) => {
           first_name: form.first_name,
           middle_initial: form.middle_initial,
           last_name: form.last_name,
-          contact_number: contactNumber,
+          contact_number: form.contact_number,
           birth_date: form.birth_date,
           emergency_contact_name: form.emergency_contact_name,
-          emergency_contact_number: emergencyContactNumber,
+          emergency_contact_number: form.emergency_contact_number,
           pfp_id: newPfpId,
           updated_at: new Date().toISOString(),
         })
@@ -449,10 +266,10 @@ const EditProfileSubScreen = ({ navigation }) => {
         first_name: data.first_name || '',
         middle_initial: data.middle_initial || '',
         last_name: data.last_name || '',
-        contact_number: formatDisplayNumber(data.contact_number) || '',
+        contact_number: data.contact_number || '',
         birth_date: data.birth_date ? new Date(data.birth_date) : null,
         emergency_contact_name: data.emergency_contact_name || '',
-        emergency_contact_number: formatDisplayNumber(data.emergency_contact_number) || '',
+        emergency_contact_number: data.emergency_contact_number || '',
         pfp_id: data.pfp_id || null,
       })
     } catch (error) {
@@ -469,18 +286,8 @@ const EditProfileSubScreen = ({ navigation }) => {
   )
 
   const handleChange = (field, value) => {
-    const sanitizedValue = sanitizeInput(field, value)
-    const error = validateField(field, sanitizedValue)
-    
-    setForm(prev => ({ ...prev, [field]: sanitizedValue }))
-    setErrors(prev => ({ ...prev, [field]: error }))
-
-    // Show snackbar for immediate feedback on blank fields
-    if (VALIDATION_RULES[field]?.required && (!sanitizedValue || (typeof sanitizedValue === 'string' && sanitizedValue.trim() === ''))) {
-      showSnackbar(VALIDATION_MESSAGES.required)
-    }
+    setForm(prev => ({ ...prev, [field]: value }))
   }
-
 
   if (loading) {
     return (
@@ -553,8 +360,6 @@ const EditProfileSubScreen = ({ navigation }) => {
             right={<TextInput.Icon icon="account" />}
             theme={{ colors: { primary: colors.primary } }}
             disabled={saving}
-            error={!!errors.first_name}
-            helperText={errors.first_name}
           />
 
           <TextInput
@@ -567,8 +372,6 @@ const EditProfileSubScreen = ({ navigation }) => {
             right={<TextInput.Icon icon="account" />}
             theme={{ colors: { primary: colors.primary } }}
             disabled={saving}
-            error={!!errors.middle_initial}
-            helperText={errors.middle_initial}
           />
 
           <TextInput
@@ -580,8 +383,6 @@ const EditProfileSubScreen = ({ navigation }) => {
             right={<TextInput.Icon icon="account" />}
             theme={{ colors: { primary: colors.primary } }}
             disabled={saving}
-            error={!!errors.last_name}
-            helperText={errors.last_name}
           />
 
           <Divider style={styles.divider} />
@@ -596,8 +397,6 @@ const EditProfileSubScreen = ({ navigation }) => {
             left={<TextInput.Affix text="+63" />}
             theme={{ colors: { primary: colors.primary } }}
             disabled={saving}
-            error={!!errors.contact_number}
-            helperText={errors.contact_number}
             maxLength={11}
           />
 
@@ -610,8 +409,6 @@ const EditProfileSubScreen = ({ navigation }) => {
             right={<TextInput.Icon icon="calendar" onPress={openDatePicker} />}
             theme={{ colors: { primary: colors.primary } }}
             disabled={saving}
-            error={!!errors.birth_date}
-            helperText={errors.birth_date}
           />
 
           <Divider style={styles.divider} />
@@ -625,8 +422,6 @@ const EditProfileSubScreen = ({ navigation }) => {
             right={<TextInput.Icon icon="account" />}
             theme={{ colors: { primary: colors.primary } }}
             disabled={saving}
-            error={!!errors.emergency_contact_name}
-            helperText={errors.emergency_contact_name}
           />
 
           <TextInput
@@ -639,8 +434,6 @@ const EditProfileSubScreen = ({ navigation }) => {
             left={<TextInput.Affix text="+63" />}
             theme={{ colors: { primary: colors.primary } }}
             disabled={saving}
-            error={!!errors.emergency_contact_number}
-            helperText={errors.emergency_contact_number}
             maxLength={11}
           />
         </Surface>
@@ -772,4 +565,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default EditProfileSubScreen 
+export default EditProfileSubScreen

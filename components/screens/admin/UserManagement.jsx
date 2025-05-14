@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useCallback } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
 import { ScrollView, StyleSheet, View } from 'react-native'
 import {
   Searchbar,
@@ -8,7 +9,6 @@ import {
   Text,
   useTheme,
   Menu,
-  Divider,
 } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabase'
@@ -77,7 +77,11 @@ const UserManagement = ({ navigation }) => {
     setLoading(false)
   }
 
-  useEffect(() => { fetchUsers() }, [])
+  useFocusEffect(
+    useCallback(() => {
+      fetchUsers()
+    }, [])
+  )
 
   const handleSort = (column) => {
     setSortDirection(prev =>
