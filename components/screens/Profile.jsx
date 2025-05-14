@@ -90,11 +90,11 @@ const Profile = ({ navigation }) => {
       {/* User Info Card */}
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
         <Card.Content style={styles.cardContent}>
-          {profile?.['pfp-id'] ? (
+          {profile?.pfp_id ? (
             <Avatar.Image
               size={60}
               source={{ 
-                uri: profile['pfp-id'],
+                uri: profile.pfp_id,
                 cache: 'reload'
               }}
               style={[styles.profile, { borderColor: colors.background }]}

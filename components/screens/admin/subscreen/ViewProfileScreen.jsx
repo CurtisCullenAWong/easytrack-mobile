@@ -126,10 +126,10 @@ const ViewProfileScreen = ({ route, navigation }) => {
       {/* User Info Card */}
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
         <Card.Content style={styles.cardContent}>
-          {user['pfp-id'] ? (
+          {user.pfp_id ? (
             <Avatar.Image
               size={60}
-              source={{ uri: user['pfp-id'] }}
+              source={{ uri: user.pfp_id }}
               style={[styles.profile, { borderColor: colors.background }]}
             />
           ) : (

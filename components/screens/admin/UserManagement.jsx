@@ -70,7 +70,7 @@ const UserManagement = ({ navigation }) => {
         ? new Date(user.updated_at).toLocaleString()
         : 'Never',  
       avatar: (user.first_name || 'N')[0].toUpperCase(),
-      'pfp-id': user['pfp-id'] || null,
+      pfp_id: user.pfp_id || null,
     }))
 
     setUsers(formatted)
@@ -260,8 +260,8 @@ const UserManagement = ({ navigation }) => {
                 paginatedUsers.map(user => (
                   <DataTable.Row key={user.id}>
                     <DataTable.Cell style={{ width: AVATAR_COLUMN_WIDTH, justifyContent: 'center' }}>
-                      {user['pfp-id'] ? (
-                        <Avatar.Image size={40} source={{ uri: user['pfp-id'] }} />
+                      {user.pfp_id ? (
+                        <Avatar.Image size={40} source={{ uri: user.pfp_id }} />
                       ) : (
                         <Avatar.Text size={40} label={user.avatar} />
                       )}

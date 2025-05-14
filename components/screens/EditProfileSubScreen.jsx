@@ -71,7 +71,7 @@ const EditProfileSubScreen = ({ navigation }) => {
     birth_date: null,
     emergency_contact_name: '',
     emergency_contact_number: '',
-    'pfp-id': null,
+    pfp_id: null,
   })
 
   const [errors, setErrors] = useState({})
@@ -167,7 +167,7 @@ const EditProfileSubScreen = ({ navigation }) => {
 
       if (!result.canceled) {
         setImage(result.assets[0].uri)
-        handleChange('pfp-id', result.assets[0].uri)
+        handleChange('pfp_id', result.assets[0].uri)
       }
     } catch (error) {
       showSnackbar('Error picking image: ' + error.message)
@@ -274,10 +274,10 @@ const EditProfileSubScreen = ({ navigation }) => {
         return
       }
 
-      // Get current profile data including role_id and pfp-id
+      // Get current profile data including role_id and pfp_id
       const { data: currentProfile, error: profileError } = await supabase
         .from('profiles')
-        .select('role_id, pfp-id')
+        .select('role_id, pfp_id')
         .eq('id', user.id)
         .single()
 
@@ -286,13 +286,13 @@ const EditProfileSubScreen = ({ navigation }) => {
       }
 
       // If there's a new image, upload it and get the signed URL
-      let newPfpId = form['pfp-id']
+      let newPfpId = form.pfp_id
       if (image?.startsWith('file://')) {
         newPfpId = await uploadImage()
       }
 
       // If no new image and there's an existing one, delete it
-      if (!newPfpId && currentProfile['pfp-id']) {
+      if (!newPfpId && currentProfile.pfp_id) {
         let folder
         switch (currentProfile.role_id) {
           case 1:
@@ -328,7 +328,7 @@ const EditProfileSubScreen = ({ navigation }) => {
           birth_date: form.birth_date,
           emergency_contact_name: form.emergency_contact_name,
           emergency_contact_number: form.emergency_contact_number,
-          'pfp-id': newPfpId,
+          pfp_id: newPfpId,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id)
@@ -376,7 +376,7 @@ const EditProfileSubScreen = ({ navigation }) => {
         birth_date: data.birth_date ? new Date(data.birth_date) : null,
         emergency_contact_name: data.emergency_contact_name || '',
         emergency_contact_number: data.emergency_contact_number || '',
-        'pfp-id': data['pfp-id'] || null,
+        pfp_id: data.pfp_id || null,
       })
     } catch (error) {
       showSnackbar('Error loading profile')
@@ -427,11 +427,11 @@ const EditProfileSubScreen = ({ navigation }) => {
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
           <View style={styles.profileContainer}>
-            {form['pfp-id'] ? (
+            {form.pfp_id ? (
               <>
               <View style={styles.imagePreviewContainer}>
                 <Image 
-                  source={{ uri: form['pfp-id'] }} 
+                  source={{ uri: form.pfp_id }} 
                   style={styles.imagePreview}
                   resizeMode="cover"
                 />
@@ -440,7 +440,7 @@ const EditProfileSubScreen = ({ navigation }) => {
                   size={20}
                   iconColor={colors.error}
                   style={[styles.removeImageButton, { backgroundColor: colors.surface }]}
-                  onPress={() => handleChange('pfp-id', null)}
+                  onPress={() => handleChange('pfp_id', null)}
                 />
               </View>
               </>
@@ -454,7 +454,7 @@ const EditProfileSubScreen = ({ navigation }) => {
               textColor={colors.primary}
               disabled={saving}
             >
-              {form['pfp-id'] ? 'Change Profile Picture' : 'Upload Profile Picture'}
+              {form.pfp_id ? 'Change Profile Picture' : 'Upload Profile Picture'}
             </Button>
           </View>
 

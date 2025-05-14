@@ -29,7 +29,7 @@ const AdminHome = ({ navigation }) => {
     <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
       <Header navigation={navigation} title='Home' />
       <View style={styles.container}>
-        <Title style={[styles.title, { color: colors.onBackground, ...fonts.titleLarge }]}>Welcome Admin!</Title>
+        <Text style={[styles.title, { color: colors.onBackground, ...fonts.titleLarge }]}>Welcome Admin!</Text>
         <Text style={[styles.subTitle, { color: colors.onBackground, ...fonts.titleMedium }]}>Hi, System Administrator</Text>
         <Divider />
         {images.length ? (
