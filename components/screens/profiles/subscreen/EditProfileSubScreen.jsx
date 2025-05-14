@@ -34,6 +34,63 @@ const EditProfileSubScreen = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   
+  // Validation functions
+  const validateName = (name) => {
+    if (!name) {
+      return { isValid: false, message: 'Name cannot be empty' }
+    }
+    // Check if each word starts with a capital letter and only contains allowed characters
+    const words = name.split(/\s+/)
+    for (const word of words) {
+      if (!/^[A-Z][a-z']*$/.test(word)) {
+        return { isValid: false, message: 'Each name must start with a capital letter and can only contain letters and apostrophes' }
+      }
+    }
+    return { isValid: true }
+  }
+
+  const validateMiddleInitial = (initial) => {
+    if (initial && !/^[A-Z]$/.test(initial)) {
+      return { isValid: false, message: 'Middle initial must be a single uppercase letter' }
+    }
+    return { isValid: true }
+  }
+
+  const validateNameSuffix = (suffix) => {
+    if (suffix && !/^[A-Za-z\s.,]+$/.test(suffix)) {
+      return { isValid: false, message: 'Name suffix can only contain letters, spaces, periods, and commas' }
+    }
+    return { isValid: true }
+  }
+
+  const validatePhoneNumber = (number) => {
+    if (number && !/^9\d{9}$/.test(number)) {
+      return { isValid: false, message: 'Phone number must start with 9 and have 10 digits' }
+    }
+    return { isValid: true }
+  }
+
+  const validateBirthDate = (date) => {
+    if (!date) {
+      return { isValid: false, message: 'Birth date is required' }
+    }
+    const minDate = new Date(1935, 0, 1)
+    const eighteenYearsAgo = new Date()
+    eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18)
+    
+    if (date < minDate || date > eighteenYearsAgo) {
+      return { isValid: false, message: 'You must be at least 18 years old' }
+    }
+    return { isValid: true }
+  }
+
+  const validateEmergencyContact = (name) => {
+    if (name && !/^[A-Z][a-z']*(\s+[A-Z][a-z']*)*$/.test(name)) {
+      return { isValid: false, message: 'Emergency contact name must start with capital letters and can only contain letters, spaces, and apostrophes' }
+    }
+    return { isValid: true }
+  }
+
   // Combined state
   const [state, setState] = useState({
     loading: true,
@@ -73,8 +130,39 @@ const EditProfileSubScreen = ({ navigation }) => {
   const updateDialog = (dialog, value) => setState(prev => ({ ...prev, dialogs: { ...prev.dialogs, [dialog]: value } }))
 
   const handleChange = (field, value) => {
-    updateForm({ [field]: value })
-    updateInput({ [field]: value })
+    let sanitizedValue = value
+
+    switch (field) {
+      case 'first_name':
+      case 'last_name':
+      case 'emergency_contact_name':
+        // Remove any characters that aren't letters, spaces, or apostrophes
+        sanitizedValue = value.replace(/[^a-zA-Z\s']/g, '')
+        break
+      case 'middle_initial':
+        sanitizedValue = value.toUpperCase()
+        break
+      case 'name_suffix':
+        sanitizedValue = value
+        break
+      case 'contact_number':
+      case 'emergency_contact_number':
+        const digitsOnly = value.replace(/\D/g, '')
+        sanitizedValue = digitsOnly.startsWith('9') ? digitsOnly.slice(0, 10) : '9' + digitsOnly.slice(0, 9)
+        break
+      case 'birth_date':
+        sanitizedValue = value
+        break
+    }
+
+    updateForm({ [field]: sanitizedValue })
+    updateInput({ [field]: sanitizedValue })
+  }
+
+  const capitalizeName = (name) => {
+    return name.split(/\s+/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ')
   }
 
   const handleDateConfirm = useCallback(({ date }) => {
@@ -146,6 +234,26 @@ const EditProfileSubScreen = ({ navigation }) => {
 
   const saveProfile = async () => {
     try {
+      // Validate all required fields before saving
+      const validations = [
+        { field: 'first_name', value: state.form.first_name, validator: validateName },
+        { field: 'last_name', value: state.form.last_name, validator: validateName },
+        { field: 'middle_initial', value: state.form.middle_initial, validator: validateMiddleInitial },
+        { field: 'name_suffix', value: state.form.name_suffix, validator: validateNameSuffix },
+        { field: 'contact_number', value: state.form.contact_number, validator: validatePhoneNumber },
+        { field: 'birth_date', value: state.form.birth_date, validator: validateBirthDate },
+        { field: 'emergency_contact_name', value: state.form.emergency_contact_name, validator: validateEmergencyContact },
+        { field: 'emergency_contact_number', value: state.form.emergency_contact_number, validator: validatePhoneNumber }
+      ]
+
+      for (const validation of validations) {
+        const result = validation.validator(validation.value)
+        if (!result.isValid) {
+          showSnackbar(result.message)
+          return
+        }
+      }
+
       updateState({ saving: true })
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
@@ -180,12 +288,14 @@ const EditProfileSubScreen = ({ navigation }) => {
       const { error } = await supabase
         .from('profiles')
         .update({
-          first_name: state.form.first_name,
+          first_name: capitalizeName(state.form.first_name),
           middle_initial: state.form.middle_initial,
-          last_name: state.form.name_suffix ? `${state.form.last_name} ${state.form.name_suffix}` : state.form.last_name,
+          last_name: state.form.name_suffix ? 
+            `${capitalizeName(state.form.last_name)} ${state.form.name_suffix}` : 
+            capitalizeName(state.form.last_name),
           contact_number: state.form.contact_number ? `+63${state.form.contact_number}` : null,
           birth_date: state.form.birth_date,
-          emergency_contact_name: state.form.emergency_contact_name,
+          emergency_contact_name: capitalizeName(state.form.emergency_contact_name),
           emergency_contact_number: state.form.emergency_contact_number ? `+63${state.form.emergency_contact_number}` : null,
           pfp_id: newPfpId,
           updated_at: new Date().toISOString(),
@@ -426,10 +536,10 @@ const EditProfileSubScreen = ({ navigation }) => {
           saveLabel='Select'
           label='Enter the birth date'
           startYear={1935}
-          endYear={new Date().getFullYear()}
+          endYear={new Date().getFullYear() - 18}
           validRange={{
             startDate: new Date(1935, 0, 1),
-            endDate: new Date().getFullYear(),
+            endDate: new Date().getFullYear() - 18,
           }}
         />
       </Portal>
