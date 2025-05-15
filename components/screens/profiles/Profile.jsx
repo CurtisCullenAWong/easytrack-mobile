@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react'
 import { ScrollView, View, StyleSheet, Image } from 'react-native'
-import { Avatar, Card, Text, Divider, Button, useTheme, ActivityIndicator } from 'react-native-paper'
+import { Avatar, Card, Text, Divider, Button, useTheme, ActivityIndicator, Portal, Dialog } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabase'
 import useLogout from '../../hooks/useLogout'
@@ -63,7 +63,14 @@ const InfoCard = React.memo(({ title, data, colors, fonts }) => (
 
 // Verification Card Component
 const VerificationCard = React.memo(({ profile, colors, fonts, navigation }) => {
-  if (!profile || profile.verify_status_id === 5 || (profile.role_id !== 2 && profile.role_id !== 3 )) return null
+  const [showVerificationDialog, setShowVerificationDialog] = useState(false)
+
+  if (!profile || (profile.role_id !== 1 && profile.role_id !== 2 && profile.role_id !== 3)) return null
+
+  const handleReverify = () => {
+    setShowVerificationDialog(false)
+    navigation.navigate('Verification')
+  }
 
   const renderVerificationContent = () => {
     if (profile.verify_status_id === 1) {
@@ -78,10 +85,22 @@ const VerificationCard = React.memo(({ profile, colors, fonts, navigation }) => 
           {profile?.gov_id_proof && (
             <View style={styles.imageContainer}>
               <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-                ID Proof:
+                ID Proof (Front):
               </Text>
               <Image
                 source={{ uri: profile.gov_id_proof }}
+                style={[styles.verificationImage, { aspectRatio: 16/9 }]}
+                resizeMode="contain"
+              />
+            </View>
+          )}
+          {profile?.gov_id_proof_back && (
+            <View style={styles.imageContainer}>
+              <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+                ID Proof (Back):
+              </Text>
+              <Image
+                source={{ uri: profile.gov_id_proof_back }}
                 style={[styles.verificationImage, { aspectRatio: 16/9 }]}
                 resizeMode="contain"
               />
@@ -113,11 +132,32 @@ const VerificationCard = React.memo(({ profile, colors, fonts, navigation }) => 
             icon="check-circle"
             mode="contained"
             style={[styles.button, { backgroundColor: colors.primary, marginTop: 16 }]}
-            onPress={() => navigation.navigate('Verification')}
+            onPress={() => setShowVerificationDialog(true)}
             labelStyle={[{ color: colors.onPrimary, ...fonts.labelLarge }]}
           >
             Reverify Account
           </Button>
+
+          <Portal>
+            <Dialog visible={showVerificationDialog} onDismiss={() => setShowVerificationDialog(false)}>
+              <Dialog.Title style={[{ color: colors.onSurface, ...fonts.titleMedium }]}>
+                Confirm Reverification
+              </Dialog.Title>
+              <Dialog.Content>
+                <Text style={[{ color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+                  Are you sure you want to reverify your account? This will require you to submit your verification documents again.
+                </Text>
+              </Dialog.Content>
+              <Dialog.Actions>
+                <Button onPress={() => setShowVerificationDialog(false)} style={{ marginRight: 8 }}>
+                  Cancel
+                </Button>
+                <Button onPress={handleReverify}>
+                  Confirm
+                </Button>
+              </Dialog.Actions>
+            </Dialog>
+          </Portal>
         </>
       )
     }

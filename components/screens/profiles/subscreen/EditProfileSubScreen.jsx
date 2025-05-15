@@ -81,7 +81,7 @@ const EditProfileSubScreen = ({ navigation }) => {
   const [state, setState] = useState({
     loading: true,
     saving: false,
-    image: null,
+    roleId: null,
     form: {
       first_name: '',
       middle_initial: '',
@@ -92,25 +92,17 @@ const EditProfileSubScreen = ({ navigation }) => {
       emergency_contact_number: '',
       pfp_id: null,
     },
-    inputValues: {
-      first_name: '',
-      middle_initial: '',
-      last_name: '',
-      contact_number: '',
-      emergency_contact_name: '',
-      emergency_contact_number: '',
-    },
     dialogs: {
       confirm: false,
       datePicker: false,
       imageSource: false,
+      removeImage: false,
     }
   })
 
   // Simplified handlers
   const updateState = (updates) => setState(prev => ({ ...prev, ...updates }))
   const updateForm = (updates) => setState(prev => ({ ...prev, form: { ...prev.form, ...updates } }))
-  const updateInput = (updates) => setState(prev => ({ ...prev, inputValues: { ...prev.inputValues, ...updates } }))
   const updateDialog = (dialog, value) => setState(prev => ({ ...prev, dialogs: { ...prev.dialogs, [dialog]: value } }))
 
   const handleChange = (field, value) => {
@@ -137,7 +129,6 @@ const EditProfileSubScreen = ({ navigation }) => {
     }
 
     updateForm({ [field]: sanitizedValue })
-    updateInput({ [field]: sanitizedValue })
   }
 
   const capitalizeName = (name) => {
@@ -159,7 +150,6 @@ const EditProfileSubScreen = ({ navigation }) => {
         : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, quality: 1, aspect: [1, 1] })
 
       if (!result.canceled) {
-        updateState({ image: result.assets[0].uri })
         handleChange('pfp_id', result.assets[0].uri)
       }
     } catch (error) {
@@ -168,7 +158,7 @@ const EditProfileSubScreen = ({ navigation }) => {
   }
 
   const uploadImage = async () => {
-    if (!state.image?.startsWith('file://')) return null
+    if (!state.form.pfp_id?.startsWith('file://')) return null
   
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -184,8 +174,8 @@ const EditProfileSubScreen = ({ navigation }) => {
 
       const folder = {
         1: 'admin',
-        2: 'airlines',
-        3: 'delivery'
+        2: 'delivery',
+        3: 'airlines'
       }[profileData.role_id]
 
       if (!folder) throw new Error('Invalid role')
@@ -193,7 +183,7 @@ const EditProfileSubScreen = ({ navigation }) => {
       const filePath = `${folder}/${user.id}.png`
       await supabase.storage.from('profile-images').remove([filePath])
 
-      const base64 = await FileSystem.readAsStringAsync(state.image, { encoding: FileSystem.EncodingType.Base64 })
+      const base64 = await FileSystem.readAsStringAsync(state.form.pfp_id, { encoding: FileSystem.EncodingType.Base64 })
       const { error } = await supabase.storage
         .from('profile-images')
         .upload(filePath, decode(base64), { contentType: 'image/png', upsert: true })
@@ -210,6 +200,41 @@ const EditProfileSubScreen = ({ navigation }) => {
       console.error('Upload error:', error)
       showSnackbar('Error uploading image: ' + error.message)
       return null
+    }
+  }
+
+  const removeImage = async () => {
+    updateDialog('removeImage', false)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('role_id')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError) throw profileError
+
+      const folder = {
+        1: 'admin',
+        2: 'delivery',
+        3: 'airlines'
+      }[profileData.role_id]
+
+      if (folder) {
+        const filePath = `${folder}/${user.id}.png`
+        await supabase.storage
+          .from('profile-images')
+          .remove([filePath])
+      }
+
+      handleChange('pfp_id', null)
+      showSnackbar('Profile picture removed successfully', true)
+    } catch (error) {
+      console.error('Error removing image:', error)
+      showSnackbar('Error removing image')
     }
   }
 
@@ -247,15 +272,19 @@ const EditProfileSubScreen = ({ navigation }) => {
       if (profileError) throw profileError
 
       let newPfpId = state.form.pfp_id
-      if (state.image?.startsWith('file://')) {
+      if (state.form.pfp_id?.startsWith('file://')) {
         newPfpId = await uploadImage()
-      }
-
-      if (!newPfpId && currentProfile.pfp_id) {
+        if (!newPfpId) {
+          showSnackbar('Failed to upload profile picture')
+          updateState({ saving: false })
+          return
+        }
+      } else if (!state.form.pfp_id && currentProfile.pfp_id) {
+        // If image was removed, delete from storage
         const folder = {
           1: 'admin',
-          2: 'airlines',
-          3: 'delivery'
+          2: 'delivery',
+          3: 'airlines'
         }[currentProfile.role_id]
 
         if (folder) {
@@ -318,7 +347,7 @@ const EditProfileSubScreen = ({ navigation }) => {
 
       updateState({
         form: initialData,
-        inputValues: { ...initialData },
+        roleId: data.role_id,
         loading: false
       })
     } catch (error) {
@@ -328,6 +357,26 @@ const EditProfileSubScreen = ({ navigation }) => {
   }
 
   useFocusEffect(useCallback(() => { fetchProfile() }, []))
+
+  const ImagePreview = ({ uri, onRemove }) => {
+    if (!uri) return null
+    return (
+      <View style={styles.imagePreviewContainer}>
+        <Image 
+          source={{ uri }} 
+          style={styles.imagePreview}
+          resizeMode="contain"
+        />
+        <IconButton
+          icon="close-circle"
+          size={20}
+          iconColor={colors.error}
+          style={[styles.removeImageButton, { backgroundColor: colors.surface }]}
+          onPress={onRemove}
+        />
+      </View>
+    )
+  }
 
   if (state.loading) {
     return (
@@ -351,7 +400,7 @@ const EditProfileSubScreen = ({ navigation }) => {
         <Appbar.Action 
           icon='content-save' 
           onPress={() => updateDialog('confirm', true)} 
-          disabled={state.loading}
+          disabled={state.saving}
           color={colors.primary}
         />
       </Appbar.Header>
@@ -360,20 +409,10 @@ const EditProfileSubScreen = ({ navigation }) => {
         <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
           <View style={styles.profileContainer}>
             {state.form.pfp_id ? (
-              <View style={styles.imagePreviewContainer}>
-                <Image 
-                  source={{ uri: state.form.pfp_id }} 
-                  style={styles.imagePreview}
-                  resizeMode='cover'
-                />
-                <IconButton
-                  icon='close-circle'
-                  size={20}
-                  iconColor={colors.error}
-                  style={[styles.removeImageButton, { backgroundColor: colors.surface }]}
-                  onPress={() => handleChange('pfp_id', null)}
-                />
-              </View>
+              <ImagePreview 
+                uri={state.form.pfp_id} 
+                onRemove={() => updateDialog('removeImage', true)} 
+              />
             ) : (
               <Avatar.Text size={80} label={(state.form.first_name || 'N')[0].toUpperCase()} />
             )}
@@ -392,7 +431,7 @@ const EditProfileSubScreen = ({ navigation }) => {
 
           <TextInput
             label='First Name'
-            value={state.inputValues.first_name}
+            value={state.form.first_name}
             onChangeText={(text) => handleChange('first_name', text)}
             mode='outlined'
             style={styles.input}
@@ -405,7 +444,7 @@ const EditProfileSubScreen = ({ navigation }) => {
 
           <TextInput
             label='Middle Initial'
-            value={state.inputValues.middle_initial}
+            value={state.form.middle_initial}
             onChangeText={(text) => handleChange('middle_initial', text)}
             mode='outlined'
             style={styles.input}
@@ -418,7 +457,7 @@ const EditProfileSubScreen = ({ navigation }) => {
 
           <TextInput
             label='Last Name'
-            value={state.inputValues.last_name}
+            value={state.form.last_name}
             onChangeText={(text) => handleChange('last_name', text)}
             mode='outlined'
             style={styles.input}
@@ -433,7 +472,7 @@ const EditProfileSubScreen = ({ navigation }) => {
 
           <TextInput
             label='Contact Number'
-            value={state.inputValues.contact_number}
+            value={state.form.contact_number}
             onChangeText={(text) => handleChange('contact_number', text)}
             mode='outlined'
             style={styles.input}
@@ -458,8 +497,8 @@ const EditProfileSubScreen = ({ navigation }) => {
           <Divider style={styles.divider} />
 
           <TextInput
-            label='Emergency Contact Name and Last Name'
-            value={state.inputValues.emergency_contact_name}
+            label='Emergency Contact Name'
+            value={state.form.emergency_contact_name}
             onChangeText={(text) => handleChange('emergency_contact_name', text)}
             mode='outlined'
             style={styles.input}
@@ -472,7 +511,7 @@ const EditProfileSubScreen = ({ navigation }) => {
 
           <TextInput
             label='Emergency Contact Number'
-            value={state.inputValues.emergency_contact_number}
+            value={state.form.emergency_contact_number}
             onChangeText={(text) => handleChange('emergency_contact_number', text)}
             mode='outlined'
             style={styles.input}
@@ -552,6 +591,22 @@ const EditProfileSubScreen = ({ navigation }) => {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <Portal>
+        <Dialog
+          visible={state.dialogs.removeImage}
+          onDismiss={() => updateDialog('removeImage', false)}
+          style={{ backgroundColor: colors.surface }}>
+          <Dialog.Title>Remove Profile Picture</Dialog.Title>
+          <Dialog.Content>
+            <Text variant='bodyMedium'>Are you sure you want to remove your profile picture?</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => updateDialog('removeImage', false)}>Cancel</Button>
+            <Button onPress={removeImage}>Remove</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
       {SnackbarElement}
     </SafeAreaView>
   )
@@ -591,9 +646,8 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     position: 'relative',
     alignSelf: 'center',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 200,
+    height: 200,
     overflow: 'hidden',
   },
   imagePreview: {
@@ -602,8 +656,8 @@ const styles = StyleSheet.create({
   },
   removeImageButton: {
     position: 'absolute',
-    top: -8,
-    right: -8,
+    top: -12,
+    right: -12,
     zIndex: 1000
   },
   profilePictureButton: {

@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
-import { ScrollView, View, StyleSheet, Image } from 'react-native'
+import { ScrollView, View, StyleSheet, Image, SafeAreaView, ActivityIndicator } from 'react-native'
 import { Text, Card, Button, TextInput, useTheme, Portal, Dialog, IconButton, Appbar, Menu } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import * as ImagePicker from 'expo-image-picker'
@@ -8,93 +8,128 @@ import * as FileSystem from 'expo-file-system'
 import { decode } from 'base64-arraybuffer'
 import useSnackbar from '../../../hooks/useSnackbar'
 
-const Verification = ({ navigation }) => {
+const ProfileVerification = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   
-  // State management
-  const [loading, setLoading] = useState(false)
-  const [showImageSourceDialog, setShowImageSourceDialog] = useState(false)
-  const [showPermissionDialog, setShowPermissionDialog] = useState(false)
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
-  const [currentImageType, setCurrentImageType] = useState(null)
-  const [idTypeMenuVisible, setIdTypeMenuVisible] = useState(false)
-  const [idTypes, setIdTypes] = useState([])
-  const [roleId, setRoleId] = useState(null)
-  const [formData, setFormData] = useState({
-    gov_id_type: null,
-    gov_id_type_id: null,
-    gov_id_number: null,
-    gov_id_proof: null,
-    vehicle_info: null,
-    vehicle_plate_number: null,
-    vehicle_or_cr: null
-  })
-
-  // Check verification status and fetch ID types on mount
-  useFocusEffect(
-    useCallback(() => {
-      checkVerificationStatus()
-      fetchIdTypes()
-    }, [])
-  )
-
-  const fetchIdTypes = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('verify_info_type')
-        .select('id, id_type_name')
-        .order('id_type_name')
-
-      if (error) throw error
-      setIdTypes(data || [])
-    } catch (error) {
-      console.error('Error fetching ID types:', error)
-      showSnackbar('Error fetching ID types')
+  // Validation functions
+  const validateIdType = (type) => {
+    if (!type) {
+      return { isValid: false, message: 'Please select an ID type' }
     }
+    return { isValid: true }
   }
 
-  const checkVerificationStatus = async () => {
+  const validateIdNumber = (number) => {
+    if (!number?.trim()) {
+      return { isValid: false, message: 'Please enter your ID number' }
+    }
+    return { isValid: true }
+  }
+
+  const validateIdProof = (proof) => {
+    if (!proof) {
+      return { isValid: false, message: 'Please upload your ID proof (front)' }
+    }
+    return { isValid: true }
+  }
+
+  const validateIdProofBack = (proof) => {
+    if (!proof) {
+      return { isValid: false, message: 'Please upload your ID proof (back)' }
+    }
+    return { isValid: true }
+  }
+
+  const validateVehicleInfo = (info) => {
+    if (!info?.trim()) {
+      return { isValid: false, message: 'Please enter vehicle description' }
+    }
+    return { isValid: true }
+  }
+
+  const validatePlateNumber = (number) => {
+    if (!number?.trim()) {
+      return { isValid: false, message: 'Please enter vehicle plate number' }
+    }
+    return { isValid: true }
+  }
+
+  const validateOrCr = (document) => {
+    if (!document) {
+      return { isValid: false, message: 'Please upload OR/CR document' }
+    }
+    return { isValid: true }
+  }
+
+  // Combined state
+  const [state, setState] = useState({
+    loading: true,
+    saving: false,
+    roleId: null,
+    idTypes: [],
+    form: {
+      gov_id_type: null,
+      gov_id_type_id: null,
+      gov_id_number: null,
+      gov_id_proof: null,
+      gov_id_proof_back: null,
+      vehicle_info: null,
+      vehicle_plate_number: null,
+      vehicle_or_cr: null
+    },
+    dialogs: {
+      imageSource: false,
+      permission: false,
+      confirm: false
+    },
+    currentImageType: null
+  })
+
+  // Simplified handlers
+  const updateState = (updates) => setState(prev => ({ ...prev, ...updates }))
+  const updateForm = (updates) => setState(prev => ({ ...prev, form: { ...prev.form, ...updates } }))
+  const updateDialog = (dialog, value) => setState(prev => ({ ...prev, dialogs: { ...prev.dialogs, [dialog]: value } }))
+
+  const handleChange = (field, value) => {
+    let sanitizedValue = value
+
+    switch (field) {
+      case 'gov_id_number':
+        sanitizedValue = value.replace(/[^0-9]/g, '')
+        break
+      case 'vehicle_plate_number':
+        sanitizedValue = value.replace(/[^A-Z0-9-]/gi, '').toUpperCase()
+        break
+      default:
+        sanitizedValue = value
+    }
+
+    updateForm({ [field]: sanitizedValue })
+  }
+
+  const handleImageSource = async (source) => {
+    updateDialog('imageSource', false)
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const options = { 
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 1,
+        aspect: [16, 9],
+      }
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          verify_status_id,
-          gov_id_type,
-          gov_id_number,
-          gov_id_proof,
-          vehicle_info,
-          vehicle_plate_number,
-          vehicle_or_cr,
-          role_id,
-          verify_info_type:gov_id_type (id_type_name)
-        `)
-        .eq('id', user.id)
-        .single()
-        setRoleId(data?.role_id)
+      const result = source === 'camera' 
+        ? await ImagePicker.launchCameraAsync(options)
+        : await ImagePicker.launchImageLibraryAsync(options)
 
-      if (error) throw error
-
-      // If verification data exists, load it into the form
-      if (data) {
-        console.log('\nLoaded verification data:', data)
-        setFormData(prev => ({
-          ...prev,
-          gov_id_type: data.verify_info_type?.id_type_name || '',
-          gov_id_type_id: data.gov_id_type || null,
-          gov_id_number: data.gov_id_number || '',
-          gov_id_proof: data.gov_id_proof || null,
-          vehicle_info: data.vehicle_info || '',
-          vehicle_plate_number: data.vehicle_plate_number || '',
-          vehicle_or_cr: data.vehicle_or_cr || null
-        }))
+      if (!result.canceled) {
+        const imageUri = result.assets[0].uri
+        handleChange(state.currentImageType, imageUri)
       }
     } catch (error) {
-      console.error('Error checking verification status:', error)
-      showSnackbar('Error loading verification data')
+      console.error('Error picking image:', error)
+      showSnackbar('Error picking image: ' + error.message)
     }
   }
 
@@ -111,19 +146,21 @@ const Verification = ({ navigation }) => {
       }
 
       // Determine bucket and folder based on role_id and image type
-      let bucket, folder
-      if (type === 'gov_id_proof') {
+      let bucket, folder, fileName
+      if (type === 'front' || type === 'back') {
         bucket = 'gov-id'
-        folder = roleId === 2 ? 'delivery' : 'airlines' // role_id 2 is delivery, 3 is airlines
+        folder = state.roleId === 1 ? 'admin' : state.roleId === 2 ? 'delivery' : 'airlines'
+        fileName = `${user.id}_gov_id_${type}.png`
       } else if (type === 'vehicle_or_cr') {
         bucket = 'or-cr'
         folder = 'delivery'
+        fileName = `${user.id}_vehicle_or_cr.png`
       } else {
         throw new Error('Invalid image type')
       }
 
       // Delete existing file for this user
-      const filePath = `${folder}/${user.id}.png`
+      const filePath = `${folder}/${fileName}`
       const { error: deleteError } = await supabase.storage
         .from(bucket)
         .remove([filePath])
@@ -154,7 +191,7 @@ const Verification = ({ navigation }) => {
       // Get a signed URL that's valid for a long time (e.g., 1 year)
       const { data: { signedUrl }, error: signedUrlError } = await supabase.storage
         .from(bucket)
-        .createSignedUrl(filePath, 31536000) // 1 year in seconds
+        .createSignedUrl(filePath, 31536000)
 
       if (signedUrlError) {
         throw signedUrlError
@@ -168,127 +205,39 @@ const Verification = ({ navigation }) => {
     }
   }
 
-  const handleImageSource = async (source) => {
-    setShowImageSourceDialog(false)
-    
-    try {
-      const options = { 
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        quality: 1,
-        aspect: [4, 3],
-      }
-
-      const result = source === 'camera' 
-        ? await ImagePicker.launchCameraAsync(options)
-        : await ImagePicker.launchImageLibraryAsync(options)
-
-      if (!result.canceled) {
-        const imageUri = result.assets[0].uri
-        setFormData(prev => ({
-          ...prev,
-          [currentImageType]: imageUri
-        }))
-      }
-    } catch (error) {
-      console.error('Error picking image:', error)
-      showSnackbar('Error picking image: ' + error.message)
-    }
-  }
-
+  // Pick image from camera or gallery for either id proof and or/cr
   const pickImage = (type) => {
-    setCurrentImageType(type)
-    setShowImageSourceDialog(true)
+    updateState({ currentImageType: type })
+    updateDialog('imageSource', true)
   }
-
-  const removeImage = async (type) => {
+  
+  const saveVerification = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      // Determine bucket and folder based on role_id and image type
-      let bucket, folder
-      if (type === 'gov_id_proof') {
-        bucket = 'gov-id'
-        folder = roleId === 2 ? 'delivery' : 'airlines' // role_id 2 is delivery, 3 is airlines
-      } else if (type === 'vehicle_or_cr') {
-        bucket = 'or-cr'
-        folder = 'delivery'
+      // Validate all required fields before saving
+      const validations = [
+        { field: 'gov_id_type', value: state.form.gov_id_type_id, validator: validateIdType },
+        { field: 'gov_id_number', value: state.form.gov_id_number, validator: validateIdNumber },
+        { field: 'gov_id_proof', value: state.form.gov_id_proof, validator: validateIdProof },
+        { field: 'gov_id_proof_back', value: state.form.gov_id_proof_back, validator: validateIdProofBack }
+      ]
+  
+      // Additional validation for delivery role
+      if (state.roleId === 2) {
+        validations.push(
+          { field: 'vehicle_info', value: state.form.vehicle_info, validator: validateVehicleInfo },
+          { field: 'vehicle_plate_number', value: state.form.vehicle_plate_number, validator: validatePlateNumber },
+          { field: 'vehicle_or_cr', value: state.form.vehicle_or_cr, validator: validateOrCr }
+        )
       }
-
-      if (bucket && folder) {
-        const filePath = `${folder}/${user.id}.png`
-        const { error: deleteError } = await supabase.storage
-          .from(bucket)
-          .remove([filePath])
-
-        if (deleteError && !deleteError.message.includes('not found')) {
-          console.error('Error deleting file:', deleteError)
+  
+      for (const validation of validations) {
+        const result = validation.validator(validation.value)
+        if (!result.isValid) {
+          showSnackbar(result.message)
+          return false
         }
       }
-
-      setFormData(prev => ({
-        ...prev,
-        [type]: null
-      }))
-    } catch (error) {
-      console.error('Error removing image:', error)
-      showSnackbar('Error removing image')
-    }
-  }
-
-  const validateForm = () => {
-    if (!formData.gov_id_type_id) {
-      showSnackbar('Please select an ID type')
-      return false
-    }
-
-    if (!formData.gov_id_number?.trim()) {
-      showSnackbar('Please enter your ID number')
-      return false
-    }
-
-    if (!formData.gov_id_proof) {
-      showSnackbar('Please upload your ID proof')
-      return false
-    }
-
-    // Additional validation for delivery role (roleId === 2)
-    if (roleId === 2) {
-      if (!formData.vehicle_info?.trim()) {
-        showSnackbar('Please enter vehicle description')
-        return false
-      }
-
-      if (!formData.vehicle_plate_number?.trim()) {
-        showSnackbar('Please enter vehicle plate number')
-        return false
-      }
-
-      if (!formData.vehicle_or_cr) {
-        showSnackbar('Please upload OR/CR document')
-        return false
-      }
-    }
-
-    return true
-  }
-
-  const handleSubmitPress = () => {
-    if (!validateForm()) {
-      return
-    }
-    setShowConfirmDialog(true)
-  }
-
-  const handleConfirmSubmit = () => {
-    setShowConfirmDialog(false)
-    handleSubmit()
-  }
-
-  const handleSubmit = async () => {
-    setLoading(true)
-    try {
+      updateState({ saving: true })
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         showSnackbar('User not authenticated')
@@ -298,7 +247,7 @@ const Verification = ({ navigation }) => {
       // Get current profile data including existing image URLs
       const { data: currentProfile, error: profileError } = await supabase
         .from('profiles')
-        .select('gov_id_proof, vehicle_or_cr')
+        .select('gov_id_proof, gov_id_proof_back, vehicle_or_cr')
         .eq('id', user.id)
         .single()
 
@@ -307,38 +256,56 @@ const Verification = ({ navigation }) => {
       }
 
       // Upload images if they exist and are new
-      let govIdProofUrl = formData.gov_id_proof
-      let vehicleOrCrUrl = formData.vehicle_or_cr
+      let govIdProofUrl = state.form.gov_id_proof
+      let govIdProofBackUrl = state.form.gov_id_proof_back
+      let vehicleOrCrUrl = state.form.vehicle_or_cr
 
-      if (formData.gov_id_proof?.startsWith('file://')) {
-        govIdProofUrl = await uploadImage(formData.gov_id_proof, 'gov_id_proof')
+      if (state.form.gov_id_proof?.startsWith('file://')) {
+        govIdProofUrl = await uploadImage(state.form.gov_id_proof, 'front')
         if (!govIdProofUrl) {
-          showSnackbar('Failed to upload government ID proof')
-          setLoading(false)
+          showSnackbar('Failed to upload government ID proof (front)')
+          updateState({ saving: false })
           return
         }
-      } else if (!formData.gov_id_proof && currentProfile.gov_id_proof) {
+      } else if (!state.form.gov_id_proof && currentProfile.gov_id_proof) {
         // If image was removed, delete from storage
         const bucket = 'gov-id'
-        const folder = roleId === 2 ? 'delivery' : 'airlines' // role_id 2 is delivery, 3 is airlines
-        const filePath = `${folder}/${user.id}.png`
+        const folder = state.roleId === 1 ? 'admin' : state.roleId === 2 ? 'delivery' : 'airlines'
+        const filePath = `${folder}/${user.id}_front.png`
         await supabase.storage
           .from(bucket)
           .remove([filePath])
       }
 
-      if (formData.vehicle_or_cr?.startsWith('file://')) {
-        vehicleOrCrUrl = await uploadImage(formData.vehicle_or_cr, 'vehicle_or_cr')
-        if (!vehicleOrCrUrl) {
-          showSnackbar('Failed to upload OR/CR document')
-          setLoading(false)
+      if (state.form.gov_id_proof_back?.startsWith('file://')) {
+        govIdProofBackUrl = await uploadImage(state.form.gov_id_proof_back, 'back')
+        if (!govIdProofBackUrl) {
+          showSnackbar('Failed to upload government ID proof (back)')
+          updateState({ saving: false })
           return
         }
-      } else if (!formData.vehicle_or_cr && currentProfile.vehicle_or_cr) {
+      } else if (!state.form.gov_id_proof_back && currentProfile.gov_id_proof_back) {
+        // If image was removed, delete from storage
+        const bucket = 'gov-id'
+        const folder = state.roleId === 1 ? 'admin' : state.roleId === 2 ? 'delivery' : 'airlines'
+        const filePath = `${folder}/${user.id}_back.png`
+        await supabase.storage
+          .from(bucket)
+          .remove([filePath])
+      }
+
+      if (state.form.vehicle_or_cr?.startsWith('file://')) {
+        vehicleOrCrUrl = await uploadImage(state.form.vehicle_or_cr, 'vehicle_or_cr')
+        if (!vehicleOrCrUrl) {
+          showSnackbar('Failed to upload OR/CR document')
+          updateState({ saving: false })
+          return
+        }
+      } else if (!state.form.vehicle_or_cr && currentProfile.vehicle_or_cr) {
         // If image was removed, delete from storage
         const bucket = 'or-cr'
         const folder = 'delivery'
-        const filePath = `${folder}/${user.id}.png`
+        const filePath = `${folder}/${user.id}_vehicle_or_cr.png`
         await supabase.storage
           .from(bucket)
           .remove([filePath])
@@ -350,11 +317,12 @@ const Verification = ({ navigation }) => {
         .update({ 
           verify_status_id: 3,
           updated_at: new Date().toISOString(),
-          gov_id_type: formData.gov_id_type_id,
-          gov_id_number: formData.gov_id_number,
+          gov_id_type: state.form.gov_id_type_id,
+          gov_id_number: state.form.gov_id_number,
           gov_id_proof: govIdProofUrl,
-          vehicle_info: formData.vehicle_info,
-          vehicle_plate_number: formData.vehicle_plate_number,
+          gov_id_proof_back: govIdProofBackUrl,
+          vehicle_info: state.form.vehicle_info,
+          vehicle_plate_number: state.form.vehicle_plate_number,
           vehicle_or_cr: vehicleOrCrUrl
         })
         .eq('id', user.id)
@@ -367,11 +335,71 @@ const Verification = ({ navigation }) => {
       console.error('Error submitting verification:', error)
       showSnackbar('Error submitting verification')
     } finally {
-      setLoading(false)
+      updateState({ saving: false })
     }
   }
 
-  const ImagePreview = ({ uri, onRemove }) => {
+  const fetchVerificationData = async () => {
+    try {
+      updateState({ loading: true })
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const [{ data: profileData, error: profileError }, { data: idTypes, error: idTypesError }] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select(`
+            verify_status_id,
+            gov_id_type,
+            gov_id_number,
+            gov_id_proof,
+            gov_id_proof_back,
+            vehicle_info,
+            vehicle_plate_number,
+            vehicle_or_cr,
+            role_id,
+            verify_info_type:gov_id_type (id_type_name)
+          `)
+          .eq('id', user.id)
+          .single(),
+        supabase
+          .from('verify_info_type')
+          .select('id, id_type_name')
+          .order('id_type_name')
+      ])
+
+      if (profileError) throw profileError
+      if (idTypesError) throw idTypesError
+
+      // If verification data exists, load it into the form
+      if (profileData) {
+        updateForm({
+          gov_id_type: profileData.verify_info_type?.id_type_name || '',
+          gov_id_type_id: profileData.gov_id_type || null,
+          gov_id_number: profileData.gov_id_number || '',
+          gov_id_proof: profileData.gov_id_proof || null,
+          gov_id_proof_back: profileData.gov_id_proof_back || null,
+          vehicle_info: profileData.vehicle_info || '',
+          vehicle_plate_number: profileData.vehicle_plate_number || '',
+          vehicle_or_cr: profileData.vehicle_or_cr || null
+        })
+        updateState({ roleId: profileData.role_id })
+      }
+
+      if (idTypes) {
+        updateState({ idTypes: idTypes || [] })
+      }
+    } catch (error) {
+      console.error('Error loading verification data:', error)
+      showSnackbar('Error loading verification data')
+    } finally {
+      updateState({ loading: false })
+    }
+  }
+
+  useFocusEffect(useCallback(() => { fetchVerificationData() }, []))
+
+  const ImagePreview = ({ uri, onRemove, type }) => {
     if (!uri) return null
     return (
       <View style={styles.imagePreviewContainer}>
@@ -380,18 +408,11 @@ const Verification = ({ navigation }) => {
           style={styles.imagePreview}
           resizeMode="contain"
         />
-        <IconButton
-          icon="close-circle"
-          size={20}
-          iconColor={colors.error}
-          style={[styles.removeImageButton, { backgroundColor: colors.surface }]}
-          onPress={onRemove}
-        />
       </View>
     )
   }
 
-  if (loading) {
+  if (state.loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <Appbar.Header>
@@ -415,8 +436,8 @@ const Verification = ({ navigation }) => {
         />
         <Appbar.Action 
           icon="content-save" 
-          onPress={handleSubmitPress} 
-          disabled={loading}
+          onPress={() => updateDialog('confirm', true)} 
+          disabled={state.saving}
           color={colors.primary}
         />
       </Appbar.Header>
@@ -429,58 +450,58 @@ const Verification = ({ navigation }) => {
           </Text>
           
           <Menu
-            visible={idTypeMenuVisible}
-            onDismiss={() => setIdTypeMenuVisible(false)}
+            visible={state.dialogs.idTypeMenu}
+            onDismiss={() => updateDialog('idTypeMenu', false)}
             anchor={
               <TextInput
                 label="ID Type"
-                value={formData.gov_id_type}
+                value={state.form.gov_id_type}
                 editable={false}
                 style={styles.input}
                 mode="outlined"
-                right={<TextInput.Icon icon="chevron-down" onPress={() => setIdTypeMenuVisible(true)} />}
+                right={<TextInput.Icon icon="chevron-down" onPress={() => updateDialog('idTypeMenu', true)} />}
                 theme={{ colors: { primary: colors.primary } }}
               />
             }
             contentStyle={{ backgroundColor: colors.surface }}
           >
-            {idTypes.map((type) => (
+            {state.idTypes.map((type) => (
               <Menu.Item
                 key={type.id}
                 onPress={() => {
-                  setFormData(prev => ({ 
-                    ...prev, 
-                    gov_id_type: type.id_type_name,
-                    gov_id_type_id: type.id 
-                  }))
-                  setIdTypeMenuVisible(false)
+                  handleChange('gov_id_type', type.id_type_name)
+                  handleChange('gov_id_type_id', type.id)
+                  updateDialog('idTypeMenu', false)
                 }}
                 title={type.id_type_name}
                 titleStyle={[
                   fonts.bodyLarge,
                   {
-                    color: formData.gov_id_type === type.id_type_name ? colors.primary : colors.onSurface,
+                    color: state.form.gov_id_type === type.id_type_name ? colors.primary : colors.onSurface,
                   },
                 ]}
-                leadingIcon={formData.gov_id_type === type.id_type_name ? 'check' : undefined}
+                leadingIcon={state.form.gov_id_type === type.id_type_name ? 'check' : undefined}
               />
             ))}
           </Menu>
           
           <TextInput
             label="ID Number"
-            value={formData.gov_id_number}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, gov_id_number: text.replace(/[^0-9]/g, '') }))}
+            value={state.form.gov_id_number}
+            onChangeText={(text) => handleChange('gov_id_number', text)}
+            mode="outlined"
             style={styles.input}
             keyboardType="numeric"
-            mode="outlined"
             maxLength={12}
             theme={{ colors: { primary: colors.primary } }}
           />
 
+          <Text style={[styles.label, { color: colors.onSurface, ...fonts.titleSmall }]}>
+            ID Proof (Front)
+          </Text>
           <ImagePreview 
-            uri={formData.gov_id_proof} 
-            onRemove={() => removeImage('gov_id_proof')} 
+            uri={state.form.gov_id_proof} 
+            type="gov_id_proof"
           />
 
           <Button
@@ -489,56 +510,76 @@ const Verification = ({ navigation }) => {
             style={styles.button}
             textColor={colors.primary}
           >
-            {formData.gov_id_proof ? 'Change ID Proof' : 'Upload ID Proof'}
+            {state.form.gov_id_proof ? 'Change ID Proof (Front)' : 'Upload ID Proof (Front)'}
           </Button>
-          {roleId === 3 ? (<></>):(<>
-          {/* Vehicle Information Section */}
-          <Text style={[styles.label, { color: colors.onSurface, ...fonts.titleMedium, marginTop: 20 }]}>
-            Vehicle Information
+
+          <Text style={[styles.label, { color: colors.onSurface, ...fonts.titleSmall }]}>
+            ID Proof (Back)
           </Text>
-
-          <TextInput
-            label="Vehicle Description"
-            value={formData.vehicle_info}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, vehicle_info: text }))}
-            style={styles.input}
-            mode="outlined"
-            theme={{ colors: { primary: colors.primary } }}
-            maxLength={50}
-          />
-
-          <TextInput
-            label="Plate Number"
-            value={formData.vehicle_plate_number}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, vehicle_plate_number: text.replace(/[^A-Z0-9-]/gi, '').toUpperCase()}))}
-            style={styles.input}
-            maxLength={12}
-            mode="outlined"
-            theme={{ colors: { primary: colors.primary } }}
-          />  
-
           <ImagePreview 
-            uri={formData.vehicle_or_cr} 
-            onRemove={() => removeImage('vehicle_or_cr')} 
+            uri={state.form.gov_id_proof_back} 
+            type="gov_id_proof_back"
           />
 
           <Button
             mode="outlined"
-            onPress={() => pickImage('vehicle_or_cr')}
+            onPress={() => pickImage('gov_id_proof_back')}
             style={styles.button}
             textColor={colors.primary}
           >
-            {formData.vehicle_or_cr ? 'Change OR/CR Document' : 'Upload OR/CR Document'}
+            {state.form.gov_id_proof_back ? 'Change ID Proof (Back)' : 'Upload ID Proof (Back)'}
           </Button>
-          </>)}
+
+          {state.roleId === 2 && (
+            <>
+              {/* Vehicle Information Section */}
+              <Text style={[styles.label, { color: colors.onSurface, ...fonts.titleMedium, marginTop: 20 }]}>
+                Vehicle Information
+              </Text>
+
+              <TextInput
+                label="Vehicle Description"
+                value={state.form.vehicle_info}
+                onChangeText={(text) => handleChange('vehicle_info', text)}
+                mode="outlined"
+                style={styles.input}
+                theme={{ colors: { primary: colors.primary } }}
+                maxLength={50}
+              />
+
+              <TextInput
+                label="Plate Number"
+                value={state.form.vehicle_plate_number}
+                onChangeText={(text) => handleChange('vehicle_plate_number', text)}
+                mode="outlined"
+                style={styles.input}
+                maxLength={12}
+                theme={{ colors: { primary: colors.primary } }}
+              />  
+
+              <ImagePreview 
+                uri={state.form.vehicle_or_cr} 
+                type="vehicle_or_cr"
+              />
+
+              <Button
+                mode="outlined"
+                onPress={() => pickImage('vehicle_or_cr')}
+                style={styles.button}
+                textColor={colors.primary}
+              >
+                {state.form.vehicle_or_cr ? 'Change OR/CR Document' : 'Upload OR/CR Document'}
+              </Button>
+            </>
+          )}
         </Card.Content>
       </Card>
 
       {/* Image Source Selection Dialog */}
       <Portal>
         <Dialog
-          visible={showImageSourceDialog}
-          onDismiss={() => setShowImageSourceDialog(false)}
+          visible={state.dialogs.imageSource}
+          onDismiss={() => updateDialog('imageSource', false)}
           style={{ backgroundColor: colors.surface }}
         >
           <Dialog.Title style={{ color: colors.onSurface, ...fonts.titleLarge }}>
@@ -563,7 +604,7 @@ const Verification = ({ navigation }) => {
               Gallery
             </Button>
             <Button
-              onPress={() => setShowImageSourceDialog(false)}
+              onPress={() => updateDialog('imageSource', false)}
               textColor={colors.error}
             >
               Cancel
@@ -575,8 +616,8 @@ const Verification = ({ navigation }) => {
       {/* Permission Dialog */}
       <Portal>
         <Dialog
-          visible={showPermissionDialog}
-          onDismiss={() => setShowPermissionDialog(false)}
+          visible={state.dialogs.permission}
+          onDismiss={() => updateDialog('permission', false)}
           style={{ backgroundColor: colors.surface }}
         >
           <Dialog.Title style={{ color: colors.onSurface, ...fonts.titleLarge }}>
@@ -589,7 +630,7 @@ const Verification = ({ navigation }) => {
           </Dialog.Content>
           <Dialog.Actions>
             <Button
-              onPress={() => setShowPermissionDialog(false)}
+              onPress={() => updateDialog('permission', false)}
               textColor={colors.primary}
             >
               OK
@@ -597,11 +638,12 @@ const Verification = ({ navigation }) => {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
       {/* Confirmation Dialog */}
       <Portal>
         <Dialog
-          visible={showConfirmDialog}
-          onDismiss={() => setShowConfirmDialog(false)}
+          visible={state.dialogs.confirm}
+          onDismiss={() => updateDialog('confirm', false)}
           style={{ backgroundColor: colors.surface }}
         >
           <Dialog.Title style={{ color: colors.onSurface, ...fonts.titleLarge }}>
@@ -614,17 +656,20 @@ const Verification = ({ navigation }) => {
           </Dialog.Content>
           <Dialog.Actions>
             <Button
-              onPress={() => setShowConfirmDialog(false)}
+              onPress={() => updateDialog('confirm', false)}
               textColor={colors.primary}
-              disabled={loading}
+              disabled={state.saving}
             >
               Cancel
             </Button>
             <Button
-              onPress={handleConfirmSubmit}
+              onPress={() => {
+                updateDialog('confirm', false)
+                saveVerification()
+              }}
               textColor={colors.primary}
-              loading={loading}
-              disabled={loading}
+              loading={state.saving}
+              disabled={state.saving}
             >
               Submit
             </Button>
@@ -667,24 +712,11 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 8,
   },
-  removeImageButton: {
-    position: 'absolute',
-    top: -10,
-    right: -10,
-    elevation: 4,
-  },
-  verifiedContainer: {
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
-  },
-  verifiedText: {
-    marginTop: 16,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  verifiedSubtext: {
-    textAlign: 'center',
   },
 })
 
-export default Verification
+export default ProfileVerification

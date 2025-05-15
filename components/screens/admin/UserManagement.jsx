@@ -232,9 +232,9 @@ const UserManagement = ({ navigation }) => {
         <View style={styles.tableContainer}>
           <ScrollView horizontal>
             <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
-              <DataTable.Header style={[styles.table, { backgroundColor: colors.surfaceVariant }]}>
+              <DataTable.Header style={[styles.table, { backgroundColor: colors.surfaceVariant, alignItems: 'center' }]}>
                 <DataTable.Title style={{ width: AVATAR_COLUMN_WIDTH, justifyContent: 'center' }}>
-                  <Text style={[{ color: colors.onSurface }, fonts.labelMedium]}>Avatar</Text>
+                  <Text style={[{ color: colors.onSurface }, fonts.labelLarge]}>Avatar</Text>
                 </DataTable.Title>
                 {columns.map(({ key, label, width }) => (
                   <DataTable.Title
@@ -243,13 +243,13 @@ const UserManagement = ({ navigation }) => {
                     onPress={() => handleSort(key)}
                   >
                     <View style={styles.sortableHeader}>
-                      <Text style={[{ color: colors.onSurface }, fonts.labelMedium]}>{label}</Text>
+                      <Text style={[{ color: colors.onSurface }, fonts.labelLarge]}>{label}</Text>
                       <Text style={[styles.sortIcon, { color: colors.onSurface }]}>{getSortIcon(key)}</Text>
                     </View>
                   </DataTable.Title>
                 ))}
                 <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center' }} numeric>
-                  <Text style={[{ color: colors.onSurface }, fonts.labelMedium]}>Actions</Text>
+                  <Text style={[{ color: colors.onSurface }, fonts.labelLarge]}>Actions</Text>
                 </DataTable.Title>
               </DataTable.Header>
 

@@ -113,15 +113,6 @@ const EditAccountScreen = ({ route, navigation }) => {
       user_status: '',
       verify_status: '',
     },
-    inputValues: {
-      first_name: '',
-      middle_initial: '',
-      last_name: '',
-      email: '',
-      contact_number: '',
-      emergency_contact_name: '',
-      emergency_contact_number: '',
-    },
     dialogs: {
       confirm: false,
       datePicker: false,
@@ -139,7 +130,6 @@ const EditAccountScreen = ({ route, navigation }) => {
   // Simplified handlers
   const updateState = (updates) => setState(prev => ({ ...prev, ...updates }))
   const updateForm = (updates) => setState(prev => ({ ...prev, form: { ...prev.form, ...updates } }))
-  const updateInput = (updates) => setState(prev => ({ ...prev, inputValues: { ...prev.inputValues, ...updates } }))
   const updateDialog = (dialog, value) => setState(prev => ({ ...prev, dialogs: { ...prev.dialogs, [dialog]: value } }))
   const updateOptions = (updates) => setState(prev => ({ ...prev, options: { ...prev.options, ...updates } }))
 
@@ -171,7 +161,6 @@ const EditAccountScreen = ({ route, navigation }) => {
     }
 
     updateForm({ [field]: sanitizedValue })
-    updateInput({ [field]: sanitizedValue })
   }
 
   const capitalizeName = (name) => {
@@ -286,7 +275,6 @@ const EditAccountScreen = ({ route, navigation }) => {
 
       updateState({
         form: initialData,
-        inputValues: { ...initialData },
         loading: false
       })
 
@@ -383,9 +371,9 @@ const EditAccountScreen = ({ route, navigation }) => {
           <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
             <View style={styles.avatarContainer}>
               {state.form.pfp_id ? (
-                <Avatar.Image size={80} source={{ uri: state.form.pfp_id }} />
+                <Avatar.Image size={150} source={{ uri: state.form.pfp_id }} />
               ) : (
-                <Avatar.Text size={80} label={(state.form.first_name || 'N')[0].toUpperCase()} />
+                <Avatar.Text size={100} label={(state.form.first_name || 'N')[0].toUpperCase()} />
               )}
               <Text variant='bodyLarge' style={[styles.avatarText, { color: colors.onSurface }]}>Profile Picture</Text>
             </View>
@@ -394,7 +382,7 @@ const EditAccountScreen = ({ route, navigation }) => {
 
             <TextInput
               label='First Name'
-              value={state.inputValues.first_name}
+              value={state.form.first_name}
               onChangeText={(text) => handleChange('first_name', text)}
               mode='outlined'
               style={styles.input}
@@ -407,7 +395,7 @@ const EditAccountScreen = ({ route, navigation }) => {
 
             <TextInput
               label='Middle Initial'
-              value={state.inputValues.middle_initial}
+              value={state.form.middle_initial}
               onChangeText={(text) => handleChange('middle_initial', text)}
               mode='outlined'
               style={styles.input}
@@ -420,7 +408,7 @@ const EditAccountScreen = ({ route, navigation }) => {
 
             <TextInput
               label='Last Name'
-              value={state.inputValues.last_name}
+              value={state.form.last_name}
               onChangeText={(text) => handleChange('last_name', text)}
               mode='outlined'
               style={styles.input}
@@ -435,7 +423,7 @@ const EditAccountScreen = ({ route, navigation }) => {
 
             <TextInput
               label='Email'
-              value={state.inputValues.email}
+              value={state.form.email}
               onChangeText={(text) => handleChange('email', text)}
               mode='outlined'
               style={styles.input}
@@ -450,7 +438,7 @@ const EditAccountScreen = ({ route, navigation }) => {
 
             <TextInput
               label='Contact Number'
-              value={state.inputValues.contact_number}
+              value={state.form.contact_number}
               onChangeText={(text) => handleChange('contact_number', text)}
               mode='outlined'
               style={styles.input}
@@ -476,7 +464,7 @@ const EditAccountScreen = ({ route, navigation }) => {
 
             <TextInput
               label='Emergency Contact Name'
-              value={state.inputValues.emergency_contact_name}
+              value={state.form.emergency_contact_name}
               onChangeText={(text) => handleChange('emergency_contact_name', text)}
               mode='outlined'
               style={styles.input}
@@ -489,7 +477,7 @@ const EditAccountScreen = ({ route, navigation }) => {
 
             <TextInput
               label='Emergency Contact Number'
-              value={state.inputValues.emergency_contact_number}
+              value={state.form.emergency_contact_number}
               onChangeText={(text) => handleChange('emergency_contact_number', text)}
               mode='outlined'
               style={styles.input}

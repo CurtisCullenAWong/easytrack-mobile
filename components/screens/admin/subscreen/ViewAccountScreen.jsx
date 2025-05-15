@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import { ScrollView, View, StyleSheet, Image } from 'react-native'
 import {
   Text,
@@ -7,8 +7,11 @@ import {
   Avatar,
   Card,
   Divider,
+  Button,
+  ActivityIndicator,
 } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
+import { useFocusEffect } from '@react-navigation/native'
 
 // Constants
 const PROFILE_SECTIONS = {
@@ -16,15 +19,186 @@ const PROFILE_SECTIONS = {
   ACCOUNT: 'Account Info',
   ACTIVITY: 'Recent Activity',
   VERIFICATION: 'Verification Status',
+  VEHICLE: 'Vehicle Information',
 }
+
+// Profile Card Component
+const ProfileCard = React.memo(({ user, colors, fonts }) => {
+  const fullName = useMemo(() => 
+    `${user?.first_name || ''} ${user?.middle_initial || ''} ${user?.last_name || ''}`.trim(),
+    [user?.first_name, user?.middle_initial, user?.last_name]
+  )
+
+  return (
+    <Card style={[styles.card, { backgroundColor: colors.surface }]}>
+      <Card.Content style={styles.cardContent}>
+        {user?.pfp_id ? (
+          <Avatar.Image
+            size={60}
+            source={{ uri: user.pfp_id, cache: 'reload' }}
+            style={[styles.profile, { borderColor: colors.background }]}
+          />
+        ) : (
+          <Avatar.Text
+            size={60}
+            label={user?.first_name ? user.first_name[0].toUpperCase() : 'U'}
+            style={[styles.profile, { backgroundColor: colors.primary }]}
+            labelStyle={{ color: colors.onPrimary }}
+          />
+        )}
+        <View style={styles.cardTextContainer}>
+          <Text style={[{ color: colors.onSurface, ...fonts.titleLarge }]}>
+            {fullName || 'No Name Available'}
+          </Text>
+          <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+            {user?.email}
+          </Text>
+        </View>
+      </Card.Content>
+    </Card>
+  )
+})
+
+// Info Card Component
+const InfoCard = React.memo(({ title, data, colors, fonts }) => (
+  <Card style={[styles.card, { backgroundColor: colors.surface }]}>
+    <Card.Title 
+      title={title} 
+      titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} 
+    />
+    <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
+    <Card.Content>
+      {Object.entries(data).map(([key, value]) => (
+        <Text key={key} style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+          {key}: {value || 'N/A'}
+        </Text>
+      ))}
+    </Card.Content>
+  </Card>
+))
+
+// Verification Card Component
+const VerificationCard = React.memo(({ user, colors, fonts }) => {
+  if (!user || (user.role_id !== 1 && user.role_id !== 2 && user.role_id !== 3)) return null
+
+  return (
+    <Card style={[styles.card, { backgroundColor: colors.surface }]}>
+      <Card.Title 
+        title={PROFILE_SECTIONS.VERIFICATION} 
+        titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} 
+      />
+      <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
+      <Card.Content>
+        <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+          Status: {user.verify_status || 'N/A'}
+        </Text>
+        <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+          ID Type: {user.gov_id?.id_type_name || 'N/A'}
+        </Text>
+        <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+          ID Number: {user.gov_id_number || 'N/A'}
+        </Text>
+        {user.gov_id_proof ? (
+          <View style={styles.imageContainer}>
+            <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+              ID Proof (Front):
+            </Text>
+            <Image
+              source={{ uri: user.gov_id_proof, cache: 'reload' }}
+              style={[styles.verificationImage, { aspectRatio: 16/9 }]}
+              resizeMode="contain"
+            />
+          </View>
+        ) : (
+          <View style={styles.imageContainer}>
+            <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+              ID Proof (Front):
+            </Text>
+            <View style={[styles.placeholderImage, { backgroundColor: colors.surfaceVariant }]}>
+              <Text style={[styles.placeholderText, { color: colors.onSurfaceVariant }]}>No ID Proof Uploaded</Text>
+            </View>
+          </View>
+        )}
+        {user.gov_id_proof_back ? (
+          <View style={styles.imageContainer}>
+            <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+              ID Proof (Back):
+            </Text>
+            <Image
+              source={{ uri: user.gov_id_proof_back, cache: 'reload' }}
+              style={[styles.verificationImage, { aspectRatio: 16/9 }]}
+              resizeMode="contain"
+            />
+          </View>
+        ) : (
+          <View style={styles.imageContainer}>
+            <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+              ID Proof (Back):
+            </Text>
+            <View style={[styles.placeholderImage, { backgroundColor: colors.surfaceVariant }]}>
+              <Text style={[styles.placeholderText, { color: colors.onSurfaceVariant }]}>No ID Proof Uploaded</Text>
+            </View>
+          </View>
+        )}
+      </Card.Content>
+    </Card>
+  )
+})
+
+// Vehicle Card Component
+const VehicleCard = React.memo(({ user, colors, fonts }) => {
+  if (!user || user.role_id !== 2) return null
+
+  return (
+    <Card style={[styles.card, { backgroundColor: colors.surface }]}>
+      <Card.Title 
+        title={PROFILE_SECTIONS.VEHICLE} 
+        titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} 
+      />
+      <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
+      <Card.Content>
+        <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+          Vehicle Description: {user.vehicle_info || 'N/A'}
+        </Text>
+        <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+          Plate Number: {user.vehicle_plate_number || 'N/A'}
+        </Text>
+        {user.vehicle_or_cr ? (
+          <View style={styles.imageContainer}>
+            <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+              OR/CR Document:
+            </Text>
+            <Image
+              source={{ uri: user.vehicle_or_cr, cache: 'reload' }}
+              style={[styles.verificationImage, { aspectRatio: 16/9 }]}
+              resizeMode="contain"
+            />
+          </View>
+        ) : (
+          <View style={styles.imageContainer}>
+            <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+              OR/CR Document:
+            </Text>
+            <View style={[styles.placeholderImage, { backgroundColor: colors.surfaceVariant }]}>
+              <Text style={[styles.placeholderText, { color: colors.onSurfaceVariant }]}>No OR/CR Uploaded</Text>
+            </View>
+          </View>
+        )}
+      </Card.Content>
+    </Card>
+  )
+})
 
 const ViewProfileScreen = ({ route, navigation }) => {
   const { userId } = route.params
   const { colors, fonts } = useTheme()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const fetchAccount = async () => {
+  const fetchAccount = useCallback(async () => {
+    setLoading(true)
+    setError(null)
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -52,16 +226,19 @@ const ViewProfileScreen = ({ route, navigation }) => {
       })
     } catch (error) {
       console.error('Error fetching user data:', error)
+      setError(error.message)
     } finally {
       setLoading(false)
     }
-  }
-
-  useEffect(() => {
-    fetchAccount()
   }, [userId])
 
-  const formatDateTime = (date) => {
+  useFocusEffect(
+    useCallback(() => {
+      fetchAccount()
+    }, [fetchAccount])
+  )
+
+  const formatDateTime = useCallback((date) => {
     if (!date) return 'N/A'
     return date.toLocaleString(undefined, {
       year: 'numeric',
@@ -71,9 +248,9 @@ const ViewProfileScreen = ({ route, navigation }) => {
       minute: '2-digit',
       hour12: true,
     })
-  }
+  }, [])
 
-  const formatDate = (dateString) => {
+  const formatDate = useCallback((dateString) => {
     if (!dateString) return 'N/A'
     const [year, month, day] = dateString.split('-')
     return new Date(year, month - 1, day).toLocaleDateString(undefined, {
@@ -81,164 +258,51 @@ const ViewProfileScreen = ({ route, navigation }) => {
       month: 'short',
       day: 'numeric',
     })
-  }
+  }, [])
 
-  const renderProfileHeader = () => (
-    <Card style={[styles.card, { backgroundColor: colors.surface }]}>
-      <Card.Content style={styles.cardContent}>
-        {user.pfp_id ? (
-          <Avatar.Image
-            size={60}
-            source={{ uri: user.pfp_id }}
-            style={[styles.profile, { borderColor: colors.background }]}
-          />
-        ) : (
-          <Avatar.Text
-            size={60}
-            label={user.first_name ? user.first_name[0].toUpperCase() : 'U'}
-            style={[styles.profile, { backgroundColor: colors.primary }]}
-            labelStyle={{ color: colors.onPrimary }}
-          />
-        )}
-        <View style={styles.cardTextContainer}>
-          <Text style={[{ color: colors.onSurface, ...fonts.titleLarge }]}>
-            {`${user.first_name || ''} ${user.middle_initial || ''} ${user.last_name || ''}`.trim() || 'No Name Available'}
-          </Text>
-          <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-            {user.email}
-          </Text>
-        </View>
-      </Card.Content>
-    </Card>
-  )
+  const personalInfo = useMemo(() => ({
+    'Contact Number': user?.contact_number,
+    'Birth Date': formatDate(user?.birth_date),
+    'Emergency Contact Name': user?.emergency_contact_name,
+    'Emergency Contact Number': user?.emergency_contact_number,
+  }), [user?.contact_number, user?.birth_date, user?.emergency_contact_name, user?.emergency_contact_number, formatDate])
 
-  const renderSection = (title, content) => (
-    <Card style={[styles.card, { backgroundColor: colors.surface }]}>
-      <Card.Title 
-        title={title} 
-        titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} 
-      />
-      <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
-      <Card.Content>
-        {content}
-      </Card.Content>
-    </Card>
-  )
+  const accountInfo = useMemo(() => ({
+    'Role': user?.role,
+    'Status': user?.user_status,
+    'Date Created': formatDateTime(user?.created_at),
+  }), [user?.role, user?.user_status, user?.created_at, formatDateTime])
 
-  const renderPersonalInfo = () => (
-    <>
-      <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-        Contact Number: {user.contact_number || 'N/A'}
-      </Text>
-      <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-        Birth Date: {formatDate(user.birth_date)}
-      </Text>
-      <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-        Emergency Contact Name: {user.emergency_contact_name || 'N/A'}
-      </Text>
-      <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-        Emergency Contact Number: {user.emergency_contact_number || 'N/A'}
-      </Text>
-    </>
-  )
-
-  const renderAccountInfo = () => (
-    <>
-      <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-        Role: {user.role || 'N/A'}
-      </Text>
-      <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-        Status: {user.user_status || 'N/A'}
-      </Text>
-      <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-        Date Created: {formatDateTime(user.created_at)}
-      </Text>
-    </>
-  )
-
-  const renderActivityInfo = () => (
-    <>
-      <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-        Last Login: {formatDateTime(user.last_sign_in_at)}
-      </Text>
-      <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-        Last Updated: {formatDateTime(user.updated_at)}
-      </Text>
-    </>
-  )
-
-  const renderVerificationInfo = () => {
-    return (
-      <>
-        <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-          Status: {user.verify_status || 'N/A'}
-        </Text>
-        <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-          ID Type: {user.gov_id?.id_type_name || 'N/A'}
-        </Text>
-        <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-          ID Number: {user.gov_id_number || 'N/A'}
-        </Text>
-        {user.gov_id_proof ? (
-          <View style={styles.imageContainer}>
-            <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-              ID Proof:
-            </Text>
-            <Image
-              source={{ uri: user.gov_id_proof }}
-              style={[styles.verificationImage, { aspectRatio: 16/9 }]}
-              resizeMode="contain"
-            />
-          </View>
-        ) : (
-          <View style={styles.imageContainer}>
-            <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-              ID Proof:
-            </Text>
-            <View style={[styles.placeholderImage, { backgroundColor: colors.surfaceVariant }]}>
-              <Text style={[styles.placeholderText, { color: colors.onSurfaceVariant }]}>No ID Proof Uploaded</Text>
-            </View>
-          </View>
-        )}
-        {user.role_id === 3 ? null : (
-          <>
-            <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-              Vehicle Description: {user.vehicle_info || 'N/A'}
-            </Text>
-            <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-              Plate Number: {user.vehicle_plate_number || 'N/A'}
-            </Text>
-            {user.vehicle_or_cr ? (
-              <View style={styles.imageContainer}>
-                <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-                  OR/CR Document:
-                </Text>
-                <Image
-                  source={{ uri: user.vehicle_or_cr }}
-                  style={[styles.verificationImage, { aspectRatio: 16/9 }]}
-                  resizeMode="contain"
-                />
-              </View>
-            ) : (
-              <View style={styles.imageContainer}>
-                <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-                  OR/CR Document:
-                </Text>
-                <View style={[styles.placeholderImage, { backgroundColor: colors.surfaceVariant }]}>
-                  <Text style={[styles.placeholderText, { color: colors.onSurfaceVariant }]}>No OR/CR Uploaded</Text>
-                </View>
-              </View>
-            )}
-          </>
-        )}
-      </>
-    )
-  }
+  const recentActivity = useMemo(() => ({
+    'Last Login': formatDateTime(user?.last_sign_in_at),
+    'Last Updated': formatDateTime(user?.updated_at),
+  }), [user?.last_sign_in_at, user?.updated_at, formatDateTime])
 
   if (loading) {
     return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <Text variant="bodyLarge" style={{ color: colors.onSurface }}>Loading user...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    )
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Appbar.Header>
+          <Appbar.BackAction onPress={() => navigation.navigate('UserManagement')} />
+          <Appbar.Content title="View Account" />
+        </Appbar.Header>
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+          <Button
+            mode="contained"
+            onPress={fetchAccount}
+            style={[styles.button, { backgroundColor: colors.primary, marginTop: 16 }]}
+          >
+            Retry
+          </Button>
+        </View>
       </View>
     )
   }
@@ -272,12 +336,13 @@ const ViewProfileScreen = ({ route, navigation }) => {
         />
       </Appbar.Header>
 
-      {renderProfileHeader()}
-      {renderSection(PROFILE_SECTIONS.PERSONAL, renderPersonalInfo())}
-      {renderSection(PROFILE_SECTIONS.ACCOUNT, renderAccountInfo())}
-      {renderSection(PROFILE_SECTIONS.ACTIVITY, renderActivityInfo())}
-      {(user.role_id === 2 || user.role_id === 3 || !user.verify_status_id === 5) && 
-        renderSection(PROFILE_SECTIONS.VERIFICATION, renderVerificationInfo())}
+      <ProfileCard user={user} colors={colors} fonts={fonts} />
+
+      <InfoCard title={PROFILE_SECTIONS.PERSONAL} data={personalInfo} colors={colors} fonts={fonts} />
+      <InfoCard title={PROFILE_SECTIONS.ACCOUNT} data={accountInfo} colors={colors} fonts={fonts} />
+      <InfoCard title={PROFILE_SECTIONS.ACTIVITY} data={recentActivity} colors={colors} fonts={fonts} />
+      <VerificationCard user={user} colors={colors} fonts={fonts} />
+      <VehicleCard user={user} colors={colors} fonts={fonts} />
     </ScrollView>
   )
 }
@@ -312,9 +377,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   errorText: {
     fontSize: 16,
+    textAlign: 'center',
   },
   imageContainer: {
     marginVertical: 8,
@@ -340,12 +407,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     padding: 16,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
   },
 })
 
