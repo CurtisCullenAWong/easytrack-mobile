@@ -352,7 +352,7 @@ const EditAccountScreen = ({ route, navigation }) => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Appbar.Header>
-        <Appbar.BackAction onPress={() => navigation.navigate('UserManagement')} />
+        <Appbar.BackAction onPress={() => navigation.navigate('ViewAccount', { userId })} />
         <Appbar.Content title='Edit Account' />
         <Appbar.Action 
           icon='content-save' 
@@ -530,27 +530,25 @@ const EditAccountScreen = ({ route, navigation }) => {
               {statusMenuItems}
             </Menu>
 
-            {(state.form.role_id === 2 || state.form.role_id === 3) && (
-              <Menu
-                visible={state.dialogs.verifyStatusMenu}
-                onDismiss={() => updateDialog('verifyStatusMenu', false)}
-                anchor={
-                  <TextInput
-                    label='Verification Status'
-                    value={state.form.verify_status}
-                    editable={false}
-                    mode='outlined'
-                    style={styles.input}
-                    right={<TextInput.Icon icon='shield-check' onPress={() => updateDialog('verifyStatusMenu', true)} />}
-                    theme={{ colors: { primary: colors.primary } }}
-                    disabled={state.saving}
-                  />
-                }
-                contentStyle={{ backgroundColor: colors.surface }}
-              >
-                {verifyStatusMenuItems}
-              </Menu>
-            )}
+            <Menu
+              visible={state.dialogs.verifyStatusMenu}
+              onDismiss={() => updateDialog('verifyStatusMenu', false)}
+              anchor={
+                <TextInput
+                  label='Verification Status'
+                  value={state.form.verify_status}
+                  editable={false}
+                  mode='outlined'
+                  style={styles.input}
+                  right={<TextInput.Icon icon='shield-check' onPress={() => updateDialog('verifyStatusMenu', true)} />}
+                  theme={{ colors: { primary: colors.primary } }}
+                  disabled={state.saving}
+                />
+              }
+              contentStyle={{ backgroundColor: colors.surface }}
+            >
+              {verifyStatusMenuItems}
+            </Menu>
           </Surface>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -79,8 +79,6 @@ const InfoCard = React.memo(({ title, data, colors, fonts }) => (
 
 // Verification Card Component
 const VerificationCard = React.memo(({ user, colors, fonts }) => {
-  if (!user || (user.role_id !== 1 && user.role_id !== 2 && user.role_id !== 3)) return null
-
   return (
     <Card style={[styles.card, { backgroundColor: colors.surface }]}>
       <Card.Title 

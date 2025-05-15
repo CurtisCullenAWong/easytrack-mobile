@@ -417,8 +417,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 16,
     borderRadius: 8,
-    minHeight: '70%',
-    marginBottom: 16,
+    minHeight: 'auto',
     overflow: 'hidden',
   },
   table: {

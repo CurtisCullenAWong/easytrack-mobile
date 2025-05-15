@@ -65,8 +65,6 @@ const InfoCard = React.memo(({ title, data, colors, fonts }) => (
 const VerificationCard = React.memo(({ profile, colors, fonts, navigation }) => {
   const [showVerificationDialog, setShowVerificationDialog] = useState(false)
 
-  if (!profile || (profile.role_id !== 1 && profile.role_id !== 2 && profile.role_id !== 3)) return null
-
   const handleReverify = () => {
     setShowVerificationDialog(false)
     navigation.navigate('Verification')
@@ -139,7 +137,7 @@ const VerificationCard = React.memo(({ profile, colors, fonts, navigation }) => 
           </Button>
 
           <Portal>
-            <Dialog visible={showVerificationDialog} onDismiss={() => setShowVerificationDialog(false)}>
+            <Dialog style={{ backgroundColor: colors.surface }} visible={showVerificationDialog} onDismiss={() => setShowVerificationDialog(false)}>
               <Dialog.Title style={[{ color: colors.onSurface, ...fonts.titleMedium }]}>
                 Confirm Reverification
               </Dialog.Title>
@@ -190,7 +188,7 @@ const VerificationCard = React.memo(({ profile, colors, fonts, navigation }) => 
         <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
           Status: {profile?.verify_status?.status_name || 'N/A'}
         </Text>
-        {renderVerificationContent()}
+        {renderVerificationContent(colors, fonts)}
       </Card.Content>
     </Card>
   )

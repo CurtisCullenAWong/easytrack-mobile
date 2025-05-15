@@ -4,7 +4,7 @@
     "slug": "easytrack",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon-w_o-name.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -21,7 +21,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon-w_o-name.png",
         "backgroundColor": "#F1F8E9"
       },
       "package": "com.hahatrashboat.EasyTrack"
@@ -38,6 +38,12 @@
         "projectId": "58eeebf8-4019-4509-947c-2185c24313a8"
       }
     },
-    "owner": "hahatrashboat"
+    "owner": "hahatrashboat",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/58eeebf8-4019-4509-947c-2185c24313a8"
+    }
   }
 }
