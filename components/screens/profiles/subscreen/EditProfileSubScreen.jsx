@@ -39,26 +39,12 @@ const EditProfileSubScreen = ({ navigation }) => {
     if (!name) {
       return { isValid: false, message: 'Name cannot be empty' }
     }
-    // Check if each word starts with a capital letter and only contains allowed characters
-    const words = name.split(/\s+/)
-    for (const word of words) {
-      if (!/^[A-Z][a-z']*$/.test(word)) {
-        return { isValid: false, message: 'Each name must start with a capital letter and can only contain letters and apostrophes' }
-      }
-    }
     return { isValid: true }
   }
 
   const validateMiddleInitial = (initial) => {
     if (initial && !/^[A-Z]$/.test(initial)) {
       return { isValid: false, message: 'Middle initial must be a single uppercase letter' }
-    }
-    return { isValid: true }
-  }
-
-  const validateNameSuffix = (suffix) => {
-    if (suffix && !/^[A-Za-z\s.,]+$/.test(suffix)) {
-      return { isValid: false, message: 'Name suffix can only contain letters, spaces, periods, and commas' }
     }
     return { isValid: true }
   }
@@ -100,7 +86,6 @@ const EditProfileSubScreen = ({ navigation }) => {
       first_name: '',
       middle_initial: '',
       last_name: '',
-      name_suffix: '',
       contact_number: '',
       birth_date: null,
       emergency_contact_name: '',
@@ -111,7 +96,6 @@ const EditProfileSubScreen = ({ navigation }) => {
       first_name: '',
       middle_initial: '',
       last_name: '',
-      name_suffix: '',
       contact_number: '',
       emergency_contact_name: '',
       emergency_contact_number: '',
@@ -141,9 +125,6 @@ const EditProfileSubScreen = ({ navigation }) => {
         break
       case 'middle_initial':
         sanitizedValue = value.toUpperCase()
-        break
-      case 'name_suffix':
-        sanitizedValue = value
         break
       case 'contact_number':
       case 'emergency_contact_number':
@@ -239,7 +220,6 @@ const EditProfileSubScreen = ({ navigation }) => {
         { field: 'first_name', value: state.form.first_name, validator: validateName },
         { field: 'last_name', value: state.form.last_name, validator: validateName },
         { field: 'middle_initial', value: state.form.middle_initial, validator: validateMiddleInitial },
-        { field: 'name_suffix', value: state.form.name_suffix, validator: validateNameSuffix },
         { field: 'contact_number', value: state.form.contact_number, validator: validatePhoneNumber },
         { field: 'birth_date', value: state.form.birth_date, validator: validateBirthDate },
         { field: 'emergency_contact_name', value: state.form.emergency_contact_name, validator: validateEmergencyContact },
@@ -289,10 +269,8 @@ const EditProfileSubScreen = ({ navigation }) => {
         .from('profiles')
         .update({
           first_name: capitalizeName(state.form.first_name),
-          middle_initial: state.form.middle_initial,
-          last_name: state.form.name_suffix ? 
-            `${capitalizeName(state.form.last_name)} ${state.form.name_suffix}` : 
-            capitalizeName(state.form.last_name),
+          middle_initial: capitalizeName(state.form.middle_initial),
+          last_name: capitalizeName(state.form.last_name),
           contact_number: state.form.contact_number ? `+63${state.form.contact_number}` : null,
           birth_date: state.form.birth_date,
           emergency_contact_name: capitalizeName(state.form.emergency_contact_name),
@@ -327,12 +305,10 @@ const EditProfileSubScreen = ({ navigation }) => {
 
       if (error) throw error
 
-      const lastNameParts = data.last_name?.split(' ') || []
       const initialData = {
         first_name: data.first_name || '',
         middle_initial: data.middle_initial || '',
-        last_name: lastNameParts[0] || '',
-        name_suffix: lastNameParts.slice(1).join(' ') || '',
+        last_name: data.last_name || '',
         contact_number: data.contact_number?.replace('+63', '') || '',
         birth_date: data.birth_date ? new Date(data.birth_date) : null,
         emergency_contact_name: data.emergency_contact_name || '',
@@ -415,7 +391,7 @@ const EditProfileSubScreen = ({ navigation }) => {
           <Divider style={styles.divider} />
 
           <TextInput
-            label='First Name and Second Name'
+            label='First Name'
             value={state.inputValues.first_name}
             onChangeText={(text) => handleChange('first_name', text)}
             mode='outlined'
@@ -451,19 +427,6 @@ const EditProfileSubScreen = ({ navigation }) => {
             disabled={state.saving}
             autoCapitalize='words'
             maxLength={35}
-          />
-
-          <TextInput
-            label='Name Suffix (e.g., Jr., Sr., III)'
-            value={state.inputValues.name_suffix}
-            onChangeText={(text) => handleChange('name_suffix', text)}
-            mode='outlined'
-            style={styles.input}
-            right={<TextInput.Icon icon='account' />}
-            theme={{ colors: { primary: colors.primary } }}
-            disabled={state.saving}
-            autoCapitalize='characters'
-            maxLength={10}
           />
 
           <Divider style={styles.divider} />

@@ -48,26 +48,12 @@ const EditAccountScreen = ({ route, navigation }) => {
     if (!name) {
       return { isValid: false, message: 'Name cannot be empty' }
     }
-    // Check if each word starts with a capital letter and only contains allowed characters
-    const words = name.split(/\s+/)
-    for (const word of words) {
-      if (!/^[A-Z][a-z']*$/.test(word)) {
-        return { isValid: false, message: 'Each name must start with a capital letter and can only contain letters and apostrophes' }
-      }
-    }
     return { isValid: true }
   }
 
   const validateMiddleInitial = (initial) => {
     if (initial && !/^[A-Z]$/.test(initial)) {
       return { isValid: false, message: 'Middle initial must be a single uppercase letter' }
-    }
-    return { isValid: true }
-  }
-
-  const validateNameSuffix = (suffix) => {
-    if (suffix && !/^[A-Za-z\s.,]+$/.test(suffix)) {
-      return { isValid: false, message: 'Name suffix can only contain letters, spaces, periods, and commas' }
     }
     return { isValid: true }
   }
@@ -118,7 +104,6 @@ const EditAccountScreen = ({ route, navigation }) => {
       first_name: '',
       middle_initial: '',
       last_name: '',
-      name_suffix: '',
       email: '',
       contact_number: '',
       birth_date: null,
@@ -132,7 +117,6 @@ const EditAccountScreen = ({ route, navigation }) => {
       first_name: '',
       middle_initial: '',
       last_name: '',
-      name_suffix: '',
       email: '',
       contact_number: '',
       emergency_contact_name: '',
@@ -159,6 +143,7 @@ const EditAccountScreen = ({ route, navigation }) => {
   const updateDialog = (dialog, value) => setState(prev => ({ ...prev, dialogs: { ...prev.dialogs, [dialog]: value } }))
   const updateOptions = (updates) => setState(prev => ({ ...prev, options: { ...prev.options, ...updates } }))
 
+  // Handle changes
   const handleChange = (field, value) => {
     let sanitizedValue = value
 
@@ -171,9 +156,6 @@ const EditAccountScreen = ({ route, navigation }) => {
         break
       case 'middle_initial':
         sanitizedValue = value.toUpperCase()
-        break
-      case 'name_suffix':
-        sanitizedValue = value
         break
       case 'email':
         sanitizedValue = value.toLowerCase()
@@ -210,7 +192,6 @@ const EditAccountScreen = ({ route, navigation }) => {
         { field: 'first_name', value: state.form.first_name, validator: validateName },
         { field: 'last_name', value: state.form.last_name, validator: validateName },
         { field: 'middle_initial', value: state.form.middle_initial, validator: validateMiddleInitial },
-        { field: 'name_suffix', value: state.form.name_suffix, validator: validateNameSuffix },
         { field: 'email', value: state.form.email, validator: validateEmail },
         { field: 'contact_number', value: state.form.contact_number, validator: validatePhoneNumber },
         { field: 'birth_date', value: state.form.birth_date, validator: validateBirthDate },
@@ -241,10 +222,8 @@ const EditAccountScreen = ({ route, navigation }) => {
         .from('profiles')
         .update({
           first_name: capitalizeName(state.form.first_name),
-          middle_initial: state.form.middle_initial,
-          last_name: state.form.name_suffix ? 
-            `${capitalizeName(state.form.last_name)} ${state.form.name_suffix}` : 
-            capitalizeName(state.form.last_name),
+          middle_initial: capitalizeName(state.form.middle_initial),
+          last_name: capitalizeName(state.form.last_name),
           email: state.form.email,
           contact_number: state.form.contact_number ? `+63${state.form.contact_number}` : null,
           birth_date: state.form.birth_date,
@@ -289,12 +268,10 @@ const EditAccountScreen = ({ route, navigation }) => {
 
       if (userError) throw userError
 
-      const lastNameParts = userData.last_name?.split(' ') || []
       const initialData = {
         first_name: userData.first_name || '',
         middle_initial: userData.middle_initial || '',
-        last_name: lastNameParts[0] || '',
-        name_suffix: lastNameParts.slice(1).join(' ') || '',
+        last_name: userData.last_name || '',
         email: userData.email || '',
         contact_number: userData.contact_number?.replace('+63', '') || '',
         birth_date: userData.birth_date ? new Date(userData.birth_date) : null,
@@ -354,6 +331,7 @@ const EditAccountScreen = ({ route, navigation }) => {
         fonts={fonts}
       />
     )), [state.options.statuses, state.form.user_status, colors, fonts])
+    
   const verifyStatusMenuItems = useMemo(() => 
     state.options.verifyStatuses.map(status => (
       <MemoizedMenuItem
@@ -368,6 +346,7 @@ const EditAccountScreen = ({ route, navigation }) => {
         fonts={fonts}
       />
     )), [state.options.verifyStatuses, state.form.verify_status, colors, fonts])
+
   if (state.loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -414,7 +393,7 @@ const EditAccountScreen = ({ route, navigation }) => {
             <Divider style={styles.divider} />
 
             <TextInput
-              label='First Name and Second Name'
+              label='First Name'
               value={state.inputValues.first_name}
               onChangeText={(text) => handleChange('first_name', text)}
               mode='outlined'
@@ -450,19 +429,6 @@ const EditAccountScreen = ({ route, navigation }) => {
               disabled={state.saving}
               autoCapitalize='words'
               maxLength={35}
-            />
-
-            <TextInput
-              label='Name Suffix (e.g., Jr., Sr., III)'
-              value={state.inputValues.name_suffix}
-              onChangeText={(text) => handleChange('name_suffix', text)}
-              mode='outlined'
-              style={styles.input}
-              right={<TextInput.Icon icon='account' />}
-              theme={{ colors: { primary: colors.primary } }}
-              disabled={state.saving}
-              autoCapitalize='characters'
-              maxLength={10}
             />
 
             <Divider style={styles.divider} />

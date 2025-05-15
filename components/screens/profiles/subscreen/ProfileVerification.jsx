@@ -20,6 +20,7 @@ const Verification = ({ navigation }) => {
   const [currentImageType, setCurrentImageType] = useState(null)
   const [idTypeMenuVisible, setIdTypeMenuVisible] = useState(false)
   const [idTypes, setIdTypes] = useState([])
+  const [roleId, setRoleId] = useState(null)
   const [formData, setFormData] = useState({
     gov_id_type: null,
     gov_id_type_id: null,
@@ -29,7 +30,6 @@ const Verification = ({ navigation }) => {
     vehicle_plate_number: null,
     vehicle_or_cr: null
   })
-  const [roleId, setRoleId] = useState(null)
 
   // Check verification status and fetch ID types on mount
   useFocusEffect(
@@ -391,6 +391,19 @@ const Verification = ({ navigation }) => {
     )
   }
 
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <Appbar.Header>
+          <Appbar.BackAction onPress={() => navigation.navigate('Profile')} />
+          <Appbar.Content title='Edit Profile' titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} />
+        </Appbar.Header>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size='large' color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    )
+  }
 
   return (
     <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
