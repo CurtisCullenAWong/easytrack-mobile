@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { CommonActions, useNavigation } from '@react-navigation/native'
 import { Portal, Dialog, Button, Text, useTheme } from 'react-native-paper'
 import { supabase } from '../../lib/supabase'
+import AsyncStorage from '@react-native-async-storage/async-storage' // Add this import
 
 const useLogout = () => {
   const navigation = useNavigation()
@@ -21,6 +22,9 @@ const useLogout = () => {
         .update({ user_status_id: 2 })
         .eq('id', user.id)
     }
+
+    // Disable autologin by clearing rememberMe
+    await AsyncStorage.setItem('rememberMe', 'false') // <-- Add this line
 
     const { error } = await supabase.auth.signOut()
     if (error) {

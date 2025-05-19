@@ -4,6 +4,7 @@ import { Button, useTheme } from 'react-native-paper'
 import BottomModal from '../../customComponents/BottomModal'
 import LoginModalContent from '../../customComponents/LoginModalContent'
 import useAuth from '../../hooks/useAuth'
+import AsyncStorage from '@react-native-async-storage/async-storage' // <-- Add this import
 
 const LoginScreen = ({ navigation }) => {
   const { colors, fonts } = useTheme()
@@ -17,8 +18,13 @@ const LoginScreen = ({ navigation }) => {
     const checkAuth = async () => {
       try {
         setIsCheckingSession(true)
-        const hasSession = await checkSession()
-        setShowLoginUI(!hasSession)
+        const rememberMe = await AsyncStorage.getItem('rememberMe')
+        if (rememberMe === 'true') {
+          const hasSession = await checkSession()
+          setShowLoginUI(!hasSession)
+        } else {
+          setShowLoginUI(true)
+        }
       } catch (error) {
         console.warn('Session check failed:', error)
         setShowLoginUI(true)

@@ -1,13 +1,17 @@
-import React, { useState } from 'react'
-import { ScrollView, StyleSheet } from 'react-native'
-import { TextInput, Button, useTheme, Text } from 'react-native-paper'
+import { useState } from 'react'
+import { ScrollView, StyleSheet, View } from 'react-native'
+import { TextInput, Button, useTheme, Text, Checkbox } from 'react-native-paper'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import useAuth from '../hooks/useAuth'
+
 const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
   const { colors, fonts } = useTheme()
   const { login, resetPassword, SnackbarElement } = useAuth(navigation, onClose)
   const [credentials, setCredentials] = useState({ email: '', password: '' })
   const [visibility, setVisibility] = useState({ password: false })
-  const [isLoading, setIsLoading] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
+
   const handleChange = (field, value) => {
     setCredentials(prev => ({ ...prev, [field]: value }))
   }
@@ -16,32 +20,15 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
     setVisibility(prev => ({ ...prev, [field]: !prev[field] }))
   }
 
-  const renderPasswordInput = () => (
-    <TextInput
-      label="Password"
-      value={credentials.password}
-      onChangeText={(text) => handleChange('password', text)}
-      secureTextEntry={!visibility.password}
-      mode="outlined"
-      style={styles.textInput}
-      right={
-        <TextInput.Icon
-          icon={visibility.password ? 'eye' : 'eye-off'}
-          iconColor={colors.primary}
-          onPress={() => toggleVisibility('password')}
-        />
-      }
-    />
-  )
-
   const handleResetPassword = () => {
     resetPassword(credentials.email)
   }
 
-  const handleLogin = () => {
-    setIsLoading(true)
-    login(credentials)
-    setIsLoading(false)
+  const handleLogin = async () => {
+    setLoading(true)
+    await AsyncStorage.setItem('rememberMe', rememberMe ? 'true' : 'false')
+    await login(credentials)
+    setLoading(false)
   }
 
   return (
@@ -58,6 +45,7 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
         style={styles.textInput}
         autoCapitalize="none"
         keyboardType="email-address"
+        disabled={loading}
       />
 
       {isResetPasswordModal ? (
@@ -66,19 +54,46 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
           onPress={handleResetPassword}
           style={[styles.button, { backgroundColor: colors.primary }]}
           labelStyle={[fonts.titleMedium, { color: colors.onPrimary }]}
-          loading={isLoading}
+          disabled={loading}
+          loading={loading}
         >
           Send Reset Email
         </Button>
       ) : (
         <>
-          {renderPasswordInput()}
+          <TextInput
+            label="Password"
+            value={credentials.password}
+            onChangeText={(text) => handleChange('password', text)}
+            secureTextEntry={!visibility.password}
+            mode="outlined"
+            disabled={loading}
+            style={styles.textInput}
+            right={
+              <TextInput.Icon
+                icon={visibility.password ? 'eye' : 'eye-off'}
+                iconColor={colors.primary}
+                onPress={() => toggleVisibility('password')}
+              />
+            }
+          />
+          <View style={styles.rememberMeContainer}>
+            <Checkbox
+              status={rememberMe ? 'checked' : 'unchecked'}
+              onPress={() => setRememberMe(!rememberMe)}
+              color={colors.primary}
+              disabled={loading}
+            />
+            <Text onPress={() => setRememberMe(!rememberMe)} style={styles.rememberMeText}>
+              Remember Me
+            </Text>
+          </View>
           <Button
             mode="contained"
             onPress={handleLogin}
             style={[styles.button, { backgroundColor: colors.primary }]}
             labelStyle={[fonts.titleMedium, { color: colors.onPrimary }]}
-            loading={isLoading}
+            loading={loading}
           >
             Login
           </Button>
@@ -108,6 +123,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
     marginTop: 16,
+  },
+  rememberMeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  rememberMeText: {
+    fontSize: 16,
+    marginLeft: 4,
   },
 })
 
