@@ -1,8 +1,26 @@
 import { supabase } from '../../lib/supabase'
 import useSnackbar from './useSnackbar'
+import * as Linking from 'expo-linking'
+import * as WebBrowser from 'expo-web-browser'
+import { makeRedirectUri } from 'expo-auth-session'
+import { Platform } from 'react-native'
+
+// Initialize WebBrowser for auth
+WebBrowser.maybeCompleteAuthSession()
 
 const useAuth = (navigation, onClose) => {
   const { showSnackbar, SnackbarElement } = useSnackbar()
+
+  // Get the redirect URL for the current platform
+  const getRedirectUrl = () => {
+    if (Platform.OS === 'web') {
+      return window.location.origin
+    }
+    return makeRedirectUri({
+      scheme: 'easytrack',
+      path: 'login'
+    })
+  }
 
   // Verify user login
   const handleLogin = async (user) => {
@@ -56,24 +74,53 @@ const useAuth = (navigation, onClose) => {
 
     handleLogin(data.user)
   }
+
   // Login with email OTP
   const loginWithOtp = async (email) => {
     if (!email) {
       return showSnackbar('Email is required for OTP login.')
     }
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: 'myapp://login',
-      },
-    })
+    try {
+      const redirectUrl = getRedirectUrl()
+      
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: redirectUrl,
+          shouldCreateUser: false, // Only allow existing users to login
+        },
+      })
 
-    if (error) {
-      return showSnackbar(`Error: ${error.message}`)
+      if (error) {
+        return showSnackbar(`Error: ${error.message}`)
+      }
+
+      showSnackbar('OTP sent to your email. Please check your inbox.', 'success')
+      
+      // Set up URL event listener for OTP response
+      const subscription = Linking.addEventListener('url', async ({ url }) => {
+        if (url.includes('login')) {
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+          
+          if (sessionError) {
+            showSnackbar('Error verifying OTP. Please try again.')
+            return
+          }
+
+          if (session?.user) {
+            await handleLogin(session.user)
+          }
+        }
+      })
+
+      // Cleanup subscription
+      return () => {
+        subscription.remove()
+      }
+    } catch (error) {
+      showSnackbar('An error occurred while sending OTP. Please try again.')
     }
-
-    showSnackbar('OTP sent to your email. Please check your inbox.', 'success')
   }
 
   // Send password reset email
@@ -83,7 +130,7 @@ const useAuth = (navigation, onClose) => {
     }
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'myapp://reset-password',
+      redirectTo: getRedirectUrl(),
     })
 
     if (error) {

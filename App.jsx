@@ -7,6 +7,7 @@ import lightTheme from './components/themes/lightTheme'
 import darkTheme from './components/themes/darkTheme'
 import { ThemeContext } from './components/themes/themeContext'
 import { ActivityIndicator, View } from 'react-native'
+import * as Linking from 'expo-linking'
 
 const THEME_KEY = 'appTheme'
 
@@ -46,6 +47,29 @@ const App = () => {
   useEffect(() => {
     loadFonts()
     loadTheme()
+
+    // Handle deep linking
+    const handleDeepLink = ({ url }) => {
+      if (url) {
+        // The URL will be handled by the useAuth hook's Linking event listener
+        console.log('Deep link received:', url)
+      }
+    }
+
+    // Get the initial URL if the app was opened from a deep link
+    Linking.getInitialURL().then(url => {
+      if (url) {
+        handleDeepLink({ url })
+      }
+    })
+
+    // Add event listener for deep links
+    const subscription = Linking.addEventListener('url', handleDeepLink)
+
+    // Cleanup subscription
+    return () => {
+      subscription.remove()
+    }
   }, [])
 
   // Save theme to AsyncStorage when toggled
@@ -58,13 +82,13 @@ const App = () => {
   if (!fontsLoaded || !themeLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     )
   }
 
   return (
-    <ThemeContext.Provider value={{ toggleTheme, theme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
       <PaperProvider theme={theme}>
         <StackNavigator />
       </PaperProvider>
