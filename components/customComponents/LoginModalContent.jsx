@@ -21,11 +21,15 @@ const LoginModalContent = ({ isResetPasswordModal, isOtpLoginModal, onClose, nav
   }
 
   const handleResetPassword = () => {
+    setLoading(true)
     resetPassword(credentials.email)
+    setLoading(false)
   }
 
-  const handleOtpLogin = () => {
-    loginWithOtp(credentials.email)
+  const handleOtpLogin = async () => {
+    setLoading(true)
+    await loginWithOtp(credentials.email)
+    setLoading(false)
   }
 
   const handleLogin = async () => {

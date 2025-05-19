@@ -8,6 +8,8 @@ import darkTheme from './components/themes/darkTheme'
 import { ThemeContext } from './components/themes/themeContext'
 import { ActivityIndicator, View } from 'react-native'
 import * as Linking from 'expo-linking'
+import { supabase } from './lib/supabase'
+import useAuth from './components/hooks/useAuth'
 
 const THEME_KEY = 'appTheme'
 
@@ -15,6 +17,7 @@ const App = () => {
   const [theme, setTheme] = useState(lightTheme)
   const [fontsLoaded, setFontsLoaded] = useState(false)
   const [themeLoaded, setThemeLoaded] = useState(false)
+  const { checkSession } = useAuth()
 
   const loadFonts = async () => {
     try {
@@ -47,12 +50,25 @@ const App = () => {
   useEffect(() => {
     loadFonts()
     loadTheme()
-
     // Handle deep linking
-    const handleDeepLink = ({ url }) => {
+    const handleDeepLink = async ({ url }) => {
       if (url) {
-        // The URL will be handled by the useAuth hook's Linking event listener
-        console.log('Deep link received:', url)
+        try {
+          // Check if the URL contains authentication parameters
+          const { data: { session }, error } = await supabase.auth.getSession()
+          
+          if (error) {
+            console.error('Error getting session:', error.message)
+            return
+          }
+
+          if (session?.user) {
+            // Check session and handle navigation
+            await checkSession()
+          }
+        } catch (error) {
+          console.error('Error handling deep link:', error)
+        }
       }
     }
 
@@ -60,6 +76,7 @@ const App = () => {
     Linking.getInitialURL().then(url => {
       if (url) {
         handleDeepLink({ url })
+        console.log('Initial URL:', url)
       }
     })
 

@@ -4,6 +4,7 @@ import * as Linking from 'expo-linking'
 import * as WebBrowser from 'expo-web-browser'
 import { makeRedirectUri } from 'expo-auth-session'
 import { Platform } from 'react-native'
+import * as QueryParams from 'expo-auth-session/build/QueryParams'
 
 // Initialize WebBrowser for auth
 WebBrowser.maybeCompleteAuthSession()
@@ -20,6 +21,29 @@ const useAuth = (navigation, onClose) => {
       scheme: 'easytrack',
       path: 'login'
     })
+  }
+
+  // Create session from URL
+  const createSessionFromUrl = async (url) => {
+    try {
+      const { params, errorCode } = QueryParams.getQueryParams(url)
+      if (errorCode) throw new Error(errorCode)
+      
+      const { access_token, refresh_token } = params
+      if (!access_token) return
+
+      const { data, error } = await supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      })
+      
+      if (error) throw error
+      return data.session
+    } catch (error) {
+      console.error('Error creating session from URL:', error)
+      showSnackbar('Error creating session. Please try again.')
+      return null
+    }
   }
 
   // Verify user login
@@ -101,13 +125,7 @@ const useAuth = (navigation, onClose) => {
       // Set up URL event listener for OTP response
       const subscription = Linking.addEventListener('url', async ({ url }) => {
         if (url.includes('login')) {
-          const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-          
-          if (sessionError) {
-            showSnackbar('Error verifying OTP. Please try again.')
-            return
-          }
-
+          const session = await createSessionFromUrl(url)
           if (session?.user) {
             await handleLogin(session.user)
           }
