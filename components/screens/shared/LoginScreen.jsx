@@ -10,6 +10,7 @@ const LoginScreen = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const [modalVisible, setModalVisible] = useState(false)
   const [isResetPasswordModal, setIsResetPasswordModal] = useState(false)
+  const [isOtpLoginModal, setIsOtpLoginModal] = useState(false)
   const [showLoginUI, setShowLoginUI] = useState(false)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
   const { checkSession } = useAuth(navigation)
@@ -52,11 +53,19 @@ const LoginScreen = ({ navigation }) => {
 
   const showResetPasswordModal = () => {
     setIsResetPasswordModal(true)
+    setIsOtpLoginModal(false)
+    showModal()
+  }
+
+  const showOtpLoginModal = () => {
+    setIsOtpLoginModal(true)
+    setIsResetPasswordModal(false)
     showModal()
   }
 
   const handleLogin = () => {
     setIsResetPasswordModal(false)
+    setIsOtpLoginModal(false)
     showModal()
   }
 
@@ -79,6 +88,23 @@ const LoginScreen = ({ navigation }) => {
         Login
       </Button>
 
+
+      {/* <Button
+        mode="text"
+        onPress={() => navigation.navigate('Sign Up')}
+        labelStyle={[styles.buttonLabel, { color: colors.primary }]}
+      >
+        Don't have an account? Sign Up
+      </Button> */}
+      <Button
+        mode="text"
+        onPress={showOtpLoginModal}
+        style={styles.resetPasswordButton}
+        labelStyle={[styles.buttonLabel, { color: colors.primary }]}
+      >
+        Login with Email OTP
+      </Button>
+
       <Button
         mode="text"
         onPress={showResetPasswordModal}
@@ -88,17 +114,10 @@ const LoginScreen = ({ navigation }) => {
         Forgot Password?
       </Button>
 
-      <Button
-        mode="text"
-        onPress={() => navigation.navigate('Sign Up')}
-        labelStyle={[styles.buttonLabel, { color: colors.primary }]}
-      >
-        Don't have an account? Sign Up
-      </Button>
-
       <BottomModal visible={modalVisible} onDismiss={hideModal}>
         <LoginModalContent
           isResetPasswordModal={isResetPasswordModal}
+          isOtpLoginModal={isOtpLoginModal}
           onClose={hideModal}
           navigation={navigation}
         />

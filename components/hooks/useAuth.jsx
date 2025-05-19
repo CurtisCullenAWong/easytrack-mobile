@@ -56,7 +56,27 @@ const useAuth = (navigation, onClose) => {
 
     handleLogin(data.user)
   }
-// Send password reset email
+  // Login with email OTP
+  const loginWithOtp = async (email) => {
+    if (!email) {
+      return showSnackbar('Email is required for OTP login.')
+    }
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: 'myapp://login',
+      },
+    })
+
+    if (error) {
+      return showSnackbar(`Error: ${error.message}`)
+    }
+
+    showSnackbar('OTP sent to your email. Please check your inbox.', 'success')
+  }
+
+  // Send password reset email
   const resetPassword = async (email) => {
     if (!email) {
       return showSnackbar('Email is required for password reset.')
@@ -106,6 +126,7 @@ const useAuth = (navigation, onClose) => {
     login,
     resetPassword,
     checkSession,
+    loginWithOtp,
     SnackbarElement,
   }
 }

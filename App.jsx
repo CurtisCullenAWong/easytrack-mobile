@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react'
 import { Provider as PaperProvider } from 'react-native-paper'
 import * as Font from 'expo-font'
-import AsyncStorage from '@react-native-async-storage/async-storage' // <-- Add this import
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import StackNavigator from './components/navigator/StackNavigator'
 import lightTheme from './components/themes/lightTheme'
 import darkTheme from './components/themes/darkTheme'
 import { ThemeContext } from './components/themes/themeContext'
 import { ActivityIndicator, View } from 'react-native'
 
-const THEME_KEY = 'appTheme' // <-- Key for AsyncStorage
+const THEME_KEY = 'appTheme'
 
 const App = () => {
   const [theme, setTheme] = useState(lightTheme)
   const [fontsLoaded, setFontsLoaded] = useState(false)
-  const [themeLoaded, setThemeLoaded] = useState(false) // <-- Track theme loading
+  const [themeLoaded, setThemeLoaded] = useState(false)
 
   const loadFonts = async () => {
     try {

@@ -4,9 +4,9 @@ import { TextInput, Button, useTheme, Text, Checkbox } from 'react-native-paper'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import useAuth from '../hooks/useAuth'
 
-const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
+const LoginModalContent = ({ isResetPasswordModal, isOtpLoginModal, onClose, navigation }) => {
   const { colors, fonts } = useTheme()
-  const { login, resetPassword, SnackbarElement } = useAuth(navigation, onClose)
+  const { login, resetPassword, loginWithOtp, SnackbarElement } = useAuth(navigation, onClose)
   const [credentials, setCredentials] = useState({ email: '', password: '' })
   const [visibility, setVisibility] = useState({ password: false })
   const [loading, setLoading] = useState(false)
@@ -24,6 +24,10 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
     resetPassword(credentials.email)
   }
 
+  const handleOtpLogin = () => {
+    loginWithOtp(credentials.email)
+  }
+
   const handleLogin = async () => {
     setLoading(true)
     await AsyncStorage.setItem('rememberMe', rememberMe ? 'true' : 'false')
@@ -34,7 +38,7 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
   return (
     <ScrollView contentContainerStyle={styles.scrollViewContainer}>
       <Text style={[fonts.headlineSmall, styles.headerText]}>
-        {isResetPasswordModal ? 'Reset Password' : 'Login'}
+        {isResetPasswordModal ? 'Reset Password' : isOtpLoginModal ? 'Login with Email OTP' : 'Login'}
       </Text>
       {SnackbarElement}
       <TextInput
@@ -53,11 +57,22 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
           mode="contained"
           onPress={handleResetPassword}
           style={[styles.button, { backgroundColor: colors.primary }]}
-          labelStyle={[fonts.titleMedium, { color: colors.onPrimary }]}
+          labelStyle={[fonts.labelLarge, { color: colors.onPrimary }]}
           disabled={loading}
           loading={loading}
         >
           Send Reset Email
+        </Button>
+      ) : isOtpLoginModal ? (
+        <Button
+          mode="contained"
+          onPress={handleOtpLogin}
+          style={[styles.button, { backgroundColor: colors.primary }]}
+          labelStyle={[fonts.labelLarge, { color: colors.onPrimary }]}
+          disabled={loading}
+          loading={loading}
+        >
+          Send OTP
         </Button>
       ) : (
         <>
@@ -84,7 +99,7 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
               color={colors.primary}
               disabled={loading}
             />
-            <Text onPress={() => setRememberMe(!rememberMe)} style={styles.rememberMeText}>
+            <Text onPress={() => setRememberMe(!rememberMe)} style={[styles.rememberMeText,fonts.labelMedium]}>
               Remember Me
             </Text>
           </View>
@@ -92,8 +107,9 @@ const LoginModalContent = ({ isResetPasswordModal, onClose, navigation }) => {
             mode="contained"
             onPress={handleLogin}
             style={[styles.button, { backgroundColor: colors.primary }]}
-            labelStyle={[fonts.titleMedium, { color: colors.onPrimary }]}
+            labelStyle={[fonts.labelLarge, { color: colors.onPrimary }]}
             loading={loading}
+            disabled={loading}
           >
             Login
           </Button>
@@ -128,10 +144,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
-    marginLeft: 4,
-  },
-  rememberMeText: {
-    fontSize: 16,
     marginLeft: 4,
   },
 })
