@@ -5,9 +5,13 @@ import * as WebBrowser from 'expo-web-browser'
 import { makeRedirectUri } from 'expo-auth-session'
 import { Platform } from 'react-native'
 import * as QueryParams from 'expo-auth-session/build/QueryParams'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 // Initialize WebBrowser for auth
 WebBrowser.maybeCompleteAuthSession()
+
+const MAX_LOGIN_ATTEMPTS = 5
+const COOLDOWN_MINUTES = 2
 
 const useAuth = (navigation, onClose) => {
   const { showSnackbar, SnackbarElement } = useSnackbar()
@@ -84,18 +88,84 @@ const useAuth = (navigation, onClose) => {
     onClose?.()
   }
 
+    // Check if user is in cooldown period
+  const checkCooldown = async (email) => {
+    const cooldownKey = `cooldown_${email}`
+    const cooldownData = await AsyncStorage.getItem(cooldownKey)
+    
+    if (cooldownData) {
+      const { timestamp } = JSON.parse(cooldownData)
+      const now = new Date().getTime()
+      const cooldownEnd = timestamp + (COOLDOWN_MINUTES * 60 * 1000)
+      
+      if (now < cooldownEnd) {
+        const remainingMinutes = Math.ceil((cooldownEnd - now) / (60 * 1000))
+        return {
+          inCooldown: true,
+          remainingMinutes
+        }
+      }
+      // Clear cooldown if it has expired
+      await AsyncStorage.removeItem(cooldownKey)
+    }
+    return { inCooldown: false }
+  }
+
+  // Update login attempts
+  const updateLoginAttempts = async (email, isSuccessful) => {
+    const attemptsKey = `login_attempts_${email}`
+    
+    if (isSuccessful) {
+      // Reset attempts on successful login
+      await AsyncStorage.removeItem(attemptsKey)
+      return
+    }
+
+    // Get current attempts
+    const attemptsData = await AsyncStorage.getItem(attemptsKey)
+    const attempts = attemptsData ? JSON.parse(attemptsData).attempts + 1 : 1
+    
+    // Store updated attempts
+    await AsyncStorage.setItem(attemptsKey, JSON.stringify({ attempts }))
+    
+    // If max attempts reached, set cooldown
+    if (attempts >= MAX_LOGIN_ATTEMPTS) {
+      const cooldownKey = `cooldown_${email}`
+      await AsyncStorage.setItem(cooldownKey, JSON.stringify({
+        timestamp: new Date().getTime()
+      }))
+    }
+    
+    return attempts
+  }
+  
   // Login user
   const login = async ({ email, password }) => {
     if (!email || !password) {
       return showSnackbar('Email and password are required.')
     }
 
+    // Check cooldown period
+    const { inCooldown, remainingMinutes } = await checkCooldown(email)
+    if (inCooldown) {
+      return showSnackbar(`Too many failed attempts. Please try again in ${remainingMinutes} minutes.`)
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      return showSnackbar(`Login error: ${error.message}`)
+      const attempts = await updateLoginAttempts(email, false)
+      const remainingAttempts = MAX_LOGIN_ATTEMPTS - attempts
+      
+      if (remainingAttempts > 0) {
+        return showSnackbar(`Login error: ${error.message}. ${remainingAttempts} attempts remaining.`)
+      } else {
+        return showSnackbar(`Too many failed attempts. Please try again in ${COOLDOWN_MINUTES} minutes.`)
+      }
     }
 
+    // Reset attempts on successful login
+    await updateLoginAttempts(email, true)
     handleLogin(data.user)
   }
 
@@ -103,6 +173,12 @@ const useAuth = (navigation, onClose) => {
   const loginWithOtp = async (email) => {
     if (!email) {
       return showSnackbar('Email is required for OTP login.')
+    }
+
+    // Check cooldown period
+    const { inCooldown, remainingMinutes } = await checkCooldown(email)
+    if (inCooldown) {
+      return showSnackbar(`Too many failed attempts. Please try again in ${remainingMinutes} minutes.`)
     }
 
     try {
@@ -117,9 +193,18 @@ const useAuth = (navigation, onClose) => {
       })
 
       if (error) {
-        return showSnackbar(`Error: ${error.message}`)
+        const attempts = await updateLoginAttempts(email, false)
+        const remainingAttempts = MAX_LOGIN_ATTEMPTS - attempts
+        
+        if (remainingAttempts > 0) {
+          return showSnackbar(`Error: ${error.message}. ${remainingAttempts} attempts remaining.`)
+        } else {
+          return showSnackbar(`Too many failed attempts. Please try again in ${COOLDOWN_MINUTES} minutes.`)
+        }
       }
 
+      // Reset attempts on successful OTP request
+      await updateLoginAttempts(email, true)
       showSnackbar('OTP sent to your email. Please check your inbox.', 'success')
       
       // Set up URL event listener for OTP response

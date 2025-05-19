@@ -399,7 +399,7 @@ const ProfileVerification = ({ navigation }) => {
 
   useFocusEffect(useCallback(() => { fetchVerificationData() }, []))
 
-  const ImagePreview = ({ uri, onRemove, type }) => {
+  const ImagePreview = ({ uri }) => {
     if (!uri) return null
     return (
       <View style={styles.imagePreviewContainer}>
@@ -417,7 +417,7 @@ const ProfileVerification = ({ navigation }) => {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.navigate('Profile')} />
-          <Appbar.Content title='Edit Profile' titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} />
+          <Appbar.Content title='Account Verification' titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} />
         </Appbar.Header>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size='large' color={colors.primary} />
@@ -682,6 +682,9 @@ const ProfileVerification = ({ navigation }) => {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   scrollView: {
     flex: 1,
   },

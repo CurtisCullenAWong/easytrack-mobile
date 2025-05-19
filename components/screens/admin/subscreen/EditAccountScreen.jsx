@@ -380,135 +380,58 @@ const EditAccountScreen = ({ route, navigation }) => {
 
             <Divider style={styles.divider} />
 
-            <TextInput
-              label='First Name'
-              value={state.form.first_name}
-              onChangeText={(text) => handleChange('first_name', text)}
-              mode='outlined'
-              style={styles.input}
-              right={<TextInput.Icon icon='account' />}
-              theme={{ colors: { primary: colors.primary } }}
-              disabled={state.saving}
-              autoCapitalize='words'
-              maxLength={35}
-            />
+            <View style={styles.fieldContainer}>
+              <Text variant='labelLarge' style={{ color: colors.onSurfaceVariant }}>First Name</Text>
+              <Text variant='bodyLarge' style={{ color: colors.onSurface }}>{state.form.first_name}</Text>
+            </View>
 
-            <TextInput
-              label='Middle Initial'
-              value={state.form.middle_initial}
-              onChangeText={(text) => handleChange('middle_initial', text)}
-              mode='outlined'
-              style={styles.input}
-              maxLength={1}
-              right={<TextInput.Icon icon='account' />}
-              theme={{ colors: { primary: colors.primary } }}
-              disabled={state.saving}
-              autoCapitalize='characters'
-            />
+            <View style={styles.fieldContainer}>
+              <Text variant='labelLarge' style={{ color: colors.onSurfaceVariant }}>Middle Initial</Text>
+              <Text variant='bodyLarge' style={{ color: colors.onSurface }}>{state.form.middle_initial}</Text>
+            </View>
 
-            <TextInput
-              label='Last Name'
-              value={state.form.last_name}
-              onChangeText={(text) => handleChange('last_name', text)}
-              mode='outlined'
-              style={styles.input}
-              right={<TextInput.Icon icon='account' />}
-              theme={{ colors: { primary: colors.primary } }}
-              disabled={state.saving}
-              autoCapitalize='words'
-              maxLength={35}
-            />
+            <View style={styles.fieldContainer}>
+              <Text variant='labelLarge' style={{ color: colors.onSurfaceVariant }}>Last Name</Text>
+              <Text variant='bodyLarge' style={{ color: colors.onSurface }}>{state.form.last_name}</Text>
+            </View>
 
             <Divider style={styles.divider} />
 
-            <TextInput
-              label='Email'
-              value={state.form.email}
-              onChangeText={(text) => handleChange('email', text)}
-              mode='outlined'
-              style={styles.input}
-              keyboardType='email-address'
-              right={<TextInput.Icon icon='email' />}
-              editable={false}
-              theme={{ colors: { primary: colors.primary } }}
-              disabled={state.saving}
-              autoCapitalize='none'
-              maxLength={50}
-            />
+            <View style={styles.fieldContainer}>
+              <Text variant='labelLarge' style={{ color: colors.onSurfaceVariant }}>Email</Text>
+              <Text variant='bodyLarge' style={{ color: colors.onSurface }}>{state.form.email}</Text>
+            </View>
 
-            <TextInput
-              label='Contact Number'
-              value={state.form.contact_number}
-              onChangeText={(text) => handleChange('contact_number', text)}
-              mode='outlined'
-              style={styles.input}
-              keyboardType='phone-pad'
-              left={<TextInput.Affix text='+63' />}
-              theme={{ colors: { primary: colors.primary } }}
-              disabled={state.saving}
-              maxLength={10}
-            />
+            <View style={styles.fieldContainer}>
+              <Text variant='labelLarge' style={{ color: colors.onSurfaceVariant }}>Contact Number</Text>
+              <Text variant='bodyLarge' style={{ color: colors.onSurface }}>
+                {state.form.contact_number ? `+63${state.form.contact_number}` : 'Not set'}
+              </Text>
+            </View>
 
-            <TextInput
-              label='Birth Date'
-              value={state.form.birth_date ? state.form.birth_date.toLocaleDateString() : ''}
-              editable={false}
-              mode='outlined'
-              style={styles.input}
-              right={<TextInput.Icon icon='calendar' onPress={() => updateDialog('datePicker', true)} />}
-              theme={{ colors: { primary: colors.primary } }}
-              disabled={state.saving}
-            />
+            <View style={styles.fieldContainer}>
+              <Text variant='labelLarge' style={{ color: colors.onSurfaceVariant }}>Birth Date</Text>
+              <Text variant='bodyLarge' style={{ color: colors.onSurface }}>
+                {state.form.birth_date ? state.form.birth_date.toLocaleDateString() : 'Not set'}
+              </Text>
+            </View>
 
             <Divider style={styles.divider} />
 
-            <TextInput
-              label='Emergency Contact Name'
-              value={state.form.emergency_contact_name}
-              onChangeText={(text) => handleChange('emergency_contact_name', text)}
-              mode='outlined'
-              style={styles.input}
-              right={<TextInput.Icon icon='account' />}
-              theme={{ colors: { primary: colors.primary } }}
-              disabled={state.saving}
-              autoCapitalize='words'
-              maxLength={50}
-            />
+            <View style={styles.fieldContainer}>
+              <Text variant='labelLarge' style={{ color: colors.onSurfaceVariant }}>Emergency Contact Name</Text>
+              <Text variant='bodyLarge' style={{ color: colors.onSurface }}>{state.form.emergency_contact_name || 'Not set'}</Text>
+            </View>
 
-            <TextInput
-              label='Emergency Contact Number'
-              value={state.form.emergency_contact_number}
-              onChangeText={(text) => handleChange('emergency_contact_number', text)}
-              mode='outlined'
-              style={styles.input}
-              keyboardType='phone-pad'
-              left={<TextInput.Affix text='+63' />}
-              theme={{ colors: { primary: colors.primary } }}
-              disabled={state.saving}
-              maxLength={10}
-            />
+            <View style={styles.fieldContainer}>
+              <Text variant='labelLarge' style={{ color: colors.onSurfaceVariant }}>Emergency Contact Number</Text>
+              <Text variant='bodyLarge' style={{ color: colors.onSurface }}>
+                {state.form.emergency_contact_number ? `+63${state.form.emergency_contact_number}` : 'Not set'}
+              </Text>
+            </View>
 
             <Divider style={styles.divider} />
 
-            <Menu
-              visible={state.dialogs.roleMenu}
-              onDismiss={() => updateDialog('roleMenu', false)}
-              anchor={
-                <TextInput
-                  label='Role'
-                  value={state.form.role}
-                  editable={false}
-                  mode='outlined'
-                  style={styles.input}
-                  right={<TextInput.Icon icon='account-cog' onPress={() => updateDialog('roleMenu', true)} />}
-                  theme={{ colors: { primary: colors.primary } }}
-                  disabled={state.saving}
-                />
-              }
-              contentStyle={{ backgroundColor: colors.surface }}
-            >
-              {roleMenuItems}
-            </Menu>
 
             <Menu
               visible={state.dialogs.statusMenu}
@@ -616,6 +539,9 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     marginTop: 8,
+  },
+  fieldContainer: {
+    marginBottom: 16,
   },
   input: { 
     marginBottom: 16

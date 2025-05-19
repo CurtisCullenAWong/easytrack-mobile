@@ -223,6 +223,18 @@ const UserManagement = ({ navigation }) => {
           ))}
         </Menu>
       </View>
+      <View style={styles.buttonContainer}>
+        <Button
+          mode="contained"
+          icon="account-plus"
+          onPress={() => navigation.navigate('AddAccount')}
+          style={[styles.button, { borderColor: colors.primary, width: '100%' }]}
+          contentStyle={styles.buttonContent}
+          labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
+        >
+          Add Account
+        </Button>
+      </View>
 
       {loading ? (
         <Text style={[styles.loadingText, { color: colors.onSurface }, fonts.bodyMedium]}>
@@ -397,8 +409,8 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-evenly',
-    padding: 16,
     gap: 10,
+    marginHorizontal: 16,
   },
   button: {
     marginVertical: 6,

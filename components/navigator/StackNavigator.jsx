@@ -5,7 +5,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 
 // Shared Screens
 import LoginScreen from '../screens/shared/LoginScreen'
-import SignUpSubScreen from '../screens/shared/SignUpSubsceen'
 import MessageCenter from '../screens/MessageCenter'
 import BookingHistory from '../screens/BookingHistory'
 import PerformanceStatistics from '../screens/PerformanceStatistics'
@@ -21,6 +20,7 @@ import AdminHome from '../screens/admin/AdminHome'
 import UserManagement from '../screens/admin/UserManagement'
 import AdminTrackLuggage from '../screens/admin/AdminTrackLuggage'
 import EditAccount from '../screens/admin/subscreen/EditAccountScreen'
+import AddAccount from '../screens/admin/subscreen/AddAccount'
 import ViewAccountScreen from '../screens/admin/subscreen/ViewAccountScreen'
 // Airline Screens
 import AirlineHome from '../screens/airline/AirlineHome'
@@ -29,7 +29,6 @@ import AirlineBookingManagement from '../screens/airline/BookingManagement'
 
 // Delivery Screens
 import DeliveryHome from '../screens/delivery/DeliveryHome'
-
 import DeliveryBookingManagement from '../screens/delivery/BookingManagement'
 
 // Import Navigators
@@ -49,6 +48,11 @@ const AdminDrawer = () => (
       <Drawer.Screen name="AdminHome" component={AdminHome} />
       <Drawer.Screen name="UserManagement" component={UserManagement} />
       <Drawer.Screen name="AdminTrackLuggage" component={AdminTrackLuggage} />
+      <Drawer.Screen
+        name="AddAccount"
+        component={AddAccount}
+        options={{ headerShown: false }}
+      />
       <Drawer.Screen
         name="EditAccount"
         component={EditAccount}
@@ -121,11 +125,6 @@ const StackNavigator = () => (
       <Stack.Screen
         name="Login"
         component={LoginScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Sign Up"
-        component={SignUpSubScreen}
         options={{ headerShown: false }}
       />
 

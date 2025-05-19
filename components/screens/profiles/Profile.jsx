@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react'
-import { ScrollView, View, StyleSheet, Image } from 'react-native'
-import { Avatar, Card, Text, Divider, Button, useTheme, ActivityIndicator, Portal, Dialog } from 'react-native-paper'
+import { ScrollView, View, StyleSheet, Image, SafeAreaView } from 'react-native'
+import { Avatar, Card, Text, Divider, Button, useTheme, ActivityIndicator, Portal, Dialog, Appbar } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabase'
 import useLogout from '../../hooks/useLogout'
@@ -256,24 +256,19 @@ const Profile = ({ navigation }) => {
 
   if (loading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    )
-  }
-
-  if (error) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <Text style={[{ color: colors.error, ...fonts.titleMedium }]}>{error}</Text>
-        <Button
-          mode="contained"
-          onPress={fetchProfile}
-          style={[styles.button, { backgroundColor: colors.primary, marginTop: 16 }]}
-        >
-          Retry
-        </Button>
-      </View>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <Header 
+          navigation={navigation} 
+          title="Profile"
+          rightAction={{
+            icon: 'refresh',
+            onPress: fetchProfile
+          }}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size='large' color={colors.primary} />
+        </View>
+      </SafeAreaView>
     )
   }
 
@@ -358,6 +353,9 @@ const Profile = ({ navigation }) => {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   scrollView: { 
     flex: 1 
   },
