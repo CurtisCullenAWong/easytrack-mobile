@@ -61,7 +61,7 @@ const UserManagement = ({ navigation }) => {
     const formatted = data.map(user => ({
       id: user.id,
       email: user.email,
-      full_name: `${user.first_name || ''} ${user.middle_initial || ''} ${user.last_name || ''} ${user.suffix || ''}`.trim(),
+      full_name: `${user?.first_name || ''} ${user?.middle_initial || ''} ${user?.last_name || ''} ${user?.suffix || ''}`.trim()||'N/A',
       contact_number: user.contact_number || 'N/A',
       status: user.profile_status?.status_name || 'Unknown',
       role: user.profile_roles?.role_name || 'N/A',
@@ -196,16 +196,17 @@ const UserManagement = ({ navigation }) => {
 
       <View style={styles.buttonContainer}>
         <Button
-          mode="contained"
+          mode="outlined"
           icon="refresh"
           onPress={fetchUsers}
           style={[styles.button, { borderColor: colors.primary, width: '40%' }]}
           contentStyle={styles.buttonContent}
-          labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
+          labelStyle={[styles.buttonLabel, { color: colors.primary }]}
         >
           Refresh
         </Button>
-        <Menu
+        <View style={[styles.buttonContainer1]}>
+          <Menu
           visible={filterMenuVisible}
           onDismiss={() => setFilterMenuVisible(false)}
           anchor={
@@ -213,7 +214,7 @@ const UserManagement = ({ navigation }) => {
               mode="contained"
               icon="filter-variant"
               onPress={() => setFilterMenuVisible(true)}
-              style={[styles.button, { borderColor: colors.primary, minWidth: 'auto', }]}
+              style={[styles.button, { borderColor: colors.primary, minWidth: 'auto'}]}
               contentStyle={styles.buttonContent}
               labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
             >
@@ -242,6 +243,8 @@ const UserManagement = ({ navigation }) => {
             />
           ))}
         </Menu>
+        </View>
+        
       </View>
       <View style={styles.buttonContainer}>
         <Button
@@ -471,6 +474,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginHorizontal: 16,
+  },
+  buttonContainer1: {
+    marginHorizontal:'auto'
   },
   button: {
     marginVertical: 10,

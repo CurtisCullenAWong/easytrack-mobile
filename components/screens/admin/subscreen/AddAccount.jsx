@@ -75,18 +75,26 @@ const AddAccount = ({ navigation }) => {
           password: encryptedValue,
           role: form.role,
         },
+        options: {
+          emailRedirectTo: makeRedirectUri({
+            scheme: 'easytrack',
+            path: 'accept-invitation'
+          }),
+        },
       })
       if (inviteError) {
         showSnackbar(inviteError.message)
         return
       }
-      console.log('THIS IS THE DATA',data.user)
-      const { data: updateData, error: updateError } = await supabase.auth.admin.updateUserById(data.user.id, {
+      const { error: updateError } = await supabase.auth.admin.updateUserById(data.user.id, {
         email: sanitizedEmail,
         password: encryptedValue,
-        user_metadata: null
+        user_metadata: {
+          password: null,
+          role: null,
+        }
+        
       })
-      console.log('THIS IS THE UPDATE DATA',updateData.user)
       if (updateError) {
         showSnackbar(updateError.message)
         return

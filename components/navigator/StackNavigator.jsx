@@ -19,7 +19,6 @@ import SetNewPasswordScreen from '../screens/shared/SetNewPasswordScreen'
 import AdminHome from '../screens/admin/AdminHome'
 import UserManagement from '../screens/admin/UserManagement'
 import AdminTrackLuggage from '../screens/admin/AdminTrackLuggage'
-import EditAccount from '../screens/admin/subscreen/EditAccountScreen'
 import AddAccount from '../screens/admin/subscreen/AddAccount'
 import ViewAccountScreen from '../screens/admin/subscreen/ViewAccountScreen'
 // Airline Screens
@@ -51,11 +50,6 @@ const AdminDrawer = () => (
       <Drawer.Screen
         name="AddAccount"
         component={AddAccount}
-        options={{ headerShown: false }}
-      />
-      <Drawer.Screen
-        name="EditAccount"
-        component={EditAccount}
         options={{ headerShown: false }}
       />
       <Drawer.Screen

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react'
-import { ScrollView, View, StyleSheet, Image } from 'react-native'
+import { ScrollView, View, StyleSheet, Image, TouchableOpacity } from 'react-native'
 import {
   Text,
   useTheme,
@@ -11,6 +11,8 @@ import {
   ActivityIndicator,
   Menu,
   TextInput,
+  Portal,
+  Dialog,
 } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabaseAdmin'
 import { useFocusEffect } from '@react-navigation/native'
@@ -25,42 +27,61 @@ const PROFILE_SECTIONS = {
 }
 
 // Profile Card Component
-const ProfileCard = React.memo(({ user, colors, fonts, onUpdateStatus, onUpdateVerifyStatus, saving }) => {
+const ProfileCard = React.memo(({ user, colors, fonts, onUpdateStatus, onUpdateVerifyStatus, saving, statuses, verifyStatuses }) => {
   const [statusMenuVisible, setStatusMenuVisible] = useState(false)
   const [verifyStatusMenuVisible, setVerifyStatusMenuVisible] = useState(false)
+  const [statusDialogVisible, setStatusDialogVisible] = useState(false)
+  const [verifyStatusDialogVisible, setVerifyStatusDialogVisible] = useState(false)
+  const [selectedStatus, setSelectedStatus] = useState(null)
+  const [selectedVerifyStatus, setSelectedVerifyStatus] = useState(null)
   
   const fullName = useMemo(() => 
     `${user?.first_name || ''} ${user?.middle_initial || ''} ${user?.last_name || ''}`.trim(),
     [user?.first_name, user?.middle_initial, user?.last_name]
   )
 
-  const handleStatusUpdate = (status) => {
-    onUpdateStatus(status)
+  const handleStatusSelect = (status) => {
+    setSelectedStatus(status)
     setStatusMenuVisible(false)
+    setStatusDialogVisible(true)
   }
 
-  const handleVerifyStatusUpdate = (status) => {
-    onUpdateVerifyStatus(status)
+  const handleVerifyStatusSelect = (status) => {
+    setSelectedVerifyStatus(status)
     setVerifyStatusMenuVisible(false)
+    setVerifyStatusDialogVisible(true)
+  }
+
+  const confirmStatusUpdate = () => {
+    onUpdateStatus(selectedStatus)
+    setStatusDialogVisible(false)
+  }
+
+  const confirmVerifyStatusUpdate = () => {
+    onUpdateVerifyStatus(selectedVerifyStatus)
+    setVerifyStatusDialogVisible(false)
   }
 
   return (
     <Card style={[styles.card, { backgroundColor: colors.surface }]}>
-      <Card.Content style={styles.cardContent}>
+      <View style={styles.profileContainer}>
         {user?.pfp_id ? (
           <Avatar.Image
-            size={60}
+            size={150}
             source={{ uri: user.pfp_id, cache: 'reload' }}
             style={[styles.profile, { borderColor: colors.background }]}
           />
         ) : (
           <Avatar.Text
-            size={60}
+            size={100}
             label={user?.first_name ? user.first_name[0].toUpperCase() : 'U'}
             style={[styles.profile, { backgroundColor: colors.primary }]}
             labelStyle={{ color: colors.onPrimary }}
           />
         )}
+      </View>
+      
+      <Card.Content style={styles.cardContent}>
         <View style={styles.cardTextContainer}>
           <Text style={[{ color: colors.onSurface, ...fonts.titleLarge }]}>
             {fullName || 'No Name Available'}
@@ -71,66 +92,95 @@ const ProfileCard = React.memo(({ user, colors, fonts, onUpdateStatus, onUpdateV
         </View>
       </Card.Content>
       <View style={styles.menuContainer}>
-        <Menu
-          visible={statusMenuVisible}
-          onDismiss={() => setStatusMenuVisible(false)}
-          anchor={
-            <TextInput
-              label='Status'
-              value={user?.user_status}
-              editable={false}
-              mode='outlined'
-              style={styles.input}
-              right={<TextInput.Icon icon='account-check' onPress={() => setStatusMenuVisible(true)} />}
-              theme={{ colors: { primary: colors.primary } }}
-            />
-          }
-          contentStyle={{ backgroundColor: colors.surface }}
-        >
-          {['Active', 'Inactive'].map((status) => (
-            <Menu.Item
-              key={status}
-              onPress={() => handleStatusUpdate(status)}
-              title={status}
-              titleStyle={[
-                fonts.bodyLarge,
-                { color: user?.user_status === status ? colors.primary : colors.onSurface }
-              ]}
-              leadingIcon={user?.user_status === status ? 'check' : undefined}
-            />
-          ))}
-        </Menu>
+        <TouchableOpacity onPress={() => setStatusMenuVisible(true)}>
+          <Menu
+            visible={statusMenuVisible}
+            onDismiss={() => setStatusMenuVisible(false)}
+            anchor={
+              <TextInput
+                label='Status'
+                value={user?.user_status}
+                editable={false}
+                mode='outlined'
+                style={styles.input}
+                right={<TextInput.Icon icon='account-check' onPress={() => setStatusMenuVisible(true)} />}
+                theme={{ colors: { primary: colors.primary } }}
+              />
+            }
+            contentStyle={{ backgroundColor: colors.surface }}
+          >
+            {statuses.map((status) => (
+              <Menu.Item
+                key={status.id}
+                onPress={() => handleStatusSelect(status.status_name)}
+                title={status.status_name}
+                titleStyle={[
+                  fonts.bodyLarge,
+                  { color: user?.user_status === status.status_name ? colors.primary : colors.onSurface }
+                ]}
+                leadingIcon={user?.user_status === status.status_name ? 'check' : undefined}
+              />
+            ))}
+          </Menu>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setVerifyStatusMenuVisible(true)}>
+            <Menu
+            visible={verifyStatusMenuVisible}
+            onDismiss={() => setVerifyStatusMenuVisible(false)}
+            anchor={
+              <TextInput
+                label='Verification Status'
+                value={user?.verify_status}
+                editable={false}
+                mode='outlined'
+                style={styles.input}
+                right={<TextInput.Icon icon='shield-check' onPress={() => setVerifyStatusMenuVisible(true)} />}
+                theme={{ colors: { primary: colors.primary } }}
+                disabled={saving}
+              />
+            }
+            contentStyle={{ backgroundColor: colors.surface }}
+          >
+            {verifyStatuses.map((status) => (
+              <Menu.Item
+                key={status.id}
+                onPress={() => handleVerifyStatusSelect(status.status_name)}
+                title={status.status_name}
+                titleStyle={[
+                  fonts.bodyLarge,
+                  { color: user?.verify_status === status.status_name ? colors.primary : colors.onSurface }
+                ]}
+                leadingIcon={user?.verify_status === status.status_name ? 'check' : undefined}
+              />
+            ))}
+          </Menu>
+        </TouchableOpacity>
 
-        <Menu
-          visible={verifyStatusMenuVisible}
-          onDismiss={() => setVerifyStatusMenuVisible(false)}
-          anchor={
-            <TextInput
-              label='Verification Status'
-              value={user?.verify_status}
-              editable={false}
-              mode='outlined'
-              style={styles.input}
-              right={<TextInput.Icon icon='shield-check' onPress={() => setVerifyStatusMenuVisible(true)} />}
-              theme={{ colors: { primary: colors.primary } }}
-              disabled={saving}
-            />
-          }
-          contentStyle={{ backgroundColor: colors.surface }}
-        >
-          {['Verified', 'Unverified'].map((status) => (
-            <Menu.Item
-              key={status}
-              onPress={() => handleVerifyStatusUpdate(status)}
-              title={status}
-              titleStyle={[
-                fonts.bodyLarge,
-                { color: user?.verify_status === status ? colors.primary : colors.onSurface }
-              ]}
-              leadingIcon={user?.verify_status === status ? 'check' : undefined}
-            />
-          ))}
-        </Menu>
+        
+
+        <Portal>
+          <Dialog visible={statusDialogVisible} onDismiss={() => setStatusDialogVisible(false)} style={{ backgroundColor: colors.surface }}>
+            <Dialog.Title>Confirm Status Update</Dialog.Title>
+            <Dialog.Content>
+              <Text>Are you sure you want to change the status to "{selectedStatus}"?</Text>
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button onPress={() => setStatusDialogVisible(false)}>Cancel</Button>
+              <Button onPress={confirmStatusUpdate}>Confirm</Button>
+            </Dialog.Actions>
+          </Dialog>
+
+          <Dialog visible={verifyStatusDialogVisible} onDismiss={() => setVerifyStatusDialogVisible(false)} style={{ backgroundColor: colors.surface }}>
+            <Dialog.Title>Confirm Verification Status Update</Dialog.Title>
+            <Dialog.Content>
+              <Text>Are you sure you want to change the verification status to "{selectedVerifyStatus}"?</Text>
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button onPress={() => setVerifyStatusDialogVisible(false)}>Cancel</Button>
+              <Button onPress={confirmVerifyStatusUpdate}>Confirm</Button>
+            </Dialog.Actions>
+          </Dialog>
+        </Portal>
       </View>
     </Card>
   )
@@ -271,6 +321,22 @@ const ViewProfileScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [statuses, setStatuses] = useState([])
+  const [verifyStatuses, setVerifyStatuses] = useState([])
+
+  const fetchStatuses = async () => {
+    try {
+      const [{ data: profileStatuses }, { data: verificationStatuses }] = await Promise.all([
+        supabase.from('profiles_status').select('id, status_name').in('id', [4, 5]),
+        supabase.from('verify_status').select('id, status_name').in('id', [1, 2])
+      ])
+      
+      if (profileStatuses) setStatuses(profileStatuses)
+      if (verificationStatuses) setVerifyStatuses(verificationStatuses)
+    } catch (error) {
+      console.error('Error fetching statuses:', error)
+    }
+  }
 
   const fetchAccount = useCallback(async () => {
     setLoading(true)
@@ -311,12 +377,9 @@ const ViewProfileScreen = ({ route, navigation }) => {
   const updateUserStatus = async (newStatus) => {
     try {
       setSaving(true)
-      const { data: statusData, error: statusError } = await supabase
-        .from('profiles_status')
-        .select('id')
-        .eq('status_name', newStatus)
-        .single()
-      if (statusError) throw statusError
+      const statusData = statuses.find(s => s.status_name === newStatus)
+      if (!statusData) throw new Error('Invalid status selected')
+
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
@@ -341,13 +404,8 @@ const ViewProfileScreen = ({ route, navigation }) => {
   const updateVerifyStatus = async (newStatus) => {
     try {
       setSaving(true)
-      const { data: statusData, error: statusError } = await supabase
-        .from('verify_status')
-        .select('id')
-        .eq('status_name', newStatus)
-        .single()
-
-      if (statusError) throw statusError
+      const statusData = verifyStatuses.find(s => s.status_name === newStatus)
+      if (!statusData) throw new Error('Invalid verification status selected')
 
       const { error: updateError } = await supabase
         .from('profiles')
@@ -373,6 +431,7 @@ const ViewProfileScreen = ({ route, navigation }) => {
   useFocusEffect(
     useCallback(() => {
       fetchAccount()
+      fetchStatuses()
     }, [fetchAccount])
   )
 
@@ -477,6 +536,8 @@ const ViewProfileScreen = ({ route, navigation }) => {
         onUpdateStatus={updateUserStatus}
         onUpdateVerifyStatus={updateVerifyStatus}
         saving={saving}
+        statuses={statuses}
+        verifyStatuses={verifyStatuses}
       />
       <InfoCard title={PROFILE_SECTIONS.PERSONAL} data={personalInfo} colors={colors} fonts={fonts} />
       <InfoCard title={PROFILE_SECTIONS.ACCOUNT} data={accountInfo} colors={colors} fonts={fonts} />
@@ -493,6 +554,11 @@ const styles = StyleSheet.create({
   },
   card: {
     margin: 16,
+  },
+  profileContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
   },
   menuContainer: {
     margin: 16,
