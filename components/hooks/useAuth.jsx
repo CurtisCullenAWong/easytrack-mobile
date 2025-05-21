@@ -84,8 +84,15 @@ const useAuth = (navigation, onClose) => {
     if (!targetRoute) {
       return showSnackbar('Unauthorized role or unknown user.')
     }
-    navigation.navigate(targetRoute)
-    onClose?.()
+
+    // Only navigate if navigation is available
+    if (navigation) {
+      navigation.navigate(targetRoute)
+      onClose?.()
+    }
+    else{
+      navigation.navigate('Login')
+    }
   }
 
     // Check if user is in cooldown period
@@ -174,13 +181,6 @@ const useAuth = (navigation, onClose) => {
     if (!email) {
       return showSnackbar('Email is required for OTP login.')
     }
-
-    // Check cooldown period
-    const { inCooldown, remainingMinutes } = await checkCooldown(email)
-    if (inCooldown) {
-      return showSnackbar(`Too many failed attempts. Please try again in ${remainingMinutes} minutes.`)
-    }
-
     try {
       const redirectUrl = getRedirectUrl()
       
@@ -193,20 +193,9 @@ const useAuth = (navigation, onClose) => {
       })
 
       if (error) {
-        const attempts = await updateLoginAttempts(email, false)
-        const remainingAttempts = MAX_LOGIN_ATTEMPTS - attempts
-        
-        if (remainingAttempts > 0) {
-          return showSnackbar(`Error: ${error.message}. ${remainingAttempts} attempts remaining.`)
-        } else {
-          return showSnackbar(`Too many failed attempts. Please try again in ${COOLDOWN_MINUTES} minutes.`)
-        }
+        return showSnackbar(`Error: ${error.message}.`)
       }
-
-      // Reset attempts on successful OTP request
-      await updateLoginAttempts(email, true)
       showSnackbar('OTP sent to your email. Please check your inbox.', 'success')
-      
       // Set up URL event listener for OTP response
       const subscription = Linking.addEventListener('url', async ({ url }) => {
         if (url.includes('login')) {
@@ -248,27 +237,23 @@ const useAuth = (navigation, onClose) => {
   const checkSession = async () => {
     try {
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Session check timeout')), 5000); // 5 second timeout
-      });
+        setTimeout(() => reject(new Error('Session check timeout')), 5000) // 5 second timeout
+      })
 
-      const sessionPromise = supabase.auth.getSession();
-      const { data } = await Promise.race([sessionPromise, timeoutPromise]);
-      
-      const session = data?.session;
+      const sessionPromise = supabase.auth.getSession()
+      const { data } = await Promise.race([sessionPromise, timeoutPromise])
+      const session = data?.session
       if (!session) {
-        return false;
+        return false
       }
 
       if (session.user) {
-        await handleLogin(session.user);
-        return true;
+        await handleLogin(session.user)
+        return true
       }
-      return false;
+      return false
     } catch (error) {
-      console.warn('Session check failed:', error.message);
-      // Force sign out on timeout or error
-      await supabase.auth.signOut();
-      return false;
+      return false
     }
   }
 

@@ -29,13 +29,14 @@ const LoginModalContent = ({ isResetPasswordModal, isOtpLoginModal, onClose, nav
   const handleOtpLogin = async () => {
     setLoading(true)
     await loginWithOtp(credentials.email)
+    await AsyncStorage.setItem('rememberMe', 'true')
     setLoading(false)
   }
 
   const handleLogin = async () => {
     setLoading(true)
-    await AsyncStorage.setItem('rememberMe', rememberMe ? 'true' : 'false')
     await login(credentials)
+    await AsyncStorage.setItem('rememberMe', rememberMe ? 'true' : 'false')
     setLoading(false)
   }
 

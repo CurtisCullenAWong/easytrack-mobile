@@ -7,8 +7,6 @@ import lightTheme from './components/themes/lightTheme'
 import darkTheme from './components/themes/darkTheme'
 import { ThemeContext } from './components/themes/themeContext'
 import { ActivityIndicator, View } from 'react-native'
-import * as Linking from 'expo-linking'
-import { supabase } from './lib/supabase'
 import useAuth from './components/hooks/useAuth'
 
 const THEME_KEY = 'appTheme'
@@ -31,6 +29,13 @@ const App = () => {
     }
   }
 
+  // Save theme to AsyncStorage when toggled
+  const toggleTheme = async () => {
+    const newTheme = theme === lightTheme ? darkTheme : lightTheme
+    setTheme(newTheme)
+    await AsyncStorage.setItem(THEME_KEY, newTheme === darkTheme ? 'dark' : 'light')
+  }
+
   // Load theme from AsyncStorage
   const loadTheme = async () => {
     try {
@@ -50,51 +55,8 @@ const App = () => {
   useEffect(() => {
     loadFonts()
     loadTheme()
-    // Handle deep linking
-    const handleDeepLink = async ({ url }) => {
-      if (url) {
-        try {
-          // Check if the URL contains authentication parameters
-          const { data: { session }, error } = await supabase.auth.getSession()
-          
-          if (error) {
-            console.error('Error getting session:', error.message)
-            return
-          }
-
-          if (session?.user) {
-            // Check session and handle navigation
-            await checkSession()
-          }
-        } catch (error) {
-          console.error('Error handling deep link:', error)
-        }
-      }
-    }
-
-    // Get the initial URL if the app was opened from a deep link
-    Linking.getInitialURL().then(url => {
-      if (url) {
-        handleDeepLink({ url })
-        console.log('Initial URL:', url)
-      }
-    })
-
-    // Add event listener for deep links
-    const subscription = Linking.addEventListener('url', handleDeepLink)
-
-    // Cleanup subscription
-    return () => {
-      subscription.remove()
-    }
+    checkSession()
   }, [])
-
-  // Save theme to AsyncStorage when toggled
-  const toggleTheme = async () => {
-    const newTheme = theme === lightTheme ? darkTheme : lightTheme
-    setTheme(newTheme)
-    await AsyncStorage.setItem(THEME_KEY, newTheme === darkTheme ? 'dark' : 'light')
-  }
 
   if (!fontsLoaded || !themeLoaded) {
     return (

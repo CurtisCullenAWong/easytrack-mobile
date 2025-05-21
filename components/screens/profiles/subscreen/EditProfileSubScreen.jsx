@@ -39,6 +39,19 @@ const EditProfileSubScreen = ({ navigation }) => {
     if (!name) {
       return { isValid: false, message: 'Name cannot be empty' }
     }
+    if (name.length < 2) {
+      return { isValid: false, message: 'Name must be at least 2 characters long' }
+    }
+    if (name.length > 35) {
+      return { isValid: false, message: 'Name cannot exceed 35 characters' }
+    }
+    return { isValid: true }
+  }
+
+  const validateNameSuffix = (suffix) => {
+    if (suffix && !/^[A-Z]$/.test(suffix)) {
+      return { isValid: false, message: 'Name suffix must be a single uppercase letter' }
+    }
     return { isValid: true }
   }
 
@@ -71,7 +84,16 @@ const EditProfileSubScreen = ({ navigation }) => {
   }
 
   const validateEmergencyContact = (name) => {
-    if (name && !/^[A-Z][a-z']*(\s+[A-Z][a-z']*)*$/.test(name)) {
+    if (!name) {
+      return { isValid: false, message: 'Emergency contact name cannot be empty' }
+    }
+    if (name.length < 2) {
+      return { isValid: false, message: 'Emergency contact name must be at least 2 characters long' }
+    }
+    if (name.length > 50) {
+      return { isValid: false, message: 'Emergency contact name cannot exceed 50 characters' }
+    }
+    if (!/^[A-Z][a-z']*(\s+[A-Z][a-z']*)*$/.test(name)) {
       return { isValid: false, message: 'Emergency contact name must start with capital letters and can only contain letters, spaces, and apostrophes' }
     }
     return { isValid: true }
@@ -86,6 +108,7 @@ const EditProfileSubScreen = ({ navigation }) => {
       first_name: '',
       middle_initial: '',
       last_name: '',
+      name_suffix: '',
       contact_number: '',
       birth_date: null,
       emergency_contact_name: '',
@@ -111,6 +134,7 @@ const EditProfileSubScreen = ({ navigation }) => {
     switch (field) {
       case 'first_name':
       case 'last_name':
+      case 'name_suffix':
       case 'emergency_contact_name':
         // Remove any characters that aren't letters, spaces, or apostrophes
         sanitizedValue = value.replace(/[^a-zA-Z\s']/g, '')
@@ -243,8 +267,9 @@ const EditProfileSubScreen = ({ navigation }) => {
       // Validate all required fields before saving
       const validations = [
         { field: 'first_name', value: state.form.first_name, validator: validateName },
-        { field: 'last_name', value: state.form.last_name, validator: validateName },
         { field: 'middle_initial', value: state.form.middle_initial, validator: validateMiddleInitial },
+        { field: 'last_name', value: state.form.last_name, validator: validateName },
+        { field: 'name_suffix', value: state.form.name_suffix, validator: validateName },
         { field: 'contact_number', value: state.form.contact_number, validator: validatePhoneNumber },
         { field: 'birth_date', value: state.form.birth_date, validator: validateBirthDate },
         { field: 'emergency_contact_name', value: state.form.emergency_contact_name, validator: validateEmergencyContact },
@@ -300,6 +325,7 @@ const EditProfileSubScreen = ({ navigation }) => {
           first_name: capitalizeName(state.form.first_name),
           middle_initial: capitalizeName(state.form.middle_initial),
           last_name: capitalizeName(state.form.last_name),
+          name_suffix: capitalizeName(state.form.name_suffix),
           contact_number: state.form.contact_number ? `+63${state.form.contact_number}` : null,
           birth_date: state.form.birth_date,
           emergency_contact_name: capitalizeName(state.form.emergency_contact_name),
@@ -338,6 +364,7 @@ const EditProfileSubScreen = ({ navigation }) => {
         first_name: data.first_name || '',
         middle_initial: data.middle_initial || '',
         last_name: data.last_name || '',
+        name_suffix: data.suffix || '',
         contact_number: data.contact_number?.replace('+63', '') || '',
         birth_date: data.birth_date ? new Date(data.birth_date) : null,
         emergency_contact_name: data.emergency_contact_name || '',
@@ -459,6 +486,19 @@ const EditProfileSubScreen = ({ navigation }) => {
             label='Last Name'
             value={state.form.last_name}
             onChangeText={(text) => handleChange('last_name', text)}
+            mode='outlined'
+            style={styles.input}
+            right={<TextInput.Icon icon='account' />}
+            theme={{ colors: { primary: colors.primary } }}
+            disabled={state.saving}
+            autoCapitalize='words'
+            maxLength={35}
+          />
+
+          <TextInput
+            label='Name Suffix'
+            value={state.form.name_suffix}
+            onChangeText={(text) => handleChange('name_suffix', text)}
             mode='outlined'
             style={styles.input}
             right={<TextInput.Icon icon='account' />}
@@ -614,7 +654,7 @@ const EditProfileSubScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { 
-    flex: 1 
+    flex: 1, 
   },
   scrollContainer: { 
     flexGrow: 1, 

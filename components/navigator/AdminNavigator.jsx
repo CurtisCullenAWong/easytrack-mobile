@@ -8,7 +8,7 @@ import ADMIN_SECTIONS from './sections/adminSections'
 const SECTIONS = ADMIN_SECTIONS
 
 const AdminNavigator = ({ navigation }) => {
-  const { toggleTheme, setTheme, theme } = useContext(ThemeContext)
+  const { toggleTheme } = useContext(ThemeContext)
   const { colors, fonts } = useTheme()
   const { handleLogout, LogoutDialog } = useLogout(navigation)
 
@@ -24,12 +24,8 @@ const AdminNavigator = ({ navigation }) => {
     return () => sub.remove()
   }, [handleLogout])
 
-  const handleThemeButton = async () => {
-    if (setTheme) {
-      await setTheme(theme.dark ? 'light' : 'dark')
-    } else {
-      toggleTheme()
-    }
+  const handleThemeButton = () => {
+    toggleTheme()
   }
 
   const toggleSection = (section) =>

@@ -9,7 +9,7 @@ const SECTIONS = DELIVERY_SECTIONS
 
 
 const DeliveryNavigator = ({ navigation }) => {
-  const { toggleTheme, setTheme, theme } = useContext(ThemeContext)
+  const { toggleTheme } = useContext(ThemeContext)
   const { colors, fonts } = useTheme()
   const { handleLogout, LogoutDialog } = useLogout(navigation)
 
@@ -25,12 +25,8 @@ const DeliveryNavigator = ({ navigation }) => {
     return () => sub.remove()
   }, [handleLogout])
 
-  const handleThemeButton = async () => {
-    if (setTheme) {
-      await setTheme(theme.dark ? 'light' : 'dark')
-    } else {
-      toggleTheme()
-    }
+  const handleThemeButton = () => {
+    toggleTheme()
   }
 
   const toggleSection = (section) =>

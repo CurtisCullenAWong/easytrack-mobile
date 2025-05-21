@@ -1,37 +1,21 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState } from 'react'
 import { StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
 import { TextInput, Button, useTheme, Appbar, Text, Portal, Dialog, Surface, Divider } from 'react-native-paper'
-import { DatePickerModal, en, registerTranslation } from 'react-native-paper-dates'
-import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../../components/hooks/useSnackbar'
-
-registerTranslation('en', en)
-
-const SignUpSubScreen = ({ navigation }) => {
+import { supabase } from '../../../../lib/supabaseAdmin'
+const AddAccount = ({ navigation }) => {
   const { colors } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
   const [form, setForm] = useState({
     email: '',
-    password: '',
-    confirmPassword: '',
     role: '',
-    first_name: '',
-    middle_initial: '',
-    last_name: '',
-    contact_number: '',
-    birth_date: null,
   })
 
   const [loading, setLoading] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
-  const [showDatePicker, setShowDatePicker] = useState(false)
   const [showRoleMenu, setShowRoleMenu] = useState(false)
 
-  const [visibility, setVisibility] = useState({
-    password: false,
-    confirmPassword: false,
-  })
 
   const roleOptions = ['Administrator', 'Airline Staff', 'Delivery Personnel']
 
@@ -39,82 +23,57 @@ const SignUpSubScreen = ({ navigation }) => {
     setForm(prev => ({ ...prev, [field]: value }))
   }
 
-  const toggleVisibility = (field) => setVisibility(prev => ({ ...prev, [field]: !prev[field] }))
-
-  const handleDateConfirm = useCallback(({ date }) => {
-    if (date) {
-      handleChange('birth_date', date)
-    }
-    setShowDatePicker(false)
-  }, [])
-
-  const handleDateDismiss = useCallback(() => {
-    setShowDatePicker(false)
-  }, [])
-
-  const openDatePicker = useCallback(() => {
-    setShowDatePicker(true)
-  }, [])
-
-  const handleSignUp = async () => {
+  const handleCreateAccount = async () => {
     try {
-      setLoading(true)
-      const { email, password, first_name, middle_initial, last_name, contact_number, birth_date, role } = form
-  
-      const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
-  
+      setLoading(true);
+      const { email, role } = form;
+    
+      const { data, error: signUpError } = await supabase.auth.admin.inviteUserByEmail(email);
+    
       if (signUpError) {
-        return showSnackbar(signUpError.message)
+        return showSnackbar(signUpError.message);
       }
-  
-      const user = data.user
-      
-      if (user) {
-        try {
-          // Get role_id based on role name
-          const { data: roleData, error: roleError } = await supabase
-            .from('profiles_roles')
-            .select('id')
-            .eq('role_name', role)
-            .single()
-
-          if (roleError) {
-            throw new Error('Invalid role selected')
-          }
-
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert({
-              id: user.id,
-              email: user.email,
-              first_name: first_name,
-              middle_initial: middle_initial,
-              last_name: last_name,
-              contact_number: '+63'+contact_number,
-              birth_date: birth_date,
-              role_id: roleData.id,
-              user_status_id: 3, // Pending status
-            })  
-  
-          if (profileError) {
-            return showSnackbar('Profile creation failed: ' + profileError.message)
-          }
-  
-          showSnackbar('Account created! Check your email to verify.', true)
-          navigation.navigate('Login')
-  
-        } catch (error) {
-          console.error("Error creating profile:", error)
-          showSnackbar('Something went wrong while creating the profile.')
-        }
-      } else {
-        showSnackbar('User creation failed.')
+    
+      const user = data?.user;
+    
+      if (!user) {
+        return showSnackbar('User creation failed.');
       }
+    
+      // Get role_id based on role name
+      const { data: roleData, error: roleError } = await supabase
+        .from('profiles_roles')
+        .select('id')
+        .eq('role_name', role)
+        .single();
+    
+      if (roleError || !roleData) {
+        return showSnackbar('Invalid role selected.');
+      }
+    
+      // Insert profile with role_id and pending status
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          email: user.email,
+          role_id: roleData.id,
+          user_status_id: 3, // Assuming 3 is "Pending"
+        });
+    
+      if (profileError) {
+        return showSnackbar('Profile creation failed: ' + profileError.message);
+      }
+    
+      showSnackbar('Account created! Check your email to verify.', true);
+    
     } catch (error) {
-      showSnackbar('Error during sign up process')
+      console.error("Error during account creation process:", error);
+      showSnackbar('Something went wrong while creating the account.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
+    
   }
 
   return (
@@ -131,65 +90,6 @@ const SignUpSubScreen = ({ navigation }) => {
       >
         <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
           <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
-            <TextInput
-              label="First Name"
-              value={form.first_name}
-              onChangeText={(text) => handleChange('first_name', text)}
-              mode="outlined"
-              style={styles.input}
-              right={<TextInput.Icon icon="account" />}
-              autoCapitalize="words"
-              maxLength={50}
-              theme={{ colors: { primary: colors.primary } }}
-            />
-            <TextInput
-              label="Middle Initial"
-              value={form.middle_initial}
-              onChangeText={(text) => handleChange('middle_initial', text)}
-              mode="outlined"
-              style={styles.input}
-              maxLength={1}
-              right={<TextInput.Icon icon="account" />}
-              autoCapitalize="characters"
-              theme={{ colors: { primary: colors.primary } }}
-            />
-            <TextInput
-              label="Last Name"
-              value={form.last_name}
-              onChangeText={(text) => handleChange('last_name', text)}
-              mode="outlined"
-              style={styles.input}
-              right={<TextInput.Icon icon="account" />}
-              autoCapitalize="words"
-              maxLength={50}
-              theme={{ colors: { primary: colors.primary } }}
-            />
-
-            <Divider style={styles.divider} />
-
-            <TextInput
-              label="Contact Number"
-              value={form.contact_number}
-              onChangeText={(text) => handleChange('contact_number', text)}
-              mode="outlined"
-              style={styles.input}
-              keyboardType="phone-pad"
-              left={<TextInput.Affix text="+63" />}
-              maxLength={10}
-              theme={{ colors: { primary: colors.primary } }}
-            />
-
-            <TextInput
-              label="Birth Date"
-              value={form.birth_date ? form.birth_date.toLocaleDateString() : ''}
-              editable={false}
-              mode="outlined"
-              style={styles.input}
-              right={<TextInput.Icon icon="calendar" onPress={openDatePicker} />}
-              theme={{ colors: { primary: colors.primary } }}
-            />
-
-            <Divider style={styles.divider} />
 
             <TextInput
               label="Email"
@@ -204,38 +104,6 @@ const SignUpSubScreen = ({ navigation }) => {
             />
 
             <TextInput
-              label="Password"
-              value={form.password}
-              onChangeText={(text) => handleChange('password', text)}
-              secureTextEntry={!visibility.password}
-              mode="outlined"
-              style={styles.input}
-              right={
-                <TextInput.Icon
-                  icon={visibility.password ? 'eye' : 'eye-off'}
-                  onPress={() => toggleVisibility('password')}
-                />
-              }
-              theme={{ colors: { primary: colors.primary } }}
-            />
-
-            <TextInput
-              label="Confirm Password"
-              value={form.confirmPassword}
-              onChangeText={(text) => handleChange('confirmPassword', text)}
-              secureTextEntry={!visibility.confirmPassword}
-              mode="outlined"
-              style={styles.input}
-              right={
-                <TextInput.Icon
-                  icon={visibility.confirmPassword ? 'eye' : 'eye-off'}
-                  onPress={() => toggleVisibility('confirmPassword')}
-                />
-              }
-              theme={{ colors: { primary: colors.primary } }}
-            />
-
-            <TextInput
               label="Role"
               value={form.role}
               editable={false}
@@ -245,6 +113,8 @@ const SignUpSubScreen = ({ navigation }) => {
               theme={{ colors: { primary: colors.primary } }}
             />
 
+            <Divider style={styles.divider} />
+
             <Button
               mode="contained"
               onPress={() => setShowConfirmDialog(true)}
@@ -253,12 +123,12 @@ const SignUpSubScreen = ({ navigation }) => {
               loading={loading}
               disabled={loading}
             >
-              Sign Up
+              Create Account
             </Button>
 
             <Button
               mode="text"
-              onPress={() => navigation.navigate('Login')}
+              onPress={() => navigation.navigate('UserManagement')}
               style={styles.cancelButton}
               labelStyle={{ color: colors.primary }}
               disabled={loading}
@@ -268,28 +138,6 @@ const SignUpSubScreen = ({ navigation }) => {
           </Surface>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      <Portal>
-        <DatePickerModal
-          locale="en"
-          mode="single"
-          visible={showDatePicker}
-          onDismiss={handleDateDismiss}
-          date={form.birth_date}
-          onConfirm={handleDateConfirm}
-          title="Select Birth Date"
-          animationType="slide"
-          presentationStyle="formSheet"
-          saveLabel="Select"
-          label="Enter the birth date"
-          startYear={1935}
-          endYear={new Date().getFullYear()}
-          validRange={{
-            startDate: new Date(1935, 0, 1),
-            endDate: new Date(),
-          }}
-        />
-      </Portal>
 
       <Portal>
         <Dialog
@@ -328,7 +176,7 @@ const SignUpSubScreen = ({ navigation }) => {
           onDismiss={() => setShowConfirmDialog(false)}
           style={{ backgroundColor: colors.surface }}
         >
-          <Dialog.Title>Confirm Sign Up</Dialog.Title>
+          <Dialog.Title>Confirm Account Creation</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium">Are you sure you want to create an account with these details?</Text>
           </Dialog.Content>
@@ -339,17 +187,16 @@ const SignUpSubScreen = ({ navigation }) => {
             <Button
               onPress={() => {
                 setShowConfirmDialog(false)
-                handleSignUp()
+                handleCreateAccount()
               }}
               loading={loading}
               disabled={loading}
             >
-              Sign Up
+              Create Account
             </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
-
       {SnackbarElement}
     </SafeAreaView>
   )
@@ -392,4 +239,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default SignUpSubScreen
+export default AddAccount

@@ -6,6 +6,9 @@ module.exports = function(api) {
         ['dotenv-import', {
           moduleName: '@env',
           path: '.env.local',
+          blacklist: null,
+          whitelist: null,
+          safe: false,
           allowUndefined: true,
         }]
       ]

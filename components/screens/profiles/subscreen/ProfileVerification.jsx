@@ -24,6 +24,12 @@ const ProfileVerification = ({ navigation }) => {
     if (!number?.trim()) {
       return { isValid: false, message: 'Please enter your ID number' }
     }
+    if (number.length < 9) {
+      return { isValid: false, message: 'ID number must be at least 9 characters long' }
+    }
+    if (number.length > 13) {
+      return { isValid: false, message: 'ID number cannot exceed 13 characters' }
+    }
     return { isValid: true }
   }
 
@@ -45,12 +51,24 @@ const ProfileVerification = ({ navigation }) => {
     if (!info?.trim()) {
       return { isValid: false, message: 'Please enter vehicle description' }
     }
+    if (info.length < 3) {
+      return { isValid: false, message: 'Vehicle description must be at least 3 characters long' }
+    }
+    if (info.length > 50) {
+      return { isValid: false, message: 'Vehicle description cannot exceed 50 characters' }
+    }
     return { isValid: true }
   }
 
   const validatePlateNumber = (number) => {
     if (!number?.trim()) {
       return { isValid: false, message: 'Please enter vehicle plate number' }
+    }
+    if (number.length < 3) {
+      return { isValid: false, message: 'Plate number must be at least 3 characters long' }
+    }
+    if (number.length > 12) {
+      return { isValid: false, message: 'Plate number cannot exceed 12 characters' }
     }
     return { isValid: true }
   }

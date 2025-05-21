@@ -71,7 +71,6 @@ const UserManagement = ({ navigation }) => {
       avatar: (user.first_name || 'N')[0].toUpperCase(),
       pfp_id: user.pfp_id || null,
     }))
-
     setUsers(formatted)
     setLoading(false)
   }
@@ -179,7 +178,7 @@ const UserManagement = ({ navigation }) => {
           mode="contained"
           icon="refresh"
           onPress={fetchUsers}
-          style={[styles.button, { borderColor: colors.primary }]}
+          style={[styles.button, { borderColor: colors.primary, width: '40%' }]}
           contentStyle={styles.buttonContent}
           labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
         >
@@ -193,7 +192,7 @@ const UserManagement = ({ navigation }) => {
               mode="contained"
               icon="filter-variant"
               onPress={() => setFilterMenuVisible(true)}
-              style={[styles.button, { borderColor: colors.primary }]}
+              style={[styles.button, { borderColor: colors.primary, minWidth: 'auto', }]}
               contentStyle={styles.buttonContent}
               labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
             >
@@ -402,21 +401,15 @@ const styles = StyleSheet.create({
   searchbar: {
     flex: 1,
   },
-  filterButton: {
-    height: 56,
-    justifyContent: 'center',
-  },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    gap: 10,
+    justifyContent: 'space-between',
     marginHorizontal: 16,
   },
   button: {
-    marginVertical: 6,
+    marginVertical: 10,
     height: 48,
     borderRadius: 8,
-    minWidth: '40%',
   },
   buttonContent: {
     height: 48,
