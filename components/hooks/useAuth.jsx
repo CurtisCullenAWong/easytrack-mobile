@@ -3,7 +3,6 @@ import useSnackbar from './useSnackbar'
 import * as Linking from 'expo-linking'
 import * as WebBrowser from 'expo-web-browser'
 import { makeRedirectUri } from 'expo-auth-session'
-import { Platform } from 'react-native'
 import * as QueryParams from 'expo-auth-session/build/QueryParams'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
@@ -208,7 +207,7 @@ const useAuth = (navigation, onClose) => {
         return showSnackbar(`Error: ${error.message}.`)
       }
 
-      showSnackbar('OTP sent to your email. Please check your inbox.', 'success')
+      showSnackbar('OTP sent to your email. Please check your inbox.', true)
       
       const subscription = Linking.addEventListener('url', async ({ url }) => {
         if (url.includes('login')) {
@@ -218,7 +217,6 @@ const useAuth = (navigation, onClose) => {
           }
         }
       })
-
       return () => subscription.remove()
     } catch (error) {
       showSnackbar('An error occurred while sending OTP. Please try again.')
@@ -235,15 +233,37 @@ const useAuth = (navigation, onClose) => {
       return showSnackbar('Please enter a valid email address.')
     }
 
-    const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
-      emailRedirectTo: getRedirectUrl(),
-    })
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
+        redirectTo: makeRedirectUri({
+          scheme: 'easytrack',
+          path: 'reset-password'
+        })
+      })
 
-    if (error) {
-      return showSnackbar(`Error: ${error.message}`)
+      if (error) {
+        return showSnackbar(`Error: ${error.message}`)
+      }
+
+      showSnackbar('Password reset email sent.', true)
+      
+      const subscription = Linking.addEventListener('url', async ({ url }) => {
+        if (url.includes('reset-password')) {
+          const session = await createSessionFromUrl(url)
+          if (session?.user) {
+            navigation.navigate('SetNewPassword', {
+              email: sanitizedEmail,
+              token: session.user.access_token
+            })
+            onClose?.()
+          }
+        }
+      })
+      return () => subscription.remove()
+    } catch (error) {
+      console.error('Error in resetPassword:', error)
+      showSnackbar('An error occurred while sending the reset email. Please try again.')
     }
-
-    showSnackbar('Password reset email sent.', true)
   }
 
   const checkSession = async () => {
@@ -269,9 +289,9 @@ const useAuth = (navigation, onClose) => {
 
   return {
     login,
+    loginWithOtp,
     resetPassword,
     checkSession,
-    loginWithOtp,
     SnackbarElement,
   }
 }

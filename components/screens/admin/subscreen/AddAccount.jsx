@@ -72,21 +72,17 @@ const AddAccount = ({ navigation }) => {
         email: sanitizedEmail,
         password: password,
       })
-    
+      console.log(data)
       if (signUpError) {
         showSnackbar(signUpError.message)
-      }
-      const user = data?.user
-      if (!user) {
-        return showSnackbar('User creation failed.')
       }
       
       // Insert profile with role_id and pending status
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
-          id: user.id,
-          email: user.email,
+          id: data.user.id,
+          email: data.user.email,
           role_id: role_id,
         })
     
@@ -99,6 +95,7 @@ const AddAccount = ({ navigation }) => {
       showSnackbar('Something went wrong while creating the account.')
     } finally {
       setLoading(false)
+      navigation.navigate('UserManagement')
     }
     
   }

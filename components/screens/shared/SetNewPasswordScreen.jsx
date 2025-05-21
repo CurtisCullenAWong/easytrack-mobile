@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
 import { Appbar, TextInput, Button, useTheme, Text } from 'react-native-paper'
 import { supabase } from '../../../lib/supabase'
@@ -10,7 +10,7 @@ const SetNewPasswordScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false)
   const [visibility, setVisibility] = useState({ password: false, confirmPassword: false })
   const [passwords, setPasswords] = useState({ password: '', confirmPassword: '' })
-
+  const [email, setEmail] = useState('')
   const handleChange = (field, value) => {
     setPasswords(prev => ({ ...prev, [field]: value }))
   }
@@ -18,6 +18,17 @@ const SetNewPasswordScreen = ({ navigation }) => {
   const toggleVisibility = (field) => {
     setVisibility(prev => ({ ...prev, [field]: !prev[field] }))
   }
+  const fetchEmail = async () => {
+    const { data, error } = await supabase.auth.getUser()
+    if (error) {
+      console.error('Error fetching email:', error)
+    } else {
+      setEmail(data.user.email)
+    }
+  }
+  useEffect(() => {
+    fetchEmail()
+  }, [])
 
   const validatePassword = (password) => {
     if (password.length < 8) {
@@ -90,6 +101,20 @@ const SetNewPasswordScreen = ({ navigation }) => {
         Please enter a strong password that is at least 8 characters long and includes uppercase, lowercase, and numbers.
       </Text>
       {SnackbarElement}
+      <TextInput
+        label="Email"
+        value={email}
+        onChangeText={(text) => setEmail(text)}
+        mode="outlined"
+        style={styles.textInput}
+        right={
+          <TextInput.Icon
+            icon={'email'}
+            iconColor={colors.primary}
+          />
+        }
+        editable={false}
+      />
       <TextInput
         label="New Password"
         value={passwords.password}

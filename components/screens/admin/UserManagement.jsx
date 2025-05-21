@@ -9,6 +9,8 @@ import {
   Text,
   useTheme,
   Menu,
+  Dialog,
+  Portal,
 } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabaseAdmin'
@@ -31,6 +33,12 @@ const UserManagement = ({ navigation }) => {
   const [page, setPage] = useState(0)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [actionMenuVisible, setActionMenuVisible] = useState(null)
+  const [showDialog, setShowDialog] = useState(false)
+  const [showDialogConfirm, setShowDialogConfirm] = useState(false)
+  const [userToDelete, setUserToDelete] = useState({
+    id: null,
+    email: null,
+  })
 
   const fetchUsers = async () => {
     setLoading(true)
@@ -53,7 +61,7 @@ const UserManagement = ({ navigation }) => {
     const formatted = data.map(user => ({
       id: user.id,
       email: user.email,
-      full_name: `${user.first_name || ''} ${user.middle_initial || ''} ${user.last_name || ''}`.trim(),
+      full_name: `${user.first_name || ''} ${user.middle_initial || ''} ${user.last_name || ''} ${user.suffix || ''}`.trim(),
       contact_number: user.contact_number || 'N/A',
       status: user.profile_status?.status_name || 'Unknown',
       role: user.profile_roles?.role_name || 'N/A',
@@ -159,6 +167,19 @@ const UserManagement = ({ navigation }) => {
     { key: 'lastLogin', label: 'Last Login', width: COLUMN_WIDTH },
     { key: 'lastUpdated', label: 'Last Updated', width: COLUMN_WIDTH },
   ]
+
+  const handleDeleteAccount = async (userId) => {
+    try {
+      const { error } = await supabase.auth.admin.deleteUser(userId)
+      if (error) {
+        console.error('Error deleting account:', error)
+      } else {
+        fetchUsers()
+      }
+    } catch (error) {
+      console.error('Error deleting account:', error)
+    }
+  }
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -335,6 +356,11 @@ const UserManagement = ({ navigation }) => {
                         <Menu.Item
                           onPress={() => {
                             setActionMenuVisible(null)
+                            setShowDialog(true)
+                            setUserToDelete({
+                              id: user.id,
+                              email: user.email,
+                            })
                           }}
                           title="Delete Account"
                           leadingIcon="account-remove"
@@ -383,6 +409,47 @@ const UserManagement = ({ navigation }) => {
               }}
             />
           </View>
+          <Portal>
+            <Dialog
+              visible={showDialog}
+              onDismiss={() => setShowDialog(false)}
+              style={{ backgroundColor: colors.surface }}
+              
+            >
+              <Dialog.Title>Account Deletion for {userToDelete.email}</Dialog.Title>
+              <Dialog.Content>
+                <Text>This will delete the account and all associated data.</Text>
+                <Text>Are you sure you want to proceed?</Text>
+              </Dialog.Content>
+              <Dialog.Actions>
+                <Button onPress={() => setShowDialog(false)}>Cancel</Button>
+                <Button onPress={() => {
+                  setShowDialogConfirm(true)
+                  setShowDialog(false)
+                }}>Delete</Button>
+              </Dialog.Actions>
+            </Dialog>
+          </Portal>
+          <Portal>
+            <Dialog
+              visible={showDialogConfirm}
+              onDismiss={() => setShowDialogConfirm(false)}
+              style={{ backgroundColor: colors.surface }}
+            >
+              <Dialog.Title>Are you sure you want to delete this account?</Dialog.Title>
+              <Dialog.Content>
+                <Text>Account Email: {userToDelete.email}</Text>
+                <Text>This action cannot be undone.</Text>
+              </Dialog.Content>
+              <Dialog.Actions>
+                <Button onPress={() => setShowDialogConfirm(false)}>Cancel</Button>
+                <Button style={{backgroundColor: colors.error}} onPress={() => {
+                  setShowDialogConfirm(false)
+                  handleDeleteAccount(userToDelete.id)
+                }}><Text style={[fonts.labelLarge, { color: colors.onError }]}>Confirm Deletion</Text></Button>
+              </Dialog.Actions>
+            </Dialog>
+          </Portal>
         </View>
       )}
     </ScrollView>
