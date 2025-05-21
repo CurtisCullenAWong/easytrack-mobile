@@ -1,6 +1,6 @@
 import React from 'react'
 import { ScrollView, View, Dimensions, FlatList, StyleSheet } from 'react-native'
-import { Text, Button, Surface, Card, Title, Paragraph, useTheme, Divider } from 'react-native-paper'
+import { Text, Button, Surface, Card, Title, useTheme, Divider } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 
 const { width } = Dimensions.get('window')
@@ -48,9 +48,9 @@ const AdminHome = ({ navigation }) => {
           </Text>
         )}
 
-        <Paragraph style={[styles.paragraph, { color: colors.onBackground, ...fonts.bodyLarge }]}>
+        <Text style={[styles.paragraph, { color: colors.onBackground, ...fonts.bodyLarge }]}>
           Monitor system activities, manage user roles, and maintain platform efficiency. Access analytics, logs, and control permissions in real-time.
-        </Paragraph>
+        </Text>
 
         <View style={styles.buttonContainer}>
           {buttons.map(({ label, icon, screen }) => (
@@ -70,7 +70,7 @@ const AdminHome = ({ navigation }) => {
 
         <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
           <Text style={[styles.surfaceText, { color: colors.onSurface, ...fonts.bodyMedium }]}>
-            “Stay in control of your platform. Empower users, track system activity, and ensure smooth operations.”
+            "Stay in control of your platform. Empower users, track system activity, and ensure smooth operations."
           </Text>
         </Surface>
       </View>

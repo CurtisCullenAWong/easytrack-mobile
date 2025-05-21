@@ -20,9 +20,9 @@ const LoginModalContent = ({ isResetPasswordModal, isOtpLoginModal, onClose, nav
     setVisibility(prev => ({ ...prev, [field]: !prev[field] }))
   }
 
-  const handleResetPassword = () => {
+  const handleResetPassword = async () => {
     setLoading(true)
-    resetPassword(credentials.email)
+    await resetPassword(credentials.email)
     setLoading(false)
   }
 

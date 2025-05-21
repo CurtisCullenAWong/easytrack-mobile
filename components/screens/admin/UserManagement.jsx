@@ -11,7 +11,7 @@ import {
   Menu,
 } from 'react-native-paper'
 import Header from '../../customComponents/Header'
-import { supabase } from '../../../lib/supabase'
+import { supabase } from '../../../lib/supabaseAdmin'
 
 const COLUMN_WIDTH = 180
 const EMAIL_COLUMN_WIDTH = 200
@@ -335,13 +335,12 @@ const UserManagement = ({ navigation }) => {
                         <Menu.Item
                           onPress={() => {
                             setActionMenuVisible(null)
-                            navigation.navigate('EditAccount', { userId: user.id })
                           }}
-                          title="Edit Account"
-                          leadingIcon="account-edit"
+                          title="Delete Account"
+                          leadingIcon="account-remove"
                           titleStyle={[
                             {
-                              color: colors.onSurface,
+                              color: colors.error,
                             },
                             fonts.bodyLarge,
                           ]}

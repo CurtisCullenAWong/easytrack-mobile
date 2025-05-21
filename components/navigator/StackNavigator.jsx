@@ -14,7 +14,7 @@ import TransactionHistory from '../screens/TransactionHistory'
 import Profile from '../screens/profiles/Profile'
 import EditProfileSubScreen from '../screens/profiles/subscreen/EditProfileSubScreen'
 import Verification from '../screens/profiles/subscreen/ProfileVerification'
-
+import SetNewPasswordScreen from '../screens/shared/SetNewPasswordScreen'
 // Admin Screens
 import AdminHome from '../screens/admin/AdminHome'
 import UserManagement from '../screens/admin/UserManagement'
@@ -153,6 +153,12 @@ const StackNavigator = () => (
       <Stack.Screen
         name="Verification"
         component={Verification}
+        options={{ headerShown: false }}
+      />
+      
+      <Stack.Screen
+        name="SetNewPassword"
+        component={SetNewPasswordScreen}
         options={{ headerShown: false }}
       />
 

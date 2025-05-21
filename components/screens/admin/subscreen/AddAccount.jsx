@@ -1,77 +1,104 @@
-import React, { useState } from 'react'
-import { StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
+import React, { useState, useCallback } from 'react'
+import { StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, View, TouchableOpacity } from 'react-native'
 import { TextInput, Button, useTheme, Appbar, Text, Portal, Dialog, Surface, Divider } from 'react-native-paper'
 import useSnackbar from '../../../../components/hooks/useSnackbar'
 import { supabase } from '../../../../lib/supabaseAdmin'
+import { useFocusEffect } from '@react-navigation/native'
+
+const validateEmail = (email) => {
+  // Basic email validation regex
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return emailRegex.test(email)
+}
+
+const sanitizeEmail = (email) => {
+  // Remove leading/trailing whitespace and convert to lowercase
+  return email.trim().toLowerCase()
+}
+
 const AddAccount = ({ navigation }) => {
   const { colors } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
-
+  const [roleOptions, setRoleOptions] = useState([])
+  const [role_id, setRole_id] = useState('')
   const [form, setForm] = useState({
     email: '',
     role: '',
   })
-
   const [loading, setLoading] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [showRoleMenu, setShowRoleMenu] = useState(false)
-
-
-  const roleOptions = ['Administrator', 'Airline Staff', 'Delivery Personnel']
+  const fetchRoles = async () => {
+    const { data } = await supabase
+      .from('profiles_roles')
+      .select('*')
+      .range(0, 2)
+    setRoleOptions(data)
+  }
+  useFocusEffect(
+    useCallback(() => {
+      fetchRoles()
+    }, [])
+  )
 
   const handleChange = (field, value) => {
+    if (field === 'role') {
+      const selectedRole = roleOptions.find(role => role.role_name === value)
+      setRole_id(selectedRole?.id || '')
+    }
     setForm(prev => ({ ...prev, [field]: value }))
   }
 
   const handleCreateAccount = async () => {
     try {
-      setLoading(true);
-      const { email, role } = form;
-    
-      const { data, error: signUpError } = await supabase.auth.admin.inviteUserByEmail(email);
+      setLoading(true)
+      const { email } = form
+      
+      if (!email) {
+        return showSnackbar('Email is required.')
+      }
+
+      const sanitizedEmail = sanitizeEmail(email)
+      if (!validateEmail(sanitizedEmail)) {
+        return showSnackbar('Please enter a valid email address.')
+      }
+
+      if (!role_id) {
+        return showSnackbar('Invalid role selected.')
+      }
+
+      const password = 'mypassword'
+      const { data, error: signUpError } = await supabase.auth.admin.createUser({
+        email: sanitizedEmail,
+        password: password,
+      })
     
       if (signUpError) {
-        return showSnackbar(signUpError.message);
+        showSnackbar(signUpError.message)
       }
-    
-      const user = data?.user;
-    
+      const user = data?.user
       if (!user) {
-        return showSnackbar('User creation failed.');
+        return showSnackbar('User creation failed.')
       }
-    
-      // Get role_id based on role name
-      const { data: roleData, error: roleError } = await supabase
-        .from('profiles_roles')
-        .select('id')
-        .eq('role_name', role)
-        .single();
-    
-      if (roleError || !roleData) {
-        return showSnackbar('Invalid role selected.');
-      }
-    
+      
       // Insert profile with role_id and pending status
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
           id: user.id,
           email: user.email,
-          role_id: roleData.id,
-          user_status_id: 3, // Assuming 3 is "Pending"
-        });
+          role_id: role_id,
+        })
     
       if (profileError) {
-        return showSnackbar('Profile creation failed: ' + profileError.message);
+        return showSnackbar('Profile creation failed: ' + profileError.message)
       }
-    
-      showSnackbar('Account created! Check your email to verify.', true);
+      showSnackbar('Account created! Check your email to verify.', true)
     
     } catch (error) {
-      console.error("Error during account creation process:", error);
-      showSnackbar('Something went wrong while creating the account.');
+      showSnackbar('Something went wrong while creating the account.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
     
   }
@@ -102,16 +129,17 @@ const AddAccount = ({ navigation }) => {
               right={<TextInput.Icon icon="email" />}
               theme={{ colors: { primary: colors.primary } }}
             />
-
-            <TextInput
-              label="Role"
-              value={form.role}
-              editable={false}
-              mode="outlined"
-              style={styles.input}
-              right={<TextInput.Icon icon="account-cog" onPress={() => setShowRoleMenu(true)} />}
-              theme={{ colors: { primary: colors.primary } }}
-            />
+            <TouchableOpacity onPress={() => setShowRoleMenu(true)}>
+              <TextInput
+                label="Role"
+                value={form.role}
+                editable={false}
+                mode="outlined"
+                style={styles.input}
+                right={<TextInput.Icon icon="account-cog" onPress={() => setShowRoleMenu(true)}/>}
+                theme={{ colors: { primary: colors.primary } }}
+              />
+            </TouchableOpacity>
 
             <Divider style={styles.divider} />
 
@@ -149,16 +177,16 @@ const AddAccount = ({ navigation }) => {
           <Dialog.Content>
             {roleOptions.map((role) => (
               <Button
-                key={role}
+                key={role.id}
                 mode="text"
                 onPress={() => {
-                  handleChange('role', role)
+                  handleChange('role', role.role_name)
                   setShowRoleMenu(false)
                 }}
                 style={styles.roleButton}
-                textColor={form.role === role ? colors.primary : colors.onSurface}
+                textColor={form.role === role.role_name ? colors.primary : colors.onSurface}
               >
-                {role}
+                {role.role_name}
               </Button>
             ))}
           </Dialog.Content>
@@ -178,7 +206,15 @@ const AddAccount = ({ navigation }) => {
         >
           <Dialog.Title>Confirm Account Creation</Dialog.Title>
           <Dialog.Content>
-            <Text variant="bodyMedium">Are you sure you want to create an account with these details?</Text>
+            <Text variant="bodyMedium">
+              Are you sure you want to create an account with these details?
+            </Text>
+            <Text variant="bodyMedium">
+              Email: {form.email}
+            </Text>
+            <Text variant="bodyMedium">
+              Role: {form.role}
+            </Text>
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setShowConfirmDialog(false)} disabled={loading}>

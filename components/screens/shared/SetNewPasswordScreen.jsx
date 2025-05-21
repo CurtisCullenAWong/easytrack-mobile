@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { View, StyleSheet } from 'react-native'
-import { TextInput, Button, useTheme, Text } from 'react-native-paper'
+import { ScrollView, StyleSheet, View } from 'react-native'
+import { Appbar, TextInput, Button, useTheme, Text } from 'react-native-paper'
 import { supabase } from '../../../lib/supabase'
 import useSnackbar from '../../hooks/useSnackbar'
 
@@ -74,9 +74,17 @@ const SetNewPasswordScreen = ({ navigation }) => {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+        <Appbar.Header>
+          <Appbar.BackAction onPress={() => navigation.navigate('Login')} />
+          <Appbar.Content title='Set New Password' />
+          <Appbar.Action 
+          color={colors.primary}
+        />
+        </Appbar.Header>
+        <View style={styles.contentContainer}>
       <Text style={[styles.title, { color: colors.primary, ...fonts.headlineMedium }]}>
-        Set New Password
+        Please enter a new password for your account
       </Text>
       <Text style={[styles.subtitle, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
         Please enter a strong password that is at least 8 characters long and includes uppercase, lowercase, and numbers.
@@ -120,21 +128,24 @@ const SetNewPasswordScreen = ({ navigation }) => {
         loading={loading}
         disabled={loading}
       >
-        Update Password
-      </Button>
-    </View>
+          Update Password
+        </Button>
+      </View>
+    </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    justifyContent: 'center',
   },
   title: {
     textAlign: 'center',
     marginBottom: 16,
+  },
+  contentContainer: {
+    padding: 20,
+    justifyContent: 'center',
   },
   subtitle: {
     textAlign: 'center',
