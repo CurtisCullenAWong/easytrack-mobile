@@ -44,9 +44,6 @@ const LoginModalContent = ({ isResetPasswordModal, isOtpLoginModal, onClose, nav
     await login(credentials)
     await AsyncStorage.setItem('rememberMe', rememberMe ? 'true' : 'false')
     setLoading(false)
-    setTimeout(() => {
-      onClose()
-    }, 2000)
   }
 
   return (

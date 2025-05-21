@@ -4,7 +4,6 @@ import { TextInput, Button, useTheme, Appbar, Text, Portal, Dialog, Surface, Div
 import useSnackbar from '../../../../components/hooks/useSnackbar'
 import { supabase } from '../../../../lib/supabaseAdmin'
 import { useFocusEffect } from '@react-navigation/native'
-
 const validateEmail = (email) => {
   // Basic email validation regex
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -27,6 +26,7 @@ const AddAccount = ({ navigation }) => {
   })
   const [loading, setLoading] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [showDialogConfirm, setShowDialogConfirm] = useState(false)
   const [showRoleMenu, setShowRoleMenu] = useState(false)
   const fetchRoles = async () => {
     const { data } = await supabase
@@ -66,38 +66,53 @@ const AddAccount = ({ navigation }) => {
       if (!role_id) {
         return showSnackbar('Invalid role selected.')
       }
-
-      const password = 'mypassword'
-      const { data, error: signUpError } = await supabase.auth.admin.createUser({
-        email: sanitizedEmail,
-        password: password,
-      })
-      console.log(data)
-      if (signUpError) {
-        showSnackbar(signUpError.message)
-      }
       
+      const encryptedValue = 'mypassword'
+      //SEND EMAIL HERE
+      const { data, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(sanitizedEmail, {
+        email: sanitizedEmail,
+        data: {
+          password: encryptedValue,
+          role: form.role,
+        },
+      })
+      if (inviteError) {
+        showSnackbar(inviteError.message)
+        return
+      }
+      console.log('THIS IS THE DATA',data.user)
+      const { data: updateData, error: updateError } = await supabase.auth.admin.updateUserById(data.user.id, {
+        email: sanitizedEmail,
+        password: encryptedValue,
+        user_metadata: null
+      })
+      console.log('THIS IS THE UPDATE DATA',updateData.user)
+      if (updateError) {
+        showSnackbar(updateError.message)
+        return
+      }
       // Insert profile with role_id and pending status
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
           id: data.user.id,
-          email: data.user.email,
+          email: sanitizedEmail,
           role_id: role_id,
         })
     
       if (profileError) {
         return showSnackbar('Profile creation failed: ' + profileError.message)
       }
+      navigation.navigate('UserManagement')
       showSnackbar('Account created! Check your email to verify.', true)
-    
     } catch (error) {
-      showSnackbar('Something went wrong while creating the account.')
+      showSnackbar(error.message)
+      console.log(error)
     } finally {
       setLoading(false)
-      navigation.navigate('UserManagement')
+      setShowConfirmDialog(false)
+      setShowDialogConfirm(false)
     }
-    
   }
 
   return (
@@ -201,10 +216,10 @@ const AddAccount = ({ navigation }) => {
           onDismiss={() => setShowConfirmDialog(false)}
           style={{ backgroundColor: colors.surface }}
         >
-          <Dialog.Title>Confirm Account Creation</Dialog.Title>
+          <Dialog.Title>Account Creation for {form.email}</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium">
-              Are you sure you want to create an account with these details?
+              This will create a new account with the following details:
             </Text>
             <Text variant="bodyMedium">
               Email: {form.email}
@@ -212,20 +227,42 @@ const AddAccount = ({ navigation }) => {
             <Text variant="bodyMedium">
               Role: {form.role}
             </Text>
+            <Text variant="bodyMedium">
+              Are you sure you want to proceed?
+            </Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setShowConfirmDialog(false)} disabled={loading}>
-              Cancel
-            </Button>
-            <Button
+            <Button onPress={() => setShowConfirmDialog(false)}>Cancel</Button>
+            <Button onPress={() => {
+              setShowDialogConfirm(true)
+              setShowConfirmDialog(false)
+            }}>Create</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
+      <Portal>
+        <Dialog
+          visible={showDialogConfirm}
+          onDismiss={() => setShowDialogConfirm(false)}
+          style={{ backgroundColor: colors.surface }}
+        >
+          <Dialog.Title>Are you sure you want to create this account?</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">Account Email: {form.email}</Text>
+            <Text variant="bodyMedium">Role: {form.role}</Text>
+            <Text variant="bodyMedium">This action will send a verification email to the user.</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setShowDialogConfirm(false)}>Cancel</Button>
+            <Button 
+              style={{backgroundColor: colors.primary}} 
               onPress={() => {
-                setShowConfirmDialog(false)
+                setShowDialogConfirm(false)
                 handleCreateAccount()
               }}
-              loading={loading}
-              disabled={loading}
             >
-              Create Account
+              <Text style={[styles.buttonLabel, { color: colors.onPrimary }]}>Confirm Creation</Text>
             </Button>
           </Dialog.Actions>
         </Dialog>

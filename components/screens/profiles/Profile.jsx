@@ -9,8 +9,8 @@ import { useFocusEffect } from '@react-navigation/native'
 // Profile Card Component
 const ProfileCard = React.memo(({ profile, colors, fonts }) => {
   const fullName = useMemo(() => 
-    `${profile?.first_name || ''} ${profile?.middle_initial || ''} ${profile?.last_name || ''}`.trim(),
-    [profile?.first_name, profile?.middle_initial, profile?.last_name]
+    `${profile?.first_name || ''} ${profile?.middle_initial || ''} ${profile?.last_name || ''} ${profile?.suffix || ''}`.trim(),
+    [profile?.first_name, profile?.middle_initial, profile?.last_name, profile?.suffix]
   )
 
   return (

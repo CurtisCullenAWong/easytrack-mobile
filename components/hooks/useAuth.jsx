@@ -50,71 +50,31 @@ const useAuth = (navigation, onClose) => {
     }
   }
 
-  const checkCooldown = async (email) => {
-    try {
-      const cooldownKey = `cooldown_${email}`
-      const cooldownData = await AsyncStorage.getItem(cooldownKey)
-      
-      if (!cooldownData) {
-        return { inCooldown: false }
-      }
-
-      const { timestamp } = JSON.parse(cooldownData)
-      const currentTime = Date.now()
-      const cooldownEndTime = timestamp + (COOLDOWN_MINUTES * 60 * 1000)
-      
-      if (currentTime < cooldownEndTime) {
-        const remainingMilliseconds = cooldownEndTime - currentTime
-        const remainingMinutes = Math.ceil(remainingMilliseconds / (60 * 1000))
-        return { 
-          inCooldown: true, 
-          remainingMinutes,
-          cooldownEndTime: new Date(cooldownEndTime).toISOString()
-        }
-      }
-
-      // Clear expired cooldown
-      await AsyncStorage.removeItem(cooldownKey)
-      return { inCooldown: false }
-    } catch (error) {
-      console.error('Error checking cooldown:', error)
-      // In case of error, don't block the user
-      return { inCooldown: false }
-    }
-  }
-
-  const updateLoginAttempts = async (email, isSuccessful) => {
-    const attemptsKey = `login_attempts_${email}`
-    
-    if (isSuccessful) {
-      await AsyncStorage.removeItem(attemptsKey)
-      return
-    }
-
-    const attemptsData = await AsyncStorage.getItem(attemptsKey)
-    const attempts = attemptsData ? JSON.parse(attemptsData).attempts + 1 : 1
-    
-    await AsyncStorage.setItem(attemptsKey, JSON.stringify({ attempts }))
-    
-    if (attempts >= MAX_LOGIN_ATTEMPTS) {
-      const cooldownKey = `cooldown_${email}`
-      await AsyncStorage.setItem(cooldownKey, JSON.stringify({
-        timestamp: new Date().getTime()
-      }))
-    }
-    
-    return attempts
-  }
-
   // ===== User Authentication =====
-  const handleLogin = async (user) => {
-    const { data: profile, error } = await supabase
+  const login = async ({ email, password }) => {
+    if (!email || !password) {
+      return showSnackbar('Email and password are required.')
+    }
+
+    const sanitizedEmail = sanitizeEmail(email)
+    if (!validateEmail(sanitizedEmail)) {
+      return showSnackbar('Please enter a valid email address.')
+    }
+
+    const { data, error: loginError } = await supabase.auth.signInWithPassword({ 
+      email: sanitizedEmail, 
+      password
+    })
+    if (loginError) {
+      return showSnackbar(`Error: ${loginError.message}.`)
+    }
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role_id, user_status_id')
-      .eq('id', user.id)
+      .eq('id', data.user.id)
       .single()
 
-    if (error || !profile) {
+    if (profileError || !profile) {
       return showSnackbar('Logged in, but no profile found.')
     }
 
@@ -125,7 +85,7 @@ const useAuth = (navigation, onClose) => {
     await supabase
       .from('profiles')
       .update({ last_sign_in_at: new Date().toISOString(), user_status_id: 1 })
-      .eq('id', user.id)
+      .eq('id', data.user.id)
 
     const routeMap = {
       1: 'AdminDrawer',
@@ -144,41 +104,6 @@ const useAuth = (navigation, onClose) => {
     } else {
       navigation.navigate('Login')
     }
-  }
-
-  const login = async ({ email, password }) => {
-    if (!email || !password) {
-      return showSnackbar('Email and password are required.')
-    }
-
-    const sanitizedEmail = sanitizeEmail(email)
-    if (!validateEmail(sanitizedEmail)) {
-      return showSnackbar('Please enter a valid email address.')
-    }
-
-    const { inCooldown, remainingMinutes } = await checkCooldown(sanitizedEmail)
-    if (inCooldown) {
-      return showSnackbar(`Too many failed attempts. Please try again in ${remainingMinutes} minute/s.`)
-    }
-
-    const { data, error } = await supabase.auth.signInWithPassword({ 
-      email: sanitizedEmail, 
-      password
-    })
-
-    if (error) {
-      const attempts = await updateLoginAttempts(sanitizedEmail, false)
-      const remainingAttempts = MAX_LOGIN_ATTEMPTS - attempts
-      
-      if (remainingAttempts > 0) {
-        return showSnackbar(`Login error: ${error.message}. ${remainingAttempts} attempts remaining.`)
-      } else {
-        return showSnackbar(`Too many failed attempts. Please try again in ${COOLDOWN_MINUTES} minute/s.`)
-      }
-    }
-
-    await updateLoginAttempts(sanitizedEmail, true)
-    handleLogin(data.user)
   }
 
   const loginWithOtp = async (email) => {
@@ -266,23 +191,97 @@ const useAuth = (navigation, onClose) => {
     }
   }
 
+  const handleLogin = async (user) => {
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role_id, user_status_id')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError || !profile) {
+        return showSnackbar('Logged in, but no profile found.')
+      }
+
+      if (profile.user_status_id === 3 || profile.user_status_id === 5) {
+        return showSnackbar('Your account is not active. Please contact support.')
+      }
+
+      await supabase
+        .from('profiles')
+        .update({ last_sign_in_at: new Date().toISOString(), user_status_id: 1 })
+        .eq('id', user.id)
+
+      const routeMap = {
+        1: 'AdminDrawer',
+        2: 'DeliveryDrawer',
+        3: 'AirlineDrawer',
+      }
+
+      const targetRoute = routeMap[profile.role_id]
+      if (!targetRoute) {
+        return showSnackbar('Unauthorized role or unknown user.')
+      }
+
+      if (navigation) {
+        navigation.navigate(targetRoute)
+        onClose?.()
+      } else {
+        navigation.navigate('Login')
+      }
+    } catch (error) {
+      console.error('Error in handleLogin:', error)
+      showSnackbar('An error occurred during login. Please try again.')
+    }
+  }
+
   const checkSession = async () => {
     try {
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Session check timeout')), 5000)
-      })
-
-      const sessionPromise = supabase.auth.getSession()
-      const { data } = await Promise.race([sessionPromise, timeoutPromise])
-      const session = data?.session
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
+      if (error) {
+        console.error('Session check error:', error)
+        return false
+      }
 
       if (!session) return false
-      if (session.user) {
-        await handleLogin(session.user)
-        return true
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role_id, user_status_id')
+        .eq('id', session.user.id)
+        .single()
+
+      if (profileError || !profile) {
+        console.error('Profile fetch error:', profileError)
+        return false
       }
-      return false
+
+      if (profile.user_status_id === 3 || profile.user_status_id === 5) {
+        showSnackbar('Your account is not active. Please contact support.')
+        return false
+      }
+
+      const routeMap = {
+        1: 'AdminDrawer',
+        2: 'DeliveryDrawer',
+        3: 'AirlineDrawer',
+      }
+
+      const targetRoute = routeMap[profile.role_id]
+      if (!targetRoute) {
+        showSnackbar('Unauthorized role or unknown user.')
+        return false
+      }
+
+      if (navigation) {
+        navigation.navigate(targetRoute)
+        onClose?.()
+      }
+
+      return true
     } catch (error) {
+      console.error('Error in checkSession:', error)
       return false
     }
   }

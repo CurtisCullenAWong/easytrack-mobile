@@ -9,8 +9,10 @@ import {
   Divider,
   Button,
   ActivityIndicator,
+  Menu,
+  TextInput,
 } from 'react-native-paper'
-import { supabase } from '../../../../lib/supabase'
+import { supabase } from '../../../../lib/supabaseAdmin'
 import { useFocusEffect } from '@react-navigation/native'
 
 // Constants
@@ -23,11 +25,24 @@ const PROFILE_SECTIONS = {
 }
 
 // Profile Card Component
-const ProfileCard = React.memo(({ user, colors, fonts }) => {
+const ProfileCard = React.memo(({ user, colors, fonts, onUpdateStatus, onUpdateVerifyStatus, saving }) => {
+  const [statusMenuVisible, setStatusMenuVisible] = useState(false)
+  const [verifyStatusMenuVisible, setVerifyStatusMenuVisible] = useState(false)
+  
   const fullName = useMemo(() => 
     `${user?.first_name || ''} ${user?.middle_initial || ''} ${user?.last_name || ''}`.trim(),
     [user?.first_name, user?.middle_initial, user?.last_name]
   )
+
+  const handleStatusUpdate = (status) => {
+    onUpdateStatus(status)
+    setStatusMenuVisible(false)
+  }
+
+  const handleVerifyStatusUpdate = (status) => {
+    onUpdateVerifyStatus(status)
+    setVerifyStatusMenuVisible(false)
+  }
 
   return (
     <Card style={[styles.card, { backgroundColor: colors.surface }]}>
@@ -55,6 +70,68 @@ const ProfileCard = React.memo(({ user, colors, fonts }) => {
           </Text>
         </View>
       </Card.Content>
+      <View style={styles.menuContainer}>
+        <Menu
+          visible={statusMenuVisible}
+          onDismiss={() => setStatusMenuVisible(false)}
+          anchor={
+            <TextInput
+              label='Status'
+              value={user?.user_status}
+              editable={false}
+              mode='outlined'
+              style={styles.input}
+              right={<TextInput.Icon icon='account-check' onPress={() => setStatusMenuVisible(true)} />}
+              theme={{ colors: { primary: colors.primary } }}
+            />
+          }
+          contentStyle={{ backgroundColor: colors.surface }}
+        >
+          {['Active', 'Inactive'].map((status) => (
+            <Menu.Item
+              key={status}
+              onPress={() => handleStatusUpdate(status)}
+              title={status}
+              titleStyle={[
+                fonts.bodyLarge,
+                { color: user?.user_status === status ? colors.primary : colors.onSurface }
+              ]}
+              leadingIcon={user?.user_status === status ? 'check' : undefined}
+            />
+          ))}
+        </Menu>
+
+        <Menu
+          visible={verifyStatusMenuVisible}
+          onDismiss={() => setVerifyStatusMenuVisible(false)}
+          anchor={
+            <TextInput
+              label='Verification Status'
+              value={user?.verify_status}
+              editable={false}
+              mode='outlined'
+              style={styles.input}
+              right={<TextInput.Icon icon='shield-check' onPress={() => setVerifyStatusMenuVisible(true)} />}
+              theme={{ colors: { primary: colors.primary } }}
+              disabled={saving}
+            />
+          }
+          contentStyle={{ backgroundColor: colors.surface }}
+        >
+          {['Verified', 'Unverified'].map((status) => (
+            <Menu.Item
+              key={status}
+              onPress={() => handleVerifyStatusUpdate(status)}
+              title={status}
+              titleStyle={[
+                fonts.bodyLarge,
+                { color: user?.verify_status === status ? colors.primary : colors.onSurface }
+              ]}
+              leadingIcon={user?.verify_status === status ? 'check' : undefined}
+            />
+          ))}
+        </Menu>
+      </View>
     </Card>
   )
 })
@@ -193,6 +270,7 @@ const ViewProfileScreen = ({ route, navigation }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [saving, setSaving] = useState(false)
 
   const fetchAccount = useCallback(async () => {
     setLoading(true)
@@ -229,6 +307,68 @@ const ViewProfileScreen = ({ route, navigation }) => {
       setLoading(false)
     }
   }, [userId])
+
+  const updateUserStatus = async (newStatus) => {
+    try {
+      setSaving(true)
+      const { data: statusData, error: statusError } = await supabase
+        .from('profiles_status')
+        .select('id')
+        .eq('status_name', newStatus)
+        .single()
+      if (statusError) throw statusError
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          user_status_id: statusData.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', userId)
+
+      if (updateError) throw updateError
+
+      setUser(prev => ({
+        ...prev,
+        user_status: newStatus
+      }))
+    } catch (error) {
+      console.error('Error updating user status:', error)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const updateVerifyStatus = async (newStatus) => {
+    try {
+      setSaving(true)
+      const { data: statusData, error: statusError } = await supabase
+        .from('verify_status')
+        .select('id')
+        .eq('status_name', newStatus)
+        .single()
+
+      if (statusError) throw statusError
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          verify_status_id: statusData.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', userId)
+
+      if (updateError) throw updateError
+
+      setUser(prev => ({
+        ...prev,
+        verify_status: newStatus
+      }))
+    } catch (error) {
+      console.error('Error updating verification status:', error)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -328,14 +468,16 @@ const ViewProfileScreen = ({ route, navigation }) => {
           icon="refresh" 
           onPress={fetchAccount}
         />
-        <Appbar.Action 
-          icon="account-edit" 
-          onPress={() => navigation.navigate('EditAccount', { userId: user.id })} 
-        />
       </Appbar.Header>
 
-      <ProfileCard user={user} colors={colors} fonts={fonts} />
-
+      <ProfileCard 
+        user={user} 
+        colors={colors} 
+        fonts={fonts} 
+        onUpdateStatus={updateUserStatus}
+        onUpdateVerifyStatus={updateVerifyStatus}
+        saving={saving}
+      />
       <InfoCard title={PROFILE_SECTIONS.PERSONAL} data={personalInfo} colors={colors} fonts={fonts} />
       <InfoCard title={PROFILE_SECTIONS.ACCOUNT} data={accountInfo} colors={colors} fonts={fonts} />
       <InfoCard title={PROFILE_SECTIONS.ACTIVITY} data={recentActivity} colors={colors} fonts={fonts} />
@@ -350,6 +492,9 @@ const styles = StyleSheet.create({
     flex: 1 
   },
   card: {
+    margin: 16,
+  },
+  menuContainer: {
     margin: 16,
   },
   cardContent: {
@@ -405,6 +550,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     padding: 16,
+  },
+  input: {
+    marginBottom: 12,
   },
 })
 
