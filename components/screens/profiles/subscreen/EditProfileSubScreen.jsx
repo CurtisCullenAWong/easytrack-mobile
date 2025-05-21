@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import {
   StyleSheet,
@@ -7,6 +7,7 @@ import {
   View,
   ActivityIndicator,
   Image,
+  TouchableOpacity,
 } from 'react-native'
 import {
   TextInput,
@@ -21,80 +22,122 @@ import {
   Divider,
   IconButton,
 } from 'react-native-paper'
-import { DatePickerModal, en, registerTranslation } from 'react-native-paper-dates'
+import { DatePickerModal, el, en, registerTranslation } from 'react-native-paper-dates'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system'
 import { decode } from 'base64-arraybuffer'
-
 registerTranslation('en', en)
 
 const EditProfileSubScreen = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   
+  // Add error state
+  const [errors, setErrors] = useState({
+    email: '',
+    first_name: '',
+    middle_initial: '',
+    last_name: '',
+    suffix: '',
+    contact_number: '',
+    birth_date: '',
+    emergency_contact_name: '',
+    emergency_contact_number: '',
+  })
+
   // Validation functions
-  const validateName = (name) => {
+  const validateEmail = (email) => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+    if (!emailRegex.test(email)) {
+      setErrors(prev => ({ ...prev, email: 'Invalid email address' }))
+      return false
+    }
+    setErrors(prev => ({ ...prev, email: '' }))
+    return true
+  }
+
+  const validateName = (name, field) => {
     if (!name) {
-      return { isValid: false, message: 'Name cannot be empty' }
+      setErrors(prev => ({ ...prev, [field]: 'Name cannot be empty' }))
+      return false
     }
     if (name.length < 2) {
-      return { isValid: false, message: 'Name must be at least 2 characters long' }
+      setErrors(prev => ({ ...prev, [field]: 'Name must be at least 2 characters long' }))
+      return false
     }
     if (name.length > 35) {
-      return { isValid: false, message: 'Name cannot exceed 35 characters' }
+      setErrors(prev => ({ ...prev, [field]: 'Name cannot exceed 35 characters' }))
+      return false
     }
-    return { isValid: true }
+    setErrors(prev => ({ ...prev, [field]: '' }))
+    return true
   }
 
   const validateNameSuffix = (suffix) => {
-
-    return { isValid: true }
+    if (suffix && suffix.length > 10) {
+      setErrors(prev => ({ ...prev, suffix: 'Suffix cannot exceed 10 characters' }))
+      return false
+    }
+    setErrors(prev => ({ ...prev, suffix: '' }))
+    return true
   }
 
   const validateMiddleInitial = (initial) => {
     if (initial && !/^[A-Z]$/.test(initial)) {
-      return { isValid: false, message: 'Middle initial must be a single uppercase letter' }
+      setErrors(prev => ({ ...prev, middle_initial: 'Middle initial must be a single uppercase letter' }))
+      return false
     }
-    return { isValid: true }
+    setErrors(prev => ({ ...prev, middle_initial: '' }))
+    return true
   }
 
-  const validatePhoneNumber = (number) => {
+  const validatePhoneNumber = (number, field) => {
     if (number && !/^9\d{9}$/.test(number)) {
-      return { isValid: false, message: 'Phone number must start with 9 and have 10 digits' }
+      setErrors(prev => ({ ...prev, [field]: 'Phone number must start with 9 and have 10 digits' }))
+      return false
     }
-    return { isValid: true }
+    setErrors(prev => ({ ...prev, [field]: '' }))
+    return true
   }
 
   const validateBirthDate = (date) => {
     if (!date) {
-      return { isValid: false, message: 'Birth date is required' }
+      setErrors(prev => ({ ...prev, birth_date: 'Birth date is required' }))
+      return false
     }
     const minDate = new Date(1935, 0, 1)
     const eighteenYearsAgo = new Date()
     eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18)
     
     if (date < minDate || date > eighteenYearsAgo) {
-      return { isValid: false, message: 'You must be at least 18 years old' }
+      setErrors(prev => ({ ...prev, birth_date: 'You must be at least 18 years old' }))
+      return false
     }
-    return { isValid: true }
+    setErrors(prev => ({ ...prev, birth_date: '' }))
+    return true
   }
 
   const validateEmergencyContact = (name) => {
     if (!name) {
-      return { isValid: false, message: 'Emergency contact name cannot be empty' }
+      setErrors(prev => ({ ...prev, emergency_contact_name: 'Emergency contact name cannot be empty' }))
+      return false
     }
     if (name.length < 2) {
-      return { isValid: false, message: 'Emergency contact name must be at least 2 characters long' }
+      setErrors(prev => ({ ...prev, emergency_contact_name: 'Emergency contact name must be at least 2 characters long' }))
+      return false
     }
     if (name.length > 50) {
-      return { isValid: false, message: 'Emergency contact name cannot exceed 50 characters' }
+      setErrors(prev => ({ ...prev, emergency_contact_name: 'Emergency contact name cannot exceed 50 characters' }))
+      return false
     }
     if (!/^[A-Z][a-z']*(\s+[A-Z][a-z']*)*$/.test(name)) {
-      return { isValid: false, message: 'Emergency contact name must start with capital letters and can only contain letters, spaces, and apostrophes' }
+      setErrors(prev => ({ ...prev, emergency_contact_name: 'Emergency contact name must start with capital letters and can only contain letters, spaces, and apostrophes' }))
+      return false
     }
-    return { isValid: true }
+    setErrors(prev => ({ ...prev, emergency_contact_name: '' }))
+    return true
   }
 
   // Combined state
@@ -103,6 +146,7 @@ const EditProfileSubScreen = ({ navigation }) => {
     saving: false,
     roleId: null,
     form: {
+      email: '',
       first_name: '',
       middle_initial: '',
       last_name: '',
@@ -118,7 +162,9 @@ const EditProfileSubScreen = ({ navigation }) => {
       datePicker: false,
       imageSource: false,
       removeImage: false,
-    }
+      emailConfirm: false,
+    },
+    initialEmail: '',
   })
 
   // Simplified handlers
@@ -130,24 +176,36 @@ const EditProfileSubScreen = ({ navigation }) => {
     let sanitizedValue = value
 
     switch (field) {
+      case 'email':
+        sanitizedValue = value.toLowerCase().trim()
+        validateEmail(sanitizedValue)
+        break
       case 'first_name':
       case 'last_name':
-      case 'emergency_contact_name':
         sanitizedValue = value.replace(/[^a-zA-Z\s']/g, '')
+        validateName(sanitizedValue, field)
         break
       case 'suffix':
         sanitizedValue = value.replace(/[^A-Z]/g, '')
+        validateNameSuffix(sanitizedValue)
         break
       case 'middle_initial':
         sanitizedValue = value.toUpperCase()
+        validateMiddleInitial(sanitizedValue)
         break
       case 'contact_number':
       case 'emergency_contact_number':
         const digitsOnly = value.replace(/\D/g, '')
         sanitizedValue = digitsOnly.startsWith('9') ? digitsOnly.slice(0, 10) : '9' + digitsOnly.slice(0, 9)
+        validatePhoneNumber(sanitizedValue, field)
         break
       case 'birth_date':
         sanitizedValue = value
+        validateBirthDate(sanitizedValue)
+        break
+      case 'emergency_contact_name':
+        sanitizedValue = value.replace(/[^a-zA-Z\s']/g, '')
+        validateEmergencyContact(sanitizedValue)
         break
     }
 
@@ -261,26 +319,40 @@ const EditProfileSubScreen = ({ navigation }) => {
     }
   }
 
+  const handleEmailChange = async () => {
+    try {
+      updateState({ saving: true })
+      const { error } = await supabase.auth.updateUser({
+        email: state.form.email,
+      })
+      if (error) throw error
+      showSnackbar('Email change request sent. Please check your email to confirm the change.', true)
+      updateDialog('emailConfirm', false)
+    } catch (error) {
+      showSnackbar('Error updating email: ' + error.message)
+    } finally {
+      updateState({ saving: false })
+    }
+  }
+
   const saveProfile = async () => {
     try {
-      // Validate all required fields before saving
+      // Validate all fields
       const validations = [
-        { field: 'first_name', value: state.form.first_name, validator: validateName },
-        { field: 'middle_initial', value: state.form.middle_initial, validator: validateMiddleInitial },
-        { field: 'last_name', value: state.form.last_name, validator: validateName },
-        { field: 'suffix', value: state.form.suffix, validator: validateNameSuffix },
-        { field: 'contact_number', value: state.form.contact_number, validator: validatePhoneNumber },
-        { field: 'birth_date', value: state.form.birth_date, validator: validateBirthDate },
-        { field: 'emergency_contact_name', value: state.form.emergency_contact_name, validator: validateEmergencyContact },
-        { field: 'emergency_contact_number', value: state.form.emergency_contact_number, validator: validatePhoneNumber }
+        validateEmail(state.form.email),
+        validateName(state.form.first_name, 'first_name'),
+        validateMiddleInitial(state.form.middle_initial),
+        validateName(state.form.last_name, 'last_name'),
+        validateNameSuffix(state.form.suffix),
+        validatePhoneNumber(state.form.contact_number, 'contact_number'),
+        validateBirthDate(state.form.birth_date),
+        validateEmergencyContact(state.form.emergency_contact_name),
+        validatePhoneNumber(state.form.emergency_contact_number, 'emergency_contact_number')
       ]
 
-      for (const validation of validations) {
-        const result = validation.validator(validation.value)
-        if (!result.isValid) {
-          showSnackbar(result.message)
-          return
-        }
+      if (validations.some(valid => !valid)) {
+        showSnackbar('Please fix the validation errors before saving')
+        return
       }
 
       updateState({ saving: true })
@@ -321,6 +393,7 @@ const EditProfileSubScreen = ({ navigation }) => {
       const { error } = await supabase
         .from('profiles')
         .update({
+          email: state.form.email,
           first_name: capitalizeName(state.form.first_name),
           middle_initial: capitalizeName(state.form.middle_initial),
           last_name: capitalizeName(state.form.last_name),
@@ -360,6 +433,7 @@ const EditProfileSubScreen = ({ navigation }) => {
       if (error) throw error
 
       const initialData = {
+        email: data.email || '',
         first_name: data.first_name || '',
         middle_initial: data.middle_initial || '',
         last_name: data.last_name || '',
@@ -373,6 +447,7 @@ const EditProfileSubScreen = ({ navigation }) => {
 
       updateState({
         form: initialData,
+        initialEmail: data.email || '',
         roleId: data.role_id,
         loading: false
       })
@@ -425,7 +500,9 @@ const EditProfileSubScreen = ({ navigation }) => {
         <Appbar.Content title='Edit Profile' />
         <Appbar.Action 
           icon='content-save' 
-          onPress={() => updateDialog('confirm', true)} 
+          onPress={() => {
+            updateDialog('confirm', true)
+          }} 
           disabled={state.saving}
           color={colors.primary}
         />
@@ -456,6 +533,24 @@ const EditProfileSubScreen = ({ navigation }) => {
           <Divider style={styles.divider} />
 
           <TextInput
+            label='Email'
+            value={state.form.email}
+            onChangeText={(text) => handleChange('email', text)}
+            mode='outlined'
+            style={styles.input}
+            right={<TextInput.Icon icon='email' onPress={()=>{
+              updateDialog('emailConfirm', true)
+            }}/>}
+            theme={{ colors: { primary: colors.primary } }}
+            disabled={state.saving}
+            autoCapitalize='words'
+            maxLength={35}
+            editable={true}
+            error={!!errors.email}
+            helperText={errors.email}
+          />
+
+          <TextInput
             label='First Name'
             value={state.form.first_name}
             onChangeText={(text) => handleChange('first_name', text)}
@@ -466,6 +561,8 @@ const EditProfileSubScreen = ({ navigation }) => {
             disabled={state.saving}
             autoCapitalize='words'
             maxLength={35}
+            error={!!errors.first_name}
+            helperText={errors.first_name}
           />
 
           <TextInput
@@ -479,6 +576,8 @@ const EditProfileSubScreen = ({ navigation }) => {
             theme={{ colors: { primary: colors.primary } }}
             disabled={state.saving}
             autoCapitalize='characters'
+            error={!!errors.middle_initial}
+            helperText={errors.middle_initial}
           />
 
           <TextInput
@@ -492,6 +591,8 @@ const EditProfileSubScreen = ({ navigation }) => {
             disabled={state.saving}
             autoCapitalize='words'
             maxLength={35}
+            error={!!errors.last_name}
+            helperText={errors.last_name}
           />
 
           <TextInput
@@ -505,6 +606,8 @@ const EditProfileSubScreen = ({ navigation }) => {
             disabled={state.saving}
             autoCapitalize='words'
             maxLength={10}
+            error={!!errors.suffix}
+            helperText={errors.suffix}
           />
 
           <Divider style={styles.divider} />
@@ -520,18 +623,23 @@ const EditProfileSubScreen = ({ navigation }) => {
             theme={{ colors: { primary: colors.primary } }}
             disabled={state.saving}
             maxLength={10}
+            error={!!errors.contact_number}
+            helperText={errors.contact_number}
           />
-
-          <TextInput
-            label='Birth Date'
-            value={state.form.birth_date ? state.form.birth_date.toLocaleDateString() : ''}
-            editable={false}
-            mode='outlined'
-            style={styles.input}
-            right={<TextInput.Icon icon='calendar' onPress={() => updateDialog('datePicker', true)} />}
-            theme={{ colors: { primary: colors.primary } }}
-            disabled={state.saving}
-          />
+          <TouchableOpacity onPress={() => updateDialog('datePicker', true)}>
+            <TextInput
+              label='Birth Date'
+              value={state.form.birth_date ? state.form.birth_date.toLocaleDateString() : ''}
+              editable={false}
+              mode='outlined'
+              style={styles.input}
+              right={<TextInput.Icon icon='calendar' onPress={() => updateDialog('datePicker', true)}/>}
+              theme={{ colors: { primary: colors.primary } }}
+              disabled={state.saving}
+              error={!!errors.birth_date}
+              helperText={errors.birth_date}
+            />
+          </TouchableOpacity>
 
           <Divider style={styles.divider} />
 
@@ -546,6 +654,8 @@ const EditProfileSubScreen = ({ navigation }) => {
             disabled={state.saving}
             autoCapitalize='words'
             maxLength={50}
+            error={!!errors.emergency_contact_name}
+            helperText={errors.emergency_contact_name}
           />
 
           <TextInput
@@ -559,6 +669,8 @@ const EditProfileSubScreen = ({ navigation }) => {
             theme={{ colors: { primary: colors.primary } }}
             disabled={state.saving}
             maxLength={10}
+            error={!!errors.emergency_contact_number}
+            helperText={errors.emergency_contact_number}
           />
         </Surface>
       </ScrollView>
@@ -643,6 +755,25 @@ const EditProfileSubScreen = ({ navigation }) => {
           <Dialog.Actions>
             <Button onPress={() => updateDialog('removeImage', false)}>Cancel</Button>
             <Button onPress={removeImage}>Remove</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
+      <Portal>
+        <Dialog
+          visible={state.dialogs.emailConfirm}
+          onDismiss={() => updateDialog('emailConfirm', false)}
+          style={{ backgroundColor: colors.surface }}>
+          <Dialog.Title>Change Email Address</Dialog.Title>
+          <Dialog.Content>
+            <Text variant='bodyMedium'>
+              Are you sure you want to change your email address to {state.form.email}? 
+              You will receive a confirmation email to verify this change.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => updateDialog('emailConfirm', false)} disabled={state.saving}>Cancel</Button>
+            <Button onPress={handleEmailChange} loading={state.saving} disabled={state.saving}>Confirm</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>

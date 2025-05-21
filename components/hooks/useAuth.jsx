@@ -134,7 +134,7 @@ const useAuth = (navigation, onClose) => {
       showSnackbar('OTP sent to your email. Please check your inbox.', true)
       
       const subscription = Linking.addEventListener('url', async ({ url }) => {
-        if (url.includes('login')) {
+        if (url.includes('login')||url.includes('accept-invitation')) {
           const session = await createSessionFromUrl(url)
           if (session?.user) {
             await handleLogin(session.user)

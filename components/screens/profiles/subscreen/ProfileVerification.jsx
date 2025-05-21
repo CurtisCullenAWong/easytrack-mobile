@@ -12,72 +12,103 @@ const ProfileVerification = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   
+  // Add error state
+  const [errors, setErrors] = useState({
+    gov_id_type: '',
+    gov_id_number: '',
+    gov_id_proof: '',
+    gov_id_proof_back: '',
+    vehicle_info: '',
+    vehicle_plate_number: '',
+    vehicle_or_cr: ''
+  })
+
   // Validation functions
   const validateIdType = (type) => {
     if (!type) {
-      return { isValid: false, message: 'Please select an ID type' }
+      setErrors(prev => ({ ...prev, gov_id_type: 'Please select an ID type' }))
+      return false
     }
-    return { isValid: true }
+    setErrors(prev => ({ ...prev, gov_id_type: '' }))
+    return true
   }
 
   const validateIdNumber = (number) => {
     if (!number?.trim()) {
-      return { isValid: false, message: 'Please enter your ID number' }
+      setErrors(prev => ({ ...prev, gov_id_number: 'Please enter your ID number' }))
+      return false
     }
     if (number.length < 9) {
-      return { isValid: false, message: 'ID number must be at least 9 characters long' }
+      setErrors(prev => ({ ...prev, gov_id_number: 'ID number must be at least 9 characters long' }))
+      return false
     }
     if (number.length > 13) {
-      return { isValid: false, message: 'ID number cannot exceed 13 characters' }
+      setErrors(prev => ({ ...prev, gov_id_number: 'ID number cannot exceed 13 characters' }))
+      return false
     }
-    return { isValid: true }
+    setErrors(prev => ({ ...prev, gov_id_number: '' }))
+    return true
   }
 
   const validateIdProof = (proof) => {
     if (!proof) {
-      return { isValid: false, message: 'Please upload your ID proof (front)' }
+      setErrors(prev => ({ ...prev, gov_id_proof: 'Please upload your ID proof (front)' }))
+      return false
     }
-    return { isValid: true }
+    setErrors(prev => ({ ...prev, gov_id_proof: '' }))
+    return true
   }
 
   const validateIdProofBack = (proof) => {
     if (!proof) {
-      return { isValid: false, message: 'Please upload your ID proof (back)' }
+      setErrors(prev => ({ ...prev, gov_id_proof_back: 'Please upload your ID proof (back)' }))
+      return false
     }
-    return { isValid: true }
+    setErrors(prev => ({ ...prev, gov_id_proof_back: '' }))
+    return true
   }
 
   const validateVehicleInfo = (info) => {
     if (!info?.trim()) {
-      return { isValid: false, message: 'Please enter vehicle description' }
+      setErrors(prev => ({ ...prev, vehicle_info: 'Please enter vehicle description' }))
+      return false
     }
     if (info.length < 3) {
-      return { isValid: false, message: 'Vehicle description must be at least 3 characters long' }
+      setErrors(prev => ({ ...prev, vehicle_info: 'Vehicle description must be at least 3 characters long' }))
+      return false
     }
     if (info.length > 50) {
-      return { isValid: false, message: 'Vehicle description cannot exceed 50 characters' }
+      setErrors(prev => ({ ...prev, vehicle_info: 'Vehicle description cannot exceed 50 characters' }))
+      return false
     }
-    return { isValid: true }
+    setErrors(prev => ({ ...prev, vehicle_info: '' }))
+    return true
   }
 
   const validatePlateNumber = (number) => {
     if (!number?.trim()) {
-      return { isValid: false, message: 'Please enter vehicle plate number' }
+      setErrors(prev => ({ ...prev, vehicle_plate_number: 'Please enter vehicle plate number' }))
+      return false
     }
     if (number.length < 3) {
-      return { isValid: false, message: 'Plate number must be at least 3 characters long' }
+      setErrors(prev => ({ ...prev, vehicle_plate_number: 'Plate number must be at least 3 characters long' }))
+      return false
     }
     if (number.length > 12) {
-      return { isValid: false, message: 'Plate number cannot exceed 12 characters' }
+      setErrors(prev => ({ ...prev, vehicle_plate_number: 'Plate number cannot exceed 12 characters' }))
+      return false
     }
-    return { isValid: true }
+    setErrors(prev => ({ ...prev, vehicle_plate_number: '' }))
+    return true
   }
 
   const validateOrCr = (document) => {
     if (!document) {
-      return { isValid: false, message: 'Please upload OR/CR document' }
+      setErrors(prev => ({ ...prev, vehicle_or_cr: 'Please upload OR/CR document' }))
+      return false
     }
-    return { isValid: true }
+    setErrors(prev => ({ ...prev, vehicle_or_cr: '' }))
+    return true
   }
 
   // Combined state
@@ -115,9 +146,31 @@ const ProfileVerification = ({ navigation }) => {
     switch (field) {
       case 'gov_id_number':
         sanitizedValue = value.replace(/[^0-9]/g, '')
+        validateIdNumber(sanitizedValue)
         break
       case 'vehicle_plate_number':
         sanitizedValue = value.replace(/[^A-Z0-9-]/gi, '').toUpperCase()
+        validatePlateNumber(sanitizedValue)
+        break
+      case 'vehicle_info':
+        sanitizedValue = value
+        validateVehicleInfo(sanitizedValue)
+        break
+      case 'gov_id_type':
+        sanitizedValue = value
+        validateIdType(sanitizedValue)
+        break
+      case 'gov_id_proof':
+        sanitizedValue = value
+        validateIdProof(sanitizedValue)
+        break
+      case 'gov_id_proof_back':
+        sanitizedValue = value
+        validateIdProofBack(sanitizedValue)
+        break
+      case 'vehicle_or_cr':
+        sanitizedValue = value
+        validateOrCr(sanitizedValue)
         break
       default:
         sanitizedValue = value
@@ -231,30 +284,28 @@ const ProfileVerification = ({ navigation }) => {
   
   const saveVerification = async () => {
     try {
-      // Validate all required fields before saving
+      // Validate all required fields
       const validations = [
-        { field: 'gov_id_type', value: state.form.gov_id_type_id, validator: validateIdType },
-        { field: 'gov_id_number', value: state.form.gov_id_number, validator: validateIdNumber },
-        { field: 'gov_id_proof', value: state.form.gov_id_proof, validator: validateIdProof },
-        { field: 'gov_id_proof_back', value: state.form.gov_id_proof_back, validator: validateIdProofBack }
+        validateIdType(state.form.gov_id_type_id),
+        validateIdNumber(state.form.gov_id_number),
+        validateIdProof(state.form.gov_id_proof),
+        validateIdProofBack(state.form.gov_id_proof_back)
       ]
-  
+
       // Additional validation for delivery role
       if (state.roleId === 2) {
         validations.push(
-          { field: 'vehicle_info', value: state.form.vehicle_info, validator: validateVehicleInfo },
-          { field: 'vehicle_plate_number', value: state.form.vehicle_plate_number, validator: validatePlateNumber },
-          { field: 'vehicle_or_cr', value: state.form.vehicle_or_cr, validator: validateOrCr }
+          validateVehicleInfo(state.form.vehicle_info),
+          validatePlateNumber(state.form.vehicle_plate_number),
+          validateOrCr(state.form.vehicle_or_cr)
         )
       }
-  
-      for (const validation of validations) {
-        const result = validation.validator(validation.value)
-        if (!result.isValid) {
-          showSnackbar(result.message)
-          return false
-        }
+
+      if (validations.some(valid => !valid)) {
+        showSnackbar('Please fix the validation errors before saving')
+        return
       }
+
       updateState({ saving: true })
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
@@ -479,6 +530,8 @@ const ProfileVerification = ({ navigation }) => {
                 mode="outlined"
                 right={<TextInput.Icon icon="chevron-down" onPress={() => updateDialog('idTypeMenu', true)} />}
                 theme={{ colors: { primary: colors.primary } }}
+                error={!!errors.gov_id_type}
+                helperText={errors.gov_id_type}
               />
             }
             contentStyle={{ backgroundColor: colors.surface }}
@@ -512,6 +565,8 @@ const ProfileVerification = ({ navigation }) => {
             keyboardType="numeric"
             maxLength={12}
             theme={{ colors: { primary: colors.primary } }}
+            error={!!errors.gov_id_number}
+            helperText={errors.gov_id_number}
           />
 
           <Text style={[styles.label, { color: colors.onSurface, ...fonts.titleSmall }]}>
@@ -521,6 +576,11 @@ const ProfileVerification = ({ navigation }) => {
             uri={state.form.gov_id_proof} 
             type="gov_id_proof"
           />
+          {errors.gov_id_proof && (
+            <Text style={[styles.errorText, { color: colors.error }]}>
+              {errors.gov_id_proof}
+            </Text>
+          )}
 
           <Button
             mode="outlined"
@@ -538,6 +598,11 @@ const ProfileVerification = ({ navigation }) => {
             uri={state.form.gov_id_proof_back} 
             type="gov_id_proof_back"
           />
+          {errors.gov_id_proof_back && (
+            <Text style={[styles.errorText, { color: colors.error }]}>
+              {errors.gov_id_proof_back}
+            </Text>
+          )}
 
           <Button
             mode="outlined"
@@ -563,6 +628,8 @@ const ProfileVerification = ({ navigation }) => {
                 style={styles.input}
                 theme={{ colors: { primary: colors.primary } }}
                 maxLength={50}
+                error={!!errors.vehicle_info}
+                helperText={errors.vehicle_info}
               />
 
               <TextInput
@@ -573,12 +640,19 @@ const ProfileVerification = ({ navigation }) => {
                 style={styles.input}
                 maxLength={12}
                 theme={{ colors: { primary: colors.primary } }}
+                error={!!errors.vehicle_plate_number}
+                helperText={errors.vehicle_plate_number}
               />  
 
               <ImagePreview 
                 uri={state.form.vehicle_or_cr} 
                 type="vehicle_or_cr"
               />
+              {errors.vehicle_or_cr && (
+                <Text style={[styles.errorText, { color: colors.error }]}>
+                  {errors.vehicle_or_cr}
+                </Text>
+              )}
 
               <Button
                 mode="outlined"
@@ -737,6 +811,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  errorText: {
+    marginTop: -12,
+    marginBottom: 16,
+    marginLeft: 16,
+    fontSize: 12,
   },
 })
 

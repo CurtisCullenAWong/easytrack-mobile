@@ -4,11 +4,6 @@ import { TextInput, Button, useTheme, Appbar, Text, Portal, Dialog, Surface, Div
 import useSnackbar from '../../../../components/hooks/useSnackbar'
 import { supabase } from '../../../../lib/supabaseAdmin'
 import { useFocusEffect } from '@react-navigation/native'
-const validateEmail = (email) => {
-  // Basic email validation regex
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  return emailRegex.test(email)
-}
 
 const sanitizeEmail = (email) => {
   // Remove leading/trailing whitespace and convert to lowercase
@@ -28,6 +23,37 @@ const AddAccount = ({ navigation }) => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [showDialogConfirm, setShowDialogConfirm] = useState(false)
   const [showRoleMenu, setShowRoleMenu] = useState(false)
+
+  // Add error state
+  const [errors, setErrors] = useState({
+    email: '',
+    role: ''
+  })
+
+  // Update validation functions
+  const validateEmail = (email) => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+    if (!email) {
+      setErrors(prev => ({ ...prev, email: 'Email is required' }))
+      return false
+    }
+    if (!emailRegex.test(email)) {
+      setErrors(prev => ({ ...prev, email: 'Please enter a valid email address' }))
+      return false
+    }
+    setErrors(prev => ({ ...prev, email: '' }))
+    return true
+  }
+
+  const validateRole = (role) => {
+    if (!role) {
+      setErrors(prev => ({ ...prev, role: 'Please select a role' }))
+      return false
+    }
+    setErrors(prev => ({ ...prev, role: '' }))
+    return true
+  }
+
   const fetchRoles = async () => {
     const { data } = await supabase
       .from('profiles_roles')
@@ -45,6 +71,9 @@ const AddAccount = ({ navigation }) => {
     if (field === 'role') {
       const selectedRole = roleOptions.find(role => role.role_name === value)
       setRole_id(selectedRole?.id || '')
+      validateRole(value)
+    } else if (field === 'email') {
+      validateEmail(value)
     }
     setForm(prev => ({ ...prev, [field]: value }))
   }
@@ -54,19 +83,24 @@ const AddAccount = ({ navigation }) => {
       setLoading(true)
       const { email } = form
       
-      if (!email) {
-        return showSnackbar('Email is required.')
-      }
+      // Validate all fields
+      const validations = [
+        validateEmail(email),
+        validateRole(form.role)
+      ]
 
-      const sanitizedEmail = sanitizeEmail(email)
-      if (!validateEmail(sanitizedEmail)) {
-        return showSnackbar('Please enter a valid email address.')
+      if (validations.some(valid => !valid)) {
+        showSnackbar('Please fix the validation errors before creating account')
+        return
       }
 
       if (!role_id) {
-        return showSnackbar('Invalid role selected.')
+        setErrors(prev => ({ ...prev, role: 'Invalid role selected' }))
+        showSnackbar('Invalid role selected')
+        return
       }
       
+      const sanitizedEmail = sanitizeEmail(email)
       const encryptedValue = 'mypassword'
       //SEND EMAIL HERE
       const { data, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(sanitizedEmail, {
@@ -148,6 +182,8 @@ const AddAccount = ({ navigation }) => {
               autoCapitalize="none"
               right={<TextInput.Icon icon="email" />}
               theme={{ colors: { primary: colors.primary } }}
+              error={!!errors.email}
+              helperText={errors.email}
             />
             <TouchableOpacity onPress={() => setShowRoleMenu(true)}>
               <TextInput
@@ -158,6 +194,8 @@ const AddAccount = ({ navigation }) => {
                 style={styles.input}
                 right={<TextInput.Icon icon="account-cog" onPress={() => setShowRoleMenu(true)}/>}
                 theme={{ colors: { primary: colors.primary } }}
+                error={!!errors.role}
+                helperText={errors.role}
               />
             </TouchableOpacity>
 
