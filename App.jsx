@@ -15,7 +15,7 @@ const App = () => {
   const [theme, setTheme] = useState(lightTheme)
   const [fontsLoaded, setFontsLoaded] = useState(false)
   const [themeLoaded, setThemeLoaded] = useState(false)
-  const { checkSession } = useAuth()
+  const { checkSession, checkForUpdates } = useAuth()
 
   const loadFonts = async () => {
     try {
@@ -56,6 +56,7 @@ const App = () => {
     loadFonts()
     loadTheme()
     checkSession()
+    checkForUpdates()
   }, [])
 
   if (!fontsLoaded || !themeLoaded) {

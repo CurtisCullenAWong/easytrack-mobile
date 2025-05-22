@@ -5,6 +5,7 @@ import * as WebBrowser from 'expo-web-browser'
 import { makeRedirectUri } from 'expo-auth-session'
 import * as QueryParams from 'expo-auth-session/build/QueryParams'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import * as Updates from 'expo-updates'
 
 // Constants
 const MAX_LOGIN_ATTEMPTS = 5
@@ -344,11 +345,26 @@ const useAuth = (navigation, onClose) => {
     }
   }
 
+  async function checkForUpdates() {
+    if (!__DEV__ && Updates.isAvailable) {
+      try {
+        const update = await Updates.checkForUpdateAsync();
+        if (update.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync();
+        }
+      } catch (e) {
+        console.warn('Update check failed:', e);
+      }
+    }
+  }
+
   return {
     login,
     loginWithOtp,
     resetPassword,
     checkSession,
+    checkForUpdates,
     SnackbarElement,
   }
 }

@@ -69,8 +69,8 @@ const MakeContracts = () => {
         .from('contract_luggage_information')
         .insert(
           luggageDetails.map(detail => ({
-            id: 2,
-            luggage_owner_name: detail.name,
+            id: 1,
+            luggage_owner: detail.name,
             case_number: detail.caseNumber,
             item_description: detail.itemDescription,
             weight: parseFloat(detail.weight),
@@ -85,7 +85,7 @@ const MakeContracts = () => {
       const { data: contract, error: contractError } = await supabase
         .from('contract')
         .insert({
-          id: 2,
+          id: 1,
           contract_status_id: 1, // Assuming 1 is the initial status
           airline_uid: user.id,
           luggage_quantity: luggageQuantity,

@@ -45,7 +45,7 @@ const ContractsMade = () => {
           *,
           contract_status:contract_status_id (status_name),
           luggage_info:luggage_information_id (
-            luggage_owner_name,
+            luggage_owner,
             case_number,
             item_description,
             weight,
@@ -82,7 +82,7 @@ const ContractsMade = () => {
           />
           <View>
             <Text style={[fonts.labelSmall, { fontWeight: 'bold', color: colors.primary }]}>
-              {contract.luggage_info?.luggage_owner_name || 'N/A'}
+              {contract.luggage_info?.luggage_owner || 'N/A'}
             </Text>
             <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
               Case #{contract.luggage_info?.case_number || 'N/A'}

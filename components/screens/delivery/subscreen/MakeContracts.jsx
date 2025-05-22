@@ -70,7 +70,7 @@ const MakeContracts = () => {
         .insert(
           luggageDetails.map(detail => ({
             id: 2,
-            luggage_owner_name: detail.name,
+            luggage_owner: detail.name,
             case_number: detail.caseNumber,
             item_description: detail.itemDescription,
             weight: parseFloat(detail.weight),
