@@ -4,10 +4,12 @@ import * as Linking from 'expo-linking'
 import * as WebBrowser from 'expo-web-browser'
 import { makeRedirectUri } from 'expo-auth-session'
 import * as QueryParams from 'expo-auth-session/build/QueryParams'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 // Constants
 const MAX_LOGIN_ATTEMPTS = 5
-const COOLDOWN_MINUTES = 2
+const BASE_COOLDOWN_MINUTES = 1
+const MAX_COOLDOWN_MINUTES = 30
 
 // Utility functions
 const validateEmail = (email) => {
@@ -60,13 +62,72 @@ const useAuth = (navigation, onClose) => {
       return showSnackbar('Please enter a valid email address.')
     }
 
+    // Check for cooldown
+    const cooldownKey = `cooldown_${sanitizedEmail}`
+    const cooldownData = await AsyncStorage.getItem(cooldownKey)
+    if (cooldownData) {
+      const { timestamp, lockoutCount } = JSON.parse(cooldownData)
+      const cooldownMinutes = Math.min(BASE_COOLDOWN_MINUTES * Math.pow(2, lockoutCount - 1), MAX_COOLDOWN_MINUTES)
+      const cooldownEndTime = timestamp + (cooldownMinutes * 60 * 1000)
+      const now = Date.now()
+      
+      if (now < cooldownEndTime) {
+        const remainingMinutes = Math.ceil((cooldownEndTime - now) / (60 * 1000))
+        return showSnackbar(`Too many login attempts. Please try again in ${remainingMinutes} minute(s).`)
+      } else {
+        // Cooldown expired, reset attempts
+        await AsyncStorage.removeItem(cooldownKey)
+      }
+    }
+
+    // Get current login attempts
+    const attemptsKey = `login_attempts_${sanitizedEmail}`
+    const attemptsData = await AsyncStorage.getItem(attemptsKey)
+    const attempts = attemptsData ? JSON.parse(attemptsData).attempts : 0
+
+    if (attempts >= MAX_LOGIN_ATTEMPTS) {
+      // Get current lockout count
+      const currentCooldownData = await AsyncStorage.getItem(cooldownKey)
+      const lockoutCount = currentCooldownData ? JSON.parse(currentCooldownData).lockoutCount + 1 : 1
+      
+      // Set cooldown with increased duration
+      const cooldownMinutes = Math.min(BASE_COOLDOWN_MINUTES * Math.pow(2, lockoutCount - 1), MAX_COOLDOWN_MINUTES)
+      await AsyncStorage.setItem(cooldownKey, JSON.stringify({
+        timestamp: Date.now(),
+        lockoutCount
+      }))
+      // Reset attempts
+      await AsyncStorage.removeItem(attemptsKey)
+      return showSnackbar(`Too many login attempts. Please try again in ${cooldownMinutes} minutes.`)
+    }
+
     const { data, error: loginError } = await supabase.auth.signInWithPassword({ 
       email: sanitizedEmail, 
       password
     })
+
     if (loginError) {
-      return showSnackbar(`Error: ${loginError.message}.`)
+      // Increment failed attempts
+      const newAttempts = attempts + 1
+      await AsyncStorage.setItem(attemptsKey, JSON.stringify({
+        attempts: newAttempts
+      }))
+      
+      const remainingAttempts = MAX_LOGIN_ATTEMPTS - newAttempts
+      const attemptsMessage = `You have ${remainingAttempts} login attempt${remainingAttempts !== 1 ? 's' : ''} remaining.`
+      
+      if (loginError?.message?.toLowerCase().includes('email not confirmed')) {
+        showSnackbar('Please login via email otp to confirm your email.')
+        loginWithOtp(sanitizedEmail)
+        return
+      }
+      return showSnackbar(`${loginError.message}. ${attemptsMessage}`)
     }
+
+    // Successful login - reset attempts and cooldown
+    await AsyncStorage.removeItem(attemptsKey)
+    await AsyncStorage.removeItem(cooldownKey)
+
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role_id, user_status_id')
@@ -126,15 +187,13 @@ const useAuth = (navigation, onClose) => {
           shouldCreateUser: false,
         },
       })
-
       if (error) {
         return showSnackbar(`Error: ${error.message}.`)
       }
-
       showSnackbar('OTP sent to your email. Please check your inbox.', true)
       
       const subscription = Linking.addEventListener('url', async ({ url }) => {
-        if (url.includes('login')||url.includes('accept-invitation')) {
+        if (url.includes('login')) {
           const session = await createSessionFromUrl(url)
           if (session?.user) {
             await handleLogin(session.user)

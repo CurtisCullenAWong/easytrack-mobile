@@ -326,6 +326,7 @@ const EditProfileSubScreen = ({ navigation }) => {
         email: state.form.email,
       })
       if (error) throw error
+      navigation.navigate('Profile')
       showSnackbar('Email change request sent. Please check your email to confirm the change.', true)
       updateDialog('emailConfirm', false)
     } catch (error) {
@@ -334,7 +335,7 @@ const EditProfileSubScreen = ({ navigation }) => {
       updateState({ saving: false })
     }
   }
-
+  
   const saveProfile = async () => {
     try {
       // Validate all fields
@@ -393,7 +394,7 @@ const EditProfileSubScreen = ({ navigation }) => {
       const { error } = await supabase
         .from('profiles')
         .update({
-          email: state.form.email,
+          // email: state.form.email,
           first_name: capitalizeName(state.form.first_name),
           middle_initial: capitalizeName(state.form.middle_initial),
           last_name: capitalizeName(state.form.last_name),
@@ -540,7 +541,7 @@ const EditProfileSubScreen = ({ navigation }) => {
             style={styles.input}
             right={<TextInput.Icon icon='email' onPress={()=>{
               updateDialog('emailConfirm', true)
-            }}/>}
+            }} color={colors.primary}/>}
             theme={{ colors: { primary: colors.primary } }}
             disabled={state.saving}
             autoCapitalize='words'

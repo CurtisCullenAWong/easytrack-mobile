@@ -1,10 +1,9 @@
 {
   "expo": {
     "scheme": "easytrack",
-    "deepLinking": true,
     "name": "EasyTrack",
     "slug": "easytrack",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon-w_o-name.png",
     "userInterfaceStyle": "light",

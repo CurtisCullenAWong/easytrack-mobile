@@ -18,6 +18,7 @@
     "base64-arraybuffer": "^1.0.2",
     "expo": "52.0.46",
     "expo-auth-session": "~6.0.3",
+    "expo-crypto": "~14.0.2",
     "expo-file-system": "~18.0.12",
     "expo-font": "~13.0.4",
     "expo-image-picker": "~16.0.6",

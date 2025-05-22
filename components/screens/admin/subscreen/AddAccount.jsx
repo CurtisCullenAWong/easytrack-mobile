@@ -4,9 +4,19 @@ import { TextInput, Button, useTheme, Appbar, Text, Portal, Dialog, Surface, Div
 import useSnackbar from '../../../../components/hooks/useSnackbar'
 import { supabase } from '../../../../lib/supabaseAdmin'
 import { useFocusEffect } from '@react-navigation/native'
+import { makeRedirectUri } from 'expo-auth-session'
+import * as Crypto from 'expo-crypto'
+
+const generateSecurePassword = () => {
+  // Generate 16 random bytes and convert to hex string
+  const randomBytes = Crypto.getRandomBytes(16)
+  return Array.from(randomBytes)
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 12)
+}
 
 const sanitizeEmail = (email) => {
-  // Remove leading/trailing whitespace and convert to lowercase
   return email.trim().toLowerCase()
 }
 
@@ -101,7 +111,7 @@ const AddAccount = ({ navigation }) => {
       }
       
       const sanitizedEmail = sanitizeEmail(email)
-      const encryptedValue = 'mypassword'
+      const encryptedValue = generateSecurePassword()
       //SEND EMAIL HERE
       const { data, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(sanitizedEmail, {
         email: sanitizedEmail,
@@ -112,7 +122,7 @@ const AddAccount = ({ navigation }) => {
         options: {
           emailRedirectTo: makeRedirectUri({
             scheme: 'easytrack',
-            path: 'accept-invitation'
+            path: 'confirm-email'
           }),
         },
       })
@@ -127,7 +137,6 @@ const AddAccount = ({ navigation }) => {
           password: null,
           role: null,
         }
-        
       })
       if (updateError) {
         showSnackbar(updateError.message)
@@ -140,6 +149,7 @@ const AddAccount = ({ navigation }) => {
           id: data.user.id,
           email: sanitizedEmail,
           role_id: role_id,
+          user_status_id: 4,
         })
     
       if (profileError) {
