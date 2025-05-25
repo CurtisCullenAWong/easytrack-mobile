@@ -25,6 +25,12 @@
         "foregroundImage": "./assets/icon-w_o-name.png",
         "backgroundColor": "#F1F8E9"
       },
+      "config": {
+        "googleMaps": {
+        "apiKey": "AIzaSyAFA84eJZWuXyM9zsTqfsq0ZsxQuRcIe0c"
+        }
+      },
+      "permissions": ["ACCESS_FINE_LOCATION"],
       "package": "com.curtiscullenwong.EasyTrack"
     },
     "web": {

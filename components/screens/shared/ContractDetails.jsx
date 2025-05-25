@@ -1,17 +1,19 @@
-import { useState, useCallback } from 'react'
-import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native' // <-- Add RefreshControl
-import { Text, Card, Divider, useTheme, Appbar } from 'react-native-paper'
-import { useFocusEffect } from '@react-navigation/native';
+import { useEffect, useState, useCallback } from 'react'
+import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native'
+import { Text, Card, Divider, useTheme, Appbar, Button } from 'react-native-paper'
+import { useFocusEffect } from '@react-navigation/native'
 import Header from '../../customComponents/Header'
-import { supabase } from '../../../lib/supabase' // Adjust path if needed
+import { supabase } from '../../../lib/supabase'
+// import MapView, { Marker } from 'react-native-maps'
+// import * as Location from 'expo-location'
 
 const ContractDetails = ({ navigation, route }) => {
     const { colors, fonts } = useTheme()
     const { contractData } = route.params || {}
-
     const [contractor, setContractor] = useState(null)
     const [subcontractor, setSubcontractor] = useState(null)
-    const [refreshing, setRefreshing] = useState(false) // <-- Add this
+    const [refreshing, setRefreshing] = useState(false)
+    // const [location, setLocation] = useState(null)
 
     useFocusEffect(
         useCallback(() => {
@@ -21,6 +23,22 @@ const ContractDetails = ({ navigation, route }) => {
         }
         }, [contractData])
     )
+    // useEffect(() => {
+    // (async () => {
+    //     try {
+    //     let { status } = await Location.requestForegroundPermissionsAsync()
+    //     if (status !== 'granted') {
+    //         alert('Permission to access location was denied')
+    //         return
+    //     }
+    //     let location = await Location.getCurrentPositionAsync({})
+    //     setLocation(location.coords)
+    //     } catch (e) {
+    //     alert('Error getting location')
+    //     }
+    //     console.log(location)
+    // })()
+    // }, [])
 
     const fetchProfiles = async () => {
         if (contractData?.airline_id) {
@@ -41,7 +59,7 @@ const ContractDetails = ({ navigation, route }) => {
         }
     }
     
-    const onRefresh = useCallback(async () => { // <-- Add this function
+    const onRefresh = useCallback(async () => {
         setRefreshing(true)
         await fetchProfiles()
         setRefreshing(false)
@@ -91,6 +109,68 @@ const ContractDetails = ({ navigation, route }) => {
                 <Appbar.BackAction onPress={() => navigation.navigate('BookingManagement')} />
                 <Appbar.Content title="Contract Details" />
             </Appbar.Header>
+            {/* {location && (
+            <>
+                <MapView
+                    style={styles.map}
+                    initialRegion={{
+                    latitude: 14.4776,
+                    longitude: 121.0103,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                    }}
+                >
+                    <Marker
+                    coordinate={{
+                        latitude: location.latitude,
+                        longitude: location.longitude,
+                    }}
+                    title="You are here"
+                    />
+                </MapView>
+                <View style={{ margin: 16 }}>
+                <Button
+                    mode="contained"
+                    onPress={async () => {
+                        // Format as PostGIS geography point
+                        const point = `POINT(${location.longitude} ${location.latitude})`
+                        const { error } = await supabase
+                            .from('contracts')
+                            .update({ current_location: point })
+                            .eq('id', contractData.id)
+                        if (error) {
+                            alert('Failed to update location')
+                        } else {
+                            alert('Current location set!')
+                            // Optionally refresh contractData here
+                        }
+                        setLocation(location)
+                    }}
+                >
+                    Set as Current Location
+                </Button>
+                <Button
+                    mode="contained"
+                    onPress={async () => {
+                        try {
+                            let { status } = await Location.requestForegroundPermissionsAsync()
+                            if (status !== 'granted') {
+                                alert('Permission to access location was denied')
+                                return
+                            }
+                            let newLocation = await Location.getCurrentPositionAsync({})
+                            setLocation(newLocation.coords)
+                            alert('Map updated to your current location!')
+                        } catch (e) {
+                            alert('Error getting location')
+                        }
+                    }}
+                >
+                    Update Map to Current Location
+                </Button>
+                </View>
+            </>
+            )} */}
             
             <Card style={[styles.card, { backgroundColor: colors.surface }]}>
                 <Card.Content>
@@ -249,6 +329,11 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
+    // map: {
+    //     height: 250, // Add this line
+    //     borderRadius: 12,
+    //     margin: 16,
+    // },
     card: {
         margin: 16,
         borderRadius: 12,

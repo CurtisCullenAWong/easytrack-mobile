@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Provider as PaperProvider } from 'react-native-paper'
 import * as Font from 'expo-font'
 import AsyncStorage from '@react-native-async-storage/async-storage'
