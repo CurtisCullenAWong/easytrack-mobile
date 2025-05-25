@@ -168,16 +168,20 @@ const UserManagement = ({ navigation }) => {
     { key: 'lastUpdated', label: 'Last Updated', width: COLUMN_WIDTH },
   ]
 
-  const handleDeleteAccount = async (userId) => {
+  const handleArchiveAccount = async (userId) => {
     try {
-      const { error } = await supabase.auth.admin.deleteUser(userId)
+      const { error } = await supabase
+        .from('profiles')
+        .update({ user_status_id: 3 })
+        .eq('id', userId)
+      
       if (error) {
-        console.error('Error deleting account:', error)
+        console.error('Error archiving account:', error)
       } else {
         fetchUsers()
       }
     } catch (error) {
-      console.error('Error deleting account:', error)
+      console.error('Error archiving account:', error)
     }
   }
 
@@ -365,8 +369,8 @@ const UserManagement = ({ navigation }) => {
                               email: user.email,
                             })
                           }}
-                          title="Delete Account"
-                          leadingIcon="account-remove"
+                          title="Archive Account"
+                          leadingIcon="archive"
                           titleStyle={[
                             {
                               color: colors.error,
@@ -419,9 +423,9 @@ const UserManagement = ({ navigation }) => {
               style={{ backgroundColor: colors.surface }}
               
             >
-              <Dialog.Title>Account Deletion for {userToDelete.email}</Dialog.Title>
+              <Dialog.Title>Archive Account for {userToDelete.email}</Dialog.Title>
               <Dialog.Content>
-                <Text>This will delete the account and all associated data.</Text>
+                <Text>This will archive the account. The user will no longer be able to access the system.</Text>
                 <Text>Are you sure you want to proceed?</Text>
               </Dialog.Content>
               <Dialog.Actions>
@@ -429,7 +433,7 @@ const UserManagement = ({ navigation }) => {
                 <Button onPress={() => {
                   setShowDialogConfirm(true)
                   setShowDialog(false)
-                }}>Delete</Button>
+                }}>Archive</Button>
               </Dialog.Actions>
             </Dialog>
           </Portal>
@@ -439,17 +443,17 @@ const UserManagement = ({ navigation }) => {
               onDismiss={() => setShowDialogConfirm(false)}
               style={{ backgroundColor: colors.surface }}
             >
-              <Dialog.Title>Are you sure you want to delete this account?</Dialog.Title>
+              <Dialog.Title>Are you sure you want to archive this account?</Dialog.Title>
               <Dialog.Content>
                 <Text>Account Email: {userToDelete.email}</Text>
-                <Text>This action cannot be undone.</Text>
+                <Text>This action can be reversed by an administrator.</Text>
               </Dialog.Content>
               <Dialog.Actions>
                 <Button onPress={() => setShowDialogConfirm(false)}>Cancel</Button>
                 <Button style={{backgroundColor: colors.error}} onPress={() => {
                   setShowDialogConfirm(false)
-                  handleDeleteAccount(userToDelete.id)
-                }}><Text style={[fonts.labelLarge, { color: colors.onError }]}>Confirm Deletion</Text></Button>
+                  handleArchiveAccount(userToDelete.id)
+                }}><Text style={[fonts.labelLarge, { color: colors.onError }]}>Confirm Archive</Text></Button>
               </Dialog.Actions>
             </Dialog>
           </Portal>

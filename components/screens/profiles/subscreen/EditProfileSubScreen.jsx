@@ -94,7 +94,11 @@ const EditProfileSubScreen = ({ navigation }) => {
   }
 
   const validatePhoneNumber = (number, field) => {
-    if (number && !/^9\d{9}$/.test(number)) {
+    if (!number) {
+      setErrors(prev => ({ ...prev, [field]: 'Phone number is required' }))
+      return false
+    }
+    if (!/^9\d{9}$/.test(number)) {
       setErrors(prev => ({ ...prev, [field]: 'Phone number must start with 9 and have 10 digits' }))
       return false
     }
@@ -352,7 +356,13 @@ const EditProfileSubScreen = ({ navigation }) => {
       ]
 
       if (validations.some(valid => !valid)) {
-        showSnackbar('Please fix the validation errors before saving')
+        const errorFields = Object.entries(errors)
+          .filter(([_, error]) => error)
+          .map(([field]) => field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()))
+        
+        if (errorFields.length > 0) {
+          showSnackbar(`Please fix the following fields: ${errorFields.join(', ')}`)
+        }
         return
       }
 
@@ -546,7 +556,7 @@ const EditProfileSubScreen = ({ navigation }) => {
             disabled={state.saving}
             autoCapitalize='words'
             maxLength={35}
-            editable={true}
+            editable={false}
             error={!!errors.email}
             helperText={errors.email}
           />
