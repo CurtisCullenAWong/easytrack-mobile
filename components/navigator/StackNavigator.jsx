@@ -5,6 +5,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 
 // Shared Screens
 import LoginScreen from '../screens/shared/LoginScreen'
+import ContractDetails from '../screens/shared/ContractDetails'
+
 import MessageCenter from '../screens/MessageCenter'
 import BookingHistory from '../screens/BookingHistory'
 import PerformanceStatistics from '../screens/PerformanceStatistics'
@@ -25,7 +27,6 @@ import ViewAccountScreen from '../screens/admin/subscreen/ViewAccountScreen'
 import AirlineHome from '../screens/airline/AirlineHome'
 import TrackLuggage from '../screens/airline/AirlineTrackLuggage'
 import AirlineBookingManagement from '../screens/airline/BookingManagement'
-import ContractDetails from '../screens/airline/subscreen/ContractDetails'
 
 // Delivery Screens
 import DeliveryHome from '../screens/delivery/DeliveryHome'
@@ -99,6 +100,7 @@ const DeliveryDrawer = () => (
   >
       <Drawer.Screen name="DeliveryHome" component={DeliveryHome} />
       <Drawer.Screen name="BookingManagement" component={DeliveryBookingManagement} />
+      <Drawer.Screen name="ContractDetails" component={ContractDetails} />
 
       {/* SHARED SCREENS */}
       <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />

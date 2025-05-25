@@ -2,12 +2,12 @@ import React, { useState } from 'react'
 import { View, StyleSheet } from 'react-native'
 import { SegmentedButtons, useTheme } from 'react-native-paper'
 import Header from '../../customComponents/Header'
-import MakeContracts from './subscreen/MakeContracts'
-import ContractsMade from './subscreen/ContractsMade'
+import AcceptContracts from './subscreen/AcceptContracts'
+import ContractsAccepted from './subscreen/ContractsAccepted'
 
 const BookingManagement = ({ navigation }) => {
   const { colors } = useTheme()
-  const [mode, setMode] = useState('create')
+  const [mode, setMode] = useState(1)
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Header navigation={navigation} title="Booking Management" />
@@ -17,18 +17,18 @@ const BookingManagement = ({ navigation }) => {
           value={mode}
           onValueChange={setMode}
           buttons={[
-            { value: 'create', label: 'Accept Contracts' },
-            { value: 'made', label: 'Contracts Accepted' },
+            { value: 1, label: 'Accept Contracts' },
+            { value: 2, label: 'Contracts Accepted' },
           ]}
           style={{ marginHorizontal: 16 }}
         />
       </View>
 
       <View style={styles.content}>
-        {mode === 'made' ? (
-          <ContractsMade navigation={navigation} />
+        {mode === 1 ? (
+          <AcceptContracts navigation={navigation} />
         ) : (
-          <MakeContracts navigation={navigation} />
+          <ContractsAccepted navigation={navigation} />
         )}
 
       </View>

@@ -1,7 +1,6 @@
-import React from 'react'
 import { View, ScrollView, StyleSheet } from 'react-native'
 import { Text, Card, Divider, useTheme, Appbar } from 'react-native-paper'
-import Header from '../../../customComponents/Header'
+import Header from '../../customComponents/Header'
 
 const ContractDetails = ({ navigation, route }) => {
     const { colors, fonts } = useTheme()

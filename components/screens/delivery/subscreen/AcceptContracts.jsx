@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { View, FlatList, StyleSheet } from 'react-native'
-import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu } from 'react-native-paper'
+import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, Portal, Dialog } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 
-const ContractsMade = ({ navigation }) => {
+const AcceptContracts = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   const [currentTime, setCurrentTime] = useState('')
@@ -16,6 +16,9 @@ const ContractsMade = ({ navigation }) => {
   const [sortMenuVisible, setSortMenuVisible] = useState(false)
   const [sortColumn, setSortColumn] = useState('created_at')
   const [sortDirection, setSortDirection] = useState('descending')
+  const [acceptDialogVisible, setAcceptDialogVisible] = useState(false)
+  const [selectedContract, setSelectedContract] = useState(null)
+  const [accepting, setAccepting] = useState(false)
 
   const filterOptions = [
     { label: 'Contract ID', value: 'id' },
@@ -86,7 +89,7 @@ const ContractsMade = ({ navigation }) => {
             suffix
           )
         `)
-        .eq('airline_id', user.id)
+        .eq('contract_status_id',1)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -174,27 +177,38 @@ const ContractsMade = ({ navigation }) => {
     navigation.navigate('ContractDetails', { contractData: contract })
   }
 
-  const handleCancelContract = async (contract) => {
+  // Accept contract logic
+  const handleAcceptContract = (contract) => {
+    setSelectedContract(contract)
+    setAcceptDialogVisible(true)
+  }
+
+  const confirmAcceptContract = async () => {
+    if (!selectedContract) return
+    setAccepting(true)
     try {
-      if (contract.contract_status_id !== 1) {
-        showSnackbar('Only contracts with status "Pending" can be cancelled', false)
-        return
-      }
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
 
       const { error } = await supabase
         .from('contract')
         .update({
-          contract_status_id: 2,
-          cancelled_at: new Date().toISOString()
+          contract_status_id: 3, // Accepted - Awaiting Pickup
+          pickup_at: new Date().toISOString(),
+          delivery_id: user.id,
         })
-        .eq('id', contract.id)
+        .eq('id', selectedContract.id)
 
       if (error) throw error
 
-      showSnackbar('Contract cancelled successfully', true)
+      showSnackbar('Contract accepted successfully', true)
       fetchContracts()
     } catch (error) {
-      showSnackbar('Error cancelling contract: ' + error.message)
+      showSnackbar('Error accepting contract: ' + error.message)
+    } finally {
+      setAccepting(false)
+      setAcceptDialogVisible(false)
+      setSelectedContract(null)
     }
   }
 
@@ -290,16 +304,18 @@ const ContractsMade = ({ navigation }) => {
             )}
           </View>
           <Divider />
-          <Button 
-            mode="contained" 
-            onPress={() => navigation.navigate('AirlineTrackLuggage', { 
-              contractId: contract.id,
-              contractData: contract 
-            })} 
-            style={[styles.actionButton, { backgroundColor: colors.primary }]}
-          >
-            Track Delivery
-          </Button>
+          {/* Accept Contract button for Pending contracts */}
+          {contract.contract_status_id === 1 && (
+            <Button 
+              mode="contained" 
+              onPress={() => handleAcceptContract(contract)} 
+              style={[styles.actionButton, { backgroundColor: colors.primary }]}
+              loading={accepting && selectedContract?.id === contract.id}
+              disabled={accepting}
+            >
+              Accept Contract
+            </Button>
+          )}
           <Button 
             mode="contained" 
             onPress={() => handleShowDetails(contract)} 
@@ -307,15 +323,6 @@ const ContractsMade = ({ navigation }) => {
           >
             Show Details
           </Button>
-          {contract.contract_status_id === 1 && (
-            <Button 
-              mode="contained" 
-              onPress={() => handleCancelContract(contract)} 
-              style={[styles.actionButton, { backgroundColor: colors.error }]}
-            >
-              Cancel Contract
-            </Button>
-          )}
         </Card.Content>
       </Card>
     )
@@ -427,6 +434,26 @@ const ContractsMade = ({ navigation }) => {
         refreshing={loading}
         onRefresh={fetchContracts}
       />
+      {/* Accept Contract Dialog */}
+      <Portal>
+        <Dialog
+          visible={acceptDialogVisible}
+          onDismiss={() => setAcceptDialogVisible(false)}
+        >
+          <Dialog.Title>Accept Contract</Dialog.Title>
+          <Dialog.Content>
+            <Text>
+              Are you sure you want to accept this contract? This will assign it to you and set the pickup time.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setAcceptDialogVisible(false)} disabled={accepting}>Cancel</Button>
+            <Button onPress={confirmAcceptContract} loading={accepting} disabled={accepting}>
+              Accept
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   )
 }
@@ -523,4 +550,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default ContractsMade
+export default AcceptContracts

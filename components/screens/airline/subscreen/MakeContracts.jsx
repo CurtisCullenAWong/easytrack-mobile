@@ -113,24 +113,23 @@ const MakeContracts = () => {
       setQuantityError('')
 
     } catch (error) {
-      console.error('Error creating contract:', error)
       showSnackbar('Error creating contract: ' + error.message)
     } finally {
       setLoading(false)
     }
   }
   useEffect(() => {
-    handleQuantityChange(luggageQuantity) // Ensure luggage details are updated when quantity changes
+    handleQuantityChange(luggageQuantity)
   }, [luggageQuantity])
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>
       {SnackbarElement}
       <View style={{ paddingHorizontal: 16 }}>
-      <Button
+        <Button
           mode="contained"
           onPress={handleSubmit}
-          style={{ marginTop: 20, borderRadius: 8 }}
+          style={{ borderRadius: 8 }}
           contentStyle={{ paddingVertical: 8 }}
           loading={loading}
           disabled={loading}

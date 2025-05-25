@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { View, FlatList, StyleSheet } from 'react-native'
 import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 
-const ContractsMade = ({ navigation }) => {
+const ContractsAccepted = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   const [currentTime, setCurrentTime] = useState('')
@@ -77,16 +77,22 @@ const ContractsMade = ({ navigation }) => {
             item_description,
             weight,
             contact_number
+          ),
+          airline_profile:airline_id (
+            pfp_id,
+            first_name,
+            middle_initial,
+            last_name,
+            suffix
           )
         `)
-        .eq('airline_id', user.id)
+        .eq('delivery_id', user.id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
 
       setContracts(data || [])
     } catch (error) {
-      console.error('Error fetching contracts:', error)
       showSnackbar('Error loading contracts: ' + error.message)
     } finally {
       setLoading(false)
@@ -186,16 +192,13 @@ const ContractsMade = ({ navigation }) => {
       if (error) throw error
 
       showSnackbar('Contract cancelled successfully', true)
-      fetchContracts() // Refresh the contracts list
+      fetchContracts()
     } catch (error) {
-      console.error('Error cancelling contract:', error)
       showSnackbar('Error cancelling contract: ' + error.message)
     }
   }
 
-  const ContractCard = ({ contract }) => {
-    const firstLuggage = contract.luggage_info?.[0] || {}
-    
+  const ContractCard = ({ contract }) => {    
     return (
       <Card style={[styles.contractCard, { backgroundColor: colors.surface }]}>
         <Card.Content>
@@ -205,20 +208,37 @@ const ContractsMade = ({ navigation }) => {
           </View>
           <Divider />
           <View style={styles.passengerInfoContainer}>
-            <Avatar.Image
-              size={40}
-              source={require('../../../../assets/profile-placeholder.png')}
-              style={styles.avatarImage}
-            />
+            
+            {contract.airline_profile?.pfp_id ? (
+                <Avatar.Image 
+                    size={40} 
+                    source={{ uri: contract.airline_profile?.pfp_id }}
+                    style={[styles.avatarImage,{ backgroundColor: colors.primary }]}
+                />
+            ) : (
+                <Avatar.Text 
+                    size={40} 
+                    label={contract.airline_profile?.first_name ? contract.airline_profile?.first_name[0].toUpperCase() : 'U'}
+                    style={[styles.avatarImage,{ backgroundColor: colors.primary }]}
+                    labelStyle={{ color: colors.onPrimary }}
+                />
+            )}
             <View>
-              <Text style={[fonts.labelSmall, { fontWeight: 'bold', color: colors.primary }]}>
-                {firstLuggage.luggage_owner || 'N/A'}
-              </Text>
+              <View style={{ flexDirection: 'row', gap: 5 }}>
+                <Text style={[fonts.labelMedium, { fontWeight: 'bold', color: colors.primary }]}>
+                  Contractor Name:
+                </Text>
+                <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
+                  {[
+                    contract.airline_profile?.first_name,
+                    contract.airline_profile?.middle_initial,
+                    contract.airline_profile?.last_name,
+                    contract.airline_profile?.suffix
+                  ].filter(Boolean).join(' ') || 'N/A'}
+                </Text>
+              </View>
               <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
-                Case #{firstLuggage.case_number || 'N/A'}
-              </Text>
-              <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
-                Items: {contract.luggage_quantity || 0}
+                Luggage Quantity: {contract.luggage_quantity || 0}
               </Text>
             </View>
           </View>
@@ -245,7 +265,11 @@ const ContractsMade = ({ navigation }) => {
               </View>
             ))}
           </View>
+          <Divider />
           <View style={styles.detailsContainer}>
+            <Text style={[fonts.labelLarge, styles.statusLabel]}>
+              Date Information:
+            </Text>
             <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
               Created: {formatDate(contract.created_at)}
             </Text>
@@ -265,6 +289,7 @@ const ContractsMade = ({ navigation }) => {
               </Text>
             )}
           </View>
+          <Divider />
           <Button 
             mode="contained" 
             onPress={() => navigation.navigate('AirlineTrackLuggage', { 
@@ -314,7 +339,7 @@ const ContractsMade = ({ navigation }) => {
           style={[styles.searchbar, { backgroundColor: colors.surface }]}
         />
       </View>
-              <View style={styles.buttonGroup}>
+        <View style={styles.buttonGroup}>
           <Menu
             visible={filterMenuVisible}
             onDismiss={() => setFilterMenuVisible(false)}
@@ -386,9 +411,14 @@ const ContractsMade = ({ navigation }) => {
                 leadingIcon={sortColumn === option.value ? 'check' : undefined}
               />
             ))}
-          </Menu>
-          
+          </Menu>    
         </View>
+      {/* Indication for contracts availability */}
+      {loading ? null : filteredAndSortedContracts.length === 0 && (
+        <Text style={[fonts.bodyMedium,{ textAlign: 'center', color: colors.onSurfaceVariant, marginTop: 30, marginBottom: 10 }]}>
+          No contracts available.
+        </Text>
+      )}
       <FlatList
         data={filteredAndSortedContracts}
         keyExtractor={(item) => item.id.toString()}
@@ -493,4 +523,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default ContractsMade
+export default ContractsAccepted
