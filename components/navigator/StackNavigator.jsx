@@ -25,6 +25,7 @@ import ViewAccountScreen from '../screens/admin/subscreen/ViewAccountScreen'
 import AirlineHome from '../screens/airline/AirlineHome'
 import TrackLuggage from '../screens/airline/AirlineTrackLuggage'
 import AirlineBookingManagement from '../screens/airline/BookingManagement'
+import ContractDetails from '../screens/airline/subscreen/ContractDetails'
 
 // Delivery Screens
 import DeliveryHome from '../screens/delivery/DeliveryHome'
@@ -78,6 +79,7 @@ const AirlineDrawer = () => (
       <Drawer.Screen name="AirlineHome" component={AirlineHome} />
       <Drawer.Screen name="AirlineTrackLuggage" component={TrackLuggage} />
       <Drawer.Screen name="BookingManagement" component={AirlineBookingManagement} />
+      <Drawer.Screen name="ContractDetails" component={ContractDetails} />
       {/* SHARED SCREENS */}
       <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />
       <Drawer.Screen name="BookingHistory" component={BookingHistory} />

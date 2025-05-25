@@ -1,17 +1,21 @@
 import React, { useState } from 'react'
 import { View, ScrollView, StyleSheet } from 'react-native'
-import { useTheme, TextInput, Button, Text, IconButton } from 'react-native-paper'
+import { useTheme, TextInput, Button, Text, IconButton, Menu } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 
 const MakeContracts = () => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
-  const [address, setAddress] = useState('')
+  const [dropOffLocation, setDropOffLocation] = useState('')
+  const [pickupLocation, setPickupLocation] = useState('')
+  const [showPickupMenu, setShowPickupMenu] = useState(false)
   const [luggageQuantity, setLuggageQuantity] = useState(0)
   const [luggageDetails, setLuggageDetails] = useState([])
   const [quantityError, setQuantityError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  const pickupBays = Array.from({ length: 18 }, (_, i) => `Bay ${i + 1}`)
 
   const handleQuantityChange = (newQuantity) => {
     if (newQuantity < 1 || newQuantity > 10) {
@@ -46,8 +50,13 @@ const MakeContracts = () => {
       if (!user) throw new Error('User not authenticated')
 
       // Validate required fields
-      if (!address) {
-        showSnackbar('Please enter a delivery address')
+      if (!dropOffLocation) {
+        showSnackbar('Please enter a drop-off location')
+        return
+      }
+
+      if (!pickupLocation) {
+        showSnackbar('Please select a pickup location')
         return
       }
 
@@ -64,42 +73,41 @@ const MakeContracts = () => {
         }
       }
 
-      // Insert luggage information first
-      const { data: luggageInfo, error: luggageError } = await supabase
-        .from('contract_luggage_information')
-        .insert(
-          luggageDetails.map(detail => ({
-            id: 1,
-            luggage_owner: detail.name,
-            case_number: detail.caseNumber,
-            item_description: detail.itemDescription,
-            weight: parseFloat(detail.weight),
-            contact_number: detail.contact
-          }))
-        )
-        .select()
-
-      if (luggageError) throw luggageError
-
-      // Insert contract
+      // Insert contract first
       const { data: contract, error: contractError } = await supabase
         .from('contract')
         .insert({
-          id: 1,
-          contract_status_id: 1, // Assuming 1 is the initial status
-          airline_uid: user.id,
           luggage_quantity: luggageQuantity,
-          drop_off_location: address,
-          luggage_information_id: luggageInfo[0].id // Using the first luggage info ID as reference
+          pickup_location: pickupLocation,
+          drop_off_location: dropOffLocation,
+          airline_id: user.id,
+          contract_status_id: 1 // Initial status
         })
         .select()
 
       if (contractError) throw contractError
 
+      // Insert luggage information with contract reference
+      const { error: luggageError } = await supabase
+        .from('contract_luggage_information')
+        .insert(
+          luggageDetails.map(detail => ({
+            luggage_owner: detail.name,
+            case_number: detail.caseNumber,
+            item_description: detail.itemDescription,
+            weight: parseInt(detail.weight),
+            contact_number: detail.contact,
+            contract_id: contract[0].id
+          }))
+        )
+
+      if (luggageError) throw luggageError
+
       showSnackbar('Contract created successfully', true)
       
       // Reset form
-      setAddress('')
+      setDropOffLocation('')
+      setPickupLocation('')
       setLuggageQuantity(0)
       setLuggageDetails([])
       setQuantityError('')
@@ -115,8 +123,8 @@ const MakeContracts = () => {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>
       {SnackbarElement}
-      <View style={{ padding: 16 }}>
-        <Button
+      <View style={{ paddingHorizontal: 16 }}>
+      <Button
           mode="contained"
           onPress={handleSubmit}
           style={{ marginTop: 20, borderRadius: 8 }}
@@ -126,10 +134,38 @@ const MakeContracts = () => {
         >
           Submit Contract
         </Button>
+        <Menu
+          visible={showPickupMenu}
+          onDismiss={() => setShowPickupMenu(false)}
+          anchor={
+            <TextInput
+              label="Pickup Location"
+              value={pickupLocation}
+              mode="outlined"
+              style={{ marginBottom: 16 }}
+              right={<TextInput.Icon icon="menu-down" />}
+              onPressIn={() => setShowPickupMenu(true)}
+            />
+          }
+          contentStyle={{ backgroundColor: colors.surface }}
+
+        >
+          {pickupBays.map((bay) => (
+            <Menu.Item
+              key={bay}
+              onPress={() => {
+                setPickupLocation(bay)
+                setShowPickupMenu(false)
+              }}
+              title={bay}
+            />
+          ))}
+        </Menu>
+
         <TextInput
-          label="Delivery Address"
-          value={address}
-          onChangeText={setAddress}
+          label="Drop-off Location"
+          value={dropOffLocation}
+          onChangeText={setDropOffLocation}
           mode="outlined"
           style={{ marginBottom: 16 }}
         />
