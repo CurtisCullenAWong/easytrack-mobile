@@ -77,6 +77,13 @@ const ContractsMade = ({ navigation }) => {
             item_description,
             weight,
             contact_number
+          ),
+          airline_profile:airline_id (
+            pfp_id,
+            first_name,
+            middle_initial,
+            last_name,
+            suffix
           )
         `)
         .eq('airline_id', user.id)
@@ -193,9 +200,7 @@ const ContractsMade = ({ navigation }) => {
     }
   }
 
-  const ContractCard = ({ contract }) => {
-    const firstLuggage = contract.luggage_info?.[0] || {}
-    
+  const ContractCard = ({ contract }) => {    
     return (
       <Card style={[styles.contractCard, { backgroundColor: colors.surface }]}>
         <Card.Content>
@@ -205,20 +210,37 @@ const ContractsMade = ({ navigation }) => {
           </View>
           <Divider />
           <View style={styles.passengerInfoContainer}>
-            <Avatar.Image
-              size={40}
-              source={require('../../../../assets/profile-placeholder.png')}
-              style={styles.avatarImage}
-            />
+            
+            {contract.airline_profile?.pfp_id ? (
+                <Avatar.Image 
+                    size={40} 
+                    source={{ uri: contract.airline_profile?.pfp_id }}
+                    style={[styles.avatarImage,{ backgroundColor: colors.primary }]}
+                />
+            ) : (
+                <Avatar.Text 
+                    size={40} 
+                    label={contract.airline_profile?.first_name ? contract.airline_profile?.first_name[0].toUpperCase() : 'U'}
+                    style={[styles.avatarImage,{ backgroundColor: colors.primary }]}
+                    labelStyle={{ color: colors.onPrimary }}
+                />
+            )}
             <View>
-              <Text style={[fonts.labelSmall, { fontWeight: 'bold', color: colors.primary }]}>
-                {firstLuggage.luggage_owner || 'N/A'}
-              </Text>
+              <View style={{ flexDirection: 'row', gap: 5 }}>
+                <Text style={[fonts.labelMedium, { fontWeight: 'bold', color: colors.primary }]}>
+                  Contractor Name:
+                </Text>
+                <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
+                  {[
+                    contract.airline_profile?.first_name,
+                    contract.airline_profile?.middle_initial,
+                    contract.airline_profile?.last_name,
+                    contract.airline_profile?.suffix
+                  ].filter(Boolean).join(' ') || 'N/A'}
+                </Text>
+              </View>
               <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
-                Case #{firstLuggage.case_number || 'N/A'}
-              </Text>
-              <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
-                Items: {contract.luggage_quantity || 0}
+                Luggage Quantity: {contract.luggage_quantity || 0}
               </Text>
             </View>
           </View>

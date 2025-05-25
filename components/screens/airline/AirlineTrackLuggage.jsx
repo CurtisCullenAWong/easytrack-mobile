@@ -77,7 +77,6 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
 
             setContractData(data)
         } catch (error) {
-            console.error('Error tracking luggage:', error)
             showSnackbar('Error tracking luggage: ' + error.message)
             setContractData(null)
         } finally {
@@ -87,8 +86,6 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
 
     const renderContractInfo = () => {
         if (!contractData) return null
-
-        const firstLuggage = contractData.luggage_info?.[0] || {}
 
         return (
             <Card style={[styles.contractCard, { backgroundColor: colors.surface }]}>
@@ -111,26 +108,50 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
                             {contractData.contract_status?.status_name || 'Unknown'}
                         </Text>
                     </View>
+                    <View style={styles.infoRow}>
+                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Luggage Quantity:</Text>
+                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{contractData.luggage_quantity || 0}</Text>
+                    </View>
 
                     <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
                         Luggage Information
                     </Text>
                     <Divider style={{ marginBottom: 10 }} />
 
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Owner:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{firstLuggage.luggage_owner || 'N/A'}</Text>
-                    </View>
-
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Case Number:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{firstLuggage.case_number || 'N/A'}</Text>
-                    </View>
-
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Items:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{contractData.luggage_quantity || 0}</Text>
-                    </View>
+                    {Array.isArray(contractData.luggage_info) && contractData.luggage_info.length > 0 ? (
+                        contractData.luggage_info.map((luggage, idx) => (
+                            <View key={idx} style={{ marginBottom: 10 }}>
+                                <Text style={[fonts.labelMedium, { color: colors.primary }]}>
+                                    Luggage #{idx + 1}
+                                </Text>
+                                <View style={styles.infoRow}>
+                                    <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Owner:</Text>
+                                    <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{luggage.luggage_owner || 'N/A'}</Text>
+                                </View>
+                                <View style={styles.infoRow}>
+                                    <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Case Number:</Text>
+                                    <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{luggage.case_number || 'N/A'}</Text>
+                                </View>
+                                <View style={styles.infoRow}>
+                                    <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Description:</Text>
+                                    <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{luggage.item_description || 'N/A'}</Text>
+                                </View>
+                                <View style={styles.infoRow}>
+                                    <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Weight:</Text>
+                                    <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{luggage.weight || 'N/A'}</Text>
+                                </View>
+                                <View style={styles.infoRow}>
+                                    <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Contact:</Text>
+                                    <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{luggage.contact_number || 'N/A'}</Text>
+                                </View>
+                                {idx !== contractData.luggage_info.length - 1 && (
+                                    <Divider style={{ marginVertical: 5 }} />
+                                )}
+                            </View>
+                        ))
+                    ) : (
+                        <Text style={[fonts.bodyMedium, { color: colors.onSurfaceVariant }]}>No luggage information available.</Text>
+                    )}
 
                     <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
                         Location Information

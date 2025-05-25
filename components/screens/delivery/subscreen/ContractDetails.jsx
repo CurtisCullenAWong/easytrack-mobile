@@ -45,9 +45,7 @@ const ContractDetails = ({ navigation, route }) => {
                     
                     <View style={styles.infoRow}>
                         <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Contract ID:</Text>
-                    </View>
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable>{contractData.id}</Text>
+                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{contractData.id}</Text>
                     </View>
 
                     <View style={styles.infoRow}>

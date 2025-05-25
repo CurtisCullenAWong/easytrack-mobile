@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.hahatrashboat.EasyTrack",
+      "bundleIdentifier": "com.curtiscullenwong.EasyTrack",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -25,7 +25,7 @@
         "foregroundImage": "./assets/icon-w_o-name.png",
         "backgroundColor": "#F1F8E9"
       },
-      "package": "com.hahatrashboat.EasyTrack"
+      "package": "com.curtiscullenwong.EasyTrack"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -39,7 +39,7 @@
         "projectId": "58eeebf8-4019-4509-947c-2185c24313a8"
       }
     },
-    "owner": "hahatrashboat",
+    "owner": "curtiscullenwong",
     "runtimeVersion": {
       "policy": "appVersion"
     },

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { View, ScrollView, StyleSheet } from 'react-native'
 import { useTheme, TextInput, Button, Text, IconButton, Menu } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
@@ -10,7 +10,7 @@ const MakeContracts = () => {
   const [dropOffLocation, setDropOffLocation] = useState('')
   const [pickupLocation, setPickupLocation] = useState('')
   const [showPickupMenu, setShowPickupMenu] = useState(false)
-  const [luggageQuantity, setLuggageQuantity] = useState(0)
+  const [luggageQuantity, setLuggageQuantity] = useState(1)
   const [luggageDetails, setLuggageDetails] = useState([])
   const [quantityError, setQuantityError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -119,6 +119,9 @@ const MakeContracts = () => {
       setLoading(false)
     }
   }
+  useEffect(() => {
+    handleQuantityChange(luggageQuantity) // Ensure luggage details are updated when quantity changes
+  }, [luggageQuantity])
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>

@@ -1,15 +1,42 @@
 import React, { useState, useEffect } from 'react'
 import { View, FlatList, StyleSheet } from 'react-native'
-import { Text, Button, Card, Avatar, Divider, IconButton, useTheme } from 'react-native-paper'
+import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
-import useSnackbar from '../../../../components/hooks/useSnackbar'
+import useSnackbar from '../../../hooks/useSnackbar'
 
-const ContractsMade = () => {
+const ContractsMade = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   const [currentTime, setCurrentTime] = useState('')
   const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchColumn, setSearchColumn] = useState('id')
+  const [filterMenuVisible, setFilterMenuVisible] = useState(false)
+  const [sortMenuVisible, setSortMenuVisible] = useState(false)
+  const [sortColumn, setSortColumn] = useState('created_at')
+  const [sortDirection, setSortDirection] = useState('descending')
+
+  const filterOptions = [
+    { label: 'Contract ID', value: 'id' },
+    { label: 'Luggage Owner', value: 'luggage_owner' },
+    { label: 'Case Number', value: 'case_number' },
+    { label: 'Status', value: 'status' },
+    { label: 'Pickup Location', value: 'pickup_location' },
+    { label: 'Current Location', value: 'current_location' },
+    { label: 'Drop-off Location', value: 'drop_off_location' },
+  ]
+
+  const sortOptions = [
+    { label: 'Contract ID', value: 'id' },
+    { label: 'Luggage Owner', value: 'luggage_owner' },
+    { label: 'Case Number', value: 'case_number' },
+    { label: 'Status', value: 'contract_status.status_name' },
+    { label: 'Created Date', value: 'created_at' },
+    { label: 'Pickup Date', value: 'pickup_at' },
+    { label: 'Delivery Date', value: 'delivered_at' },
+    { label: 'Cancellation Date', value: 'cancelled_at' },
+  ]
 
   useEffect(() => {
     const updateTime = () =>
@@ -44,7 +71,7 @@ const ContractsMade = () => {
         .select(`
           *,
           contract_status:contract_status_id (status_name),
-          luggage_info:luggage_information_id (
+          luggage_info:contract_luggage_information (
             luggage_owner,
             case_number,
             item_description,
@@ -52,7 +79,7 @@ const ContractsMade = () => {
             contact_number
           )
         `)
-        .eq('airline_uid', user.id)
+        .eq('airline_id', user.id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -66,99 +93,304 @@ const ContractsMade = () => {
     }
   }
 
-  const ContractCard = ({ contract }) => (
-    <Card style={[styles.contractCard, { backgroundColor: colors.surface }]}>
-      <Card.Content>
-        <View style={styles.contractCardHeader}>
-          <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>CONTRACT ID</Text>
-          <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>{contract.id}</Text>
-        </View>
-        <Divider />
-        <View style={styles.passengerInfoContainer}>
-          <Avatar.Image
-            size={40}
-            source={require('../../../../assets/profile-placeholder.png')}
-            style={styles.avatarImage}
-          />
-          <View>
-            <Text style={[fonts.labelSmall, { fontWeight: 'bold', color: colors.primary }]}>
-              {contract.luggage_info?.luggage_owner || 'N/A'}
-            </Text>
-            <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
-              Case #{contract.luggage_info?.case_number || 'N/A'}
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      setSortDirection(prev => prev === 'ascending' ? 'descending' : 'ascending')
+    } else {
+      setSortColumn(column)
+      setSortDirection('ascending')
+    }
+  }
+
+  const getSortIcon = (column) => {
+    if (sortColumn !== column) return ''
+    return sortDirection === 'ascending' ? '▲' : '▼'
+  }
+
+  const getSortLabel = () => {
+    const option = sortOptions.find(opt => opt.value === sortColumn)
+    return `${option?.label || 'Sort By'} ${getSortIcon(sortColumn)}`
+  }
+
+  const filteredAndSortedContracts = contracts
+    .filter(contract => {
+      const searchValue = String(
+        searchColumn === 'luggage_owner' || searchColumn === 'case_number'
+          ? contract.luggage_info?.[0]?.[searchColumn] || ''
+          : contract[searchColumn] || ''
+      ).toLowerCase()
+      const query = searchQuery.toLowerCase()
+      return searchValue.includes(query)
+    })
+    .sort((a, b) => {
+      let valA, valB
+
+      if (sortColumn === 'luggage_owner' || sortColumn === 'case_number') {
+        valA = a.luggage_info?.[0]?.[sortColumn] || ''
+        valB = b.luggage_info?.[0]?.[sortColumn] || ''
+      } else if (sortColumn === 'contract_status.status_name') {
+        valA = a.contract_status?.status_name || ''
+        valB = b.contract_status?.status_name || ''
+      } else {
+        valA = a[sortColumn] || ''
+        valB = b[sortColumn] || ''
+      }
+
+      // Special handling for date columns
+      if (['created_at', 'pickup_at', 'delivered_at', 'cancelled_at'].includes(sortColumn)) {
+        if (!valA) return sortDirection === 'ascending' ? -1 : 1
+        if (!valB) return sortDirection === 'ascending' ? 1 : -1
+        return sortDirection === 'ascending'
+          ? new Date(valA) - new Date(valB)
+          : new Date(valB) - new Date(valA)
+      }
+
+      // Default sorting for non-date columns
+      if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
+      if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
+      return 0
+    })
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Not set'
+    return new Date(dateString).toLocaleString('en-PH', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'Asia/Manila',
+    })
+  }
+
+  const handleShowDetails = (contract) => {
+    navigation.navigate('ContractDetails', { contractData: contract })
+  }
+
+  const handleCancelContract = async (contract) => {
+    try {
+      if (contract.contract_status_id !== 1) {
+        showSnackbar('Only contracts with status "Pending" can be cancelled', false)
+        return
+      }
+
+      const { error } = await supabase
+        .from('contract')
+        .update({
+          contract_status_id: 2,
+          cancelled_at: new Date().toISOString()
+        })
+        .eq('id', contract.id)
+
+      if (error) throw error
+
+      showSnackbar('Contract cancelled successfully', true)
+      fetchContracts() // Refresh the contracts list
+    } catch (error) {
+      console.error('Error cancelling contract:', error)
+      showSnackbar('Error cancelling contract: ' + error.message)
+    }
+  }
+
+  const ContractCard = ({ contract }) => {
+    const firstLuggage = contract.luggage_info?.[0] || {}
+    
+    return (
+      <Card style={[styles.contractCard, { backgroundColor: colors.surface }]}>
+        <Card.Content>
+          <View style={styles.contractCardHeader}>
+            <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>CONTRACT ID</Text>
+            <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>{contract.id || 'N/A'}</Text>
+          </View>
+          <Divider />
+          <View style={styles.passengerInfoContainer}>
+            <Avatar.Image
+              size={40}
+              source={require('../../../../assets/profile-placeholder.png')}
+              style={styles.avatarImage}
+            />
+            <View>
+              <Text style={[fonts.labelSmall, { fontWeight: 'bold', color: colors.primary }]}>
+                {firstLuggage.luggage_owner || 'N/A'}
+              </Text>
+              <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
+                Case #{firstLuggage.case_number || 'N/A'}
+              </Text>
+              <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
+                Items: {contract.luggage_quantity || 0}
+              </Text>
+            </View>
+          </View>
+          <Divider />
+          <View style={styles.statusContainer}>
+            <Text style={[fonts.labelSmall, styles.statusLabel]}>STATUS:</Text>
+            <Text style={[fonts.bodySmall, styles.statusValue, { color: colors.primary }]}>
+              {contract.contract_status?.status_name || 'Unknown'}
             </Text>
           </View>
-        </View>
-        <Divider />
-        <View style={styles.statusContainer}>
-          <Text style={[fonts.labelSmall, styles.statusLabel]}>STATUS:</Text>
-          <Text style={[fonts.bodySmall, styles.statusValue, { color: colors.primary }]}>
-            {contract.contract_status?.status_name || 'Unknown'}
-          </Text>
-        </View>
-        <Divider />
-        <View style={styles.locationContainer}>
-          {[
-            { location: contract.pickup_location, label: 'Pickup', color: colors.primary },
-            { location: contract.current_location, label: 'Current', color: colors.secondary },
-            { location: contract.drop_off_location, label: 'Drop-off', color: colors.error }
-          ].map((loc, idx) => (
-            <View key={idx} style={styles.locationRow}>
-              <IconButton icon="map-marker" size={20} iconColor={loc.color} />
-              <View style={styles.locationTextContainer}>
-                <Text style={[fonts.labelSmall, { color: loc.color }]}>{loc.label}</Text>
-                <Text style={[fonts.bodySmall, styles.locationText]}>{loc.location || 'Not set'}</Text>
+          <Divider />
+          <View style={styles.locationContainer}>
+            {[
+              { location: contract.pickup_location, label: 'Pickup', color: colors.primary },
+              { location: contract.current_location, label: 'Current', color: colors.secondary },
+              { location: contract.drop_off_location, label: 'Drop-off', color: colors.error }
+            ].map((loc, idx) => (
+              <View key={idx} style={styles.locationRow}>
+                <IconButton icon="map-marker" size={20} iconColor={loc.color} />
+                <View style={styles.locationTextContainer}>
+                  <Text style={[fonts.labelSmall, { color: loc.color }]}>{loc.label}</Text>
+                  <Text style={[fonts.bodySmall, styles.locationText]}>{loc.location || 'Not set'}</Text>
+                </View>
               </View>
-            </View>
-          ))}
-        </View>
-        <View style={styles.detailsContainer}>
-          <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
-            Created: {new Date(contract.created_at).toLocaleString()}
-          </Text>
-          <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
-            Updated: {new Date(contract.updated_at).toLocaleString()}
-          </Text>
-        </View>
-        <Button 
-          mode="contained" 
-          onPress={() => console.log('Track Delivery')} 
-          style={[styles.actionButton, { backgroundColor: colors.primary }]}
-        >
-          Track Delivery
-        </Button>
-        <Button 
-          mode="contained" 
-          onPress={() => console.log('Show Details')} 
-          style={[styles.actionButton, { backgroundColor: colors.primary }]}
-        >
-          Show Details
-        </Button>
-        <Button 
-          mode="contained" 
-          onPress={() => console.log('Cancel')} 
-          style={[styles.actionButton, { backgroundColor: colors.error }]}
-        >
-          Cancel Contract
-        </Button>
-      </Card.Content>
-    </Card>
-  )
+            ))}
+          </View>
+          <View style={styles.detailsContainer}>
+            <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
+              Created: {formatDate(contract.created_at)}
+            </Text>
+            {contract.pickup_at && (
+              <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
+                Pickup: {formatDate(contract.pickup_at)}
+              </Text>
+            )}
+            {contract.delivered_at && (
+              <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
+                Delivered: {formatDate(contract.delivered_at)}
+              </Text>
+            )}
+            {contract.cancelled_at && (
+              <Text style={[fonts.labelSmall, { color: colors.error }]}>
+                Cancelled: {formatDate(contract.cancelled_at)}
+              </Text>
+            )}
+          </View>
+          <Button 
+            mode="contained" 
+            onPress={() => navigation.navigate('AirlineTrackLuggage', { 
+              contractId: contract.id,
+              contractData: contract 
+            })} 
+            style={[styles.actionButton, { backgroundColor: colors.primary }]}
+          >
+            Track Delivery
+          </Button>
+          <Button 
+            mode="contained" 
+            onPress={() => handleShowDetails(contract)} 
+            style={[styles.actionButton, { backgroundColor: colors.primary }]}
+          >
+            Show Details
+          </Button>
+          {contract.contract_status_id === 1 && (
+            <Button 
+              mode="contained" 
+              onPress={() => handleCancelContract(contract)} 
+              style={[styles.actionButton, { backgroundColor: colors.error }]}
+            >
+              Cancel Contract
+            </Button>
+          )}
+        </Card.Content>
+      </Card>
+    )
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {SnackbarElement}
+      <View style={{ backgroundColor: colors.background }}>
+        <Card style={[styles.timeCard, { backgroundColor: colors.surface, elevation: colors.elevation.level3 }]}>
+          <Card.Content style={styles.timeCardContent}>
+            <Text style={fonts.titleSmall}>{currentTime}</Text>
+          </Card.Content>
+        </Card>
+      </View>
+      <View style={styles.searchActionsRow}>
+        <Searchbar
+          placeholder={`Search by ${filterOptions.find(opt => opt.value === searchColumn)?.label}`}
+          onChangeText={setSearchQuery}
+          value={searchQuery}
+          style={[styles.searchbar, { backgroundColor: colors.surface }]}
+        />
+      </View>
+              <View style={styles.buttonGroup}>
+          <Menu
+            visible={filterMenuVisible}
+            onDismiss={() => setFilterMenuVisible(false)}
+            anchor={
+              <Button
+                mode="contained"
+                icon="filter-variant"
+                onPress={() => setFilterMenuVisible(true)}
+                style={[styles.actionButton, { backgroundColor: colors.primary }]}
+                contentStyle={styles.buttonContent}
+              >
+                {filterOptions.find(opt => opt.value === searchColumn)?.label}
+              </Button>
+            }
+            contentStyle={{ backgroundColor: colors.surface }}
+          >
+            {filterOptions.map(option => (
+              <Menu.Item
+                key={option.value}
+                onPress={() => {
+                  setSearchColumn(option.value)
+                  setFilterMenuVisible(false)
+                }}
+                title={option.label}
+                titleStyle={[
+                  {
+                    color: searchColumn === option.value
+                      ? colors.primary
+                      : colors.onSurface,
+                  },
+                  fonts.bodyLarge,
+                ]}
+                leadingIcon={searchColumn === option.value ? 'check' : undefined}
+              />
+            ))}
+          </Menu>
+          <Menu
+            visible={sortMenuVisible}
+            onDismiss={() => setSortMenuVisible(false)}
+            anchor={
+              <Button
+                mode="contained"
+                icon="sort"
+                onPress={() => setSortMenuVisible(true)}
+                style={[styles.actionButton, { backgroundColor: colors.primary }]}
+                contentStyle={styles.buttonContent}
+              >
+                {getSortLabel()}
+              </Button>
+            }
+            contentStyle={{ backgroundColor: colors.surface }}
+          >
+            {sortOptions.map(option => (
+              <Menu.Item
+                key={option.value}
+                onPress={() => {
+                  handleSort(option.value)
+                  setSortMenuVisible(false)
+                }}
+                title={option.label}
+                titleStyle={[
+                  {
+                    color: sortColumn === option.value
+                      ? colors.primary
+                      : colors.onSurface,
+                  },
+                  fonts.bodyLarge,
+                ]}
+                leadingIcon={sortColumn === option.value ? 'check' : undefined}
+              />
+            ))}
+          </Menu>
+          
+        </View>
       <FlatList
-        ListHeaderComponent={
-          <View style={[styles.headerContainer, { backgroundColor: colors.background }]}>
-            <Card style={[styles.timeCard, { backgroundColor: colors.surface, elevation: colors.elevation.level3 }]}>
-              <Card.Content style={styles.timeCardContent}>
-                <Text style={fonts.titleSmall}>{currentTime}</Text>
-              </Card.Content>
-            </Card>
-          </View>
-        }
-        data={contracts}
+        data={filteredAndSortedContracts}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => <ContractCard contract={item} />}
         contentContainerStyle={styles.flatListContent}
@@ -173,9 +405,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  headerContainer: {
-    marginBottom: 16,
-  },
   timeCard: {
     borderRadius: 10,
     marginVertical: 10,
@@ -184,6 +413,30 @@ const styles = StyleSheet.create({
   timeCardContent: {
     alignItems: 'center',
     paddingVertical: 10,
+  },
+  searchActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    gap: 10,
+  },
+  searchbar: {
+    flex: 1,
+  },
+  buttonGroup: {
+    alignSelf:'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    borderRadius: 8,
+    minWidth: 120,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    gap: 10,
+  },
+  buttonContent: {
+    height: 40,
   },
   contractCard: {
     marginTop: 10,
@@ -234,12 +487,6 @@ const styles = StyleSheet.create({
   detailsContainer: {
     marginTop: 10,
     marginBottom: 10,
-  },
-  actionButton: {
-    borderRadius: 25,
-    marginTop: 10,
-    alignSelf: 'center',
-    width: '80%',
   },
   flatListContent: {
     paddingBottom: 20,

@@ -17,8 +17,8 @@ const BookingManagement = ({ navigation }) => {
           value={mode}
           onValueChange={setMode}
           buttons={[
-            { value: 'create', label: 'Make Contract' },
-            { value: 'made', label: 'Contracts Made' },
+            { value: 'create', label: 'Accept Contracts' },
+            { value: 'made', label: 'Contracts Accepted' },
           ]}
           style={{ marginHorizontal: 16 }}
         />
