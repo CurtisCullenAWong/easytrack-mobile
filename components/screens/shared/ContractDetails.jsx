@@ -1,10 +1,62 @@
-import { View, ScrollView, StyleSheet } from 'react-native'
+import { useState, useCallback } from 'react'
+import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native' // <-- Add RefreshControl
 import { Text, Card, Divider, useTheme, Appbar } from 'react-native-paper'
+import { useFocusEffect } from '@react-navigation/native';
 import Header from '../../customComponents/Header'
+import { supabase } from '../../../lib/supabase' // Adjust path if needed
 
 const ContractDetails = ({ navigation, route }) => {
     const { colors, fonts } = useTheme()
     const { contractData } = route.params || {}
+
+    const [contractor, setContractor] = useState(null)
+    const [subcontractor, setSubcontractor] = useState(null)
+    const [refreshing, setRefreshing] = useState(false) // <-- Add this
+
+    useFocusEffect(
+        useCallback(() => {
+        fetchProfiles()
+        return () => {
+        fetchProfiles()
+        }
+        }, [contractData])
+    )
+
+    const fetchProfiles = async () => {
+        if (contractData?.airline_id) {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('first_name, middle_initial, last_name, suffix, email, contact_number')
+                .eq('id', contractData.airline_id)
+                .single()
+            setContractor(data)
+        }
+        if (contractData?.delivery_id) {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('first_name, middle_initial, last_name, suffix, email, contact_number')
+                .eq('id', contractData.delivery_id)
+                .single()
+            setSubcontractor(data)
+        }
+    }
+    
+    const onRefresh = useCallback(async () => { // <-- Add this function
+        setRefreshing(true)
+        await fetchProfiles()
+        setRefreshing(false)
+    }, [contractData])
+
+    const formatProfileName = (profile) => {
+        if (!profile) return 'N/A'
+        const { first_name, middle_initial, last_name, suffix } = profile
+        return [
+            first_name,
+            middle_initial ? `${middle_initial}.` : '',
+            last_name,
+            suffix || ''
+        ].filter(Boolean).join(' ')
+    }
 
     const formatDate = (dateString) => {
         if (!dateString) return 'Not set'
@@ -29,7 +81,12 @@ const ContractDetails = ({ navigation, route }) => {
     }
 
     return (
-        <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+        <ScrollView
+            style={[styles.container, { backgroundColor: colors.background }]}
+            refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+            }
+        >
             <Appbar.Header>
                 <Appbar.BackAction onPress={() => navigation.navigate('BookingManagement')} />
                 <Appbar.Content title="Contract Details" />
@@ -44,11 +101,48 @@ const ContractDetails = ({ navigation, route }) => {
                     
                     <View style={styles.infoRow}>
                         <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Contract ID:</Text>
+                        <Text style={[fonts.bodySmall, { color: colors.onSurface }]} selectable>{contractData.id}</Text>
                     </View>
                     <View style={styles.infoRow}>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable>{contractData.id}</Text>
+                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Contractor Name:</Text>
+                        <Text style={[fonts.bodyMedium, { color: colors.primary }]}>
+                            {formatProfileName(contractor)}
+                        </Text>
                     </View>
-
+                    <View style={styles.infoRow}>
+                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Contractor Email:</Text>
+                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>
+                            {contractor?.email || 'N/A'}
+                        </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Contractor Contact:</Text>
+                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>
+                            {contractor?.contact_number || 'N/A'}
+                        </Text>
+                    </View>
+                    {contractData.delivery_id && (
+                    <>
+                    <View style={styles.infoRow}>
+                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Subcontractor Name:</Text>
+                        <Text style={[fonts.bodyMedium, { color: colors.primary }]}>
+                            {formatProfileName(subcontractor)}
+                        </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Subcontractor Email:</Text>
+                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>
+                            {subcontractor?.email || 'N/A'}
+                        </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Subcontractor Contact:</Text>
+                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>
+                            {subcontractor?.contact_number || 'N/A'}
+                        </Text>
+                    </View>
+                    </>
+                    )}
                     <View style={styles.infoRow}>
                         <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Status:</Text>
                         <Text style={[fonts.bodyMedium, { color: colors.primary }]}>
@@ -119,7 +213,12 @@ const ContractDetails = ({ navigation, route }) => {
                         <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Created:</Text>
                         <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{formatDate(contractData.created_at)}</Text>
                     </View>
-
+                    {contractData.accepted_at && (
+                        <View style={styles.infoRow}>
+                            <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Accepted:</Text>
+                            <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{formatDate(contractData.accepted_at)}</Text>
+                        </View>
+                    )}
                     {contractData.pickup_at && (
                         <View style={styles.infoRow}>
                             <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Pickup:</Text>
@@ -168,4 +267,4 @@ const styles = StyleSheet.create({
     },
 })
 
-export default ContractDetails 
+export default ContractDetails

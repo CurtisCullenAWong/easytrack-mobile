@@ -3,7 +3,7 @@ import { View, StyleSheet } from 'react-native'
 import { SegmentedButtons, useTheme } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 import AcceptContracts from './subscreen/AcceptContracts'
-import ContractsAccepted from './subscreen/ContractsAccepted'
+import ContractsInTransit from './subscreen/ContractsInTransit'
 
 const BookingManagement = ({ navigation }) => {
   const { colors } = useTheme()
@@ -17,8 +17,8 @@ const BookingManagement = ({ navigation }) => {
           value={mode}
           onValueChange={setMode}
           buttons={[
-            { value: 1, label: 'Accept Contracts' },
-            { value: 2, label: 'Contracts Accepted' },
+            { value: 1, label: 'Accept and Pickup' },
+            { value: 2, label: 'Contracts In Transit' },
           ]}
           style={{ marginHorizontal: 16 }}
         />
@@ -28,7 +28,7 @@ const BookingManagement = ({ navigation }) => {
         {mode === 1 ? (
           <AcceptContracts navigation={navigation} />
         ) : (
-          <ContractsAccepted navigation={navigation} />
+          <ContractsInTransit navigation={navigation} />
         )}
 
       </View>

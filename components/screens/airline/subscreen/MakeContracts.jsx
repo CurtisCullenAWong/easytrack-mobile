@@ -108,7 +108,7 @@ const MakeContracts = () => {
       // Reset form
       setDropOffLocation('')
       setPickupLocation('')
-      setLuggageQuantity(0)
+      setLuggageQuantity(1)
       setLuggageDetails([])
       setQuantityError('')
 

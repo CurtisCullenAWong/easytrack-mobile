@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react'
-import { ScrollView, View, StyleSheet, Image, SafeAreaView } from 'react-native'
+import { ScrollView, View, StyleSheet, Image, SafeAreaView, RefreshControl } from 'react-native'
 import { Avatar, Card, Text, Divider, Button, useTheme, ActivityIndicator, Portal, Dialog, Appbar } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabase'
@@ -199,6 +199,7 @@ const Profile = ({ navigation }) => {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [refreshing, setRefreshing] = useState(false) // <-- Add this
 
   const { handleLogout, LogoutDialog } = useLogout(navigation)
 
@@ -235,6 +236,13 @@ const Profile = ({ navigation }) => {
     }
   }, [navigation])
 
+  // Add pull-to-refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await fetchProfile()
+    setRefreshing(false)
+  }, [fetchProfile])
+
   useFocusEffect(
     useCallback(() => {
       fetchProfile()
@@ -260,10 +268,6 @@ const Profile = ({ navigation }) => {
         <Header 
           navigation={navigation} 
           title="Profile"
-          rightAction={{
-            icon: 'refresh',
-            onPress: fetchProfile
-          }}
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size='large' color={colors.primary} />
@@ -291,28 +295,20 @@ const Profile = ({ navigation }) => {
   }
 
   return (
-    <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
+    <ScrollView
+      style={[styles.scrollView, { backgroundColor: colors.background }]}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+      }
+    >
       <Header 
         navigation={navigation} 
         title="Profile"
-        rightAction={{
-          icon: 'refresh',
-          onPress: fetchProfile
-        }}
       />
       
       <ProfileCard profile={profile} colors={colors} fonts={fonts} />
       
       <View style={styles.buttonContainer}>
-        <Button
-          icon="refresh"
-          mode="contained"
-          style={[styles.button, { backgroundColor: colors.primary }]}
-          onPress={fetchProfile}
-          labelStyle={[{ color: colors.onPrimary, ...fonts.labelLarge }]}
-        >
-          Refresh
-        </Button>
         <Button
           icon="account-edit"
           mode="contained"

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { View, FlatList, StyleSheet } from 'react-native'
-import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu } from 'react-native-paper'
+import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, Portal, Dialog } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 
-const ContractsAccepted = ({ navigation }) => {
+const ContractsInTransit = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   const [currentTime, setCurrentTime] = useState('')
@@ -16,6 +16,9 @@ const ContractsAccepted = ({ navigation }) => {
   const [sortMenuVisible, setSortMenuVisible] = useState(false)
   const [sortColumn, setSortColumn] = useState('created_at')
   const [sortDirection, setSortDirection] = useState('descending')
+  const [dialogVisible, setDialogVisible] = useState(false)
+  const [dialogType, setDialogType] = useState(null) // 'deliver' or 'cancel'
+  const [selectedContract, setSelectedContract] = useState(null)
 
   const filterOptions = [
     { label: 'Contract ID', value: 'id' },
@@ -87,6 +90,7 @@ const ContractsAccepted = ({ navigation }) => {
           )
         `)
         .eq('delivery_id', user.id)
+        .eq('contract_status_id', 4)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -174,27 +178,40 @@ const ContractsAccepted = ({ navigation }) => {
     navigation.navigate('ContractDetails', { contractData: contract })
   }
 
-  const handleCancelContract = async (contract) => {
+  const handleDialogAction = async () => {
+    if (!selectedContract) return
     try {
-      if (contract.contract_status_id !== 1) {
-        showSnackbar('Only contracts with status "Pending" can be cancelled', false)
-        return
+      setLoading(true)
+      let updateObj = {}
+      if (dialogType === 'deliver') {
+        updateObj = {
+          delivered_at: new Date().toISOString(),
+          contract_status_id: 5,
+        }
+      } else if (dialogType === 'cancel') {
+        updateObj = {
+          cancelled_at: new Date().toISOString(),
+          contract_status_id: 6,
+        }
       }
-
       const { error } = await supabase
         .from('contract')
-        .update({
-          contract_status_id: 2,
-          cancelled_at: new Date().toISOString()
-        })
-        .eq('id', contract.id)
-
+        .update(updateObj)
+        .eq('id', selectedContract.id)
       if (error) throw error
-
-      showSnackbar('Contract cancelled successfully', true)
+      showSnackbar(
+        dialogType === 'deliver'
+          ? 'Contract marked as delivered.'
+          : 'Contract marked as failed.',
+        true
+      )
+      setDialogVisible(false)
+      setSelectedContract(null)
       fetchContracts()
     } catch (error) {
-      showSnackbar('Error cancelling contract: ' + error.message)
+      showSnackbar('Error updating contract: ' + error.message)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -268,7 +285,7 @@ const ContractsAccepted = ({ navigation }) => {
           <Divider />
           <View style={styles.detailsContainer}>
             <Text style={[fonts.labelLarge, styles.statusLabel]}>
-              Date Information:
+              Timeline:
             </Text>
             <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
               Created: {formatDate(contract.created_at)}
@@ -292,30 +309,35 @@ const ContractsAccepted = ({ navigation }) => {
           <Divider />
           <Button 
             mode="contained" 
-            onPress={() => navigation.navigate('AirlineTrackLuggage', { 
-              contractId: contract.id,
-              contractData: contract 
-            })} 
-            style={[styles.actionButton, { backgroundColor: colors.primary }]}
-          >
-            Track Delivery
-          </Button>
-          <Button 
-            mode="contained" 
             onPress={() => handleShowDetails(contract)} 
             style={[styles.actionButton, { backgroundColor: colors.primary }]}
           >
             Show Details
           </Button>
-          {contract.contract_status_id === 1 && (
-            <Button 
-              mode="contained" 
-              onPress={() => handleCancelContract(contract)} 
-              style={[styles.actionButton, { backgroundColor: colors.error }]}
-            >
-              Cancel Contract
-            </Button>
-          )}
+          <Button
+            mode="contained"
+            onPress={() => {
+              setSelectedContract(contract)
+              setDialogType('deliver')
+              setDialogVisible(true)
+            }}
+            style={[styles.actionButton, { backgroundColor: colors.primary }]}
+            disabled={contract.contract_status_id === 5 || contract.contract_status_id === 6}
+          >
+            Mark as Delivered
+          </Button>
+          <Button
+            mode="contained"
+            onPress={() => {
+              setSelectedContract(contract)
+              setDialogType('cancel')
+              setDialogVisible(true)
+            }}
+            style={[styles.actionButton, { backgroundColor: colors.error }]}
+            disabled={contract.contract_status_id === 6 || contract.contract_status_id === 5}
+          >
+            Mark as Failed
+          </Button>
         </Card.Content>
       </Card>
     )
@@ -324,6 +346,28 @@ const ContractsAccepted = ({ navigation }) => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {SnackbarElement}
+      <Portal>
+        <Dialog
+          visible={dialogVisible}
+          onDismiss={() => setDialogVisible(false)}
+          style={{ backgroundColor: colors.surface }}
+        >
+          <Dialog.Title>
+            {dialogType === 'deliver' ? 'Mark as Delivered' : 'Mark as Failed'}
+          </Dialog.Title>
+          <Dialog.Content>
+            <Text>
+              {dialogType === 'deliver'
+                ? 'Are you sure you want to mark this contract as delivered?'
+                : 'Are you sure you want to mark this contract as failed?'}
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDialogVisible(false)}>No</Button>
+            <Button onPress={handleDialogAction}>Yes</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
       <View style={{ backgroundColor: colors.background }}>
         <Card style={[styles.timeCard, { backgroundColor: colors.surface, elevation: colors.elevation.level3 }]}>
           <Card.Content style={styles.timeCardContent}>
@@ -523,4 +567,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default ContractsAccepted
+export default ContractsInTransit

@@ -17,8 +17,10 @@ const AcceptContracts = ({ navigation }) => {
   const [sortColumn, setSortColumn] = useState('created_at')
   const [sortDirection, setSortDirection] = useState('descending')
   const [acceptDialogVisible, setAcceptDialogVisible] = useState(false)
+  const [pickupDialogVisible, setPickupDialogVisible] = useState(false)
   const [selectedContract, setSelectedContract] = useState(null)
   const [accepting, setAccepting] = useState(false)
+  const [pickingup, setPickingup] = useState(false)
 
   const filterOptions = [
     { label: 'Contract ID', value: 'id' },
@@ -36,6 +38,7 @@ const AcceptContracts = ({ navigation }) => {
     { label: 'Case Number', value: 'case_number' },
     { label: 'Status', value: 'contract_status.status_name' },
     { label: 'Created Date', value: 'created_at' },
+    { label: 'Accept Date', value: 'accepted_at' },
     { label: 'Pickup Date', value: 'pickup_at' },
     { label: 'Delivery Date', value: 'delivered_at' },
     { label: 'Cancellation Date', value: 'cancelled_at' },
@@ -89,7 +92,7 @@ const AcceptContracts = ({ navigation }) => {
             suffix
           )
         `)
-        .eq('contract_status_id',1)
+        .or('contract_status_id.eq.1,contract_status_id.eq.3')
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -146,7 +149,7 @@ const AcceptContracts = ({ navigation }) => {
       }
 
       // Special handling for date columns
-      if (['created_at', 'pickup_at', 'delivered_at', 'cancelled_at'].includes(sortColumn)) {
+      if (['created_at', 'accepted_at', 'pickup_at', 'delivered_at', 'cancelled_at'].includes(sortColumn)) {
         if (!valA) return sortDirection === 'ascending' ? -1 : 1
         if (!valB) return sortDirection === 'ascending' ? 1 : -1
         return sortDirection === 'ascending'
@@ -182,6 +185,11 @@ const AcceptContracts = ({ navigation }) => {
     setSelectedContract(contract)
     setAcceptDialogVisible(true)
   }
+  // Pickup luggage logic
+  const handlePickupLuggage = async (contract) => {
+    setSelectedContract(contract)
+    setPickupDialogVisible(true)
+  }
 
   const confirmAcceptContract = async () => {
     if (!selectedContract) return
@@ -194,7 +202,7 @@ const AcceptContracts = ({ navigation }) => {
         .from('contract')
         .update({
           contract_status_id: 3, // Accepted - Awaiting Pickup
-          pickup_at: new Date().toISOString(),
+          accepted_at: new Date().toISOString(),
           delivery_id: user.id,
         })
         .eq('id', selectedContract.id)
@@ -208,6 +216,34 @@ const AcceptContracts = ({ navigation }) => {
     } finally {
       setAccepting(false)
       setAcceptDialogVisible(false)
+      setSelectedContract(null)
+    }
+  }
+  
+  const confirmPickupLuggage = async () => {
+    if (!selectedContract) return
+    setPickingup(true) // was setAccepting(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
+
+      const { error } = await supabase
+        .from('contract')
+        .update({
+          contract_status_id: 4, // Accepted - Awaiting Pickup
+          pickup_at: new Date().toISOString(),
+        })
+        .eq('id', selectedContract.id)
+
+      if (error) throw error
+
+      showSnackbar('Luggage picked up successfully', true)
+      fetchContracts()
+    } catch (error) {
+      showSnackbar('Error accepting contract: ' + error.message)
+    } finally {
+      setPickingup(false) // was setAccepting(false)
+      setPickupDialogVisible(false)
       setSelectedContract(null)
     }
   }
@@ -282,11 +318,16 @@ const AcceptContracts = ({ navigation }) => {
           <Divider />
           <View style={styles.detailsContainer}>
             <Text style={[fonts.labelLarge, styles.statusLabel]}>
-              Date Information:
+              Timeline:
             </Text>
             <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
               Created: {formatDate(contract.created_at)}
             </Text>
+            {contract.accepted_at && (
+              <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
+                Accepted: {formatDate(contract.accepted_at)}
+              </Text>
+            )}
             {contract.pickup_at && (
               <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
                 Pickup: {formatDate(contract.pickup_at)}
@@ -316,6 +357,20 @@ const AcceptContracts = ({ navigation }) => {
               Accept Contract
             </Button>
           )}
+
+          {/* Pickup Luggage button for Accepted contracts */}
+          {contract.contract_status_id === 3 && (
+            <Button 
+              mode="contained" 
+              onPress={() => handlePickupLuggage(contract)} 
+              style={[styles.actionButton, { backgroundColor: colors.primary }]}
+              loading={pickingup && selectedContract?.id === contract.id} // was accepting
+              disabled={pickingup} // was accepting
+            >
+             Pickup Luggage
+            </Button>
+          )}
+
           <Button 
             mode="contained" 
             onPress={() => handleShowDetails(contract)} 
@@ -450,6 +505,26 @@ const AcceptContracts = ({ navigation }) => {
             <Button onPress={() => setAcceptDialogVisible(false)} disabled={accepting}>Cancel</Button>
             <Button onPress={confirmAcceptContract} loading={accepting} disabled={accepting}>
               Accept
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+      {/* Pickup Luggage Dialog */}
+      <Portal>
+        <Dialog
+          visible={pickupDialogVisible}
+          onDismiss={() => setPickupDialogVisible(false)}
+        >
+          <Dialog.Title>Pickup Luggage</Dialog.Title>
+          <Dialog.Content>
+            <Text>
+              Are you sure you want to mark this luggage as picked up? This will update the contract status.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setPickupDialogVisible(false)} disabled={pickingup}>Cancel</Button>
+            <Button onPress={confirmPickupLuggage} loading={pickingup} disabled={pickingup}>
+              Pickup
             </Button>
           </Dialog.Actions>
         </Dialog>
