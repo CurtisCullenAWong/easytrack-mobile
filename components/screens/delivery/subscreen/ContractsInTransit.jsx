@@ -175,7 +175,7 @@ const ContractsInTransit = ({ navigation }) => {
   }
 
   const handleShowDetails = (contract) => {
-    navigation.navigate('ContractDetails', { contractData: contract })
+    navigation.navigate('ContractDetails', { id: contract.id})
   }
 
   const handleDialogAction = async () => {

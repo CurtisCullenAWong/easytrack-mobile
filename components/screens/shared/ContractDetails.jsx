@@ -2,68 +2,99 @@ import { useEffect, useState, useCallback } from 'react'
 import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native'
 import { Text, Card, Divider, useTheme, Appbar, Button } from 'react-native-paper'
 import { useFocusEffect } from '@react-navigation/native'
-import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabase'
-// import MapView, { Marker } from 'react-native-maps'
-// import * as Location from 'expo-location'
+import useLocationForwarder from '../../hooks/useLocationForwarder';
 
 const ContractDetails = ({ navigation, route }) => {
     const { colors, fonts } = useTheme()
-    const { contractData } = route.params || {}
+    const { id } = route.params || {}
+    const [contractData, setContractData] = useState(null)
     const [contractor, setContractor] = useState(null)
     const [subcontractor, setSubcontractor] = useState(null)
     const [refreshing, setRefreshing] = useState(false)
-    // const [location, setLocation] = useState(null)
+
+    // Fetch contract data by id
+    const fetchContract = async () => {
+        if (!id) {
+            console.log('No contract id provided');
+            return;
+        }
+        // Fetch contract data
+        const { data: contract, error: contractError } = await supabase
+            .from('contract')
+            .select(`
+                *,
+                contract_status:contract_status_id(*),
+                pickup_location,
+                current_location,
+                drop_off_location
+            `)
+            .eq('id', id)
+            .single()
+        if (contractError) {
+            console.log('Error fetching contract:', contractError.message)
+            setContractData(null)
+            return
+        }
+
+        // Fetch luggage info from contract_luggage table
+        const { data: luggageInfo, error: luggageError } = await supabase
+            .from('contract_luggage_information')
+            .select('*')
+            .eq('contract_id', id)
+
+        if (luggageError) {
+            console.log('Error fetching luggage info:', luggageError.message)
+        }
+
+        // Attach luggage info to contract data
+        setContractData({
+            ...contract,
+            luggage_info: luggageInfo || [],
+        })
+    }
+
+    // Fetch profiles for contractor and subcontractor
+    const fetchProfiles = async (contract) => {
+        if (contract?.airline_id) {
+            const { data } = await supabase
+                .from('profiles')
+                .select('first_name, middle_initial, last_name, suffix, email, contact_number')
+                .eq('id', contract.airline_id)
+                .single()
+            setContractor(data)
+        } else {
+            setContractor(null)
+        }
+        if (contract?.delivery_id) {
+            const { data } = await supabase
+                .from('profiles')
+                .select('first_name, middle_initial, last_name, suffix, email, contact_number')
+                .eq('id', contract.delivery_id)
+                .single()
+            setSubcontractor(data)
+        } else {
+            setSubcontractor(null)
+        }
+    }
 
     useFocusEffect(
         useCallback(() => {
-        fetchProfiles()
-        return () => {
-        fetchProfiles()
-        }
-        }, [contractData])
+            fetchContract()
+        }, [id])
     )
-    // useEffect(() => {
-    // (async () => {
-    //     try {
-    //     let { status } = await Location.requestForegroundPermissionsAsync()
-    //     if (status !== 'granted') {
-    //         alert('Permission to access location was denied')
-    //         return
-    //     }
-    //     let location = await Location.getCurrentPositionAsync({})
-    //     setLocation(location.coords)
-    //     } catch (e) {
-    //     alert('Error getting location')
-    //     }
-    //     console.log(location)
-    // })()
-    // }, [])
 
-    const fetchProfiles = async () => {
-        if (contractData?.airline_id) {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('first_name, middle_initial, last_name, suffix, email, contact_number')
-                .eq('id', contractData.airline_id)
-                .single()
-            setContractor(data)
+    useEffect(() => {
+        if (contractData) {
+            fetchProfiles(contractData)
         }
-        if (contractData?.delivery_id) {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('first_name, middle_initial, last_name, suffix, email, contact_number')
-                .eq('id', contractData.delivery_id)
-                .single()
-            setSubcontractor(data)
-        }
-    }
-    
+    }, [contractData])
+
     const onRefresh = useCallback(async () => {
         setRefreshing(true)
-        await fetchProfiles()
+        await fetchContract()
         setRefreshing(false)
-    }, [contractData])
+    }, [id])
 
     const formatProfileName = (profile) => {
         if (!profile) return 'N/A'
@@ -89,10 +120,35 @@ const ContractDetails = ({ navigation, route }) => {
         })
     }
 
+    // const updateLocationInSupabase = async (coords) => {
+    //     if (!coords || !contractData?.id) return
+
+    //     const { latitude, longitude } = coords
+    //     const geoPoint = `SRID=4326;POINT(${longitude} ${latitude})`
+    //     const locationText = `${latitude},${longitude}`
+
+    //     const { error } = await supabase
+    //         .from('contract')
+    //         .update({
+    //             current_location: locationText,
+    //             current_location_geo: geoPoint,
+    //         })
+    //         .eq('id', contractData.id)
+
+    //     if (error) {
+    //         console.log('Failed to update location:', error.message)
+    //     } else {
+    //         console.log('Location forwarded to Supabase!')
+    //     }
+    // }
+
     if (!contractData) {
         return (
             <View style={[styles.container, { backgroundColor: colors.background }]}>
-                <Header navigation={navigation} title="Contract Details" />
+                <Appbar.Header>
+                    <Appbar.BackAction onPress={() => navigation.navigate('BookingManagement')} />
+                    <Appbar.Content title="Contract Details" />
+                </Appbar.Header>
                 <Text style={[styles.errorText, { color: colors.error }]}>No contract data available</Text>
             </View>
         )
@@ -109,68 +165,65 @@ const ContractDetails = ({ navigation, route }) => {
                 <Appbar.BackAction onPress={() => navigation.navigate('BookingManagement')} />
                 <Appbar.Content title="Contract Details" />
             </Appbar.Header>
-            {/* {location && (
-            <>
-                <MapView
-                    style={styles.map}
-                    initialRegion={{
-                    latitude: 14.4776,
-                    longitude: 121.0103,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                    }}
-                >
-                    <Marker
-                    coordinate={{
-                        latitude: location.latitude,
-                        longitude: location.longitude,
-                    }}
-                    title="You are here"
-                    />
-                </MapView>
-                <View style={{ margin: 16 }}>
-                <Button
-                    mode="contained"
-                    onPress={async () => {
-                        // Format as PostGIS geography point
-                        const point = `POINT(${location.longitude} ${location.latitude})`
-                        const { error } = await supabase
-                            .from('contracts')
-                            .update({ current_location: point })
-                            .eq('id', contractData.id)
-                        if (error) {
-                            alert('Failed to update location')
-                        } else {
-                            alert('Current location set!')
-                            // Optionally refresh contractData here
-                        }
+        {/* {location && (
+        <>
+            <MapView
+                style={styles.map}
+                initialRegion={{
+                latitude: 14.4776,
+                longitude: 121.0103,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+                }}
+                showsUserLocation={true}                    
+            >
+                <Marker
+                coordinate={{
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                }}
+                title="You are here"
+                />
+            </MapView>
+            <View style={{ margin: 16 }}>
+            <Button
+                mode="contained"
+                onPress={async () => {
+                try {
+                    if (!location) {
+                        console.log('No location available')
+                        return
+                    }
+
+                    const { latitude, longitude } = location
+
+                    const geoPoint = `SRID=4326;POINT(${longitude} ${latitude})`
+
+                    console.log('Setting current location:', geoPoint)
+
+                    const { data, error } = await supabase
+                        .from('contract') // change this
+                        .update({
+                        current_location_geo: geoPoint
+                        })
+                        .eq('id', contractData.id) // or another identifier
+                        .select('current_location_geo')
+                    if (error) {
+                        console.log('Failed to update location:', error.message)
+                    } else {
+                        console.log('Current location set!', data)
                         setLocation(location)
-                    }}
-                >
-                    Set as Current Location
-                </Button>
-                <Button
-                    mode="contained"
-                    onPress={async () => {
-                        try {
-                            let { status } = await Location.requestForegroundPermissionsAsync()
-                            if (status !== 'granted') {
-                                alert('Permission to access location was denied')
-                                return
-                            }
-                            let newLocation = await Location.getCurrentPositionAsync({})
-                            setLocation(newLocation.coords)
-                            alert('Map updated to your current location!')
-                        } catch (e) {
-                            alert('Error getting location')
-                        }
-                    }}
-                >
-                    Update Map to Current Location
-                </Button>
-                </View>
-            </>
-            )} */}
+                    }
+                    } catch (err) {
+                    console.error('Unexpected error:', err)
+                    }
+                }}
+            >
+                Set as Current Location
+            </Button>
+            </View>
+        </>
+        )} */}
             
             <Card style={[styles.card, { backgroundColor: colors.surface }]}>
                 <Card.Content>
@@ -217,7 +270,7 @@ const ContractDetails = ({ navigation, route }) => {
                     </View>
                     <View style={styles.infoRow}>
                         <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Subcontractor Contact:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>
+                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable>
                             {subcontractor?.contact_number || 'N/A'}
                         </Text>
                     </View>
@@ -278,7 +331,7 @@ const ContractDetails = ({ navigation, route }) => {
                             </View>
                             <View style={styles.infoRow}>
                                 <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Contact:</Text>
-                                <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{luggage.contact_number || 'N/A'}</Text>
+                                <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable>{luggage.contact_number || 'N/A'}</Text>
                             </View>
                             {index < contractData.luggage_info.length - 1 && <Divider style={{ marginVertical: 10 }} />}
                         </View>
@@ -329,11 +382,11 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    // map: {
-    //     height: 250, // Add this line
-    //     borderRadius: 12,
-    //     margin: 16,
-    // },
+    map: {
+        height: 250,
+        borderRadius: 12,
+        margin: 16,
+    },
     card: {
         margin: 16,
         borderRadius: 12,

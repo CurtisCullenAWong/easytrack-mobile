@@ -177,7 +177,7 @@ const AcceptContracts = ({ navigation }) => {
   }
 
   const handleShowDetails = (contract) => {
-    navigation.navigate('ContractDetails', { contractData: contract })
+    navigation.navigate('ContractDetails', { id: contract.id })
   }
 
   // Accept contract logic
@@ -234,10 +234,9 @@ const AcceptContracts = ({ navigation }) => {
           pickup_at: new Date().toISOString(),
         })
         .eq('id', selectedContract.id)
-
       if (error) throw error
-
       showSnackbar('Luggage picked up successfully', true)
+      navigation.navigate('ContractDetails', { id: selectedContract.id })
       fetchContracts()
     } catch (error) {
       showSnackbar('Error accepting contract: ' + error.message)
@@ -494,6 +493,7 @@ const AcceptContracts = ({ navigation }) => {
         <Dialog
           visible={acceptDialogVisible}
           onDismiss={() => setAcceptDialogVisible(false)}
+          style={{backgroundColor: colors.surface}}
         >
           <Dialog.Title>Accept Contract</Dialog.Title>
           <Dialog.Content>
@@ -514,6 +514,7 @@ const AcceptContracts = ({ navigation }) => {
         <Dialog
           visible={pickupDialogVisible}
           onDismiss={() => setPickupDialogVisible(false)}
+          style={{backgroundColor: colors.surface}}
         >
           <Dialog.Title>Pickup Luggage</Dialog.Title>
           <Dialog.Content>

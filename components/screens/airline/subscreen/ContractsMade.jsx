@@ -171,7 +171,7 @@ const ContractsMade = ({ navigation }) => {
   }
 
   const handleShowDetails = (contract) => {
-    navigation.navigate('ContractDetails', { contractData: contract })
+    navigation.navigate('ContractDetails', { id: contract.id})
   }
 
   const handleCancelContract = async (contract) => {

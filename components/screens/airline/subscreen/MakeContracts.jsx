@@ -3,6 +3,8 @@ import { View, ScrollView, StyleSheet } from 'react-native'
 import { useTheme, TextInput, Button, Text, IconButton, Menu } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
+import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps'
+import * as Location from 'expo-location'
 
 const MakeContracts = () => {
   const { colors, fonts } = useTheme()
@@ -14,6 +16,7 @@ const MakeContracts = () => {
   const [luggageDetails, setLuggageDetails] = useState([])
   const [quantityError, setQuantityError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [location, setLocation] = useState(null)
 
   const pickupBays = Array.from({ length: 18 }, (_, i) => `Bay ${i + 1}`)
 

@@ -87,15 +87,7 @@ const LoginScreen = ({ navigation }) => {
       >
         Login
       </Button>
-
-
-      {/* <Button
-        mode="text"
-        onPress={() => navigation.navigate('Sign Up')}
-        labelStyle={[styles.buttonLabel, { color: colors.primary }]}
-      >
-        Don't have an account? Sign Up
-      </Button> */}
+      
       <Button
         mode="text"
         onPress={showOtpLoginModal}
