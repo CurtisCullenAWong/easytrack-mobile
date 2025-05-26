@@ -3,8 +3,15 @@ import { View, FlatList, StyleSheet } from 'react-native'
 import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, Portal, Dialog } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
+import useLocationForwarder from '../../../hooks/useLocationForwarder'
 
 const AcceptContracts = ({ navigation }) => {
+  const forwardLocationFn = (coords) => {
+    // Example: Log or send to your server
+    console.log('Sending location:', coords);
+  }
+
+  const { startForwarding, stopForwarding } = useLocationForwarder(forwardLocationFn)
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   const [currentTime, setCurrentTime] = useState('')
@@ -377,6 +384,11 @@ const AcceptContracts = ({ navigation }) => {
           >
             Show Details
           </Button>
+        <View style={{ padding: 20 }}>
+          <Text>Location Forwarding Demo</Text>
+          <Button onPress={startForwarding}>start</Button>
+          <Button onPress={stopForwarding}>stop</Button>
+        </View>
         </Card.Content>
       </Card>
     )

@@ -3,8 +3,15 @@ import { View, FlatList, StyleSheet } from 'react-native'
 import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, Portal, Dialog } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
+import useLocationForwarder from '../../../hooks/useLocationForwarder'
 
 const ContractsInTransit = ({ navigation }) => {
+  const forwardLocationFn = (coords) => {
+    // Example: Log or send to your server
+    console.log('Sending location:', coords)
+  }
+    const { startForwarding, stopForwarding } = useLocationForwarder(forwardLocationFn)
+  
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   const [currentTime, setCurrentTime] = useState('')
@@ -208,6 +215,7 @@ const ContractsInTransit = ({ navigation }) => {
       setDialogVisible(false)
       setSelectedContract(null)
       fetchContracts()
+      stopForwarding()
     } catch (error) {
       showSnackbar('Error updating contract: ' + error.message)
     } finally {
