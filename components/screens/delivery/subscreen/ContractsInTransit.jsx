@@ -7,10 +7,9 @@ import useLocationForwarder from '../../../hooks/useLocationForwarder'
 
 const ContractsInTransit = ({ navigation }) => {
   const forwardLocationFn = (coords) => {
-    // Example: Log or send to your server
     console.log('Sending location:', coords)
   }
-    const { startForwarding, stopForwarding } = useLocationForwarder(forwardLocationFn)
+  const { startForwarding, stopForwarding } = useLocationForwarder(forwardLocationFn)
   
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
@@ -49,6 +48,7 @@ const ContractsInTransit = ({ navigation }) => {
   ]
 
   useEffect(() => {
+    fetchContracts()
     const updateTime = () =>
       setCurrentTime(
         new Date().toLocaleString('en-PH', {
@@ -63,12 +63,21 @@ const ContractsInTransit = ({ navigation }) => {
       )
     updateTime()
     const interval = setInterval(updateTime, 1000)
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      stopForwarding() // Stop location forwarding when screen unmounts
+    }
   }, [])
 
+  // Start/stop forwarding based on contracts in transit
   useEffect(() => {
-    fetchContracts()
-  }, [])
+    if (contracts.length > 0) {
+      startForwarding()
+    } else {
+      stopForwarding()
+    }
+    // Only run when contracts change
+  }, [contracts])
 
   const fetchContracts = async () => {
     try {
@@ -189,13 +198,15 @@ const ContractsInTransit = ({ navigation }) => {
     if (!selectedContract) return
     try {
       setLoading(true)
+      // stopForwarding() // Remove this, handled by useEffect
       let updateObj = {}
       if (dialogType === 'deliver') {
         updateObj = {
           delivered_at: new Date().toISOString(),
           contract_status_id: 5,
         }
-      } else if (dialogType === 'cancel') {
+      }
+      else if (dialogType === 'cancel') {
         updateObj = {
           cancelled_at: new Date().toISOString(),
           contract_status_id: 6,
@@ -214,8 +225,8 @@ const ContractsInTransit = ({ navigation }) => {
       )
       setDialogVisible(false)
       setSelectedContract(null)
+      // await stopForwarding() // Remove this, handled by useEffect
       fetchContracts()
-      stopForwarding()
     } catch (error) {
       showSnackbar('Error updating contract: ' + error.message)
     } finally {

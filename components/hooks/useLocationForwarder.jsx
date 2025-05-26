@@ -1,39 +1,44 @@
+// useLocationForwarder.js
 import * as Location from 'expo-location'
-import { useRef } from 'react'
+
+let locationSubscription = null
+let isInitializing = false
 
 export default function useLocationForwarder(forwardLocationFn) {
-  const locationSubscription = useRef(null)
-
-  // Start sending location updates
   const startForwarding = async () => {
-    const { status } = await Location.requestForegroundPermissionsAsync()
-    if (status !== 'granted') {
-      console.warn('Location permission not granted')
-      return
-    }
+    if (locationSubscription || isInitializing) return
 
-    // Prevent duplicate subscriptions
-    if (locationSubscription.current) return
-
-    locationSubscription.current = await Location.watchPositionAsync(
-      {
-        accuracy: Location.Accuracy.High,
-        timeInterval: 5000, // every 5 seconds
-        distanceInterval: 10, // or every 10 meters
-      },
-      (location) => {
-        forwardLocationFn(location.coords) // send location
+    isInitializing = true
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync()
+      if (status !== 'granted') {
+        console.warn('Location permission not granted')
+        return
       }
-    )
 
-    console.log('Location forwarding started')
+      locationSubscription = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.High,
+          timeInterval: 2500,
+          distanceInterval: 10,
+        },
+        (location) => {
+          forwardLocationFn(location.coords)
+        }
+      )
+
+      console.log('Location forwarding started')
+    } catch (err) {
+      console.error('Failed to start location forwarding:', err)
+    } finally {
+      isInitializing = false
+    }
   }
 
-  // Stop sending location updates
-  const stopForwarding = () => {
-    if (locationSubscription.current) {
-      locationSubscription.current.remove()
-      locationSubscription.current = null
+  const stopForwarding = async () => {
+    if (locationSubscription) {
+      await locationSubscription.remove()
+      locationSubscription = null
       console.log('Location forwarding stopped')
     }
   }

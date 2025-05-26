@@ -7,11 +7,11 @@ import useLocationForwarder from '../../../hooks/useLocationForwarder'
 
 const AcceptContracts = ({ navigation }) => {
   const forwardLocationFn = (coords) => {
-    // Example: Log or send to your server
     console.log('Sending location:', coords);
   }
 
-  const { startForwarding, stopForwarding } = useLocationForwarder(forwardLocationFn)
+  // Only get startForwarding, do not expose to UI
+  const { startForwarding } = useLocationForwarder(forwardLocationFn)
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   const [currentTime, setCurrentTime] = useState('')
@@ -229,7 +229,7 @@ const AcceptContracts = ({ navigation }) => {
   
   const confirmPickupLuggage = async () => {
     if (!selectedContract) return
-    setPickingup(true) // was setAccepting(true)
+    setPickingup(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
@@ -237,7 +237,7 @@ const AcceptContracts = ({ navigation }) => {
       const { error } = await supabase
         .from('contract')
         .update({
-          contract_status_id: 4, // Accepted - Awaiting Pickup
+          contract_status_id: 4, // In Transit
           pickup_at: new Date().toISOString(),
         })
         .eq('id', selectedContract.id)
@@ -245,10 +245,12 @@ const AcceptContracts = ({ navigation }) => {
       showSnackbar('Luggage picked up successfully', true)
       navigation.navigate('ContractDetails', { id: selectedContract.id })
       fetchContracts()
+      // Start forwarding location only once, here
+      startForwarding()
     } catch (error) {
       showSnackbar('Error accepting contract: ' + error.message)
     } finally {
-      setPickingup(false) // was setAccepting(false)
+      setPickingup(false)
       setPickupDialogVisible(false)
       setSelectedContract(null)
     }
@@ -376,7 +378,6 @@ const AcceptContracts = ({ navigation }) => {
              Pickup Luggage
             </Button>
           )}
-
           <Button 
             mode="contained" 
             onPress={() => handleShowDetails(contract)} 
@@ -384,11 +385,6 @@ const AcceptContracts = ({ navigation }) => {
           >
             Show Details
           </Button>
-        <View style={{ padding: 20 }}>
-          <Text>Location Forwarding Demo</Text>
-          <Button onPress={startForwarding}>start</Button>
-          <Button onPress={stopForwarding}>stop</Button>
-        </View>
         </Card.Content>
       </Card>
     )
