@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
     flex: 2,
   },
   segmentContainer: {
-    marginTop: 10,
+    marginTop: 20,
     marginBottom: 5,
   },
   content: {

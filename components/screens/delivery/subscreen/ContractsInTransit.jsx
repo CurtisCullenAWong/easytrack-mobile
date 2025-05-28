@@ -3,11 +3,12 @@ import { View, FlatList, StyleSheet } from 'react-native'
 import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, Portal, Dialog } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
-import useBackgroundLocation from '../../../hooks/useBackgroundLocation'
+import { useBackgroundLocation } from '../../../hooks/useBackgroundLocation'
 
 const ContractsInTransit = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
+  const { stopTracking } = useBackgroundLocation()
   const [currentTime, setCurrentTime] = useState('')
   const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -196,6 +197,23 @@ const ContractsInTransit = ({ navigation }) => {
         .update(updateObj)
         .eq('id', selectedContract.id)
       if (error) throw error
+
+      // Get count of remaining contracts in transit
+      const { count, error: countError } = await supabase
+        .from('contract')
+        .select('*', { count: 'exact', head: true })
+        .eq('delivery_id', (await supabase.auth.getUser()).data.user.id)
+        .eq('contract_status_id', 4)
+
+      if (countError) throw countError
+      console.log(`Remaining contracts in transit: ${count}`)
+
+      // Stop tracking if no contracts remain
+      if (count === 0) {
+        await stopTracking()
+        showSnackbar('No more contracts in transit. Location tracking stopped.', true)
+      }
+
       showSnackbar(
         dialogType === 'deliver'
           ? 'Contract marked as delivered.'

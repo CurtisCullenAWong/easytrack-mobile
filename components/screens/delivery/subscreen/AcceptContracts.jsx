@@ -3,10 +3,10 @@ import { View, FlatList, StyleSheet } from 'react-native'
 import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, Portal, Dialog } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
-import useBackgroundLocation from '../../../hooks/useBackgroundLocation'
+import { useBackgroundLocation }  from '../../../hooks/useBackgroundLocation'
 
 const AcceptContracts = ({ navigation }) => {
-  const { startTracking, stopTracking } = useBackgroundLocation();
+  const { startTracking, stopTracking } = useBackgroundLocation()
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   const [currentTime, setCurrentTime] = useState('')
@@ -404,9 +404,15 @@ const AcceptContracts = ({ navigation }) => {
         />
       </View>
       <View>
-        <Button title="Start Tracking" onPress={startTracking}>start</Button>
+        <Button title="Start Tracking" onPress={() => {
+          console.log('Start tracking button pressed')
+          startTracking()
+        }}>start</Button>
         <View style={{ marginVertical: 10 }} />
-        <Button title="Stop Tracking" onPress={stopTracking}>stop</Button>
+        <Button title="Stop Tracking" onPress={() => {
+          console.log('Stop tracking button pressed')
+          stopTracking()
+        }}>stop</Button>
       </View>
       <View style={styles.buttonGroup}>
         <Menu
