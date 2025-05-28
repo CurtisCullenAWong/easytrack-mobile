@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 // Shared Screens
 import LoginScreen from '../screens/shared/LoginScreen'
 import ContractDetails from '../screens/shared/ContractDetails'
+import CheckLocation from '../screens/delivery/subscreen/CheckLocation'
 
 import MessageCenter from '../screens/MessageCenter'
 import BookingHistory from '../screens/shared/BookingHistory'
@@ -81,6 +82,8 @@ const AirlineDrawer = () => (
       <Drawer.Screen name="AirlineTrackLuggage" component={TrackLuggage} />
       <Drawer.Screen name="BookingManagement" component={AirlineBookingManagement} />
       <Drawer.Screen name="ContractDetails" component={ContractDetails} />
+      <Drawer.Screen name="CheckLocation" component={CheckLocation} />
+      
       {/* SHARED SCREENS */}
       <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />
       <Drawer.Screen name="BookingHistory" component={BookingHistory} />
@@ -101,6 +104,7 @@ const DeliveryDrawer = () => (
       <Drawer.Screen name="DeliveryHome" component={DeliveryHome} />
       <Drawer.Screen name="BookingManagement" component={DeliveryBookingManagement} />
       <Drawer.Screen name="ContractDetails" component={ContractDetails} />
+      <Drawer.Screen name="CheckLocation" component={CheckLocation} />
 
       {/* SHARED SCREENS */}
       <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />
@@ -147,7 +151,6 @@ const StackNavigator = () => (
         options={{ headerShown: false }}
       />
 
-      {/* SUBSCREENS */}
       <Stack.Screen
         name="Verification"
         component={Verification}

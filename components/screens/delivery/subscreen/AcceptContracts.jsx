@@ -371,10 +371,22 @@ const AcceptContracts = ({ navigation }) => {
               mode="contained" 
               onPress={() => handlePickupLuggage(contract)} 
               style={[styles.actionButton, { backgroundColor: colors.primary }]}
-              loading={pickingup && selectedContract?.id === contract.id} // was accepting
-              disabled={pickingup} // was accepting
+              loading={pickingup && selectedContract?.id === contract.id}
+              disabled={pickingup}
             >
              Pickup Luggage
+            </Button>
+          )}
+          {contract.drop_off_location && (
+            <Button 
+              mode="contained" 
+              onPress={() => navigation.navigate('CheckLocation', { 
+                dropOffLocation: contract.drop_off_location,
+                dropOffLocationGeo: contract.drop_off_location_geo
+              })} 
+              style={[styles.actionButton, { backgroundColor: colors.primary }]}
+            >
+              Check Location
             </Button>
           )}
           <Button 
