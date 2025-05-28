@@ -295,17 +295,17 @@ const ContractDetails = ({ navigation, route }) => {
 
                     <View style={styles.infoRow}>
                         <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Pickup:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{contractData.pickup_location || 'Not set'}</Text>
+                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable>{contractData.pickup_location || 'Not set'}</Text>
                     </View>
 
                     <View style={styles.infoRow}>
                         <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Current:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{contractData.current_location || 'Not set'}</Text>
+                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable>{contractData.current_location || 'Not set'}</Text>
                     </View>
 
                     <View style={styles.infoRow}>
                         <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Drop-off:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{contractData.drop_off_location || 'Not set'}</Text>
+                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable>{contractData.drop_off_location || 'Not set'}</Text>
                     </View>
 
                     <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>

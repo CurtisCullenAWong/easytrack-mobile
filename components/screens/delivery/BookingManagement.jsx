@@ -38,10 +38,10 @@ const BookingManagement = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 2,
+    flex: 1,
   },
   segmentContainer: {
-    marginTop: 20,
+    marginTop: '2%',
     marginBottom: 5,
   },
   content: {

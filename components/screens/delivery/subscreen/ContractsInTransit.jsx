@@ -8,7 +8,7 @@ import { useBackgroundLocation } from '../../../hooks/useBackgroundLocation'
 const ContractsInTransit = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
-  const { stopTracking } = useBackgroundLocation()
+  const { startTracking, stopTracking } = useBackgroundLocation()
   const [currentTime, setCurrentTime] = useState('')
   const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -19,7 +19,7 @@ const ContractsInTransit = ({ navigation }) => {
   const [sortColumn, setSortColumn] = useState('created_at')
   const [sortDirection, setSortDirection] = useState('descending')
   const [dialogVisible, setDialogVisible] = useState(false)
-  const [dialogType, setDialogType] = useState(null) // 'deliver' or 'cancel'
+  const [dialogType, setDialogType] = useState(null)
   const [selectedContract, setSelectedContract] = useState(null)
 
   const filterOptions = [
@@ -58,7 +58,33 @@ const ContractsInTransit = ({ navigation }) => {
         })
       )
     updateTime()
+
+    checkContractsAndManageTracking()
   }, [contracts.length])
+
+  const checkContractsAndManageTracking = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { count, error: countError } = await supabase
+        .from('contract')
+        .select('*', { count: 'exact', head: true })
+        .eq('delivery_id', user.id)
+        .eq('contract_status_id', 4)
+
+      if (countError) throw countError
+
+      if (count > 0) {
+        await startTracking()
+      } else {
+        await stopTracking()
+        showSnackbar('No contracts in transit. Location tracking inactive.', true)
+      }
+    } catch (error) {
+      showSnackbar('Error managing location tracking: ' + error.message)
+    }
+  }
 
   const fetchContracts = async () => {
     try {
@@ -91,7 +117,6 @@ const ContractsInTransit = ({ navigation }) => {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-
       setContracts(data || [])
     } catch (error) {
       showSnackbar('Error loading contracts: ' + error.message)
@@ -198,21 +223,7 @@ const ContractsInTransit = ({ navigation }) => {
         .eq('id', selectedContract.id)
       if (error) throw error
 
-      // Get count of remaining contracts in transit
-      const { count, error: countError } = await supabase
-        .from('contract')
-        .select('*', { count: 'exact', head: true })
-        .eq('delivery_id', (await supabase.auth.getUser()).data.user.id)
-        .eq('contract_status_id', 4)
-
-      if (countError) throw countError
-      console.log(`Remaining contracts in transit: ${count}`)
-
-      // Stop tracking if no contracts remain
-      if (count === 0) {
-        await stopTracking()
-        showSnackbar('No more contracts in transit. Location tracking stopped.', true)
-      }
+      checkContractsAndManageTracking()
 
       showSnackbar(
         dialogType === 'deliver'
@@ -222,7 +233,8 @@ const ContractsInTransit = ({ navigation }) => {
       )
       setDialogVisible(false)
       setSelectedContract(null)
-      fetchContracts() // This will trigger the useEffect to check if we need to stop forwarding
+      fetchContracts()
+      navigation.navigate('BookingHistory')
     } catch (error) {
       showSnackbar('Error updating contract: ' + error.message)
     } finally {

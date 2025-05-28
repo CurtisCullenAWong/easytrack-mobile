@@ -5,7 +5,7 @@
     "slug": "easytrack",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon-w_o-name.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {

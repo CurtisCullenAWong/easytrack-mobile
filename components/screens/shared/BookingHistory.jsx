@@ -328,7 +328,7 @@ const ContractList = ({ navigation, statusIds, emptyMessage, contracts, loading,
 // Main BookingHistory Component
 const BookingHistory = ({ navigation }) => {
   const { colors } = useTheme()
-  const [mode, setMode] = useState('cancelled')
+  const [mode, setMode] = useState('delivered')
   const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
     flex: 2,
   },
   segmentContainer: {
-    marginTop: 10,
+    marginTop: '2%',
     marginBottom: 5,
   },
   content: {

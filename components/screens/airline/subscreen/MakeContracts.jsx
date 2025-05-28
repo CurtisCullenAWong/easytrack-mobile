@@ -18,7 +18,7 @@ const MakeContracts = () => {
   const [loading, setLoading] = useState(false)
   const [location, setLocation] = useState(null)
 
-  const pickupBays = Array.from({ length: 18 }, (_, i) => `Bay ${i + 1}`)
+  const pickupBays = Array.from({ length: 18 }, (_, i) => `Terminal 3, Bay ${i + 1}`)
 
   const handleQuantityChange = (newQuantity) => {
     if (newQuantity < 1 || newQuantity > 10) {
