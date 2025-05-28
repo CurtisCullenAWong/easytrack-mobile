@@ -56,6 +56,7 @@ const AcceptContracts = ({ navigation }) => {
   const filterOptions = [
     { label: 'Contract ID', value: 'id' },
     { label: 'Luggage Owner', value: 'luggage_owner' },
+    { label: 'Luggage Quantity', value: 'luggage_quantity' },
     { label: 'Case Number', value: 'case_number' },
     { label: 'Status', value: 'status' },
     { label: 'Pickup Location', value: 'pickup_location' },
@@ -66,6 +67,7 @@ const AcceptContracts = ({ navigation }) => {
   const sortOptions = [
     { label: 'Contract ID', value: 'id' },
     { label: 'Luggage Owner', value: 'luggage_owner' },
+    { label: 'Luggage Quantity', value: 'luggage_quantity' },
     { label: 'Case Number', value: 'case_number' },
     { label: 'Status', value: 'contract_status.status_name' },
     { label: 'Created Date', value: 'created_at' },
@@ -320,7 +322,7 @@ const AcceptContracts = ({ navigation }) => {
                 </Text>
               </View>
               <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
-                Luggage Quantity: {contract.luggage_quantity || 0}
+                Total Luggage Quantity: {contract.luggage_quantity || 0}
               </Text>
             </View>
           </View>

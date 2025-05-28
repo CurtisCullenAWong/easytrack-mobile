@@ -297,7 +297,7 @@ const ContractsInTransit = ({ navigation }) => {
                 </Text>
               </View>
               <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
-                Luggage Quantity: {contract.luggage_quantity || 0}
+                Total Luggage Quantity: {contract.luggage_quantity || 0}
               </Text>
             </View>
           </View>

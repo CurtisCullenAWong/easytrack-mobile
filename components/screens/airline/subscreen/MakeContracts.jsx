@@ -22,7 +22,7 @@ const MakeContracts = () => {
 
   const handleQuantityChange = (newQuantity) => {
     if (newQuantity < 1 || newQuantity > 10) {
-      setQuantityError('Luggage quantity must be between 1 and 10.')
+      setQuantityError('Passenger count must be between 1 and 10.')
       return
     }
     setQuantityError('')
@@ -33,6 +33,8 @@ const MakeContracts = () => {
       caseNumber: '',
       itemDescription: '',
       weight: '',
+      contact: '',
+      luggageQuantity: 1
     })
     setLuggageDetails(updatedDetails)
   }
@@ -41,6 +43,10 @@ const MakeContracts = () => {
     const updatedDetails = [...luggageDetails]
     updatedDetails[index][field] = value
     setLuggageDetails(updatedDetails)
+  }
+
+  const calculateTotalLuggage = () => {
+    return luggageDetails.reduce((total, detail) => total + (parseInt(detail.luggageQuantity) || 0), 0)
   }
 
   const handleSubmit = async () => {
@@ -80,11 +86,10 @@ const MakeContracts = () => {
       const { data: contract, error: contractError } = await supabase
         .from('contract')
         .insert({
-          luggage_quantity: luggageQuantity,
           pickup_location: pickupLocation,
           drop_off_location: dropOffLocation,
           airline_id: user.id,
-          contract_status_id: 1 // Initial status
+          luggage_quantity: calculateTotalLuggage(),
         })
         .select()
 
@@ -100,7 +105,8 @@ const MakeContracts = () => {
             item_description: detail.itemDescription,
             weight: parseInt(detail.weight),
             contact_number: detail.contact,
-            contract_id: contract[0].id
+            contract_id: contract[0].id,
+            quantity: parseInt(detail.luggageQuantity)
           }))
         )
 
@@ -177,7 +183,7 @@ const MakeContracts = () => {
 
         <View style={styles.quantityContainer}>
           <Text style={[fonts.titleSmall, { color: colors.primary, marginBottom: 8 }]}>
-            Luggage Quantity
+            Passenger Count
           </Text>
           <View style={styles.quantityControls}>
             <IconButton
@@ -211,14 +217,16 @@ const MakeContracts = () => {
             </Text>
           ) : null}
         </View>
-
+        <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 16, marginBottom: 8 }]}>
+          Total Luggage: {calculateTotalLuggage()}
+        </Text>
         {luggageDetails.map((detail, index) => (
           <View
             key={index}
             style={[styles.luggageBlock, { backgroundColor: colors.surface, borderColor: colors.primary }]}
           >
             <Text style={[fonts.titleSmall, { color: colors.primary, marginBottom: 12 }]}>
-              Luggage {index + 1}
+              Passenger {index + 1}
             </Text>
             <TextInput
               label="Name"
@@ -253,6 +261,14 @@ const MakeContracts = () => {
               label="Contact Number"
               value={detail.contact}
               onChangeText={(text) => handleDetailChange(index, 'contact', text)}
+              keyboardType="numeric"
+              mode="outlined"
+              style={{ marginBottom: 12 }}
+            />
+            <TextInput
+              label="Luggage Quantity"
+              value={String(detail.luggageQuantity)}
+              onChangeText={(text) => handleDetailChange(index, 'luggageQuantity', text)}
               keyboardType="numeric"
               mode="outlined"
               style={{ marginBottom: 12 }}

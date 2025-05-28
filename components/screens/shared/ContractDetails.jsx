@@ -236,6 +236,12 @@ const ContractDetails = ({ navigation, route }) => {
                         <Text style={[fonts.bodySmall, { color: colors.onSurface }]} selectable>{contractData.id}</Text>
                     </View>
                     <View style={styles.infoRow}>
+                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Total Luggage Quantity:</Text>
+                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>
+                            {contractData?.luggage_quantity || 'N/A'}
+                        </Text>
+                    </View>
+                    <View style={styles.infoRow}>
                         <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Contractor Name:</Text>
                         <Text style={[fonts.bodyMedium, { color: colors.primary }]}>
                             {formatProfileName(contractor)}
@@ -310,11 +316,15 @@ const ContractDetails = ({ navigation, route }) => {
                     {contractData.luggage_info?.map((luggage, index) => (
                         <View key={index} style={styles.luggageSection}>
                             <Text style={[fonts.titleSmall, { color: colors.primary, marginBottom: 8 }]}>
-                                Luggage {index + 1}
+                                Passenger {index + 1}
                             </Text>
                             <View style={styles.infoRow}>
                                 <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Owner:</Text>
                                 <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{luggage.luggage_owner || 'N/A'}</Text>
+                            </View>
+                            <View style={styles.infoRow}>
+                                <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Quantity:</Text>
+                                <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable>{luggage.quantity || 'N/A'}</Text>
                             </View>
                             <View style={styles.infoRow}>
                                 <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Case Number:</Text>

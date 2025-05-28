@@ -58,6 +58,7 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
                     contract_status:contract_status_id (status_name),
                     luggage_info:contract_luggage_information (
                         luggage_owner,
+                        quantity,
                         case_number,
                         item_description,
                         weight,
@@ -110,7 +111,7 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
                     </View>
                     <View style={styles.infoRow}>
                         <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Luggage Quantity:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{contractData.luggage_quantity || 0}</Text>
+                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{contractData?.luggage_quantity || 0}</Text>
                     </View>
 
                     <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
@@ -127,6 +128,10 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
                                 <View style={styles.infoRow}>
                                     <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Owner:</Text>
                                     <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{luggage.luggage_owner || 'N/A'}</Text>
+                                </View>
+                                <View style={styles.infoRow}>
+                                    <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Owner:</Text>
+                                    <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{luggage.quantity || 'N/A'}</Text>
                                 </View>
                                 <View style={styles.infoRow}>
                                     <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Case Number:</Text>
