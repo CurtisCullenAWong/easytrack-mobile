@@ -6,11 +6,35 @@ import useSnackbar from '../../../hooks/useSnackbar'
 import useLocationForwarder from '../../../hooks/useLocationForwarder'
 
 const AcceptContracts = ({ navigation }) => {
-  const forwardLocationFn = (coords) => {
-    console.log('Sending location:', coords);
+  const forwardLocationFn = async (coords) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
+
+      // Update all in-transit contracts for this delivery person
+      const { error: updateError } = await supabase
+        .from('contract')
+        .update({
+          current_location: `${coords.latitude}, ${coords.longitude}`,
+          current_location_geo: `POINT(${coords.longitude} ${coords.latitude})`
+        })
+        .eq('delivery_id', user.id)
+        .eq('contract_status_id', 4) // Only update in-transit contracts
+      if (updateError) throw updateError
+      
+      console.log('📍 Location Update:', {
+        timestamp: new Date().toLocaleTimeString(),
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        accuracy: coords.accuracy,
+        status: 'Updated in database'
+      })
+    } catch (error) {
+      console.error('Error updating location:', error)
+      showSnackbar('Error updating location: ' + error.message)
+    }
   }
 
-  // Only get startForwarding, do not expose to UI
   const { startForwarding } = useLocationForwarder(forwardLocationFn)
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
@@ -245,7 +269,7 @@ const AcceptContracts = ({ navigation }) => {
       showSnackbar('Luggage picked up successfully', true)
       navigation.navigate('ContractDetails', { id: selectedContract.id })
       fetchContracts()
-      // Start forwarding location only once, here
+      // Start location forwarding when contract is picked up
       startForwarding()
     } catch (error) {
       showSnackbar('Error accepting contract: ' + error.message)

@@ -27,10 +27,16 @@
       },
       "config": {
         "googleMaps": {
-        "apiKey": "AIzaSyAOoKmOwCGfo-ieMhTpmM2DF5kdv5yP0cs"
+          "apiKey": "AIzaSyDFmfy3j09egUbTeDImVNnMCFgOjVvLUUM"
         }
       },
-      "permissions": ["ACCESS_FINE_LOCATION"],
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+      ],
       "package": "com.curtiscullenwong.EasyTrack"
     },
     "web": {
@@ -38,7 +44,15 @@
     },
     "plugins": [
       "expo-font",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location for delivery tracking.",
+          "locationAlwaysPermission": "Allow $(PRODUCT_NAME) to use your location in the background for delivery tracking.",
+          "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location for delivery tracking."
+        }
+      ]
     ],
     "extra": {
       "eas": {

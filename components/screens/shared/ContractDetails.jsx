@@ -3,7 +3,6 @@ import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native'
 import { Text, Card, Divider, useTheme, Appbar, Button } from 'react-native-paper'
 import { useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../../../lib/supabase'
-import useLocationForwarder from '../../hooks/useLocationForwarder';
 
 const ContractDetails = ({ navigation, route }) => {
     const { colors, fonts } = useTheme()
@@ -146,7 +145,7 @@ const ContractDetails = ({ navigation, route }) => {
         return (
             <View style={[styles.container, { backgroundColor: colors.background }]}>
                 <Appbar.Header>
-                    <Appbar.BackAction onPress={() => navigation.navigate('BookingManagement')} />
+                    <Appbar.BackAction onPress={() => navigation.goBack()} />
                     <Appbar.Content title="Contract Details" />
                 </Appbar.Header>
                 <Text style={[styles.errorText, { color: colors.error }]}>No contract data available</Text>
@@ -162,7 +161,7 @@ const ContractDetails = ({ navigation, route }) => {
             }
         >
             <Appbar.Header>
-                <Appbar.BackAction onPress={() => navigation.navigate('BookingManagement')} />
+                <Appbar.BackAction onPress={() => navigation.goBack()} />
                 <Appbar.Content title="Contract Details" />
             </Appbar.Header>
         {/* {location && (

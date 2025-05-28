@@ -8,7 +8,7 @@ import LoginScreen from '../screens/shared/LoginScreen'
 import ContractDetails from '../screens/shared/ContractDetails'
 
 import MessageCenter from '../screens/MessageCenter'
-import BookingHistory from '../screens/BookingHistory'
+import BookingHistory from '../screens/shared/BookingHistory'
 import PerformanceStatistics from '../screens/PerformanceStatistics'
 import TransactionHistory from '../screens/TransactionHistory'
 

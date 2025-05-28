@@ -6,9 +6,35 @@ import useSnackbar from '../../../hooks/useSnackbar'
 import useLocationForwarder from '../../../hooks/useLocationForwarder'
 
 const ContractsInTransit = ({ navigation }) => {
-  const forwardLocationFn = (coords) => {
-    console.log('Sending location:', coords)
+  const forwardLocationFn = async (coords) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
+
+      // Update all in-transit contracts for this delivery person
+      const { error: updateError } = await supabase
+        .from('contract')
+        .update({
+          current_location: `${coords.latitude}, ${coords.longitude}`,
+          current_location_geo: `POINT(${coords.longitude} ${coords.latitude})`
+        })
+        .eq('delivery_id', user.id)
+        .eq('contract_status_id', 4) // Only update in-transit contracts
+      if (updateError) throw updateError
+      
+      console.log('📍 Location Update:', {
+        timestamp: new Date().toLocaleTimeString(),
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        accuracy: coords.accuracy,
+        status: 'Updated in database'
+      })
+    } catch (error) {
+      console.error('Error updating location:', error)
+      showSnackbar('Error updating location: ' + error.message)
+    }
   }
+
   const { startForwarding, stopForwarding } = useLocationForwarder(forwardLocationFn)
   
   const { colors, fonts } = useTheme()
@@ -63,21 +89,20 @@ const ContractsInTransit = ({ navigation }) => {
       )
     updateTime()
     const interval = setInterval(updateTime, 1000)
-    return () => {
-      clearInterval(interval)
-      stopForwarding() // Stop location forwarding when screen unmounts
-    }
-  }, [])
 
-  // Start/stop forwarding based on contracts in transit
-  useEffect(() => {
+    // Start location forwarding if there are any in-transit contracts
     if (contracts.length > 0) {
       startForwarding()
-    } else {
-      stopForwarding()
     }
-    // Only run when contracts change
-  }, [contracts])
+
+    return () => {
+      clearInterval(interval)
+      // Only stop forwarding if there are no more in-transit contracts
+      if (contracts.length === 0) {
+        stopForwarding()
+      }
+    }
+  }, [contracts.length])
 
   const fetchContracts = async () => {
     try {
@@ -198,18 +223,17 @@ const ContractsInTransit = ({ navigation }) => {
     if (!selectedContract) return
     try {
       setLoading(true)
-      // stopForwarding() // Remove this, handled by useEffect
       let updateObj = {}
       if (dialogType === 'deliver') {
         updateObj = {
           delivered_at: new Date().toISOString(),
-          contract_status_id: 5,
+          contract_status_id: 5, // Delivered
         }
       }
       else if (dialogType === 'cancel') {
         updateObj = {
           cancelled_at: new Date().toISOString(),
-          contract_status_id: 6,
+          contract_status_id: 6, // Failed
         }
       }
       const { error } = await supabase
@@ -225,8 +249,7 @@ const ContractsInTransit = ({ navigation }) => {
       )
       setDialogVisible(false)
       setSelectedContract(null)
-      // await stopForwarding() // Remove this, handled by useEffect
-      fetchContracts()
+      fetchContracts() // This will trigger the useEffect to check if we need to stop forwarding
     } catch (error) {
       showSnackbar('Error updating contract: ' + error.message)
     } finally {
@@ -365,28 +388,6 @@ const ContractsInTransit = ({ navigation }) => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {SnackbarElement}
-      <Portal>
-        <Dialog
-          visible={dialogVisible}
-          onDismiss={() => setDialogVisible(false)}
-          style={{ backgroundColor: colors.surface }}
-        >
-          <Dialog.Title>
-            {dialogType === 'deliver' ? 'Mark as Delivered' : 'Mark as Failed'}
-          </Dialog.Title>
-          <Dialog.Content>
-            <Text>
-              {dialogType === 'deliver'
-                ? 'Are you sure you want to mark this contract as delivered?'
-                : 'Are you sure you want to mark this contract as failed?'}
-            </Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setDialogVisible(false)}>No</Button>
-            <Button onPress={handleDialogAction}>Yes</Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
       <View style={{ backgroundColor: colors.background }}>
         <Card style={[styles.timeCard, { backgroundColor: colors.surface, elevation: colors.elevation.level3 }]}>
           <Card.Content style={styles.timeCardContent}>
@@ -490,6 +491,28 @@ const ContractsInTransit = ({ navigation }) => {
         refreshing={loading}
         onRefresh={fetchContracts}
       />
+            <Portal>
+        <Dialog
+          visible={dialogVisible}
+          onDismiss={() => setDialogVisible(false)}
+          style={{ backgroundColor: colors.surface }}
+        >
+          <Dialog.Title>
+            {dialogType === 'deliver' ? 'Mark as Delivered' : 'Mark as Failed'}
+          </Dialog.Title>
+          <Dialog.Content>
+            <Text>
+              {dialogType === 'deliver'
+                ? 'Are you sure you want to mark this contract as delivered?'
+                : 'Are you sure you want to mark this contract as failed?'}
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDialogVisible(false)}>No</Button>
+            <Button onPress={handleDialogAction}>Yes</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   )
 }
