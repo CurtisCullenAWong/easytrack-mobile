@@ -3,40 +3,9 @@ import { View, FlatList, StyleSheet } from 'react-native'
 import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, Portal, Dialog } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
-import useLocationForwarder from '../../../hooks/useLocationForwarder'
+import useBackgroundLocation from '../../../hooks/useBackgroundLocation'
 
 const ContractsInTransit = ({ navigation }) => {
-  const forwardLocationFn = async (coords) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('User not authenticated')
-
-      // Update all in-transit contracts for this delivery person
-      const { error: updateError } = await supabase
-        .from('contract')
-        .update({
-          current_location: `${coords.latitude}, ${coords.longitude}`,
-          current_location_geo: `POINT(${coords.longitude} ${coords.latitude})`
-        })
-        .eq('delivery_id', user.id)
-        .eq('contract_status_id', 4) // Only update in-transit contracts
-      if (updateError) throw updateError
-      
-      console.log('📍 Location Update:', {
-        timestamp: new Date().toLocaleTimeString(),
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        accuracy: coords.accuracy,
-        status: 'Updated in database'
-      })
-    } catch (error) {
-      console.error('Error updating location:', error)
-      showSnackbar('Error updating location: ' + error.message)
-    }
-  }
-
-  const { startForwarding, stopForwarding } = useLocationForwarder(forwardLocationFn)
-  
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   const [currentTime, setCurrentTime] = useState('')
@@ -88,20 +57,6 @@ const ContractsInTransit = ({ navigation }) => {
         })
       )
     updateTime()
-    const interval = setInterval(updateTime, 1000)
-
-    // Start location forwarding if there are any in-transit contracts
-    if (contracts.length > 0) {
-      startForwarding()
-    }
-
-    return () => {
-      clearInterval(interval)
-      // Only stop forwarding if there are no more in-transit contracts
-      if (contracts.length === 0) {
-        stopForwarding()
-      }
-    }
   }, [contracts.length])
 
   const fetchContracts = async () => {

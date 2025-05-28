@@ -145,7 +145,7 @@ const ContractDetails = ({ navigation, route }) => {
         return (
             <View style={[styles.container, { backgroundColor: colors.background }]}>
                 <Appbar.Header>
-                    <Appbar.BackAction onPress={() => navigation.goBack()} />
+                    <Appbar.BackAction onPress={() => navigation.navigate('BookingManagement')} />
                     <Appbar.Content title="Contract Details" />
                 </Appbar.Header>
                 <Text style={[styles.errorText, { color: colors.error }]}>No contract data available</Text>
@@ -161,7 +161,7 @@ const ContractDetails = ({ navigation, route }) => {
             }
         >
             <Appbar.Header>
-                <Appbar.BackAction onPress={() => navigation.goBack()} />
+                <Appbar.BackAction onPress={() => navigation.navigate('BookingManagement')} />
                 <Appbar.Content title="Contract Details" />
             </Appbar.Header>
         {/* {location && (

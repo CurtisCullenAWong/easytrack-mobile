@@ -3,39 +3,10 @@ import { View, FlatList, StyleSheet } from 'react-native'
 import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, Portal, Dialog } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
-import useLocationForwarder from '../../../hooks/useLocationForwarder'
+import useBackgroundLocation from '../../../hooks/useBackgroundLocation'
 
 const AcceptContracts = ({ navigation }) => {
-  const forwardLocationFn = async (coords) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('User not authenticated')
-
-      // Update all in-transit contracts for this delivery person
-      const { error: updateError } = await supabase
-        .from('contract')
-        .update({
-          current_location: `${coords.latitude}, ${coords.longitude}`,
-          current_location_geo: `POINT(${coords.longitude} ${coords.latitude})`
-        })
-        .eq('delivery_id', user.id)
-        .eq('contract_status_id', 4) // Only update in-transit contracts
-      if (updateError) throw updateError
-      
-      console.log('📍 Location Update:', {
-        timestamp: new Date().toLocaleTimeString(),
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        accuracy: coords.accuracy,
-        status: 'Updated in database'
-      })
-    } catch (error) {
-      console.error('Error updating location:', error)
-      showSnackbar('Error updating location: ' + error.message)
-    }
-  }
-
-  const { startForwarding } = useLocationForwarder(forwardLocationFn)
+  const { startTracking, stopTracking } = useBackgroundLocation();
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   const [currentTime, setCurrentTime] = useState('')
@@ -271,8 +242,6 @@ const AcceptContracts = ({ navigation }) => {
       showSnackbar('Luggage picked up successfully', true)
       navigation.navigate('ContractDetails', { id: selectedContract.id })
       fetchContracts()
-      // Start location forwarding when contract is picked up
-      startForwarding()
     } catch (error) {
       showSnackbar('Error accepting contract: ' + error.message)
     } finally {
@@ -434,80 +403,85 @@ const AcceptContracts = ({ navigation }) => {
           style={[styles.searchbar, { backgroundColor: colors.surface }]}
         />
       </View>
-        <View style={styles.buttonGroup}>
-          <Menu
-            visible={filterMenuVisible}
-            onDismiss={() => setFilterMenuVisible(false)}
-            anchor={
-              <Button
-                mode="contained"
-                icon="filter-variant"
-                onPress={() => setFilterMenuVisible(true)}
-                style={[styles.actionButton, { backgroundColor: colors.primary }]}
-                contentStyle={styles.buttonContent}
-              >
-                {filterOptions.find(opt => opt.value === searchColumn)?.label}
-              </Button>
-            }
-            contentStyle={{ backgroundColor: colors.surface }}
-          >
-            {filterOptions.map(option => (
-              <Menu.Item
-                key={option.value}
-                onPress={() => {
-                  setSearchColumn(option.value)
-                  setFilterMenuVisible(false)
-                }}
-                title={option.label}
-                titleStyle={[
-                  {
-                    color: searchColumn === option.value
-                      ? colors.primary
-                      : colors.onSurface,
-                  },
-                  fonts.bodyLarge,
-                ]}
-                leadingIcon={searchColumn === option.value ? 'check' : undefined}
-              />
-            ))}
-          </Menu>
-          <Menu
-            visible={sortMenuVisible}
-            onDismiss={() => setSortMenuVisible(false)}
-            anchor={
-              <Button
-                mode="contained"
-                icon="sort"
-                onPress={() => setSortMenuVisible(true)}
-                style={[styles.actionButton, { backgroundColor: colors.primary }]}
-                contentStyle={styles.buttonContent}
-              >
-                {getSortLabel()}
-              </Button>
-            }
-            contentStyle={{ backgroundColor: colors.surface }}
-          >
-            {sortOptions.map(option => (
-              <Menu.Item
-                key={option.value}
-                onPress={() => {
-                  handleSort(option.value)
-                  setSortMenuVisible(false)
-                }}
-                title={option.label}
-                titleStyle={[
-                  {
-                    color: sortColumn === option.value
-                      ? colors.primary
-                      : colors.onSurface,
-                  },
-                  fonts.bodyLarge,
-                ]}
-                leadingIcon={sortColumn === option.value ? 'check' : undefined}
-              />
-            ))}
-          </Menu>    
-        </View>
+      <View>
+        <Button title="Start Tracking" onPress={startTracking}>start</Button>
+        <View style={{ marginVertical: 10 }} />
+        <Button title="Stop Tracking" onPress={stopTracking}>stop</Button>
+      </View>
+      <View style={styles.buttonGroup}>
+        <Menu
+          visible={filterMenuVisible}
+          onDismiss={() => setFilterMenuVisible(false)}
+          anchor={
+            <Button
+              mode="contained"
+              icon="filter-variant"
+              onPress={() => setFilterMenuVisible(true)}
+              style={[styles.actionButton, { backgroundColor: colors.primary }]}
+              contentStyle={styles.buttonContent}
+            >
+              {filterOptions.find(opt => opt.value === searchColumn)?.label}
+            </Button>
+          }
+          contentStyle={{ backgroundColor: colors.surface }}
+        >
+          {filterOptions.map(option => (
+            <Menu.Item
+              key={option.value}
+              onPress={() => {
+                setSearchColumn(option.value)
+                setFilterMenuVisible(false)
+              }}
+              title={option.label}
+              titleStyle={[
+                {
+                  color: searchColumn === option.value
+                    ? colors.primary
+                    : colors.onSurface,
+                },
+                fonts.bodyLarge,
+              ]}
+              leadingIcon={searchColumn === option.value ? 'check' : undefined}
+            />
+          ))}
+        </Menu>
+        <Menu
+          visible={sortMenuVisible}
+          onDismiss={() => setSortMenuVisible(false)}
+          anchor={
+            <Button
+              mode="contained"
+              icon="sort"
+              onPress={() => setSortMenuVisible(true)}
+              style={[styles.actionButton, { backgroundColor: colors.primary }]}
+              contentStyle={styles.buttonContent}
+            >
+              {getSortLabel()}
+            </Button>
+          }
+          contentStyle={{ backgroundColor: colors.surface }}
+        >
+          {sortOptions.map(option => (
+            <Menu.Item
+              key={option.value}
+              onPress={() => {
+                handleSort(option.value)
+                setSortMenuVisible(false)
+              }}
+              title={option.label}
+              titleStyle={[
+                {
+                  color: sortColumn === option.value
+                    ? colors.primary
+                    : colors.onSurface,
+                },
+                fonts.bodyLarge,
+              ]}
+              leadingIcon={sortColumn === option.value ? 'check' : undefined}
+            />
+          ))}
+        </Menu>    
+      </View>
       {/* Indication for contracts availability */}
       {loading ? null : filteredAndSortedContracts.length === 0 && (
         <Text style={[fonts.bodyMedium,{ textAlign: 'center', color: colors.onSurfaceVariant, marginTop: 30, marginBottom: 10 }]}>
