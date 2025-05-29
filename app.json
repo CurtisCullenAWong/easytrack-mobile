@@ -5,7 +5,7 @@
     "slug": "easytrack",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon-w_o-name.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -18,7 +18,9 @@
       "bundleIdentifier": "com.curtiscullenwong.EasyTrack",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["location"],
+        "UIBackgroundModes": [
+          "location"
+        ],
         "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs location access to track you in the background.",
         "NSLocationWhenInUseUsageDescription": "We use your location to show your position on the map."
       }
@@ -34,17 +36,12 @@
         }
       },
       "permissions": [
-        "ACCESS_BACKGROUND_LOCATION",
+        "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_LOCATION"
       ],
-      "package": "com.curtiscullenwong.EasyTrack",
-      "foregroundService": {
-        "name": "Location Tracking",
-        "notificationTitle": "Location Tracking",
-        "notificationBody": "Tracking your location in the background"
-      }
+      "package": "com.curtiscullenwong.EasyTrack"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -63,10 +60,10 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "58eeebf8-4019-4509-947c-2185c24313a8"
+        "projectId": "07e90185-3577-4c2c-912a-66542d0d92eb"
       }
     },
-    "owner": "curtiscullenwong",
+    "owner": "thewalkingdev_numoa",
     "runtimeVersion": "1.0.0",
     "updates": {
       "enabled": true,

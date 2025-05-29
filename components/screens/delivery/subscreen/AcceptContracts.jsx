@@ -419,17 +419,6 @@ const AcceptContracts = ({ navigation }) => {
           style={[styles.searchbar, { backgroundColor: colors.surface }]}
         />
       </View>
-      {/* <View>
-        <Button title="Start Tracking" onPress={() => {
-          console.log('Start tracking button pressed')
-          startTracking()
-        }}>start</Button>
-        <View style={{ marginVertical: 10 }} />
-        <Button title="Stop Tracking" onPress={() => {
-          console.log('Stop tracking button pressed')
-          stopTracking()
-        }}>stop</Button>
-      </View> */}
       <View style={styles.buttonGroup}>
         <Menu
           visible={filterMenuVisible}
@@ -441,6 +430,7 @@ const AcceptContracts = ({ navigation }) => {
               onPress={() => setFilterMenuVisible(true)}
               style={[styles.actionButton, { backgroundColor: colors.primary }]}
               contentStyle={styles.buttonContent}
+              labelStyle={fonts.labelMedium}
             >
               {filterOptions.find(opt => opt.value === searchColumn)?.label}
             </Button>
@@ -477,6 +467,7 @@ const AcceptContracts = ({ navigation }) => {
               onPress={() => setSortMenuVisible(true)}
               style={[styles.actionButton, { backgroundColor: colors.primary }]}
               contentStyle={styles.buttonContent}
+              labelStyle={fonts.labelMedium}
             >
               {getSortLabel()}
             </Button>
@@ -588,8 +579,8 @@ const styles = StyleSheet.create({
   },
   buttonGroup: {
     alignSelf:'center',
+    alignContent: 'space-evenly',
     flexDirection: 'row',
-    gap: 8,
   },
   actionButton: {
     borderRadius: 8,

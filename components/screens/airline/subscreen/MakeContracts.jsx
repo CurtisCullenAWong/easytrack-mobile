@@ -9,117 +9,175 @@ import * as Location from 'expo-location'
 const MakeContracts = () => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
-  const [dropOffLocation, setDropOffLocation] = useState('')
+  const [dropOffLocation, setDropOffLocation] = useState({ location: '', lat: null, lng: null })
   const [pickupLocation, setPickupLocation] = useState('')
   const [showPickupMenu, setShowPickupMenu] = useState(false)
-  const [luggageQuantity, setLuggageQuantity] = useState(1)
-  const [luggageDetails, setLuggageDetails] = useState([])
-  const [quantityError, setQuantityError] = useState('')
+  const [contracts, setContracts] = useState([{ 
+    name: "", 
+    caseNumber: "", 
+    itemDescription: "", 
+    contact: "", 
+    weight: "", 
+    quantity: "",
+    errors: {
+      name: false,
+      caseNumber: false,
+      itemDescription: false,
+      contact: false,
+      weight: false,
+      quantity: false
+    }
+  }])
   const [loading, setLoading] = useState(false)
   const [location, setLocation] = useState(null)
+  const [dropOffError, setDropOffError] = useState(false)
+  const [pickupError, setPickupError] = useState(false)
 
-  const pickupBays = Array.from({ length: 18 }, (_, i) => `Terminal 3, Bay ${i + 1}`)
+  const pickupBays = Array.from({ length: 12 }, (_, i) => `Terminal 3, Bay ${i + 1}`)
 
-  const handleQuantityChange = (newQuantity) => {
-    if (newQuantity < 1 || newQuantity > 10) {
-      setQuantityError('Passenger count must be between 1 and 10.')
+  const validateContract = (contract) => {
+    const errors = {
+      name: !contract.name.trim(),
+      caseNumber: !contract.caseNumber.trim(),
+      itemDescription: !contract.itemDescription.trim(),
+      contact: !contract.contact.trim(),
+      weight: !contract.weight.trim() || isNaN(contract.weight) || Number(contract.weight) <= 0,
+      quantity: !contract.quantity.trim() || isNaN(contract.quantity) || Number(contract.quantity) <= 0
+    }
+    return errors
+  }
+
+  const handleInputChange = (index, field, value) => {
+    const updatedContracts = [...contracts]
+    updatedContracts[index][field] = value
+    // Clear error when user starts typing
+    if (updatedContracts[index].errors) {
+      updatedContracts[index].errors[field] = false
+    }
+    setContracts(updatedContracts)
+  }
+
+  const clearSingleContract = (index) => {
+    const updatedContracts = [...contracts]
+    updatedContracts[index] = { name: "", caseNumber: "", itemDescription: "", contact: "", weight: "", quantity: "", errors: { name: false, caseNumber: false, itemDescription: false, contact: false, weight: false, quantity: false } }
+    setContracts(updatedContracts)
+  }
+
+  const deleteContract = (index) => {
+    if (contracts.length === 1) {
+      showSnackbar('At least one delivery information form is required')
       return
     }
-    setQuantityError('')
-    setLuggageQuantity(newQuantity)
-
-    const updatedDetails = Array.from({ length: newQuantity }, (_, index) => luggageDetails[index] || {
-      name: '',
-      caseNumber: '',
-      itemDescription: '',
-      weight: '',
-      contact: '',
-      luggageQuantity: 1
-    })
-    setLuggageDetails(updatedDetails)
+    const updatedContracts = contracts.filter((_, i) => i !== index)
+    setContracts(updatedContracts)
   }
 
-  const handleDetailChange = (index, field, value) => {
-    const updatedDetails = [...luggageDetails]
-    updatedDetails[index][field] = value
-    setLuggageDetails(updatedDetails)
-  }
-
-  const calculateTotalLuggage = () => {
-    return luggageDetails.reduce((total, detail) => total + (parseInt(detail.luggageQuantity) || 0), 0)
+  const addContract = () => {
+    setContracts([...contracts, { 
+      name: "", 
+      caseNumber: "", 
+      itemDescription: "", 
+      contact: "", 
+      weight: "", 
+      quantity: "",
+      errors: {
+        name: false,
+        caseNumber: false,
+        itemDescription: false,
+        contact: false,
+        weight: false,
+        quantity: false
+      }
+    }])
   }
 
   const handleSubmit = async () => {
     try {
       setLoading(true)
 
+      // Validate drop-off and pickup locations
+      if (!pickupLocation.trim()) {
+        setPickupError(true)
+        showSnackbar('Please select a pickup location')
+        return
+      }
+      setPickupError(false)
+      if (!dropOffLocation.location.trim()) {
+        setDropOffError(true)
+        showSnackbar('Please enter a drop-off location')
+        return
+      }
+      setDropOffError(false)
+
+      // Validate all contracts
+      const updatedContracts = [...contracts]
+      let hasErrors = false
+
+      updatedContracts.forEach((contract, index) => {
+        const errors = validateContract(contract)
+        updatedContracts[index].errors = errors
+        if (Object.values(errors).some(error => error)) {
+          hasErrors = true
+        }
+      })
+
+      if (hasErrors) {
+        setContracts(updatedContracts)
+        showSnackbar('Please fill in all required fields correctly')
+        return
+      }
+
       // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       if (userError) throw userError
       if (!user) throw new Error('User not authenticated')
 
-      // Validate required fields
-      if (!dropOffLocation) {
-        showSnackbar('Please enter a drop-off location')
-        return
-      }
+      // Calculate total luggage quantity
+      const totalLuggageQuantity = contracts.reduce((sum, contract) => sum + Number(contract.quantity || 0), 0)
 
-      if (!pickupLocation) {
-        showSnackbar('Please select a pickup location')
-        return
-      }
-
-      if (luggageQuantity < 1) {
-        showSnackbar('Please add at least one luggage')
-        return
-      }
-
-      // Validate luggage details
-      for (const detail of luggageDetails) {
-        if (!detail.name || !detail.caseNumber || !detail.itemDescription || !detail.weight || !detail.contact) {
-          showSnackbar('Please fill in all luggage details')
-          return
+      // Insert contract
+      const contractData = {
+        luggage_quantity: totalLuggageQuantity,
+        airline_id: user.id,
+        pickup_location: pickupLocation,
+        drop_off_location: dropOffLocation.location,
+        drop_off_location_geo: {
+          type: 'Point',
+          coordinates: [dropOffLocation.lng, dropOffLocation.lat]
         }
       }
 
-      // Insert contract first
-      const { data: contract, error: contractError } = await supabase
+      const { data: insertedContract, error: contractError } = await supabase
         .from('contract')
-        .insert({
-          pickup_location: pickupLocation,
-          drop_off_location: dropOffLocation,
-          airline_id: user.id,
-          luggage_quantity: calculateTotalLuggage(),
-        })
+        .insert(contractData)
         .select()
+        .single()
 
       if (contractError) throw contractError
 
-      // Insert luggage information with contract reference
+      // Format and insert luggage information
+      const formattedData = contracts.map(contract => ({
+        case_number: contract.caseNumber,
+        luggage_owner: contract.name,
+        contact_number: contract.contact,
+        item_description: contract.itemDescription,
+        weight: contract.weight,
+        quantity: contract.quantity,
+        contract_id: insertedContract.id
+      }))
+
       const { error: luggageError } = await supabase
         .from('contract_luggage_information')
-        .insert(
-          luggageDetails.map(detail => ({
-            luggage_owner: detail.name,
-            case_number: detail.caseNumber,
-            item_description: detail.itemDescription,
-            weight: parseInt(detail.weight),
-            contact_number: detail.contact,
-            contract_id: contract[0].id,
-            quantity: parseInt(detail.luggageQuantity)
-          }))
-        )
+        .insert(formattedData)
 
       if (luggageError) throw luggageError
 
       showSnackbar('Contract created successfully', true)
       
       // Reset form
-      setDropOffLocation('')
+      setDropOffLocation({ location: '', lat: null, lng: null })
       setPickupLocation('')
-      setLuggageQuantity(1)
-      setLuggageDetails([])
-      setQuantityError('')
+      setContracts([{ name: "", caseNumber: "", itemDescription: "", contact: "", weight: "", quantity: "", errors: { name: false, caseNumber: false, itemDescription: false, contact: false, weight: false, quantity: false } }])
 
     } catch (error) {
       showSnackbar('Error creating contract: ' + error.message)
@@ -127,24 +185,11 @@ const MakeContracts = () => {
       setLoading(false)
     }
   }
-  useEffect(() => {
-    handleQuantityChange(luggageQuantity)
-  }, [luggageQuantity])
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>
       {SnackbarElement}
       <View style={{ paddingHorizontal: 16 }}>
-        <Button
-          mode="contained"
-          onPress={handleSubmit}
-          style={{ borderRadius: 8 }}
-          contentStyle={{ paddingVertical: 8 }}
-          loading={loading}
-          disabled={loading}
-        >
-          Submit Contract
-        </Button>
         <Menu
           visible={showPickupMenu}
           onDismiss={() => setShowPickupMenu(false)}
@@ -156,10 +201,10 @@ const MakeContracts = () => {
               style={{ marginBottom: 16 }}
               right={<TextInput.Icon icon="menu-down" />}
               onPressIn={() => setShowPickupMenu(true)}
+              error={pickupError}
             />
           }
           contentStyle={{ backgroundColor: colors.surface }}
-
         >
           {pickupBays.map((bay) => (
             <Menu.Item
@@ -167,6 +212,7 @@ const MakeContracts = () => {
               onPress={() => {
                 setPickupLocation(bay)
                 setShowPickupMenu(false)
+                setPickupError(false)
               }}
               title={bay}
             />
@@ -175,134 +221,137 @@ const MakeContracts = () => {
 
         <TextInput
           label="Drop-off Location"
-          value={dropOffLocation}
-          onChangeText={setDropOffLocation}
+          value={dropOffLocation.location}
+          onChangeText={(text) => {
+            setDropOffLocation(prev => ({ ...prev, location: text }))
+            setDropOffError(false)
+          }}
           mode="outlined"
           style={{ marginBottom: 16 }}
+          error={dropOffError}
         />
-
-        <View style={styles.quantityContainer}>
-          <Text style={[fonts.titleSmall, { color: colors.primary, marginBottom: 8 }]}>
-            Passenger Count
-          </Text>
-          <View style={styles.quantityControls}>
-            <IconButton
-              icon="minus"
-              size={24}
-              onPress={() => handleQuantityChange(luggageQuantity - 1)}
-              style={{ backgroundColor: colors.primary }}
-              iconColor={colors.onPrimary}
-            />
-            <TextInput
-              value={String(luggageQuantity)}
-              onChangeText={(text) => {
-                const newValue = Math.min(10, Math.max(1, Number(text)))
-                handleQuantityChange(newValue)
-              }}
-              keyboardType="numeric"
-              mode="outlined"
-              style={styles.quantityInput}
-            />
-            <IconButton
-              icon="plus"
-              size={24}
-              onPress={() => handleQuantityChange(luggageQuantity + 1)}
-              style={{ backgroundColor: colors.primary }}
-              iconColor={colors.onPrimary}
-            />
-          </View>
-          {quantityError ? (
-            <Text style={[fonts.bodyMedium, styles.errorText, { color: colors.error }]}>
-              {quantityError}
-            </Text>
-          ) : null}
-        </View>
-        <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 16, marginBottom: 8 }]}>
-          Total Luggage: {calculateTotalLuggage()}
+        <Text style={[fonts.titleSmall, { marginBottom: 10, color: colors.primary }]}>
+          Total Luggage Quantity: 
+          {contracts.reduce((sum, contract) => sum + Number(contract.quantity || 0), 0)}
         </Text>
-        {luggageDetails.map((detail, index) => (
+        {contracts.map((contract, index) => (
           <View
             key={index}
             style={[styles.luggageBlock, { backgroundColor: colors.surface, borderColor: colors.primary }]}
           >
-            <Text style={[fonts.titleSmall, { color: colors.primary, marginBottom: 12 }]}>
-              Passenger {index + 1}
-            </Text>
-            <TextInput
-              label="Name"
-              value={detail.name}
-              onChangeText={(text) => handleDetailChange(index, 'name', text)}
-              mode="outlined"
-              style={{ marginBottom: 12 }}
-            />
+            <View style={styles.headerContainer}>
+              <Text style={[fonts.titleSmall, { color: colors.primary }]}>
+                Delivery Information {index + 1}
+              </Text>
+              <IconButton
+                icon="close"
+                size={20}
+                onPress={() => deleteContract(index)}
+                style={{ margin: 0 }}
+                disabled={contracts.length === 1}
+                iconColor={contracts.length === 1 ? colors.disabled : colors.error}
+              />
+            </View>
             <TextInput
               label="Case Number"
-              value={detail.caseNumber}
-              onChangeText={(text) => handleDetailChange(index, 'caseNumber', text)}
+              value={contract.caseNumber}
+              onChangeText={(text) => handleInputChange(index, "caseNumber", text)}
               mode="outlined"
               style={{ marginBottom: 12 }}
+              error={contract.errors?.caseNumber}
+            />
+            <TextInput
+              label="Name"
+              value={contract.name}
+              onChangeText={(text) => handleInputChange(index, "name", text)}
+              mode="outlined"
+              style={{ marginBottom: 12 }}
+              error={contract.errors?.name}
             />
             <TextInput
               label="Item Description"
-              value={detail.itemDescription}
-              onChangeText={(text) => handleDetailChange(index, 'itemDescription', text)}
+              value={contract.itemDescription}
+              onChangeText={(text) => handleInputChange(index, "itemDescription", text)}
               mode="outlined"
               style={{ marginBottom: 12 }}
-            />
-            <TextInput
-              label="Weight (kg)"
-              value={detail.weight}
-              onChangeText={(text) => handleDetailChange(index, 'weight', text)}
-              keyboardType="numeric"
-              mode="outlined"
-              style={{ marginBottom: 12 }}
+              error={contract.errors?.itemDescription}
             />
             <TextInput
               label="Contact Number"
-              value={detail.contact}
-              onChangeText={(text) => handleDetailChange(index, 'contact', text)}
-              keyboardType="numeric"
+              value={contract.contact}
+              onChangeText={(text) => handleInputChange(index, "contact", text)}
               mode="outlined"
               style={{ marginBottom: 12 }}
+              error={contract.errors?.contact}
             />
             <TextInput
-              label="Luggage Quantity"
-              value={String(detail.luggageQuantity)}
-              onChangeText={(text) => handleDetailChange(index, 'luggageQuantity', text)}
+              label="Weight (kg)"
+              value={contract.weight}
+              onChangeText={(text) => handleInputChange(index, "weight", text)}
               keyboardType="numeric"
               mode="outlined"
               style={{ marginBottom: 12 }}
+              error={contract.errors?.weight}
             />
+            <TextInput
+              label="Quantity"
+              value={contract.quantity}
+              onChangeText={(text) => handleInputChange(index, "quantity", text)}
+              keyboardType="numeric"
+              mode="outlined"
+              style={{ marginBottom: 12 }}
+              error={contract.errors?.quantity}
+            />
+            <Button
+              mode="outlined"
+              onPress={() => clearSingleContract(index)}
+              style={{ marginTop: 12 }}
+            >
+              Clear Contract
+            </Button>
           </View>
         ))}
+
+        <View style={styles.buttonContainer}>
+          <Button
+            mode="outlined"
+            onPress={addContract}
+            style={{ marginRight: 8 }}
+          >
+            Add Another Form
+          </Button>
+          <Button
+            mode="contained"
+            onPress={handleSubmit}
+            loading={loading}
+            disabled={loading}
+          >
+            Send Contract
+          </Button>
+        </View>
       </View>
     </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  quantityContainer: {
-    marginBottom: 24,
-  },
-  quantityControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quantityInput: {
-    width: 60,
-    marginHorizontal: 12,
-    textAlign: 'center'
-  },
   luggageBlock: {
     marginBottom: 20,
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
   },
-  errorText: {
-    marginTop: 8,
-    alignSelf: 'center',
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 24,
+    marginBottom: 32,
   },
 })
 

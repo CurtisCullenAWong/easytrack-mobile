@@ -512,7 +512,10 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   locationText: {
+    marginRight:'20%',
     flex: 1,
+    numberOfLines: 2,
+    ellipsizeMode: 'tail',
   },
   detailsContainer: {
     marginTop: 10,

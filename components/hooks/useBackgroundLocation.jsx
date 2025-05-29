@@ -88,12 +88,12 @@ export function useBackgroundLocation() {
         }
       } catch (err) {
         console.error('Error in background location task:', err)
-        // You might want to add additional error reporting here
       }
     })
 
     return () => {
-      // stopTracking() // Stop on unmount
+      // Cleanup: stop tracking when component unmounts
+      stopTracking()
     }
   }, [])
 

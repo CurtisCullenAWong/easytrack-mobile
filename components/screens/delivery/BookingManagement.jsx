@@ -18,7 +18,7 @@ const BookingManagement = ({ navigation }) => {
           onValueChange={setMode}
           buttons={[
             { value: 1, label: 'Accept and Pickup' },
-            { value: 2, label: 'Contracts In Transit' },
+            { value: 2, label: 'In Transit' },
           ]}
           style={{ marginHorizontal: 16 }}
         />

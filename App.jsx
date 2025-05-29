@@ -1,3 +1,4 @@
+import './lib/backgroundLocation'  // Import background location initialization
 import { useState, useEffect } from 'react'
 import { Provider as PaperProvider } from 'react-native-paper'
 import * as Font from 'expo-font'
