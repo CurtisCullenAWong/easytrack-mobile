@@ -1,42 +1,188 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState, useRef, useCallback, useMemo } from 'react'
 import { View, ScrollView, StyleSheet } from 'react-native'
 import { useTheme, TextInput, Button, Text, IconButton, Menu } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
-import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps'
-import * as Location from 'expo-location'
+import MapView, { Marker } from 'react-native-maps'
+import { useNavigation } from '@react-navigation/native'
+
+// Constants
+const INITIAL_CONTRACT = {
+  name: "",
+  caseNumber: "",
+  itemDescription: "",
+  contact: "",
+  weight: "",
+  quantity: "",
+  errors: {
+    name: false,
+    caseNumber: false,
+    itemDescription: false,
+    contact: false,
+    weight: false,
+    quantity: false
+  }
+}
+
+const INITIAL_REGION = {
+  latitude: 14.5350,
+  longitude: 120.9821,
+  latitudeDelta: 0.0922,
+  longitudeDelta: 0.0421,
+}
+
+// Map Component
+const LocationMap = ({ region, onRegionChange, mapRef }) => {
+  const { colors } = useTheme()
+  
+  return (
+    <View style={styles.mapContainer}>
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        region={region}
+        onRegionChangeComplete={onRegionChange}
+      >
+        <Marker
+          coordinate={{
+            latitude: region.latitude,
+            longitude: region.longitude
+          }}
+          pinColor={colors.primary}
+        />
+      </MapView>
+    </View>
+  )
+}
+
+// Contract Form Component
+const ContractForm = ({ contract, index, onInputChange, onClear, onDelete, isLastContract }) => {
+  const { colors, fonts } = useTheme()
+
+  return (
+    <View style={[styles.luggageBlock, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
+      <View style={styles.headerContainer}>
+        <Text style={[fonts.titleSmall, { color: colors.primary }]}>
+          Delivery Information {index + 1}
+        </Text>
+        <IconButton
+          icon="close"
+          size={20}
+          onPress={() => onDelete(index)}
+          style={{ margin: 0 }}
+          disabled={isLastContract}
+          iconColor={isLastContract ? colors.disabled : colors.error}
+        />
+      </View>
+      <TextInput
+        label="Case Number"
+        value={contract.caseNumber}
+        onChangeText={(text) => onInputChange(index, "caseNumber", text)}
+        mode="outlined"
+        style={{ marginBottom: 12 }}
+        error={contract.errors?.caseNumber}
+      />
+      <TextInput
+        label="Name"
+        value={contract.name}
+        onChangeText={(text) => onInputChange(index, "name", text)}
+        mode="outlined"
+        style={{ marginBottom: 12 }}
+        error={contract.errors?.name}
+      />
+      <TextInput
+        label="Item Description"
+        value={contract.itemDescription}
+        onChangeText={(text) => onInputChange(index, "itemDescription", text)}
+        mode="outlined"
+        style={{ marginBottom: 12 }}
+        error={contract.errors?.itemDescription}
+      />
+      <TextInput
+        label="Contact Number"
+        value={contract.contact}
+        onChangeText={(text) => onInputChange(index, "contact", text)}
+        mode="outlined"
+        style={{ marginBottom: 12 }}
+        error={contract.errors?.contact}
+      />
+      <TextInput
+        label="Weight (kg)"
+        value={contract.weight}
+        onChangeText={(text) => onInputChange(index, "weight", text)}
+        keyboardType="numeric"
+        mode="outlined"
+        style={{ marginBottom: 12 }}
+        error={contract.errors?.weight}
+      />
+      <TextInput
+        label="Quantity"
+        value={contract.quantity}
+        onChangeText={(text) => onInputChange(index, "quantity", text)}
+        keyboardType="numeric"
+        mode="outlined"
+        style={{ marginBottom: 12 }}
+        error={contract.errors?.quantity}
+      />
+      <Button
+        mode="outlined"
+        onPress={() => onClear(index)}
+        style={{ marginTop: 12 }}
+      >
+        Clear Contract
+      </Button>
+    </View>
+  )
+}
 
 const MakeContracts = () => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
+  const mapRef = useRef(null)
+  const markerRef = useRef(null)
+  const navigation = useNavigation()
+  
+  // State
   const [dropOffLocation, setDropOffLocation] = useState({ location: '', lat: null, lng: null })
   const [pickupLocation, setPickupLocation] = useState('')
   const [showPickupMenu, setShowPickupMenu] = useState(false)
-  const [contracts, setContracts] = useState([{ 
-    name: "", 
-    caseNumber: "", 
-    itemDescription: "", 
-    contact: "", 
-    weight: "", 
-    quantity: "",
-    errors: {
-      name: false,
-      caseNumber: false,
-      itemDescription: false,
-      contact: false,
-      weight: false,
-      quantity: false
-    }
-  }])
+  const [contracts, setContracts] = useState([INITIAL_CONTRACT])
   const [loading, setLoading] = useState(false)
-  const [location, setLocation] = useState(null)
   const [dropOffError, setDropOffError] = useState(false)
   const [pickupError, setPickupError] = useState(false)
+  const [region, setRegion] = useState(INITIAL_REGION)
 
-  const pickupBays = Array.from({ length: 12 }, (_, i) => `Terminal 3, Bay ${i + 1}`)
+  // Memoized values
+  const pickupBays = useMemo(() => 
+    Array.from({ length: 12 }, (_, i) => `Terminal 3, Bay ${i + 1}`),
+    []
+  )
 
-  const validateContract = (contract) => {
-    const errors = {
+  const totalLuggageQuantity = useMemo(() => 
+    contracts.reduce((sum, contract) => sum + Number(contract.quantity || 0), 0),
+    [contracts]
+  )
+
+  // Event Handlers
+  const handleRegionChange = useCallback(async (newRegion) => {
+    setRegion(newRegion)
+    if (address) {
+      setDropOffLocation(prev => ({
+        ...prev,
+        location: address,
+        lat: newRegion.latitude,
+        lng: newRegion.longitude
+      }))
+    }
+  }, [])
+
+  const handleDropoffInputChange = useCallback((text) => {
+    setDropOffLocation(prev => ({ ...prev, location: text }))
+    setDropOffError(false)
+  }, [])
+
+  const validateContract = useCallback((contract) => {
+    return {
       name: !contract.name.trim(),
       caseNumber: !contract.caseNumber.trim(),
       itemDescription: !contract.itemDescription.trim(),
@@ -44,64 +190,51 @@ const MakeContracts = () => {
       weight: !contract.weight.trim() || isNaN(contract.weight) || Number(contract.weight) <= 0,
       quantity: !contract.quantity.trim() || isNaN(contract.quantity) || Number(contract.quantity) <= 0
     }
-    return errors
-  }
+  }, [])
 
-  const handleInputChange = (index, field, value) => {
-    const updatedContracts = [...contracts]
-    updatedContracts[index][field] = value
-    // Clear error when user starts typing
-    if (updatedContracts[index].errors) {
-      updatedContracts[index].errors[field] = false
-    }
-    setContracts(updatedContracts)
-  }
+  const handleInputChange = useCallback((index, field, value) => {
+    setContracts(prev => {
+      const updated = [...prev]
+      updated[index][field] = value
+      if (updated[index].errors) {
+        updated[index].errors[field] = false
+      }
+      return updated
+    })
+  }, [])
 
-  const clearSingleContract = (index) => {
-    const updatedContracts = [...contracts]
-    updatedContracts[index] = { name: "", caseNumber: "", itemDescription: "", contact: "", weight: "", quantity: "", errors: { name: false, caseNumber: false, itemDescription: false, contact: false, weight: false, quantity: false } }
-    setContracts(updatedContracts)
-  }
+  const clearSingleContract = useCallback((index) => {
+    setContracts(prev => {
+      const updated = [...prev]
+      updated[index] = { ...INITIAL_CONTRACT }
+      return updated
+    })
+  }, [])
 
-  const deleteContract = (index) => {
+  const deleteContract = useCallback((index) => {
     if (contracts.length === 1) {
       showSnackbar('At least one delivery information form is required')
       return
     }
-    const updatedContracts = contracts.filter((_, i) => i !== index)
-    setContracts(updatedContracts)
-  }
+    setContracts(prev => prev.filter((_, i) => i !== index))
+  }, [contracts.length, showSnackbar])
 
-  const addContract = () => {
-    setContracts([...contracts, { 
-      name: "", 
-      caseNumber: "", 
-      itemDescription: "", 
-      contact: "", 
-      weight: "", 
-      quantity: "",
-      errors: {
-        name: false,
-        caseNumber: false,
-        itemDescription: false,
-        contact: false,
-        weight: false,
-        quantity: false
-      }
-    }])
-  }
+  const addContract = useCallback(() => {
+    setContracts(prev => [...prev, { ...INITIAL_CONTRACT }])
+  }, [])
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     try {
       setLoading(true)
 
-      // Validate drop-off and pickup locations
+      // Validate locations
       if (!pickupLocation.trim()) {
         setPickupError(true)
         showSnackbar('Please select a pickup location')
         return
       }
       setPickupError(false)
+      
       if (!dropOffLocation.location.trim()) {
         setDropOffError(true)
         showSnackbar('Please enter a drop-off location')
@@ -109,7 +242,7 @@ const MakeContracts = () => {
       }
       setDropOffError(false)
 
-      // Validate all contracts
+      // Validate contracts
       const updatedContracts = [...contracts]
       let hasErrors = false
 
@@ -132,9 +265,6 @@ const MakeContracts = () => {
       if (userError) throw userError
       if (!user) throw new Error('User not authenticated')
 
-      // Calculate total luggage quantity
-      const totalLuggageQuantity = contracts.reduce((sum, contract) => sum + Number(contract.quantity || 0), 0)
-
       // Insert contract
       const contractData = {
         luggage_quantity: totalLuggageQuantity,
@@ -155,7 +285,7 @@ const MakeContracts = () => {
 
       if (contractError) throw contractError
 
-      // Format and insert luggage information
+      // Insert luggage information
       const formattedData = contracts.map(contract => ({
         case_number: contract.caseNumber,
         luggage_owner: contract.name,
@@ -177,14 +307,16 @@ const MakeContracts = () => {
       // Reset form
       setDropOffLocation({ location: '', lat: null, lng: null })
       setPickupLocation('')
-      setContracts([{ name: "", caseNumber: "", itemDescription: "", contact: "", weight: "", quantity: "", errors: { name: false, caseNumber: false, itemDescription: false, contact: false, weight: false, quantity: false } }])
+      setContracts([{ ...INITIAL_CONTRACT }])
 
+      // Navigate to contracts made screen
+      navigation.navigate('BookingManagement', { screen: 'made' })
     } catch (error) {
       showSnackbar('Error creating contract: ' + error.message)
     } finally {
       setLoading(false)
     }
-  }
+  }, [contracts, dropOffLocation, pickupLocation, showSnackbar, totalLuggageQuantity, validateContract, navigation])
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -200,7 +332,7 @@ const MakeContracts = () => {
               mode="outlined"
               style={{ marginBottom: 16 }}
               right={<TextInput.Icon icon="menu-down" />}
-              onPressIn={() => setShowPickupMenu(true)}
+              onPress={() => setShowPickupMenu(true)}
               error={pickupError}
             />
           }
@@ -222,94 +354,34 @@ const MakeContracts = () => {
         <TextInput
           label="Drop-off Location"
           value={dropOffLocation.location}
-          onChangeText={(text) => {
-            setDropOffLocation(prev => ({ ...prev, location: text }))
-            setDropOffError(false)
-          }}
+          onChangeText={handleDropoffInputChange}
           mode="outlined"
           style={{ marginBottom: 16 }}
           error={dropOffError}
+          right={<TextInput.Icon icon="map-marker" />}
         />
+
+        <LocationMap
+          region={region}
+          onRegionChange={handleRegionChange}
+          mapRef={mapRef}
+          markerRef={markerRef}
+        />
+
         <Text style={[fonts.titleSmall, { marginBottom: 10, color: colors.primary }]}>
-          Total Luggage Quantity: 
-          {contracts.reduce((sum, contract) => sum + Number(contract.quantity || 0), 0)}
+          Total Luggage Quantity: {totalLuggageQuantity}
         </Text>
+
         {contracts.map((contract, index) => (
-          <View
+          <ContractForm
             key={index}
-            style={[styles.luggageBlock, { backgroundColor: colors.surface, borderColor: colors.primary }]}
-          >
-            <View style={styles.headerContainer}>
-              <Text style={[fonts.titleSmall, { color: colors.primary }]}>
-                Delivery Information {index + 1}
-              </Text>
-              <IconButton
-                icon="close"
-                size={20}
-                onPress={() => deleteContract(index)}
-                style={{ margin: 0 }}
-                disabled={contracts.length === 1}
-                iconColor={contracts.length === 1 ? colors.disabled : colors.error}
-              />
-            </View>
-            <TextInput
-              label="Case Number"
-              value={contract.caseNumber}
-              onChangeText={(text) => handleInputChange(index, "caseNumber", text)}
-              mode="outlined"
-              style={{ marginBottom: 12 }}
-              error={contract.errors?.caseNumber}
-            />
-            <TextInput
-              label="Name"
-              value={contract.name}
-              onChangeText={(text) => handleInputChange(index, "name", text)}
-              mode="outlined"
-              style={{ marginBottom: 12 }}
-              error={contract.errors?.name}
-            />
-            <TextInput
-              label="Item Description"
-              value={contract.itemDescription}
-              onChangeText={(text) => handleInputChange(index, "itemDescription", text)}
-              mode="outlined"
-              style={{ marginBottom: 12 }}
-              error={contract.errors?.itemDescription}
-            />
-            <TextInput
-              label="Contact Number"
-              value={contract.contact}
-              onChangeText={(text) => handleInputChange(index, "contact", text)}
-              mode="outlined"
-              style={{ marginBottom: 12 }}
-              error={contract.errors?.contact}
-            />
-            <TextInput
-              label="Weight (kg)"
-              value={contract.weight}
-              onChangeText={(text) => handleInputChange(index, "weight", text)}
-              keyboardType="numeric"
-              mode="outlined"
-              style={{ marginBottom: 12 }}
-              error={contract.errors?.weight}
-            />
-            <TextInput
-              label="Quantity"
-              value={contract.quantity}
-              onChangeText={(text) => handleInputChange(index, "quantity", text)}
-              keyboardType="numeric"
-              mode="outlined"
-              style={{ marginBottom: 12 }}
-              error={contract.errors?.quantity}
-            />
-            <Button
-              mode="outlined"
-              onPress={() => clearSingleContract(index)}
-              style={{ marginTop: 12 }}
-            >
-              Clear Contract
-            </Button>
-          </View>
+            contract={contract}
+            index={index}
+            onInputChange={handleInputChange}
+            onClear={clearSingleContract}
+            onDelete={deleteContract}
+            isLastContract={contracts.length === 1}
+          />
         ))}
 
         <View style={styles.buttonContainer}>
@@ -352,6 +424,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 24,
     marginBottom: 32,
+  },
+  mapContainer: {
+    height: 300,
+    marginBottom: 16,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  map: {
+    flex: 1,
   },
 })
 

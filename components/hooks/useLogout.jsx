@@ -32,13 +32,13 @@ const useLogout = () => {
       return
     }
     setIsDialogVisible(false)
-    stopTracking()
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
         routes: [{ name: 'Login' }],
       })
     )
+    stopTracking()
   }
 
   const cancelLogout = () => setIsDialogVisible(false)

@@ -330,22 +330,26 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
 
         return (
             <Card style={[styles.contractCard, { backgroundColor: colors.surface }]}>
-                <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10, marginLeft:'5%' }]}>
-                    Location Tracking
-                </Text>
-                <Divider style={{ marginBottom: 10 }} />
+                {contractData.contract_status_id === 4 && (
+                    <>
+                        <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10, marginLeft:'5%' }]}>
+                            Location Tracking
+                        </Text>
+                        <Divider style={{ marginBottom: 10 }} />
 
-                <View style={styles.infoRow}>
-                    <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant, marginLeft:'5%' }]}>Current Location:</Text>
-                    <Text style={[fonts.bodySmall, { color: colors.onSurface, marginRight:'40%' }]} numberOfLines={2} ellipsizeMode="tail">{contractData.current_location || 'Not set'}</Text>
-                </View>
-                <View style={styles.infoRow}>
-                    <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant, marginLeft:'5%' }]}>Drop-Off Location:</Text>
-                    <Text style={[fonts.bodySmall, { color: colors.onSurface, marginRight:'40%' }]} numberOfLines={2} ellipsizeMode="tail">{contractData.drop_off_location || 'Not set'}</Text>
-                </View>
-                {renderMap(currentLocationCoords, dropOffCoords)}
+                        <View style={styles.infoRow}>
+                            <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant, marginLeft:'5%' }]}>Current Location:</Text>
+                            <Text style={[fonts.bodySmall, { color: colors.onSurface, marginRight:'40%' }]} numberOfLines={2} ellipsizeMode="tail">{contractData.current_location || 'Not set'}</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                            <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant, marginLeft:'5%' }]}>Drop-Off Location:</Text>
+                            <Text style={[fonts.bodySmall, { color: colors.onSurface, marginRight:'40%' }]} numberOfLines={2} ellipsizeMode="tail">{contractData.drop_off_location || 'Not set'}</Text>
+                        </View>
+                        {renderMap(currentLocationCoords, dropOffCoords)}
+                    </>
+                )}
                 <Card.Content>
-                    <Text style={[fonts.titleMedium, { color: colors.primary, marginBottom: 10 }]}>
+                    <Text style={[fonts.titleMedium, { color: colors.primary, marginVertical: 10 }]}>
                         Contract Information
                     </Text>
                     <Divider style={{ marginBottom: 10 }} />
