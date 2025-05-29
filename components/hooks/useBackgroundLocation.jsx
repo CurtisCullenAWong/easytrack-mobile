@@ -93,7 +93,7 @@ export function useBackgroundLocation() {
 
     return () => {
       // Cleanup: stop tracking when component unmounts
-      stopTracking()
+      // stopTracking()
     }
   }, [])
 

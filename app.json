@@ -36,10 +36,11 @@
         }
       },
       "permissions": [
-        "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "FOREGROUND_SERVICE",
-        "FOREGROUND_SERVICE_LOCATION"
+        "FOREGROUND_SERVICE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ],
       "package": "com.curtiscullenwong.EasyTrack"
     },
@@ -60,7 +61,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "07e90185-3577-4c2c-912a-66542d0d92eb"
+        "projectId": "d8ebd14f-1692-49e2-a6fc-3fc09d571d13"
       }
     },
     "owner": "thewalkingdev_numoa",
