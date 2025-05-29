@@ -73,12 +73,12 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
 
     useEffect(() => {
         if (contractId) {
-            setTrackingNumber(contractId)
+            setTrackingNumber(contractId.toString())
             if (initialContractData) {
                 setContractData(initialContractData)
             }
+            handleTrackLuggage()
         }
-        handleTrackLuggage()
     }, [contractId, initialContractData])
 
     // Auto refresh every 30 seconds if we have a tracking number
@@ -356,11 +356,8 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
                     
                     <View style={styles.infoRow}>
                         <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Contract ID:</Text>
-                    </View>
-                    <View style={styles.infoRow}>
                         <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{contractData.id}</Text>
                     </View>
-
                     <View style={styles.infoRow}>
                         <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Status:</Text>
                         <Text style={[fonts.bodyMedium, { color: colors.primary }]}>

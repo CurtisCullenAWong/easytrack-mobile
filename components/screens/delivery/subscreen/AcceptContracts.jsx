@@ -3,10 +3,10 @@ import { View, FlatList, StyleSheet } from 'react-native'
 import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, Portal, Dialog } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
-import { useBackgroundLocation } from '../../../hooks/useBackgroundLocation'
+import { useLocation } from '../../../hooks/useLocation'
 
 const AcceptContracts = ({ navigation }) => {
-  const { startTracking, stopTracking } = useBackgroundLocation()
+  const { startTracking } = useLocation()
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   const [currentTime, setCurrentTime] = useState('')

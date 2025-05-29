@@ -3,7 +3,7 @@ import { CommonActions, useNavigation } from '@react-navigation/native'
 import { Portal, Dialog, Button, Text, useTheme } from 'react-native-paper'
 import { supabase } from '../../lib/supabase'
 import AsyncStorage from '@react-native-async-storage/async-storage' // Add this import
-import { stopTracking } from '../hooks/useBackgroundLocation'
+import { stopTracking } from './useLocation'
 const useLogout = () => {
   const navigation = useNavigation()
   const [isDialogVisible, setIsDialogVisible] = useState(false)
