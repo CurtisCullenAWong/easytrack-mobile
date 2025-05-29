@@ -235,6 +235,7 @@ const ContractList = ({ navigation, statusIds, emptyMessage, contracts, loading,
               onPress={() => setFilterMenuVisible(true)}
               style={[styles.actionButton, { backgroundColor: colors.primary }]}
               contentStyle={styles.buttonContent}
+              labelStyle={fonts.labelMedium}
             >
               {filterOptions.find(opt => opt.value === searchColumn)?.label}
             </Button>
@@ -271,6 +272,7 @@ const ContractList = ({ navigation, statusIds, emptyMessage, contracts, loading,
               onPress={() => setSortMenuVisible(true)}
               style={[styles.actionButton, { backgroundColor: colors.primary }]}
               contentStyle={styles.buttonContent}
+              labelStyle={fonts.labelMedium}
             >
               {getSortLabel()}
             </Button>
@@ -452,7 +454,6 @@ const styles = StyleSheet.create({
   buttonGroup: {
     alignSelf: 'center',
     flexDirection: 'row',
-    gap: 8,
   },
   actionButton: {
     borderRadius: 8,

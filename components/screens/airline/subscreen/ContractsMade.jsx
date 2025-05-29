@@ -350,6 +350,7 @@ const ContractsMade = ({ navigation }) => {
                 onPress={() => setFilterMenuVisible(true)}
                 style={[styles.actionButton, { backgroundColor: colors.primary }]}
                 contentStyle={styles.buttonContent}
+                labelStyle={fonts.labelMedium}
               >
                 {filterOptions.find(opt => opt.value === searchColumn)?.label}
               </Button>
@@ -386,6 +387,7 @@ const ContractsMade = ({ navigation }) => {
                 onPress={() => setSortMenuVisible(true)}
                 style={[styles.actionButton, { backgroundColor: colors.primary }]}
                 contentStyle={styles.buttonContent}
+                labelStyle={fonts.labelMedium}
               >
                 {getSortLabel()}
               </Button>
@@ -477,8 +479,7 @@ const styles = StyleSheet.create({
   },
   contractCardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
+    justifyContent: 'space-evenly',
   },
   passengerInfoContainer: {
     flexDirection: 'row',

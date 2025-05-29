@@ -31,8 +31,8 @@ const useLogout = () => {
       console.error('Logout error:', error.message)
       return
     }
-    stopTracking()
     setIsDialogVisible(false)
+    stopTracking()
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
