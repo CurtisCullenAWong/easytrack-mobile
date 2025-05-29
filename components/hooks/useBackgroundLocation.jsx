@@ -110,8 +110,8 @@ export function useBackgroundLocation() {
     if (!hasStarted) {
       await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
         accuracy: Location.Accuracy.High,
-        timeInterval: 2500, // Minimum time (ms) between updates
-        distanceInterval: 10, // Minimum distance (meters) between updates
+        timeInterval: 5000, // Increased to 5 seconds between updates
+        distanceInterval: 10, // Only update when moved 10 meters
         showsBackgroundLocationIndicator: true,
       })
       isTracking.current = true

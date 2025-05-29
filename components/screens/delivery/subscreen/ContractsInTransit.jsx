@@ -341,6 +341,18 @@ const ContractsInTransit = ({ navigation }) => {
           >
             Show Details
           </Button>
+          {contract.drop_off_location && (
+            <Button 
+              mode="contained" 
+              onPress={() => navigation.navigate('CheckLocation', { 
+                dropOffLocation: contract.drop_off_location,
+                dropOffLocationGeo: contract.drop_off_location_geo
+              })} 
+              style={[styles.actionButton, { backgroundColor: colors.primary }]}
+            >
+              Check Location
+            </Button>
+          )}
           <Button
             mode="contained"
             onPress={() => {
