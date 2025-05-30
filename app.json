@@ -1,15 +1,13 @@
 {
   "expo": {
-    "scheme": "easytrack",
     "name": "EasyTrack",
     "slug": "easytrack",
     "version": "1.0.0",
+    "scheme": "easytrack",
+    "owner": "thewalkingdev_numoa",
     "orientation": "portrait",
-    "icon": "./assets/icon-w_o-name.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
     "splash": {
-      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#F1F8E9"
     },
@@ -19,6 +17,9 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": [
+          "location",
+          "location",
+          "location",
           "location"
         ],
         "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs location access to track you in the background.",
@@ -26,8 +27,8 @@
       }
     },
     "android": {
+      "package": "com.curtiscullenwong.EasyTrack",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon-w_o-name.png",
         "backgroundColor": "#F1F8E9"
       },
       "config": {
@@ -41,14 +42,28 @@
         "FOREGROUND_SERVICE_LOCATION",
         "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
-      ],
-      "package": "com.curtiscullenwong.EasyTrack"
+      ]
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
+    "web": {},
+    "extra": {
+      "eas": {
+        "projectId": "66476e21-4cda-45a9-bfae-9fa38aa3a257"
+      }
     },
     "plugins": [
+      [
+        "expo-updates",
+        {
+          "username": "thewalkingdev_numoa"
+        }
+      ],
       "expo-font",
       "expo-asset",
       [
@@ -60,20 +75,15 @@
         }
       ]
     ],
-    "extra": {
-      "eas": {
-        "projectId": "d8ebd14f-1692-49e2-a6fc-3fc09d571d13"
-      }
-    },
-    "owner": "thewalkingdev_numoa",
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
       "enabled": true,
       "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/58eeebf8-4019-4509-947c-2185c24313a8",
-      "checkAutomatically": "ON_LOAD"
-    }
+      "checkAutomatically": "ON_LOAD",
+      "url": "https://u.expo.dev/66476e21-4cda-45a9-bfae-9fa38aa3a257"
+    },
+    "newArchEnabled": true
   }
 }

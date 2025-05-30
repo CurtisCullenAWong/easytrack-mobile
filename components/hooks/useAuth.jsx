@@ -25,7 +25,7 @@ const sanitizeEmail = (email) => {
 // Initialize WebBrowser for auth
 WebBrowser.maybeCompleteAuthSession()
 
-const useAuth = (navigation, onClose) => {
+const useAuth = (navigation = null, onClose = null) => {
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
   // ===== Session and Login State Management =====

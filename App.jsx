@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Provider as PaperProvider } from 'react-native-paper'
 import * as Font from 'expo-font'
+import * as Updates from 'expo-updates'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import StackNavigator from './components/navigator/StackNavigator'
 import lightTheme from './components/themes/lightTheme'
@@ -18,6 +19,19 @@ const App = () => {
   const [error, setError] = useState(null)
   const { checkSession, checkForUpdates } = useAuth()
 
+  async function onFetchUpdateAsync() {
+    try {
+    const update = await Updates.checkForUpdateAsync()
+    
+    if (update.isAvailable) {
+    await Updates.fetchUpdateAsync()
+    await Updates.reloadAsync()
+    }
+    } catch (error) {
+    // You can also add an alert() to see the error message in case of an error when fetching updates.
+    alert('Error fetching latest Expo update: ${error}')
+    }
+  }
   const loadFonts = async () => {
     try {
       await Font.loadAsync({
@@ -27,11 +41,10 @@ const App = () => {
       setFontsLoaded(true)
     } catch (error) {
       console.error('Error loading fonts:', error)
-      setError('Failed to load fonts')
+      setFontsLoaded(true)
     }
   }
 
-  // Save theme to AsyncStorage when toggled
   const toggleTheme = async () => {
     try {
       const newTheme = theme === lightTheme ? darkTheme : lightTheme
@@ -39,11 +52,9 @@ const App = () => {
       await AsyncStorage.setItem(THEME_KEY, newTheme === darkTheme ? 'dark' : 'light')
     } catch (error) {
       console.error('Error saving theme:', error)
-      setError('Failed to save theme')
     }
   }
 
-  // Load theme from AsyncStorage
   const loadTheme = async () => {
     try {
       const storedTheme = await AsyncStorage.getItem(THEME_KEY)
@@ -54,7 +65,7 @@ const App = () => {
       }
     } catch (error) {
       console.error('Error loading theme:', error)
-      setError('Failed to load theme')
+      setTheme(lightTheme)
     } finally {
       setThemeLoaded(true)
     }
@@ -63,18 +74,24 @@ const App = () => {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        await loadFonts()
-        await loadTheme()
-        await checkSession()
-        await checkForUpdates()
+        await Promise.all([
+          onFetchUpdateAsync(),
+          loadFonts(),
+          loadTheme(),
+        ])
+        
+        if (fontsLoaded && themeLoaded) {
+          await checkSession()
+          await checkForUpdates()
+        }
       } catch (error) {
         console.error('Error initializing app:', error)
-        setError('Failed to initialize app')
+        setError('Failed to initialize app. Please restart the app.')
       }
     }
 
     initializeApp()
-  }, [])
+  }, [fontsLoaded, themeLoaded])
 
   if (error) {
     return (
