@@ -7,7 +7,7 @@ import StackNavigator from './components/navigator/StackNavigator'
 import lightTheme from './components/themes/lightTheme'
 import darkTheme from './components/themes/darkTheme'
 import { ThemeContext } from './components/themes/themeContext'
-import { ActivityIndicator, View, Text } from 'react-native'
+import { ActivityIndicator, View, Text, Alert } from 'react-native'
 import useAuth from './components/hooks/useAuth'
 
 const THEME_KEY = 'appTheme'
@@ -21,15 +21,33 @@ const App = () => {
 
   async function onFetchUpdateAsync() {
     try {
-    const update = await Updates.checkForUpdateAsync()
-    
-    if (update.isAvailable) {
-    await Updates.fetchUpdateAsync()
-    await Updates.reloadAsync()
-    }
+      const update = await Updates.checkForUpdateAsync()
+      
+      if (update.isAvailable) {
+        await Updates.fetchUpdateAsync()
+        // Notify user that update is ready
+        Alert.alert(
+          "Update Available",
+          "A new version is ready to install. The app will restart to apply the update.",
+          [
+            {
+              text: "Install Now",
+              onPress: async () => {
+                await Updates.reloadAsync()
+              }
+            }
+          ]
+        )
+      }
     } catch (error) {
-    // You can also add an alert() to see the error message in case of an error when fetching updates.
-    console.log('Error fetching latest Expo update: ${error}')
+      console.log(`Error fetching latest Expo update: ${error.message}`)
+      // You might want to show this error to the user in development
+      if (__DEV__) {
+        Alert.alert(
+          "Update Error",
+          `Failed to check for updates: ${error.message}`
+        )
+      }
     }
   }
   const loadFonts = async () => {

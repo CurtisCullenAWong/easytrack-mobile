@@ -3,6 +3,12 @@
     "name": "EasyTrack",
     "slug": "EasyTrack",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3e4bab5f-78e3-44ef-a89f-fcaba29bc5b6"
+    },
     "scheme": "easytrack",
     "owner": "thewalkingdev_numoa",
     "orientation": "portrait",
@@ -37,12 +43,6 @@
         "projectId": "3e4bab5f-78e3-44ef-a89f-fcaba29bc5b6"
       },
       "googleMapsApiKey": "AIzaSyDFmfy3j09egUbTeDImVNnMCFgOjVvLUUM"
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/3e4bab5f-78e3-44ef-a89f-fcaba29bc5b6"
     }
   }
 }
