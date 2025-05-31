@@ -228,7 +228,7 @@ const LocationSelection = ({ navigation, route }) => {
             onPress={handleCenterMap}
             icon="map-marker"
             style={[styles.centerButton, { backgroundColor: colors.primary, marginBottom: 20, alignSelf:'center' }]}
-            labelStyle={[fonts.labelMedium, { color: colors.onPrimary }]}
+            labelStyle={[fonts.labelLarge, { color: colors.onPrimary }]}
           >
             Center to Terminal 3
           </Button>
@@ -300,7 +300,7 @@ const LocationSelection = ({ navigation, route }) => {
             onPress={handleConfirm}
             disabled={!selectedLocation}
             style={[styles.confirmButton, { backgroundColor: colors.primary }]}
-            labelStyle={[fonts.labelMedium, { color: colors.onPrimary }]}
+            labelStyle={[fonts.labelLarge, { color: colors.onPrimary }]}
           >
             Confirm Location
           </Button>

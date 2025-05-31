@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "EasyTrack",
-    "slug": "easytrack",
+    "slug": "EasyTrack",
     "version": "1.0.0",
     "scheme": "easytrack",
     "owner": "thewalkingdev_numoa",
@@ -36,6 +36,12 @@
       "eas": {
         "projectId": "3e4bab5f-78e3-44ef-a89f-fcaba29bc5b6"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3e4bab5f-78e3-44ef-a89f-fcaba29bc5b6"
     }
   }
 }
