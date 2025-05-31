@@ -122,7 +122,7 @@ const LocationSelection = ({ navigation, route }) => {
         const newLocation = {
           location: formattedAddress,
           lat: newPosition.latitude,
-          lng: newPosition.longitude
+          lng: newPosition.longitude,
         }
         setSelectedLocation(newLocation)
       }

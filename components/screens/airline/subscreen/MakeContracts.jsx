@@ -122,21 +122,24 @@ const MakeContracts = () => {
   const [loading, setLoading] = useState(false)
   const [pickupError, setPickupError] = useState(false)
   const [dropOffError, setDropOffError] = useState(false)
+  const [deliveryFee, setDeliveryFee] = useState(0)
 
   // Update drop-off location when returning from LocationSelection
   useFocusEffect(
     useCallback(() => {
       if (route.params?.locationData) {
-        const { drop_off_location, drop_off_location_geo } = route.params.locationData;
+        const { drop_off_location, drop_off_location_geo, city } = route.params.locationData
         // Extract coordinates from POINT format
-        const match = drop_off_location_geo.match(/POINT\(([\d.-]+) ([\d.-]+)\)/);
+        const match = drop_off_location_geo.match(/POINT\(([\d.-]+) ([\d.-]+)\)/)
         if (match) {
-          const [_, lng, lat] = match;
+          const [_, lng, lat] = match
           setDropOffLocation({
             location: drop_off_location,
             lat: parseFloat(lat),
             lng: parseFloat(lng)
-          });
+          })
+          // Extract city from drop-off location and fetch price
+          fetchDeliveryPrice(route.params?.locationData.drop_off_location)
         }
       }
     }, [route.params])
@@ -299,6 +302,26 @@ const MakeContracts = () => {
     }
   }, [contracts, dropOffLocation, pickupLocation, showSnackbar, totalLuggageQuantity, validateContract, navigation])
 
+  // Function to fetch delivery price based on city
+  const fetchDeliveryPrice = async (address) => {
+    console.log(address)
+    try {
+      const { data, error } = await supabase
+        .from('pricing')
+        .select('price')
+        .like('city', address)
+        .single()
+      if (data) {
+        setDeliveryFee(data.price)
+      } else {
+        setDeliveryFee(0)
+      }
+    } catch (error) {
+      console.error('Error fetching delivery price:', error)
+      setDeliveryFee(0)
+    }
+  }
+
   // Memoized render functions
   const renderDropOffLocation = useMemo(() => (
     <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
@@ -373,6 +396,9 @@ const MakeContracts = () => {
       <View style={styles.content}>
         {renderDropOffLocation}
         {renderPickupLocation}
+        <Text style={[fonts.titleSmall, { marginBottom: 10, color: colors.primary }]}>
+          Total Delivery Fee: ₱{deliveryFee.toFixed(2)}
+        </Text>
         <Text style={[fonts.titleSmall, { marginBottom: 10, color: colors.primary }]}>
           Total Luggage Quantity: {totalLuggageQuantity}
         </Text>
