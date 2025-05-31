@@ -29,7 +29,7 @@ const App = () => {
     }
     } catch (error) {
     // You can also add an alert() to see the error message in case of an error when fetching updates.
-    alert('Error fetching latest Expo update: ${error}')
+    console.log('Error fetching latest Expo update: ${error}')
     }
   }
   const loadFonts = async () => {
@@ -75,9 +75,9 @@ const App = () => {
     const initializeApp = async () => {
       try {
         await Promise.all([
-          onFetchUpdateAsync(),
           loadFonts(),
           loadTheme(),
+          onFetchUpdateAsync(),
         ])
         
         if (fontsLoaded && themeLoaded) {
