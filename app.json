@@ -35,7 +35,8 @@
     "extra": {
       "eas": {
         "projectId": "3e4bab5f-78e3-44ef-a89f-fcaba29bc5b6"
-      }
+      },
+      "googleMapsApiKey": "AIzaSyDFmfy3j09egUbTeDImVNnMCFgOjVvLUUM"
     },
     "runtimeVersion": {
       "policy": "appVersion"
