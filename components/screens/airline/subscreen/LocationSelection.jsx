@@ -29,7 +29,7 @@ const MemoizedGooglePlacesAutocomplete = React.memo(({ onPlaceSelect, colors, fo
     placeholder="Search location"
     onPress={onPlaceSelect}
     query={{
-      key: 'AIzaSyDFmfy3j09egUbTeDImVNnMCFgOjVvLUUM',
+      key: 'AIzaSyAEw52JSva397q0RXiB5dpqUcSAIcZNgmY',
       language: 'en',
       components: 'country:ph',
     }}
