@@ -304,21 +304,32 @@ const MakeContracts = () => {
 
   // Function to fetch delivery price based on city
   const fetchDeliveryPrice = async (address) => {
-    console.log(address)
     try {
-      const { data, error } = await supabase
+      // Fetch all cities and prices from the pricing table
+      const { data: pricingList, error } = await supabase
         .from('pricing')
-        .select('price')
-        .like('city', address)
-        .single()
-      if (data) {
-        setDeliveryFee(data.price)
+        .select('city, price');
+  
+      if (error) throw error;
+  
+      // Convert the address to lowercase for comparison
+      const normalizedAddress = address.toLowerCase();
+  
+      // Find the first city that appears in the address
+      const matched = pricingList.find(entry =>
+        normalizedAddress.includes(entry.city.toLowerCase())
+      );
+  
+      if (matched) {
+        setDeliveryFee(matched.price);
       } else {
-        setDeliveryFee(0)
+        setDeliveryFee(0);
+        showSnackbar('The selected address is either invalid or out of bounds');
       }
     } catch (error) {
-      console.error('Error fetching delivery price:', error)
-      setDeliveryFee(0)
+      console.error('Error fetching delivery price:', error);
+      setDeliveryFee(0);
+      showSnackbar('The selected address is either invalid or out of bounds');
     }
   }
 
@@ -329,19 +340,22 @@ const MakeContracts = () => {
         <Text style={[fonts.titleMedium, { color: colors.primary }]}>
           Drop-Off Location
         </Text>
-        <Button
-          mode="contained"
-          onPress={() => navigation.navigate('LocationSelection', {
-            params: {
-              screen: 'LocationSelection'
-            }
-          })}
-          icon="map-marker"
-          style={{ backgroundColor: colors.primary }}
-        >
-          Select Location
-        </Button>
+
       </View>
+      <Button
+        mode="contained"
+        onPress={() => navigation.navigate('LocationSelection', {
+          params: {
+            screen: 'LocationSelection'
+          }
+        })}
+        icon="map-marker"
+        style={{ backgroundColor: colors.primary, alignSelf:'center', marginBottom:10}}
+      >
+        Select Location
+      </Button>
+
+      
       {dropOffLocation.location ? (
         <View style={[styles.locationContent, { backgroundColor: colors.surfaceVariant }]}>
           <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>
@@ -390,6 +404,11 @@ const MakeContracts = () => {
     </Menu>
   ), [showPickupMenu, pickupLocation, pickupError, pickupBays, colors])
 
+  // Calculate total delivery fee based on number of contracts
+  const totalDeliveryFee = useMemo(() => {
+    return deliveryFee * contracts.length;
+  }, [deliveryFee, contracts.length]);
+
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       {SnackbarElement}
@@ -397,7 +416,10 @@ const MakeContracts = () => {
         {renderDropOffLocation}
         {renderPickupLocation}
         <Text style={[fonts.titleSmall, { marginBottom: 10, color: colors.primary }]}>
-          Total Delivery Fee: ₱{deliveryFee.toFixed(2)}
+          Base Delivery Fee: ₱{deliveryFee.toFixed(2)}
+        </Text>
+        <Text style={[fonts.titleSmall, { marginBottom: 10, color: colors.primary }]}>
+          Total Delivery Fee ({contracts.length} passengers): ₱{totalDeliveryFee.toFixed(2)}
         </Text>
         <Text style={[fonts.titleSmall, { marginBottom: 10, color: colors.primary }]}>
           Total Luggage Quantity: {totalLuggageQuantity}

@@ -1,6 +1,6 @@
 import 'react-native-get-random-values'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
-import { View, StyleSheet, Dimensions } from 'react-native'
+import { View, StyleSheet, ScrollView } from 'react-native'
 import { Text, Button, Appbar, Surface, useTheme, IconButton } from 'react-native-paper'
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
@@ -29,7 +29,7 @@ const MemoizedGooglePlacesAutocomplete = React.memo(({ onPlaceSelect, colors, fo
     placeholder="Search location"
     onPress={onPlaceSelect}
     query={{
-      key: 'AIzaSyCGiKKxrhJ2Sk7I1gF1Yth5TfamYw5bIiU',
+      key: 'AIzaSyDFmfy3j09egUbTeDImVNnMCFgOjVvLUUM',
       language: 'en',
       components: 'country:ph',
     }}
@@ -62,6 +62,7 @@ const MemoizedGooglePlacesAutocomplete = React.memo(({ onPlaceSelect, colors, fo
 const LocationSelection = ({ navigation, route }) => {
   const { colors, fonts } = useTheme()
   const [selectedLocation, setSelectedLocation] = useState(null)
+  const [isMapExpanded, setIsMapExpanded] = useState(true)
   const mapRef = useRef(null)
   const markerRef = useRef(null)
 
@@ -213,48 +214,59 @@ const LocationSelection = ({ navigation, route }) => {
         <Text style={[fonts.titleMedium, { color: colors.primary }]}>
           Map View
         </Text>
-        <View style={styles.mapControls}>
-          <Button
+          <IconButton
+            icon={isMapExpanded ? "chevron-down" : "chevron-up"}
+            onPress={() => setIsMapExpanded(!isMapExpanded)}
+            size={24}
+          />
+          
+      </View>
+      {isMapExpanded && (
+        <>
+        <Button
             mode="contained"
             onPress={handleCenterMap}
             icon="map-marker"
-            style={[styles.centerButton, { backgroundColor: colors.primary }]}
+            style={[styles.centerButton, { backgroundColor: colors.primary, marginBottom: 20, alignSelf:'center' }]}
             labelStyle={[fonts.labelMedium, { color: colors.onPrimary }]}
           >
             Center to Terminal 3
           </Button>
-        </View>
-      </View>
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        initialRegion={{
-          ...INITIAL_CENTER,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        }}
-        onRegionChange={handleRegionChange}
-        maxZoomLevel={18}
-        minZoomLevel={5}
-        restrictToBounds={true}
-        bounds={PHILIPPINES_BOUNDS}
-      >
-        {selectedLocation && (
-          <Marker
-            coordinate={{
-              latitude: selectedLocation.lat,
-              longitude: selectedLocation.lng,
-            }}
-            draggable
-            onDragEnd={handleMarkerDragEnd}
-            title='Move map or Hold and drag the marker'
-            description={selectedLocation.location}
-          />
-        )}
-      </MapView>
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          provider={PROVIDER_GOOGLE}
+          initialRegion={{
+            ...INITIAL_CENTER,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          }}
+          onRegionChange={handleRegionChange}
+          maxZoomLevel={18}
+          minZoomLevel={5}
+          restrictToBounds={true}
+          bounds={PHILIPPINES_BOUNDS}
+          showsCompass={true}
+          showsZoomControls={true}
+        >
+          {selectedLocation && (
+            <Marker
+              coordinate={{
+                latitude: selectedLocation.lat,
+                longitude: selectedLocation.lng,
+              }}
+              draggable
+              onDragEnd={handleMarkerDragEnd}
+              title='Move map or Hold and drag the marker'
+              description={selectedLocation.location}
+            />
+          )}
+        </MapView>
+        </>
+        
+      )}
     </Surface>
-  ), [colors, fonts, handleCenterMap, handleRegionChange, handleMarkerDragEnd, selectedLocation])
+  ), [colors, fonts, handleCenterMap, handleRegionChange, handleMarkerDragEnd, selectedLocation, isMapExpanded])
 
   const renderSelectedLocation = useMemo(() => (
     selectedLocation && (
@@ -277,12 +289,11 @@ const LocationSelection = ({ navigation, route }) => {
         })} />
         <Appbar.Content title="Drop-Off Location" />
       </Appbar.Header>
-
       <View style={styles.content}>
         {renderSearchSection}
+        <ScrollView>
         {renderMapSection}
         {renderSelectedLocation}
-
         <View style={styles.buttonContainer}>
           <Button
             mode="contained"
@@ -294,6 +305,7 @@ const LocationSelection = ({ navigation, route }) => {
             Confirm Location
           </Button>
         </View>
+        </ScrollView>
       </View>
     </View>
   )
@@ -322,7 +334,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   buttonContainer: {
-    marginTop: 'auto',
     paddingBottom: 16,
   },
   confirmButton: {
@@ -340,11 +351,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
-  },
-  mapControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
   },
   centerButton: {
     flexDirection: 'row',
