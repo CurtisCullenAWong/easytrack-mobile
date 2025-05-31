@@ -17,7 +17,7 @@ const BookingManagement = ({ navigation }) => {
           value={mode}
           onValueChange={setMode}
           buttons={[
-            { value: 1, label: 'Accept and Pickup' },
+            { value: 1, label: 'Pickup Luggage' },
             { value: 2, label: 'In Transit' },
           ]}
           style={{ marginHorizontal: 16 }}

@@ -38,7 +38,7 @@ const DeliveryRates = ({ navigation }) => {
   const [editingRate, setEditingRate] = useState({
     id: null,
     city: '',
-    region: '',
+    region_id: null,
   })
   const [editingPrice, setEditingPrice] = useState('')
   const [editError, setEditError] = useState('')
@@ -84,7 +84,13 @@ const DeliveryRates = ({ navigation }) => {
     setLoading(true)
     const { data, error } = await supabase
       .from('pricing')
-      .select('*')
+      .select(`
+        *,
+        region:region_id (
+          id,
+          region
+        )
+      `)
       .order('city', { ascending: true })
 
     if (error) {
@@ -97,7 +103,7 @@ const DeliveryRates = ({ navigation }) => {
       id: rate.id,
       city: rate.city || 'N/A',
       price: rate.price ? `₱${rate.price.toFixed(2)}` : 'N/A',
-      region: rate.region || 'N/A',
+      region: rate.region?.region || 'N/A',
       updated_at: rate.updated_at
         ? new Date(rate.updated_at).toLocaleString()
         : 'N/A',
@@ -215,6 +221,7 @@ const DeliveryRates = ({ navigation }) => {
         .from('pricing')
         .update({
           price: price,
+          region_id: editingRate.region_id,
           updated_at: new Date().toISOString(),
         })
         .eq('id', editingRate.id)
@@ -236,7 +243,7 @@ const DeliveryRates = ({ navigation }) => {
     setEditingRate({
       id: rate.id,
       city: rate.city,
-      region: rate.region,
+      region_id: rate.region_id,
     })
     setEditingPrice(rate.price.replace('₱', ''))
     setEditDialogVisible(true)
@@ -435,7 +442,7 @@ const DeliveryRates = ({ navigation }) => {
             </View>
             <View style={styles.infoContainer}>
               <Text style={[styles.infoLabel, { color: colors.onSurface }]}>Region:</Text>
-              <Text style={[styles.infoValue, { color: colors.onSurface }]}>{editingRate.region}</Text>
+              <Text style={[styles.infoValue, { color: colors.onSurface }]}>{rates.find(r => r.id === editingRate.id)?.region || 'N/A'}</Text>
             </View>
             <View style={styles.infoContainer}>
               <Text style={[styles.infoLabel, { color: colors.onSurface }]}>Last Updated:</Text>

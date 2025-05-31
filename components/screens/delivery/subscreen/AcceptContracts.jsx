@@ -96,7 +96,7 @@ const AcceptContracts = ({ navigation }) => {
             suffix
           )
         `)
-        .or('contract_status_id.eq.1,contract_status_id.eq.3')
+        .eq('contract_status_id',3)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -352,7 +352,7 @@ const AcceptContracts = ({ navigation }) => {
             )}
           </View>
           <Divider />
-          {/* Accept Contract button for Pending contracts */}
+          {/* Accept Contract button for Pending contracts
           {contract.contract_status_id === 1 && (
             <Button 
               mode="contained" 
@@ -363,7 +363,7 @@ const AcceptContracts = ({ navigation }) => {
             >
               Accept Contract
             </Button>
-          )}
+          )} */}
 
           {/* Pickup Luggage button for Accepted contracts */}
           {contract.contract_status_id === 3 && (
@@ -509,7 +509,7 @@ const AcceptContracts = ({ navigation }) => {
         refreshing={loading}
         onRefresh={fetchContracts}
       />
-      {/* Accept Contract Dialog */}
+      {/* Accept Contract Dialog
       <Portal>
         <Dialog
           visible={acceptDialogVisible}
@@ -529,7 +529,7 @@ const AcceptContracts = ({ navigation }) => {
             </Button>
           </Dialog.Actions>
         </Dialog>
-      </Portal>
+      </Portal> */}
       {/* Pickup Luggage Dialog */}
       <Portal>
         <Dialog

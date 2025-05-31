@@ -65,7 +65,7 @@ const LocationSelection = ({ navigation, route }) => {
   const [selectedLocation, setSelectedLocation] = useState(null)
   const [isMapExpanded, setIsMapExpanded] = useState(true)
   const mapRef = useRef(null)
-  const markerRef = useRef(null)
+  const geocodeTimeoutRef = useRef(null)
 
   // Request location permissions
   useEffect(() => {
@@ -143,33 +143,50 @@ const LocationSelection = ({ navigation, route }) => {
       lng: longitude
     }));
 
-    try {
-      const [address] = await Location.reverseGeocodeAsync({
-        latitude,
-        longitude
-      });
-
-      if (address) {
-        const formattedAddress = [
-          address.name,
-          address.street,
-          address.district,
-          address.subregion,
-          address.city,
-          address.region,
-          address.postalCode,
-          address.country
-        ].filter(Boolean).join(', ');
-
-        setSelectedLocation(prev => ({
-          ...prev,
-          location: formattedAddress
-        }));
-      }
-    } catch (error) {
-      console.error('Error reverse geocoding:', error);
+    // Clear any existing timeout
+    if (geocodeTimeoutRef.current) {
+      clearTimeout(geocodeTimeoutRef.current);
     }
+
+    // Set a new timeout to geocode after 500ms of no movement
+    geocodeTimeoutRef.current = setTimeout(async () => {
+      try {
+        const [address] = await Location.reverseGeocodeAsync({
+          latitude,
+          longitude
+        });
+
+        if (address) {
+          const formattedAddress = [
+            address.name,
+            address.street,
+            address.district,
+            address.subregion,
+            address.city,
+            address.region,
+            address.postalCode,
+            address.country
+          ].filter(Boolean).join(', ');
+
+          setSelectedLocation(prev => ({
+            ...prev,
+            location: formattedAddress
+          }));
+        }
+      } catch (error) {
+        console.error('Error reverse geocoding:', error);
+      }
+    }, 500);
   }, [])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (geocodeTimeoutRef.current) {
+        clearTimeout(geocodeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleCenterMap = useCallback(() => {
     mapRef.current?.animateToRegion({
