@@ -6,6 +6,7 @@ import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplet
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
 import * as Location from 'expo-location'
 import React from 'react'
+import Constants from 'expo-constants';
 
 const INITIAL_CENTER = {
   latitude: 14.51974293733431,
@@ -29,7 +30,7 @@ const MemoizedGooglePlacesAutocomplete = React.memo(({ onPlaceSelect, colors, fo
     placeholder="Search location"
     onPress={onPlaceSelect}
     query={{
-      key: 'AIzaSyAEw52JSva397q0RXiB5dpqUcSAIcZNgmY',
+      key: Constants.expoConfig?.extra?.googleMapsPlacesApiKey,
       language: 'en',
       components: 'country:ph',
     }}

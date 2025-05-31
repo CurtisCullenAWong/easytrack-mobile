@@ -42,7 +42,16 @@
       "eas": {
         "projectId": "3e4bab5f-78e3-44ef-a89f-fcaba29bc5b6"
       },
-      "googleMapsApiKey": "AIzaSyDFmfy3j09egUbTeDImVNnMCFgOjVvLUUM"
-    }
+      "googleMapsApiKey": "AIzaSyDFmfy3j09egUbTeDImVNnMCFgOjVvLUUM",
+      "googleMapsPlacesApiKey": "AIzaSyDFznm1jJhwsN7Y_OPKZ_EmiT63tO2G9MI"
+    },
+    "plugins": [
+      [
+        "expo-updates",
+        {
+          "username": "curtiscullenwong"
+        }
+      ]
+    ]
   }
 }
