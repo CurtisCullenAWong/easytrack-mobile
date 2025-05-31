@@ -119,12 +119,10 @@ const AddAccount = ({ navigation }) => {
           password: encryptedValue,
           role: form.role,
         },
-        options: {
-          emailRedirectTo: makeRedirectUri({
-            scheme: 'easytrack',
-            path: 'confirm-email'
-          }),
-        },
+        redirectTo: makeRedirectUri({
+          scheme: 'easytrack',
+          path: 'login'
+        }),
       })
       if (inviteError) {
         showSnackbar(inviteError.message)

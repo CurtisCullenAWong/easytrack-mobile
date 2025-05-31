@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabase'
+import { supabase as supabaseAdmin }  from '../../lib/supabaseAdmin'
 import useSnackbar from './useSnackbar'
 import * as Linking from 'expo-linking'
 import * as WebBrowser from 'expo-web-browser'
@@ -6,7 +7,6 @@ import { makeRedirectUri } from 'expo-auth-session'
 import * as QueryParams from 'expo-auth-session/build/QueryParams'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Updates from 'expo-updates'
-
 // Constants
 const MAX_LOGIN_ATTEMPTS = 5
 const BASE_COOLDOWN_MINUTES = 1
@@ -122,6 +122,34 @@ const useAuth = (navigation = null, onClose = null) => {
         loginWithOtp(sanitizedEmail)
         return
       }
+
+      if (loginError?.message?.toLowerCase().includes('invalid login credentials')) {
+        // Check if user exists by attempting to get user
+        const { data: userData } = await supabaseAdmin.auth.admin.getUserById(sanitizedEmail)
+        
+        if (!userData) {
+          showSnackbar('User does not exist. Please check your email or sign up.')
+          return
+        } else {
+          showSnackbar(`Incorrect password. ${attemptsMessage}`)
+          
+          // If this was the last attempt, trigger cooldown
+          if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
+            const currentCooldownData = await AsyncStorage.getItem(cooldownKey)
+            const lockoutCount = currentCooldownData ? JSON.parse(currentCooldownData).lockoutCount + 1 : 1
+            const cooldownMinutes = Math.min(BASE_COOLDOWN_MINUTES * Math.pow(2, lockoutCount - 1), MAX_COOLDOWN_MINUTES)
+            
+            await AsyncStorage.setItem(cooldownKey, JSON.stringify({
+              timestamp: Date.now(),
+              lockoutCount
+            }))
+            
+            showSnackbar(`Too many failed attempts. Please try again in ${cooldownMinutes} minutes.`)
+          }
+          return
+        }
+      }
+      
       return showSnackbar(`${loginError.message}. ${attemptsMessage}`)
     }
 

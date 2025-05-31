@@ -23,8 +23,8 @@ const AIRLINE_SECTIONS = [
     key: 'results',
     icon: 'chart-bar',
     items: [
-      { icon: 'credit-card-clock-outline', label: 'Transaction History', screen: 'TransactionHistory' },
       { icon: 'history', label: 'Booking History (Completed)', screen: 'BookingHistory' },
+      { icon: 'credit-card-clock-outline', label: 'Transaction History', screen: 'TransactionHistory' },
       { icon: 'chart-line', label: 'Performance Statistics', screen: 'PerformanceStatistics' },
     ],
   },

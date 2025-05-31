@@ -1,10 +1,10 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react'
-import { View, ScrollView, StyleSheet } from 'react-native'
-import { useTheme, TextInput, Button, Text, IconButton, Menu } from 'react-native-paper'
+import React, { useState, useCallback, useMemo, useEffect } from 'react'
+import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native'
+import { useTheme, TextInput, Button, Text, IconButton, Menu, Surface } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
-import MapView, { Marker } from 'react-native-maps'
-import { useNavigation } from '@react-navigation/native'
+import * as Location from 'expo-location'
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'
 
 // Constants
 const INITIAL_CONTRACT = {
@@ -24,39 +24,8 @@ const INITIAL_CONTRACT = {
   }
 }
 
-const INITIAL_REGION = {
-  latitude: 14.5350,
-  longitude: 120.9821,
-  latitudeDelta: 0.0922,
-  longitudeDelta: 0.0421,
-}
-
-// Map Component
-const LocationMap = ({ region, onRegionChange, mapRef }) => {
-  const { colors } = useTheme()
-  
-  return (
-    <View style={styles.mapContainer}>
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        region={region}
-        onRegionChangeComplete={onRegionChange}
-      >
-        <Marker
-          coordinate={{
-            latitude: region.latitude,
-            longitude: region.longitude
-          }}
-          pinColor={colors.primary}
-        />
-      </MapView>
-    </View>
-  )
-}
-
-// Contract Form Component
-const ContractForm = ({ contract, index, onInputChange, onClear, onDelete, isLastContract }) => {
+// Memoized Contract Form Component
+const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDelete, isLastContract }) => {
   const { colors, fonts } = useTheme()
 
   return (
@@ -133,24 +102,56 @@ const ContractForm = ({ contract, index, onInputChange, onClear, onDelete, isLas
       </Button>
     </View>
   )
-}
+})
 
 const MakeContracts = () => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
-  const mapRef = useRef(null)
-  const markerRef = useRef(null)
   const navigation = useNavigation()
+  const route = useRoute()
   
   // State
-  const [dropOffLocation, setDropOffLocation] = useState({ location: '', lat: null, lng: null })
+  const [dropOffLocation, setDropOffLocation] = useState({
+    location: '',
+    lat: null,
+    lng: null
+  })
   const [pickupLocation, setPickupLocation] = useState('')
   const [showPickupMenu, setShowPickupMenu] = useState(false)
   const [contracts, setContracts] = useState([INITIAL_CONTRACT])
   const [loading, setLoading] = useState(false)
-  const [dropOffError, setDropOffError] = useState(false)
   const [pickupError, setPickupError] = useState(false)
-  const [region, setRegion] = useState(INITIAL_REGION)
+  const [dropOffError, setDropOffError] = useState(false)
+
+  // Update drop-off location when returning from LocationSelection
+  useFocusEffect(
+    useCallback(() => {
+      if (route.params?.locationData) {
+        const { drop_off_location, drop_off_location_geo } = route.params.locationData;
+        // Extract coordinates from POINT format
+        const match = drop_off_location_geo.match(/POINT\(([\d.-]+) ([\d.-]+)\)/);
+        if (match) {
+          const [_, lng, lat] = match;
+          setDropOffLocation({
+            location: drop_off_location,
+            lat: parseFloat(lat),
+            lng: parseFloat(lng)
+          });
+        }
+      }
+    }, [route.params])
+  )
+
+  // Request location permissions
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync()
+      if (status !== 'granted') {
+        console.log('Permission to access location was denied')
+        return
+      }
+    })()
+  }, [])
 
   // Memoized values
   const pickupBays = useMemo(() => 
@@ -164,34 +165,6 @@ const MakeContracts = () => {
   )
 
   // Event Handlers
-  const handleRegionChange = useCallback(async (newRegion) => {
-    setRegion(newRegion)
-    if (address) {
-      setDropOffLocation(prev => ({
-        ...prev,
-        location: address,
-        lat: newRegion.latitude,
-        lng: newRegion.longitude
-      }))
-    }
-  }, [])
-
-  const handleDropoffInputChange = useCallback((text) => {
-    setDropOffLocation(prev => ({ ...prev, location: text }))
-    setDropOffError(false)
-  }, [])
-
-  const validateContract = useCallback((contract) => {
-    return {
-      name: !contract.name.trim(),
-      caseNumber: !contract.caseNumber.trim(),
-      itemDescription: !contract.itemDescription.trim(),
-      contact: !contract.contact.trim(),
-      weight: !contract.weight.trim() || isNaN(contract.weight) || Number(contract.weight) <= 0,
-      quantity: !contract.quantity.trim() || isNaN(contract.quantity) || Number(contract.quantity) <= 0
-    }
-  }, [])
-
   const handleInputChange = useCallback((index, field, value) => {
     setContracts(prev => {
       const updated = [...prev]
@@ -223,6 +196,17 @@ const MakeContracts = () => {
     setContracts(prev => [...prev, { ...INITIAL_CONTRACT }])
   }, [])
 
+  const validateContract = useCallback((contract) => {
+    return {
+      name: !contract.name.trim(),
+      caseNumber: !contract.caseNumber.trim(),
+      itemDescription: !contract.itemDescription.trim(),
+      contact: !contract.contact.trim(),
+      weight: !contract.weight.trim() || isNaN(contract.weight) || Number(contract.weight) <= 0,
+      quantity: !contract.quantity.trim() || isNaN(contract.quantity) || Number(contract.quantity) <= 0
+    }
+  }, [])
+
   const handleSubmit = useCallback(async () => {
     try {
       setLoading(true)
@@ -235,9 +219,9 @@ const MakeContracts = () => {
       }
       setPickupError(false)
       
-      if (!dropOffLocation.location.trim()) {
+      if (!dropOffLocation.location) {
         setDropOffError(true)
-        showSnackbar('Please enter a drop-off location')
+        showSnackbar('Please select a drop-off location')
         return
       }
       setDropOffError(false)
@@ -265,16 +249,13 @@ const MakeContracts = () => {
       if (userError) throw userError
       if (!user) throw new Error('User not authenticated')
 
-      // Insert contract
+      // Insert contract with properly formatted location data
       const contractData = {
         luggage_quantity: totalLuggageQuantity,
         airline_id: user.id,
         pickup_location: pickupLocation,
         drop_off_location: dropOffLocation.location,
-        drop_off_location_geo: {
-          type: 'Point',
-          coordinates: [dropOffLocation.lng, dropOffLocation.lat]
-        }
+        drop_off_location_geo: `POINT(${dropOffLocation.lng} ${dropOffLocation.lat})`
       }
 
       const { data: insertedContract, error: contractError } = await supabase
@@ -318,56 +299,80 @@ const MakeContracts = () => {
     }
   }, [contracts, dropOffLocation, pickupLocation, showSnackbar, totalLuggageQuantity, validateContract, navigation])
 
-  return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>
-      {SnackbarElement}
-      <View style={{ paddingHorizontal: 16 }}>
-        <Menu
-          visible={showPickupMenu}
-          onDismiss={() => setShowPickupMenu(false)}
-          anchor={
-            <TextInput
-              label="Pickup Location"
-              value={pickupLocation}
-              mode="outlined"
-              style={{ marginBottom: 16 }}
-              right={<TextInput.Icon icon="menu-down" />}
-              onPress={() => setShowPickupMenu(true)}
-              error={pickupError}
-            />
-          }
-          contentStyle={{ backgroundColor: colors.surface }}
+  // Memoized render functions
+  const renderDropOffLocation = useMemo(() => (
+    <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
+      <View style={styles.locationHeader}>
+        <Text style={[fonts.titleMedium, { color: colors.primary }]}>
+          Drop-Off Location
+        </Text>
+        <Button
+          mode="contained"
+          onPress={() => navigation.navigate('LocationSelection', {
+            params: {
+              screen: 'LocationSelection'
+            }
+          })}
+          icon="map-marker"
+          style={{ backgroundColor: colors.primary }}
         >
-          {pickupBays.map((bay) => (
-            <Menu.Item
-              key={bay}
-              onPress={() => {
-                setPickupLocation(bay)
-                setShowPickupMenu(false)
-                setPickupError(false)
-              }}
-              title={bay}
-            />
-          ))}
-        </Menu>
+          Select Location
+        </Button>
+      </View>
+      {dropOffLocation.location ? (
+        <View style={[styles.locationContent, { backgroundColor: colors.surfaceVariant }]}>
+          <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>
+            {dropOffLocation.location}
+          </Text>
+          <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant, marginTop: 4 }]}>
+            Coordinates: {dropOffLocation.lat?.toFixed(6)}, {dropOffLocation.lng?.toFixed(6)}
+          </Text>
+        </View>
+      ) : (
+        <Text style={[fonts.bodyMedium, { color: colors.onSurfaceVariant }]}>
+          No drop-off location selected
+        </Text>
+      )}
+    </Surface>
+  ), [dropOffLocation, colors, fonts, navigation])
 
+  const renderPickupLocation = useMemo(() => (
+    <Menu
+      visible={showPickupMenu}
+      onDismiss={() => setShowPickupMenu(false)}
+      anchor={
         <TextInput
-          label="Drop-off Location"
-          value={dropOffLocation.location}
-          onChangeText={handleDropoffInputChange}
+          label="Pickup Location"
+          value={pickupLocation}
           mode="outlined"
           style={{ marginBottom: 16 }}
-          error={dropOffError}
-          right={<TextInput.Icon icon="map-marker" />}
+          right={<TextInput.Icon icon="menu-down" />}
+          onPress={() => setShowPickupMenu(true)}
+          error={pickupError}
         />
-
-        <LocationMap
-          region={region}
-          onRegionChange={handleRegionChange}
-          mapRef={mapRef}
-          markerRef={markerRef}
+      }
+      contentStyle={{ backgroundColor: colors.surface }}
+    >
+      {pickupBays.map((bay) => (
+        <Menu.Item
+          key={bay}
+          onPress={() => {
+            setPickupLocation(bay)
+            setShowPickupMenu(false)
+            setPickupError(false)
+          }}
+          title={bay}
         />
+      ))}
+    </Menu>
+  ), [showPickupMenu, pickupLocation, pickupError, pickupBays, colors])
 
+  return (
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+      {SnackbarElement}
+      <View style={styles.content}>
+        {renderDropOffLocation}
+        {renderPickupLocation}
         <Text style={[fonts.titleSmall, { marginBottom: 10, color: colors.primary }]}>
           Total Luggage Quantity: {totalLuggageQuantity}
         </Text>
@@ -407,6 +412,12 @@ const MakeContracts = () => {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    padding: 16,
+  },
   luggageBlock: {
     marginBottom: 20,
     padding: 12,
@@ -425,15 +436,52 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 32,
   },
-  mapContainer: {
-    height: 300,
-    marginBottom: 16,
+  surface: {
+    padding: 16,
     borderRadius: 8,
-    overflow: 'hidden',
+    marginBottom: 16,
   },
   map: {
-    flex: 1,
+    width: '100%',
+    height: 400,
+    borderRadius: 8,
+  },
+  mapHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  centerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  dropoffContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  mapControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  locationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  locationContent: {
+    padding: 12,
+    borderRadius: 8,
   },
 })
 
-export default MakeContracts
+export default React.memo(MakeContracts)

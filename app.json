@@ -6,7 +6,7 @@
     "scheme": "easytrack",
     "owner": "thewalkingdev_numoa",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/adaptive-icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {

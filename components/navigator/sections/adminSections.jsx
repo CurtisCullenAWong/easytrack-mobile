@@ -16,6 +16,7 @@ const ADMIN_SECTIONS = [
     items: [
       { icon: 'account-group-outline', label: 'User Management', screen: 'UserManagement' },
       { icon: 'map-marker-path', label: 'Luggage Tracking (In Transit)', screen: 'AdminTrackLuggage' },
+      { icon: 'currency-php', label: 'Delivery Rates', screen: 'DeliveryRates' },
     ],
   },
   {

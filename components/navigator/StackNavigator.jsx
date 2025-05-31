@@ -24,6 +24,8 @@ import UserManagement from '../screens/admin/UserManagement'
 import AdminTrackLuggage from '../screens/admin/AdminTrackLuggage'
 import AddAccount from '../screens/admin/subscreen/AddAccount'
 import ViewAccountScreen from '../screens/admin/subscreen/ViewAccountScreen'
+import DeliveryRates from '../screens/admin/DeliveryRates'
+import LocationSelection from '../screens/airline/subscreen/LocationSelection'
 // Airline Screens
 import AirlineHome from '../screens/airline/AirlineHome'
 import TrackLuggage from '../screens/airline/AirlineTrackLuggage'
@@ -50,6 +52,7 @@ const AdminDrawer = () => (
       <Drawer.Screen name="AdminHome" component={AdminHome} />
       <Drawer.Screen name="UserManagement" component={UserManagement} />
       <Drawer.Screen name="AdminTrackLuggage" component={AdminTrackLuggage} />
+      <Drawer.Screen name="DeliveryRates" component={DeliveryRates} />
       <Drawer.Screen
         name="AddAccount"
         component={AddAccount}
@@ -83,6 +86,7 @@ const AirlineDrawer = () => (
       <Drawer.Screen name="BookingManagement" component={AirlineBookingManagement} />
       <Drawer.Screen name="ContractDetails" component={ContractDetails} />
       <Drawer.Screen name="CheckLocation" component={CheckLocation} />
+      <Drawer.Screen name="LocationSelection" component={LocationSelection} />
       
       {/* SHARED SCREENS */}
       <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />

@@ -4,7 +4,7 @@ import { SegmentedButtons, useTheme } from 'react-native-paper';
 import Header from '../../customComponents/Header';
 import MakeContracts from './subscreen/MakeContracts';
 import ContractsMade from './subscreen/ContractsMade';
-
+import LocationSelection from './subscreen/LocationSelection';
 const BookingManagement = ({ navigation }) => {
   const { colors } = useTheme();
   const [mode, setMode] = useState('create');

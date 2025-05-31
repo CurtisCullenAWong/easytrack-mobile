@@ -4,91 +4,118 @@ import { ScrollView, StyleSheet, View, RefreshControl } from 'react-native'
 import {
   Searchbar,
   Button,
-  Avatar,
   DataTable,
   Text,
   useTheme,
   Menu,
   Dialog,
   Portal,
+  TextInput,
 } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabaseAdmin'
 
 const COLUMN_WIDTH = 180
-const EMAIL_COLUMN_WIDTH = 200
-const AVATAR_COLUMN_WIDTH = 80
-const FULL_NAME_WIDTH = 200
+const CITY_COLUMN_WIDTH = 200
+const PRICE_COLUMN_WIDTH = 150
+const REGION_COLUMN_WIDTH = 200
 
-const UserManagement = ({ navigation }) => {
+const DeliveryRates = ({ navigation }) => {
   const { colors, fonts } = useTheme()
 
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchColumn, setSearchColumn] = useState('full_name')
+  const [searchColumn, setSearchColumn] = useState('city')
   const [filterMenuVisible, setFilterMenuVisible] = useState(false)
-  const [sortColumn, setSortColumn] = useState('full_name')
+  const [sortColumn, setSortColumn] = useState('city')
   const [sortDirection, setSortDirection] = useState('ascending')
-  const [users, setUsers] = useState([])
+  const [rates, setRates] = useState([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [actionMenuVisible, setActionMenuVisible] = useState(null)
-  const [showDialog, setShowDialog] = useState(false)
-  const [showDialogConfirm, setShowDialogConfirm] = useState(false)
-  const [userToDelete, setUserToDelete] = useState({
-    id: null,
-    email: null,
-  })
   const [refreshing, setRefreshing] = useState(false)
+  const [editDialogVisible, setEditDialogVisible] = useState(false)
+  const [editingRate, setEditingRate] = useState({
+    id: null,
+    city: '',
+    region: '',
+  })
+  const [editingPrice, setEditingPrice] = useState('')
+  const [editError, setEditError] = useState('')
 
-  const fetchUsers = async () => {
+  const MIN_PRICE = 1.00
+  const MAX_PRICE = 99999.99
+
+  const formatPrice = (value) => {
+    // Remove any non-numeric characters except decimal point
+    let numericValue = value.replace(/[^0-9.]/g, '')
+    
+    // Ensure only one decimal point
+    const parts = numericValue.split('.')
+    if (parts.length > 2) {
+      numericValue = parts[0] + '.' + parts.slice(1).join('')
+    }
+    
+    // Limit to 2 decimal places
+    if (parts.length === 2 && parts[1].length > 2) {
+      numericValue = parts[0] + '.' + parts[1].substring(0, 2)
+    }
+    
+    // Convert to number and validate range
+    const numValue = parseFloat(numericValue)
+    if (!isNaN(numValue)) {
+      if (numValue < MIN_PRICE) {
+        return MIN_PRICE.toFixed(2)
+      }
+      if (numValue > MAX_PRICE) {
+        return MAX_PRICE.toFixed(2)
+      }
+    }
+    
+    return numericValue
+  }
+
+  const handlePriceChange = (text) => {
+    const formattedPrice = formatPrice(text)
+    setEditingPrice(formattedPrice)
+  }
+
+  const fetchRates = async () => {
     setLoading(true)
     const { data, error } = await supabase
-      .from('profiles')
-      .select(`
-        *,
-        profile_status:user_status_id (status_name),
-        profile_roles:role_id (role_name),
-        verify_status:verify_status_id (status_name)
-      `)
-      .order('first_name', { ascending: true })
+      .from('pricing')
+      .select('*')
+      .order('city', { ascending: true })
 
     if (error) {
-      console.error('Error fetching users:', error)
+      console.error('Error fetching rates:', error)
       setLoading(false)
       return
     }
 
-    const formatted = data.map(user => ({
-      id: user.id,
-      email: user.email,
-      full_name: `${user?.first_name || ''} ${user?.middle_initial || ''} ${user?.last_name || ''} ${user?.suffix || ''}`.trim()||'N/A',
-      contact_number: user.contact_number || 'N/A',
-      status: user.profile_status?.status_name || 'Unknown',
-      role: user.profile_roles?.role_name || 'N/A',
-      verify_status: user.verify_status?.status_name || 'Unverified',
-      verify_status_id: user.verify_status_id,
-      dateCreated: user.created_at
-        ? new Date(user.created_at).toLocaleString()
+    const formatted = data.map(rate => ({
+      id: rate.id,
+      city: rate.city || 'N/A',
+      price: rate.price ? `₱${rate.price.toFixed(2)}` : 'N/A',
+      region: rate.region || 'N/A',
+      updated_at: rate.updated_at
+        ? new Date(rate.updated_at).toLocaleString()
         : 'N/A',
-      lastLogin: user.last_sign_in_at
-        ? new Date(user.last_sign_in_at).toLocaleString()
-        : 'Never',
-      lastUpdated: user.updated_at
-        ? new Date(user.updated_at).toLocaleString()
-        : 'Never',  
-      avatar: (user.first_name || 'N')[0].toUpperCase(),
-      pfp_id: user.pfp_id || null,
     }))
-    setUsers(formatted)
+    setRates(formatted)
     setLoading(false)
   }
 
   useFocusEffect(
     useCallback(() => {
-      fetchUsers()
+      fetchRates()
     }, [])
   )
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true)
+    fetchRates().finally(() => setRefreshing(false))
+  }, [])
 
   const handleSort = (column) => {
     setSortDirection(prev =>
@@ -100,42 +127,30 @@ const UserManagement = ({ navigation }) => {
   const getSortIcon = (column) =>
     sortColumn === column ? (sortDirection === 'ascending' ? '▲' : '▼') : ''
 
-  const filteredAndSortedUsers = users
-    .filter(user => {
-      const searchValue = String(user[searchColumn] || '').toLowerCase()
+  const filteredAndSortedRates = rates
+    .filter(rate => {
+      const searchValue = String(rate[searchColumn] || '').toLowerCase()
       const query = searchQuery.toLowerCase()
-      
-      // Special handling for verification status
-      if (searchColumn === 'verify_status') {
-        if (query === 'verified') {
-          return user.verify_status_id === 1
-        } else if (query === 'unverified') {
-          return user.verify_status_id === 2
-        } else if (query === 'pending') {
-          return user.verify_status_id === 3
-        }
-      }
-      
       return searchValue.includes(query)
     })
     .sort((a, b) => {
       const valA = a[sortColumn]
       const valB = b[sortColumn]
 
+      // Special handling for price column
+      if (sortColumn === 'price') {
+        const priceA = parseFloat(valA.replace('₱', '')) || 0
+        const priceB = parseFloat(valB.replace('₱', '')) || 0
+        return sortDirection === 'ascending' ? priceA - priceB : priceB - priceA
+      }
+
       // Special handling for date columns
-      if (['dateCreated', 'lastLogin', 'lastUpdated'].includes(sortColumn)) {
-        // If either value is 'Never' or 'N/A', handle special case
-        if (valA === 'Never' || valA === 'N/A') {
-          return sortDirection === 'ascending' ? -1 : 1;
-        }
-        if (valB === 'Never' || valB === 'N/A') {
-          return sortDirection === 'ascending' ? 1 : -1;
-        }
-        
-        // For actual dates, compare them normally
-        if (valA < valB) return sortDirection === 'ascending' ? -1 : 1;
-        if (valA > valB) return sortDirection === 'ascending' ? 1 : -1;
-        return 0;
+      if (sortColumn === 'updated_at') {
+        if (valA === 'N/A') return sortDirection === 'ascending' ? -1 : 1
+        if (valB === 'N/A') return sortDirection === 'ascending' ? 1 : -1
+        return sortDirection === 'ascending'
+          ? new Date(valA) - new Date(valB)
+          : new Date(valB) - new Date(valA)
       }
 
       // Default sorting for non-date columns
@@ -145,51 +160,87 @@ const UserManagement = ({ navigation }) => {
     })
 
   const from = page * itemsPerPage
-  const to = Math.min((page + 1) * itemsPerPage, filteredAndSortedUsers.length)
-  const paginatedUsers = filteredAndSortedUsers.slice(from, to)
+  const to = Math.min((page + 1) * itemsPerPage, filteredAndSortedRates.length)
+  const paginatedRates = filteredAndSortedRates.slice(from, to)
 
   const filterOptions = [
-    { label: 'Full Name', value: 'full_name' },
-    { label: 'Email', value: 'email' },
-    { label: 'Role', value: 'role' },
-    { label: 'Account Status', value: 'status' },
-    { label: 'Verification Status', value: 'verify_status' },
-    { label: 'Contact', value: 'contact_number' },
+    { label: 'Price', value: 'price' },
+    { label: 'City', value: 'city' },
+    { label: 'Region', value: 'region' },
+    { label: 'Last Updated', value: 'updated_at' },
   ]
 
   const columns = [
-    { key: 'full_name', label: 'Full Name', width: FULL_NAME_WIDTH },
-    { key: 'email', label: 'Email', width: EMAIL_COLUMN_WIDTH },
-    { key: 'contact_number', label: 'Contact Number', width: COLUMN_WIDTH },
-    { key: 'role', label: 'Role', width: COLUMN_WIDTH },
-    { key: 'status', label: 'Account Status', width: COLUMN_WIDTH },
-    { key: 'verify_status', label: 'Verification Status', width: COLUMN_WIDTH },
-    { key: 'dateCreated', label: 'Date Created', width: COLUMN_WIDTH },
-    { key: 'lastLogin', label: 'Last Login', width: COLUMN_WIDTH },
-    { key: 'lastUpdated', label: 'Last Updated', width: COLUMN_WIDTH },
+    { key: 'price', label: 'Price', width: PRICE_COLUMN_WIDTH },
+    { key: 'city', label: 'City', width: CITY_COLUMN_WIDTH },
+    { key: 'region', label: 'Region', width: REGION_COLUMN_WIDTH },
+    { key: 'updated_at', label: 'Last Updated', width: COLUMN_WIDTH },
   ]
 
-  const handleArchiveAccount = async (userId) => {
+  const handleDeleteRate = async (rateId) => {
     try {
       const { error } = await supabase
-        .from('profiles')
-        .update({ user_status_id: 3 })
-        .eq('id', userId)
+        .from('pricing')
+        .delete()
+        .eq('id', rateId)
       
       if (error) {
-        console.error('Error archiving account:', error)
+        console.error('Error deleting rate:', error)
       } else {
-        fetchUsers()
+        fetchRates()
       }
     } catch (error) {
-      console.error('Error archiving account:', error)
+      console.error('Error deleting rate:', error)
     }
   }
 
-  const onRefresh = useCallback(() => {
-    setRefreshing(true)
-    fetchUsers().finally(() => setRefreshing(false))
-  }, [])
+  const handleEditRate = async () => {
+    try {
+      setEditError('')
+      
+      // Validate price
+      if (!editingPrice.trim()) {
+        setEditError('Price is required')
+        return
+      }
+
+      // Convert price to number and validate
+      const price = parseFloat(editingPrice)
+      if (isNaN(price) || price < MIN_PRICE || price > MAX_PRICE) {
+        setEditError(`Price must be between ₱${MIN_PRICE.toFixed(2)} and ₱${MAX_PRICE.toFixed(2)}`)
+        return
+      }
+
+      const { error } = await supabase
+        .from('pricing')
+        .update({
+          price: price,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', editingRate.id)
+
+      if (error) {
+        console.error('Error updating rate:', error)
+        setEditError('Failed to update rate. Please try again.')
+      } else {
+        setEditDialogVisible(false)
+        fetchRates()
+      }
+    } catch (error) {
+      console.error('Error updating rate:', error)
+      setEditError('An unexpected error occurred')
+    }
+  }
+
+  const openEditDialog = (rate) => {
+    setEditingRate({
+      id: rate.id,
+      city: rate.city,
+      region: rate.region,
+    })
+    setEditingPrice(rate.price.replace('₱', ''))
+    setEditDialogVisible(true)
+  }
 
   return (
     <ScrollView 
@@ -198,7 +249,7 @@ const UserManagement = ({ navigation }) => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      <Header navigation={navigation} title="Manage Users" />
+      <Header navigation={navigation} title="Delivery Rates" />
 
       <View style={styles.searchActionsRow}>
         <Searchbar
@@ -251,31 +302,15 @@ const UserManagement = ({ navigation }) => {
         </View>
       </View>
 
-      <View style={styles.buttonContainer}>
-        <Button
-          mode="contained"
-          icon="account-plus"
-          onPress={() => navigation.navigate('AddAccount')}
-          style={[styles.button, { borderColor: colors.primary, width: '100%' }]}
-          contentStyle={styles.buttonContent}
-          labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
-        >
-          Add Account
-        </Button>
-      </View>
-
       {loading ? (
         <Text style={[styles.loadingText, { color: colors.onSurface }, fonts.bodyMedium]}>
-          Loading users...
+          Loading rates...
         </Text>
       ) : (
         <View style={styles.tableContainer}>
           <ScrollView horizontal>
             <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
               <DataTable.Header style={[styles.table, { backgroundColor: colors.surfaceVariant, alignItems: 'center' }]}>
-                <DataTable.Title style={{ width: AVATAR_COLUMN_WIDTH, justifyContent: 'center' }}>
-                  <Text style={[{ color: colors.onSurface }, fonts.labelLarge]}>Avatar</Text>
-                </DataTable.Title>
                 {columns.map(({ key, label, width }) => (
                   <DataTable.Title
                     key={key}
@@ -293,34 +328,22 @@ const UserManagement = ({ navigation }) => {
                 </DataTable.Title>
               </DataTable.Header>
 
-              {filteredAndSortedUsers.length === 0 ? (
+              {filteredAndSortedRates.length === 0 ? (
                 <DataTable.Row>
                   <DataTable.Cell style={styles.noDataCell}>
                     <Text style={[{ color: colors.onSurface, textAlign: 'center' }, fonts.bodyMedium]}>
-                      No users available
+                      No delivery rates available
                     </Text>
                   </DataTable.Cell>
                 </DataTable.Row>
               ) : (
-                paginatedUsers.map(user => (
-                  <DataTable.Row key={user.id}>
-                    <DataTable.Cell style={{ width: AVATAR_COLUMN_WIDTH, justifyContent: 'center' }}>
-                      {user.pfp_id ? (
-                        <Avatar.Image size={40} source={{ uri: user.pfp_id }} />
-                      ) : (
-                        <Avatar.Text size={40} label={user.avatar} />
-                      )}
-                    </DataTable.Cell>
+                paginatedRates.map(rate => (
+                  <DataTable.Row key={rate.id}>
                     {[
-                      { value: user.full_name, width: FULL_NAME_WIDTH },
-                      { value: user.email, width: EMAIL_COLUMN_WIDTH },
-                      { value: user.contact_number, width: COLUMN_WIDTH },
-                      { value: user.role, width: COLUMN_WIDTH },
-                      { value: user.status, width: COLUMN_WIDTH },
-                      { value: user.verify_status, width: COLUMN_WIDTH },
-                      { value: user.dateCreated, width: COLUMN_WIDTH },
-                      { value: user.lastLogin, width: COLUMN_WIDTH },
-                      { value: user.lastUpdated, width: COLUMN_WIDTH },
+                      { value: rate.price, width: PRICE_COLUMN_WIDTH },
+                      { value: rate.city, width: CITY_COLUMN_WIDTH },
+                      { value: rate.region, width: REGION_COLUMN_WIDTH },
+                      { value: rate.updated_at, width: COLUMN_WIDTH },
                     ].map(({ value, width }, idx) => (
                       <DataTable.Cell
                         key={idx}
@@ -331,13 +354,13 @@ const UserManagement = ({ navigation }) => {
                     ))}
                     <DataTable.Cell numeric style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 8 }}>
                       <Menu
-                        visible={actionMenuVisible === user.id}
+                        visible={actionMenuVisible === rate.id}
                         onDismiss={() => setActionMenuVisible(null)}
                         anchor={
                           <Button
                             mode="outlined"
                             icon="dots-vertical"
-                            onPress={() => setActionMenuVisible(user.id)}
+                            onPress={() => setActionMenuVisible(rate.id)}
                             style={[styles.actionButton, { borderColor: colors.primary }]}
                             contentStyle={styles.buttonContent}
                             labelStyle={[styles.buttonLabel, { color: colors.primary }]}
@@ -350,31 +373,13 @@ const UserManagement = ({ navigation }) => {
                         <Menu.Item
                           onPress={() => {
                             setActionMenuVisible(null)
-                            navigation.navigate('ViewAccount', { userId: user.id })
+                            openEditDialog(rate)
                           }}
-                          title="View Account"
-                          leadingIcon="eye"
+                          title="Edit Rate"
+                          leadingIcon="pencil"
                           titleStyle={[
                             {
                               color: colors.onSurface,
-                            },
-                            fonts.bodyLarge,
-                          ]}
-                        />
-                        <Menu.Item
-                          onPress={() => {
-                            setActionMenuVisible(null)
-                            setShowDialog(true)
-                            setUserToDelete({
-                              id: user.id,
-                              email: user.email,
-                            })
-                          }}
-                          title="Archive Account"
-                          leadingIcon="archive"
-                          titleStyle={[
-                            {
-                              color: colors.error,
                             },
                             fonts.bodyLarge,
                           ]}
@@ -390,9 +395,9 @@ const UserManagement = ({ navigation }) => {
           <View style={[styles.paginationContainer, { backgroundColor: colors.surface }]}>
             <DataTable.Pagination
               page={page}
-              numberOfPages={Math.ceil(filteredAndSortedUsers.length / itemsPerPage)}
+              numberOfPages={Math.ceil(filteredAndSortedRates.length / itemsPerPage)}
               onPageChange={page => setPage(page)}
-              label={`${from + 1}-${to} of ${filteredAndSortedUsers.length}`}
+              label={`${from + 1}-${to} of ${filteredAndSortedRates.length}`}
               labelStyle={[{ color: colors.onSurface }, fonts.bodyMedium]}
               showFirstPageButton
               showLastPageButton
@@ -417,49 +422,45 @@ const UserManagement = ({ navigation }) => {
               }}
             />
           </View>
-          <Portal>
-            <Dialog
-              visible={showDialog}
-              onDismiss={() => setShowDialog(false)}
-              style={{ backgroundColor: colors.surface }}
-              
-            >
-              <Dialog.Title>Archive Account for {userToDelete.email}</Dialog.Title>
-              <Dialog.Content>
-                <Text>This will archive the account. The user will no longer be able to access the system.</Text>
-                <Text>Are you sure you want to proceed?</Text>
-              </Dialog.Content>
-              <Dialog.Actions>
-                <Button onPress={() => setShowDialog(false)}>Cancel</Button>
-                <Button onPress={() => {
-                  setShowDialogConfirm(true)
-                  setShowDialog(false)
-                }}>Archive</Button>
-              </Dialog.Actions>
-            </Dialog>
-          </Portal>
-          <Portal>
-            <Dialog
-              visible={showDialogConfirm}
-              onDismiss={() => setShowDialogConfirm(false)}
-              style={{ backgroundColor: colors.surface }}
-            >
-              <Dialog.Title>Are you sure you want to archive this account?</Dialog.Title>
-              <Dialog.Content>
-                <Text>Account Email: {userToDelete.email}</Text>
-                <Text>This action can be reversed by an administrator.</Text>
-              </Dialog.Content>
-              <Dialog.Actions>
-                <Button onPress={() => setShowDialogConfirm(false)}>Cancel</Button>
-                <Button style={{backgroundColor: colors.error}} onPress={() => {
-                  setShowDialogConfirm(false)
-                  handleArchiveAccount(userToDelete.id)
-                }}><Text style={[fonts.labelLarge, { color: colors.onError }]}>Confirm Archive</Text></Button>
-              </Dialog.Actions>
-            </Dialog>
-          </Portal>
         </View>
       )}
+
+      <Portal>
+        <Dialog visible={editDialogVisible} onDismiss={() => setEditDialogVisible(false)} style={{backgroundColor: colors.surface}}>
+          <Dialog.Title>Edit Delivery Rate</Dialog.Title>
+          <Dialog.Content>
+            <View style={styles.infoContainer}>
+              <Text style={[styles.infoLabel, { color: colors.onSurface }]}>City:</Text>
+              <Text style={[styles.infoValue, { color: colors.onSurface }]}>{editingRate.city}</Text>
+            </View>
+            <View style={styles.infoContainer}>
+              <Text style={[styles.infoLabel, { color: colors.onSurface }]}>Region:</Text>
+              <Text style={[styles.infoValue, { color: colors.onSurface }]}>{editingRate.region}</Text>
+            </View>
+            <View style={styles.infoContainer}>
+              <Text style={[styles.infoLabel, { color: colors.onSurface }]}>Last Updated:</Text>
+              <Text style={[styles.infoValue, { color: colors.onSurface }]}>{editingRate.updated_at}</Text>
+            </View>
+            <TextInput
+              label="Price"
+              value={editingPrice}
+              onChangeText={handlePriceChange}
+              keyboardType="numeric"
+              style={styles.input}
+              placeholder={`₱${MIN_PRICE.toFixed(2)} - ₱${MAX_PRICE.toFixed(2)}`}
+              error={editError}
+              left={<TextInput.Icon icon={() => <Text>₱</Text>} />}
+            />
+            {editError ? (
+              <Text style={[styles.errorText, { color: colors.error }]}>{editError}</Text>
+            ) : null}
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setEditDialogVisible(false)}>Cancel</Button>
+            <Button onPress={handleEditRate}>Save</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </ScrollView>
   )
 }
@@ -535,6 +536,26 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.12)',
   },
+  input: {
+    marginBottom: 16,
+  },
+  errorText: {
+    marginTop: 8,
+    fontSize: 14,
+  },
+  infoContainer: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  infoLabel: {
+    fontWeight: 'bold',
+    marginRight: 8,
+    fontSize: 16,
+  },
+  infoValue: {
+    fontSize: 16,
+  },
 })
 
-export default UserManagement
+export default DeliveryRates 
