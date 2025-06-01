@@ -76,8 +76,17 @@ const EditProfileSubScreen = ({ navigation }) => {
   }
 
   const validateNameSuffix = (suffix) => {
-    if (suffix && suffix.length > 10) {
+    if (!suffix) {
+      setErrors(prev => ({ ...prev, suffix: '' }))
+      return true
+    }
+    if (suffix.length > 10) {
       setErrors(prev => ({ ...prev, suffix: 'Suffix cannot exceed 10 characters' }))
+      return false
+    }
+    // Allow common suffixes like Jr., Sr., III, etc.
+    if (!/^[A-Za-z]+\.?$|^[IVX]+$/.test(suffix)) {
+      setErrors(prev => ({ ...prev, suffix: 'Invalid suffix format. Use formats like Jr., Sr., III, etc.' }))
       return false
     }
     setErrors(prev => ({ ...prev, suffix: '' }))
@@ -190,7 +199,7 @@ const EditProfileSubScreen = ({ navigation }) => {
         validateName(sanitizedValue, field)
         break
       case 'suffix':
-        sanitizedValue = value.replace(/[^A-Z]/g, '')
+        sanitizedValue = value.replace(/[^A-Za-z.IVX]/g, '')
         validateNameSuffix(sanitizedValue)
         break
       case 'middle_initial':

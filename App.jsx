@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Provider as PaperProvider } from 'react-native-paper'
 import * as Font from 'expo-font'
-import * as Updates from 'expo-updates'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import StackNavigator from './components/navigator/StackNavigator'
 import lightTheme from './components/themes/lightTheme'
 import darkTheme from './components/themes/darkTheme'
 import { ThemeContext } from './components/themes/themeContext'
-import { ActivityIndicator, View, Text, Alert } from 'react-native'
+import { ActivityIndicator, View, Text } from 'react-native'
 import useAuth from './components/hooks/useAuth'
+import useAppUpdate from './components/hooks/useAppUpdate'
 
 const THEME_KEY = 'appTheme'
 
@@ -17,39 +17,9 @@ const App = () => {
   const [fontsLoaded, setFontsLoaded] = useState(false)
   const [themeLoaded, setThemeLoaded] = useState(false)
   const [error, setError] = useState(null)
-  const { checkSession, checkForUpdates } = useAuth()
+  const { checkSession } = useAuth()
+  const { isUpdating, updateStatus, handleAppUpdate, UpdateModal } = useAppUpdate()
 
-  async function onFetchUpdateAsync() {
-    try {
-      const update = await Updates.checkForUpdateAsync()
-      
-      if (update.isAvailable) {
-        await Updates.fetchUpdateAsync()
-        // Notify user that update is ready
-        Alert.alert(
-          "Update Available",
-          "A new version is ready to install. The app will restart to apply the update.",
-          [
-            {
-              text: "Install Now",
-              onPress: async () => {
-                await Updates.reloadAsync()
-              }
-            }
-          ]
-        )
-      }
-    } catch (error) {
-      console.log(`Error fetching latest Expo update: ${error.message}`)
-      // You might want to show this error to the user in development
-      if (__DEV__) {
-        Alert.alert(
-          "Update Error",
-          `Failed to check for updates: ${error.message}`
-        )
-      }
-    }
-  }
   const loadFonts = async () => {
     try {
       await Font.loadAsync({
@@ -63,6 +33,18 @@ const App = () => {
     }
   }
 
+  const loadTheme = async () => {
+    try {
+      const storedTheme = await AsyncStorage.getItem(THEME_KEY)
+      setTheme(storedTheme === 'dark' ? darkTheme : lightTheme)
+    } catch (error) {
+      console.error('Error loading theme:', error)
+      setTheme(lightTheme)
+    } finally {
+      setThemeLoaded(true)
+    }
+  }
+
   const toggleTheme = async () => {
     try {
       const newTheme = theme === lightTheme ? darkTheme : lightTheme
@@ -72,35 +54,15 @@ const App = () => {
       console.error('Error saving theme:', error)
     }
   }
-
-  const loadTheme = async () => {
-    try {
-      const storedTheme = await AsyncStorage.getItem(THEME_KEY)
-      if (storedTheme === 'dark') {
-        setTheme(darkTheme)
-      } else {
-        setTheme(lightTheme)
-      }
-    } catch (error) {
-      console.error('Error loading theme:', error)
-      setTheme(lightTheme)
-    } finally {
-      setThemeLoaded(true)
-    }
-  }
-
+  
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        await Promise.all([
-          loadFonts(),
-          loadTheme(),
-          onFetchUpdateAsync(),
-        ])
+        await Promise.all([loadFonts(), loadTheme()])
         
         if (fontsLoaded && themeLoaded) {
           await checkSession()
-          await checkForUpdates()
+          await handleAppUpdate(true)
         }
       } catch (error) {
         console.error('Error initializing app:', error)
@@ -123,6 +85,7 @@ const App = () => {
   if (!fontsLoaded || !themeLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ marginBottom: 10, color: theme.colors.onSurface, ...theme.fonts.bodyLarge }}>Loading fonts and theme...</Text>
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     )
@@ -132,6 +95,7 @@ const App = () => {
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
       <PaperProvider theme={theme}>
         <StackNavigator />
+        <UpdateModal visible={isUpdating} status={updateStatus} theme={theme} />
       </PaperProvider>
     </ThemeContext.Provider>
   )

@@ -5,6 +5,7 @@ import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabase'
 import useLogout from '../../hooks/useLogout'
 import { useFocusEffect } from '@react-navigation/native'
+import useSnackbar from '../../hooks/useSnackbar'
 
 // Profile Card Component
 const ProfileCard = React.memo(({ profile, colors, fonts }) => {
@@ -64,10 +65,38 @@ const InfoCard = React.memo(({ title, data, colors, fonts }) => (
 // Verification Card Component
 const VerificationCard = React.memo(({ profile, colors, fonts, navigation }) => {
   const [showVerificationDialog, setShowVerificationDialog] = useState(false)
+  const { showSnackbar, SnackbarElement } = useSnackbar()
 
   const handleReverify = () => {
     setShowVerificationDialog(false)
     navigation.navigate('Verification')
+  }
+
+  const checkMissingInfo = () => {
+    const requiredFields = {
+      'First Name': profile?.first_name,
+      'Last Name': profile?.last_name,
+      'Contact Number': profile?.contact_number,
+      'Birth Date': profile?.birth_date,
+      'Emergency Contact Name': profile?.emergency_contact_name,
+      'Emergency Contact Number': profile?.emergency_contact_number,
+    }
+
+    const missingFields = Object.entries(requiredFields)
+      .filter(([_, value]) => !value)
+      .map(([key]) => key)
+
+    if (missingFields.length > 0) {
+      showSnackbar('Please fill in missing personal information')
+      return true
+    }
+    return false
+  }
+
+  const handleVerifyPress = () => {
+    if (!checkMissingInfo()) {
+      navigation.navigate('Verification')
+    }
   }
 
   const renderVerificationContent = () => {
@@ -166,7 +195,7 @@ const VerificationCard = React.memo(({ profile, colors, fonts, navigation }) => 
           icon="check-circle"
           mode="contained"
           style={[styles.button, { backgroundColor: colors.primary, marginTop: 16 }]}
-          onPress={() => navigation.navigate('Verification')}
+          onPress={handleVerifyPress}
           labelStyle={[{ color: colors.onPrimary, ...fonts.labelLarge }]}
         >
           Verify Account
@@ -183,6 +212,7 @@ const VerificationCard = React.memo(({ profile, colors, fonts, navigation }) => 
         title="Verification Status" 
         titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]}
       />
+      {SnackbarElement}
       <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
       <Card.Content>
         <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>

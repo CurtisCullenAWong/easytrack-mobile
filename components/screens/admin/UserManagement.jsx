@@ -498,6 +498,7 @@ const styles = StyleSheet.create({
   tableContainer: {
     flex: 1,
     marginHorizontal: 16,
+    marginBottom: 16,
     borderRadius: 8,
     minHeight: 'auto',
     overflow: 'hidden',

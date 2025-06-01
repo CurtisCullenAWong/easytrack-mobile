@@ -373,26 +373,11 @@ const useAuth = (navigation = null, onClose = null) => {
     }
   }
 
-  async function checkForUpdates() {
-    if (!__DEV__ && Updates.isAvailable) {
-      try {
-        const update = await Updates.checkForUpdateAsync();
-        if (update.isAvailable) {
-          await Updates.fetchUpdateAsync();
-          await Updates.reloadAsync();
-        }
-      } catch (e) {
-        console.warn('Update check failed:', e);
-      }
-    }
-  }
-
   return {
     login,
     loginWithOtp,
     resetPassword,
     checkSession,
-    checkForUpdates,
     SnackbarElement,
   }
 }

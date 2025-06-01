@@ -182,7 +182,7 @@ const MakeContracts = () => {
   const clearSingleContract = useCallback((index) => {
     setContracts(prev => {
       const updated = [...prev]
-      updated[index] = { ...INITIAL_CONTRACT }
+      updated[index] = JSON.parse(JSON.stringify(INITIAL_CONTRACT))
       return updated
     })
   }, [])
@@ -196,7 +196,7 @@ const MakeContracts = () => {
   }, [contracts.length, showSnackbar])
 
   const addContract = useCallback(() => {
-    setContracts(prev => [...prev, { ...INITIAL_CONTRACT }])
+    setContracts(prev => [...prev, JSON.parse(JSON.stringify(INITIAL_CONTRACT))])
   }, [])
 
   const validateContract = useCallback((contract) => {
@@ -247,13 +247,39 @@ const MakeContracts = () => {
         return
       }
 
+      // Generate tracking ID with format 'yyyyddMKTPxxxx'
+      function generateTrackingID() {
+        const now = new Date()
+        const year = now.getFullYear()
+        const day = String(now.getDate()).padStart(2, '0')
+        const randomPart = [...Array(4)].map(() => Math.random().toString(36)[2].toUpperCase()).join('')
+        return `${year}${day}MKTP${randomPart}`
+      }
+
       // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       if (userError) throw userError
       if (!user) throw new Error('User not authenticated')
 
-      // Insert contract with properly formatted location data
+      // Generate unique tracking ID
+      let trackingID
+      let collisionCheck
+
+      do {
+        trackingID = generateTrackingID()
+
+        const { data: existing, error: checkError } = await supabase
+          .from('contract')
+          .select('tracking_id')
+          .eq('tracking_id', trackingID)
+
+        if (checkError) throw checkError
+        collisionCheck = existing.length > 0
+      } while (collisionCheck)
+
+      // Insert contract with properly formatted location data and tracking ID
       const contractData = {
+        tracking_id: trackingID,
         luggage_quantity: totalLuggageQuantity,
         airline_id: user.id,
         pickup_location: pickupLocation,
@@ -287,6 +313,7 @@ const MakeContracts = () => {
       if (luggageError) throw luggageError
 
       showSnackbar('Contract created successfully', true)
+
       
       // Reset form
       setDropOffLocation({ location: '', lat: null, lng: null })
@@ -378,15 +405,17 @@ const MakeContracts = () => {
       visible={showPickupMenu}
       onDismiss={() => setShowPickupMenu(false)}
       anchor={
-        <TextInput
-          label="Pickup Location"
-          value={pickupLocation}
-          mode="outlined"
-          style={{ marginBottom: 16 }}
-          right={<TextInput.Icon icon="menu-down" />}
-          onPress={() => setShowPickupMenu(true)}
-          error={pickupError}
-        />
+        <TouchableOpacity onPress={() => setShowPickupMenu(true)}>
+          <TextInput
+            label="Pickup Location"
+            value={pickupLocation}
+            mode="outlined"
+            style={{ marginBottom: 16 }}
+            right={<TextInput.Icon icon="menu-down" onPress={() => setShowPickupMenu(true)}/>}
+            error={pickupError}
+            editable={false}
+          />
+        </TouchableOpacity>
       }
       contentStyle={{ backgroundColor: colors.surface }}
     >

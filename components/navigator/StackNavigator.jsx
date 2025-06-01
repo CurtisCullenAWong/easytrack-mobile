@@ -21,6 +21,8 @@ import SetNewPasswordScreen from '../screens/shared/SetNewPasswordScreen'
 // Admin Screens
 import AdminHome from '../screens/admin/AdminHome'
 import UserManagement from '../screens/admin/UserManagement'
+import TransactionManagement from '../screens/admin/TransactionManagement'
+import ContractDetailsAdmin from '../screens/admin/subscreen/ContractDetailsAdmin'
 import AdminTrackLuggage from '../screens/admin/AdminTrackLuggage'
 import AddAccount from '../screens/admin/subscreen/AddAccount'
 import ViewAccountScreen from '../screens/admin/subscreen/ViewAccountScreen'
@@ -51,6 +53,8 @@ const AdminDrawer = () => (
   >
       <Drawer.Screen name="AdminHome" component={AdminHome} />
       <Drawer.Screen name="UserManagement" component={UserManagement} />
+      <Drawer.Screen name="TransactionManagement" component={TransactionManagement} />
+      <Drawer.Screen name="ContractDetailsAdmin" component={ContractDetailsAdmin} />
       <Drawer.Screen name="AdminTrackLuggage" component={AdminTrackLuggage} />
       <Drawer.Screen name="DeliveryRates" component={DeliveryRates} />
       <Drawer.Screen
