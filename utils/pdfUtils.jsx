@@ -37,6 +37,20 @@ const generateTransactionReportHTML = (transactions, summary, date, time) => {
     </tr>
   `).join('')
 
+  // Filter out transactions without passenger forms
+  const transactionsWithForms = transactions.filter(t => t.passenger_form)
+  
+  // Generate HTML for passenger forms
+  const formPages = transactionsWithForms.map((transaction, index) => `
+    <div class="page-break"></div>
+    <div class="form-container">
+      <img src="${transaction.passenger_form}" class="form-image" />
+      <div class="form-info">
+        Contract ID: ${transaction.id} | Amount: ₱${transaction.amount_per_passenger.toFixed(2)} | Page ${index + 1} of ${transactionsWithForms.length}
+      </div>
+    </div>
+  `).join('')
+
   return `
     <!DOCTYPE html>
     <html>
@@ -104,6 +118,34 @@ const generateTransactionReportHTML = (transactions, summary, date, time) => {
             font-weight: bold;
             background-color: #f5f5f5;
           }
+          .page-break {
+            page-break-before: always;
+          }
+          .form-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          .form-image {
+            width: 100%;
+            height: calc(100vh - 40px);
+            object-fit: contain;
+          }
+          .form-info {
+            font-family: Arial, sans-serif;
+            font-size: 10px;
+            color: #666;
+            text-align: center;
+            width: 100%;
+            padding: 10px;
+            background-color: #fff;
+          }
         </style>
       </head>
       <body>
@@ -146,6 +188,7 @@ const generateTransactionReportHTML = (transactions, summary, date, time) => {
             Total PIR submitted: ${transactions.length}
           </div>
         </div>
+        ${formPages}
       </body>
     </html>
   `

@@ -122,6 +122,7 @@ const TransactionManagement = ({ navigation }) => {
           amount_per_passenger: discountedAmount,
           remarks: transaction.remarks || 'N/A',
           flight_number: 'N/A',
+          passenger_form: transaction.passenger_form || null,
           created_at: transaction.created_at
             ? new Date(transaction.created_at).toLocaleString()
             : 'N/A',
@@ -146,6 +147,7 @@ const TransactionManagement = ({ navigation }) => {
           amount_per_passenger: perPassengerAmount * transaction.luggage_info.length,
           remarks: transaction.remarks || ' ',
           flight_number: luggage.flight_number || 'N/A',
+          passenger_form: transaction.passenger_form || null,
           created_at: transaction.created_at
             ? new Date(transaction.created_at).toLocaleString()
             : 'N/A',
