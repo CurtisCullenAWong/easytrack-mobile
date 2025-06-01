@@ -40,7 +40,6 @@ const TransactionManagement = ({ navigation }) => {
   const [showDiscountDialog, setShowDiscountDialog] = useState(false)
   const [surchargeAmount, setSurchargeAmount] = useState('')
   const [discountAmount, setDiscountAmount] = useState('')
-  const [selectedRows, setSelectedRows] = useState(new Set())
   const [actionMenuVisible, setActionMenuVisible] = useState(false)
   const [showSummaryDialog, setShowSummaryDialog] = useState(false)
   const [summaryData, setSummaryData] = useState(null)
@@ -63,6 +62,15 @@ const TransactionManagement = ({ navigation }) => {
           middle_initial,
           last_name,
           suffix
+        ),
+        luggage_info:contract_luggage_information (
+          luggage_owner,
+          quantity,
+          case_number,
+          item_description,
+          weight,
+          contact_number,
+          flight_number
         )
       `)
       .in('contract_status_id', [5, 6]) // 5 for delivered, 6 for failed
@@ -74,7 +82,8 @@ const TransactionManagement = ({ navigation }) => {
       return
     }
 
-    const formatted = data.map(transaction => {
+    // Expand luggage_info into separate rows
+    const formatted = data.flatMap(transaction => {
       let completionDate = 'N/A'
       if (transaction.delivered_at) {
         completionDate = new Date(transaction.delivered_at).toLocaleString('en-US', {
@@ -96,24 +105,54 @@ const TransactionManagement = ({ navigation }) => {
         })
       }
 
-      return {
-        id: transaction.id,
-        status: transaction.contract_status?.status_name || 'N/A',
-        luggage_quantity: transaction.luggage_quantity || 'N/A',
-        completion_date: completionDate,
-        drop_off_location: transaction.drop_off_location || 'N/A',
-        airline_name: `${transaction.airline?.first_name || ''} ${transaction.airline?.middle_initial || ''} ${transaction.airline?.last_name || ''} ${transaction.airline?.suffix || ''}`.trim() || 'N/A',
-        delivery_name: `${transaction.delivery?.first_name || ''} ${transaction.delivery?.middle_initial || ''} ${transaction.delivery?.last_name || ''} ${transaction.delivery?.suffix || ''}`.trim() || 'N/A',
-        delivery_charge: transaction.delivery_charge || 0,
-        surcharge: transaction.surcharge || 0,
-        discount: transaction.discount || 0,
-        total_amount: ((transaction.delivery_charge || 0) + (transaction.surcharge || 0)) * 
-          (1 - (transaction.discount || 0) / 100),
-        created_at: transaction.created_at
-          ? new Date(transaction.created_at).toLocaleString()
-          : 'N/A',
+      // If no luggage info, return one row with N/A
+      if (!transaction.luggage_info || transaction.luggage_info.length === 0) {
+        const baseAmount = (transaction.delivery_charge || 0) + (transaction.surcharge || 0)
+        const discountedAmount = baseAmount * (1 - ((transaction.discount || 0) / 100))
+        return [{
+          key: `${transaction.id}_0`,
+          id: transaction.id,
+          status: transaction.contract_status?.status_name || 'N/A',
+          drop_off_location: transaction.drop_off_location || 'N/A',
+          completion_date: completionDate,
+          delivery_charge: transaction.delivery_charge || 0,
+          surcharge: transaction.surcharge || 0,
+          discount: transaction.discount || 0,
+          luggage_owner: 'N/A',
+          amount_per_passenger: discountedAmount,
+          remarks: transaction.remarks || 'N/A',
+          flight_number: 'N/A',
+          created_at: transaction.created_at
+            ? new Date(transaction.created_at).toLocaleString()
+            : 'N/A',
+        }]
       }
+
+      // Return one row per luggage owner
+      return transaction.luggage_info.map((luggage, index) => {
+        const baseAmount = (transaction.delivery_charge || 0) + (transaction.surcharge || 0)
+        const discountedAmount = baseAmount * (1 - ((transaction.discount || 0) / 100))
+        const perPassengerAmount = discountedAmount / transaction.luggage_info.length
+        return {
+          key: `${transaction.id}_${index}`,
+          id: transaction.id,
+          status: transaction.contract_status?.status_name || 'N/A',
+          drop_off_location: transaction.drop_off_location || 'N/A',
+          completion_date: completionDate,
+          delivery_charge: transaction.delivery_charge || 0,
+          surcharge: transaction.surcharge || 0,
+          discount: transaction.discount || 0,
+          luggage_owner: luggage.luggage_owner || 'N/A',
+          amount_per_passenger: perPassengerAmount * transaction.luggage_info.length,
+          remarks: transaction.remarks || ' ',
+          flight_number: luggage.flight_number || 'N/A',
+          created_at: transaction.created_at
+            ? new Date(transaction.created_at).toLocaleString()
+            : 'N/A',
+        }
+      })
     })
+
     setTransactions(formatted)
     setLoading(false)
   }
@@ -171,16 +210,12 @@ const TransactionManagement = ({ navigation }) => {
   const columns = [
     { key: 'select', label: '', width: 50 },
     { key: 'id', label: 'Contract ID', width: COLUMN_WIDTH },
+    { key: 'luggage_owner', label: 'Luggage Owner', width: COLUMN_WIDTH },
+    { key: 'drop_off_location', label: 'Address', width: COLUMN_WIDTH },
+    { key: 'completion_date', label: 'Date Received', width: COLUMN_WIDTH },
     { key: 'status', label: 'Status', width: COLUMN_WIDTH },
-    { key: 'luggage_quantity', label: 'Luggage Quantity', width: COLUMN_WIDTH },
-    { key: 'completion_date', label: 'Completion Date', width: COLUMN_WIDTH },
-    { key: 'drop_off_location', label: 'Drop-off Location', width: COLUMN_WIDTH },
-    { key: 'airline_name', label: 'Airline Name', width: FULL_NAME_WIDTH },
-    { key: 'delivery_name', label: 'Delivery Name', width: FULL_NAME_WIDTH },
-    { key: 'delivery_charge', label: 'Delivery Charge', width: COLUMN_WIDTH },
-    { key: 'surcharge', label: 'Surcharge', width: COLUMN_WIDTH },
-    { key: 'discount', label: 'Discount (%)', width: COLUMN_WIDTH },
-    { key: 'total_amount', label: 'Total Amount', width: COLUMN_WIDTH },
+    { key: 'amount_per_passenger', label: 'Amount', width: COLUMN_WIDTH },
+    { key: 'remarks', label: 'Remarks', width: COLUMN_WIDTH },
     { key: 'created_at', label: 'Created At', width: COLUMN_WIDTH },
   ]
 
@@ -235,24 +270,6 @@ const TransactionManagement = ({ navigation }) => {
     return `${parseFloat(amount).toFixed(2)}%`
   }
 
-  const handleSelectAll = () => {
-    if (selectedRows.size === paginatedTransactions.length) {
-      setSelectedRows(new Set())
-    } else {
-      setSelectedRows(new Set(paginatedTransactions.map(t => t.id)))
-    }
-  }
-
-  const handleSelectRow = (id) => {
-    const newSelected = new Set(selectedRows)
-    if (newSelected.has(id)) {
-      newSelected.delete(id)
-    } else {
-      newSelected.add(id)
-    }
-    setSelectedRows(newSelected)
-  }
-
   const handleGenerateAllSummary = async () => {
     try {
       const summary = generateSummary(filteredAndSortedTransactions)
@@ -260,23 +277,6 @@ const TransactionManagement = ({ navigation }) => {
       setShowSummaryDialog(true)
     } catch (error) {
       console.error('Error generating all summary:', error)
-      showSnackbar(`Failed to generate summary: ${error.message}`)
-    }
-  }
-
-  const handleGenerateSelectedSummary = async () => {
-    if (selectedRows.size === 0) {
-      showSnackbar('Please select at least one transaction to generate a summary.')
-      return
-    }
-
-    try {
-      const selectedTransactions = filteredAndSortedTransactions.filter(t => selectedRows.has(t.id))
-      const summary = generateSummary(selectedTransactions)
-      setSummaryData(summary)
-      setShowSummaryDialog(true)
-    } catch (error) {
-      console.error('Error generating selected summary:', error)
       showSnackbar(`Failed to generate summary: ${error.message}`)
     }
   }
@@ -291,15 +291,18 @@ const TransactionManagement = ({ navigation }) => {
     }
 
     transactions.forEach(transaction => {
-      // Add to total amount
-      summary.totalAmount += transaction.total_amount || 0
+      // Calculate base amount (delivery charge + surcharge)
+      const baseAmount = (transaction.delivery_charge || 0) + (transaction.surcharge || 0)
       
-      // Add to total surcharge
+      // Calculate discount amount
+      const discountAmount = baseAmount * ((transaction.discount || 0) / 100)
+      
+      // Calculate final amount after discount
+      const finalAmount = baseAmount - discountAmount
+      
+      // Add to totals
+      summary.totalAmount += finalAmount
       summary.totalSurcharge += transaction.surcharge || 0
-      
-      // Calculate and add to total discount
-      const discountAmount = (transaction.delivery_charge + transaction.surcharge) * 
-        ((transaction.discount || 0) / 100)
       summary.totalDiscount += discountAmount
 
       // Count statuses
@@ -371,28 +374,17 @@ const TransactionManagement = ({ navigation }) => {
         </View>
       </View>
       <View style={styles.summaryButtonsContainer}>
-          <Button
-            mode="contained"
-            icon="file-document-outline"
-            onPress={handleGenerateAllSummary}
-            style={[styles.button, { marginRight: 8 }]}
-            contentStyle={styles.buttonContent}
-            labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
-          >
-            Summarize All
-          </Button>
-          <Button
-            mode="contained"
-            icon="file-document-multiple-outline"
-            onPress={handleGenerateSelectedSummary}
-            style={[styles.button]}
-            contentStyle={styles.buttonContent}
-            labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
-            disabled={selectedRows.size === 0}
-          >
-            Summary Selected
-          </Button>
-        </View>
+        <Button
+          mode="contained"
+          icon="file-document-outline"
+          onPress={handleGenerateAllSummary}
+          style={[styles.button]}
+          contentStyle={styles.buttonContent}
+          labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
+        >
+          Generate Summary
+        </Button>
+      </View>
       {loading ? (
         <Text style={[styles.loadingText, { color: colors.onSurface }, fonts.bodyMedium]}>
           Loading transactions...
@@ -402,15 +394,6 @@ const TransactionManagement = ({ navigation }) => {
           <ScrollView horizontal>
             <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
               <DataTable.Header style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
-                <DataTable.Title style={styles.selectAllCell}>
-                  <View style={styles.checkboxContainer}>
-                    <Checkbox
-                      status={selectedRows.size === paginatedTransactions.length ? 'checked' : 'unchecked'}
-                      onPress={handleSelectAll}
-                      color={colors.primary}
-                    />
-                  </View>
-                </DataTable.Title>
                 {columns.slice(1).map(({ key, label, width }) => (
                   <DataTable.Title
                     key={key}
@@ -438,16 +421,7 @@ const TransactionManagement = ({ navigation }) => {
                 </DataTable.Row>
               ) : (
                 paginatedTransactions.map(transaction => (
-                  <DataTable.Row key={transaction.id}>
-                    <DataTable.Cell style={styles.selectAllCell}>
-                      <View style={styles.checkboxContainer}>
-                        <Checkbox
-                          status={selectedRows.has(transaction.id) ? 'checked' : 'unchecked'}
-                          onPress={() => handleSelectRow(transaction.id)}
-                          color={colors.primary}
-                        />
-                      </View>
-                    </DataTable.Cell>
+                  <DataTable.Row key={transaction.key}>
                     {columns.slice(1).map(({ key, width }, idx) => (
                       <DataTable.Cell
                         key={idx}
@@ -502,7 +476,7 @@ const TransactionManagement = ({ navigation }) => {
                             setActionMenuVisible(false)
                             setShowSurchargeDialog(true)
                           }}
-                          title="Add Surcharge"
+                          title="Adjust Surcharge"
                           leadingIcon="plus"
                           titleStyle={[
                             {
@@ -516,7 +490,7 @@ const TransactionManagement = ({ navigation }) => {
                             setActionMenuVisible(false)
                             setShowDiscountDialog(true)
                           }}
-                          title="Add Discount"
+                          title="Adjust Discount"
                           leadingIcon="minus"
                           titleStyle={[
                             {
@@ -678,10 +652,7 @@ const TransactionManagement = ({ navigation }) => {
                     icon="printer"
                     onPress={async () => {
                       try {
-                        const transactions = selectedRows.size > 0
-                          ? filteredAndSortedTransactions.filter(t => selectedRows.has(t.id))
-                          : filteredAndSortedTransactions
-                        await printPDF(transactions, summaryData)
+                        await printPDF(filteredAndSortedTransactions, summaryData)
                       } catch (error) {
                         Alert.alert('Error', error.message)
                       }
@@ -694,10 +665,7 @@ const TransactionManagement = ({ navigation }) => {
                     icon="share"
                     onPress={async () => {
                       try {
-                        const transactions = selectedRows.size > 0
-                          ? filteredAndSortedTransactions.filter(t => selectedRows.has(t.id))
-                          : filteredAndSortedTransactions
-                        await sharePDF(transactions, summaryData)
+                        await sharePDF(filteredAndSortedTransactions, summaryData)
                       } catch (error) {
                         Alert.alert('Error', error.message)
                       }

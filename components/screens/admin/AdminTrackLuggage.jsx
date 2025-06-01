@@ -178,7 +178,8 @@ const AssignLuggage = ({ navigation }) => {
         .from('contract')
         .update({ 
           delivery_id: selectedDeliveryPerson.id,
-          contract_status_id: 3 // Update status to assigned
+          contract_status_id: 3, // Update status to assigned
+          accepted_at: new Date().toISOString()
         })
         .eq('id', selectedContract.id)
 

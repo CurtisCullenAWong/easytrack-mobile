@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { View, FlatList, StyleSheet } from 'react-native'
-import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, Portal, Dialog } from 'react-native-paper'
+import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, Portal, Dialog, TextInput } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 import { useLocation } from '../../../hooks/useLocation'
@@ -21,6 +21,7 @@ const ContractsInTransit = ({ navigation }) => {
   const [dialogVisible, setDialogVisible] = useState(false)
   const [dialogType, setDialogType] = useState(null)
   const [selectedContract, setSelectedContract] = useState(null)
+  const [remarks, setRemarks] = useState('')
 
   const filterOptions = [
     { label: 'Contract ID', value: 'id' },
@@ -203,38 +204,34 @@ const ContractsInTransit = ({ navigation }) => {
   const handleDialogAction = async () => {
     if (!selectedContract) return
     try {
-      setLoading(true)
-      let updateObj = {}
       if (dialogType === 'deliver') {
-        updateObj = {
-          delivered_at: new Date().toISOString(),
-          contract_status_id: 5, // Delivered
-        }
+        setDialogVisible(false)
+        setSelectedContract(null)
+        setRemarks('')
+        navigation.navigate('DeliveryConfirmation', { contract: selectedContract })
       }
       else if (dialogType === 'cancel') {
-        updateObj = {
+        setLoading(true)
+        const updateObj = {
           cancelled_at: new Date().toISOString(),
           contract_status_id: 6, // Failed
+          remarks: remarks
         }
+        const { error } = await supabase
+          .from('contract')
+          .update(updateObj)
+          .eq('id', selectedContract.id)
+        if (error) throw error
+
+        checkContractsAndManageTracking()
+
+        showSnackbar('Contract marked as failed.', true)
+        setDialogVisible(false)
+        setSelectedContract(null)
+        setRemarks('')
+        fetchContracts()
+        navigation.navigate('BookingHistory')
       }
-      const { error } = await supabase
-        .from('contract')
-        .update(updateObj)
-        .eq('id', selectedContract.id)
-      if (error) throw error
-
-      checkContractsAndManageTracking()
-
-      showSnackbar(
-        dialogType === 'deliver'
-          ? 'Contract marked as delivered.'
-          : 'Contract marked as failed.',
-        true
-      )
-      setDialogVisible(false)
-      setSelectedContract(null)
-      fetchContracts()
-      navigation.navigate('BookingHistory')
     } catch (error) {
       showSnackbar('Error updating contract: ' + error.message)
     } finally {
@@ -505,9 +502,24 @@ const ContractsInTransit = ({ navigation }) => {
                 ? 'Are you sure you want to mark this contract as delivered?'
                 : 'Are you sure you want to mark this contract as failed?'}
             </Text>
+            <TextInput
+              mode="outlined"
+              label="Remarks"
+              value={remarks}
+              onChangeText={setRemarks}
+              multiline
+              numberOfLines={3}
+              style={{ marginTop: 16 }}
+              placeholder="Enter remarks here..."
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setDialogVisible(false)}>No</Button>
+            <Button onPress={() => {
+              setDialogVisible(false)
+              setRemarks('')
+            }}>No</Button>
             <Button onPress={handleDialogAction}>Yes</Button>
           </Dialog.Actions>
         </Dialog>

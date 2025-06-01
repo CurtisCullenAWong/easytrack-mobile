@@ -14,13 +14,15 @@ const INITIAL_CONTRACT = {
   contact: "",
   weight: "",
   quantity: "",
+  flightNumber: "",
   errors: {
     name: false,
     caseNumber: false,
     itemDescription: false,
     contact: false,
     weight: false,
-    quantity: false
+    quantity: false,
+    flightNumber: false
   }
 }
 
@@ -93,6 +95,14 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
         style={{ marginBottom: 12 }}
         error={contract.errors?.quantity}
       />
+      <TextInput
+        label="Flight Number"
+        value={contract.flightNumber}
+        onChangeText={(text) => onInputChange(index, "flightNumber", text)}
+        mode="outlined"
+        style={{ marginBottom: 12 }}
+        error={contract.errors?.flightNumber}
+      />
       <Button
         mode="outlined"
         onPress={() => onClear(index)}
@@ -123,6 +133,11 @@ const MakeContracts = () => {
   const [pickupError, setPickupError] = useState(false)
   const [dropOffError, setDropOffError] = useState(false)
   const [deliveryFee, setDeliveryFee] = useState(0)
+
+  // Calculate total delivery fee based on number of contracts
+  const totalDeliveryFee = useMemo(() => {
+    return deliveryFee * contracts.length;
+  }, [deliveryFee, contracts.length]);
 
   // Update drop-off location when returning from LocationSelection
   useFocusEffect(
@@ -206,7 +221,8 @@ const MakeContracts = () => {
       itemDescription: !contract.itemDescription.trim(),
       contact: !contract.contact.trim(),
       weight: !contract.weight.trim() || isNaN(contract.weight) || Number(contract.weight) <= 0,
-      quantity: !contract.quantity.trim() || isNaN(contract.quantity) || Number(contract.quantity) <= 0
+      quantity: !contract.quantity.trim() || isNaN(contract.quantity) || Number(contract.quantity) <= 0,
+      flightNumber: !contract.flightNumber.trim()
     }
   }, [])
 
@@ -247,13 +263,24 @@ const MakeContracts = () => {
         return
       }
 
-      // Generate tracking ID with format 'yyyyddMKTPxxxx'
+      // Generate tracking ID with format 'YYYYMMDDMKTPxxxx'
       function generateTrackingID() {
         const now = new Date()
         const year = now.getFullYear()
+        const month = String(now.getMonth() + 1).padStart(2, '0')
         const day = String(now.getDate()).padStart(2, '0')
         const randomPart = [...Array(4)].map(() => Math.random().toString(36)[2].toUpperCase()).join('')
-        return `${year}${day}MKTP${randomPart}`
+        return `${year}${month}${day}MKTP${randomPart}`
+      }
+
+      // Generate luggage tracking ID with format 'YYYYMMDDTRKLGxxxx'
+      function generateLuggageTrackingID() {
+        const now = new Date()
+        const year = now.getFullYear()
+        const month = String(now.getMonth() + 1).padStart(2, '0')
+        const day = String(now.getDate()).padStart(2, '0')
+        const randomPart = [...Array(4)].map(() => Math.random().toString(36)[2].toUpperCase()).join('')
+        return `${year}${month}${day}TRKLG${randomPart}`
       }
 
       // Get current user
@@ -270,8 +297,8 @@ const MakeContracts = () => {
 
         const { data: existing, error: checkError } = await supabase
           .from('contract')
-          .select('tracking_id')
-          .eq('tracking_id', trackingID)
+          .select('id')
+          .eq('id', trackingID)
 
         if (checkError) throw checkError
         collisionCheck = existing.length > 0
@@ -279,12 +306,13 @@ const MakeContracts = () => {
 
       // Insert contract with properly formatted location data and tracking ID
       const contractData = {
-        tracking_id: trackingID,
+        id: trackingID,
         luggage_quantity: totalLuggageQuantity,
         airline_id: user.id,
         pickup_location: pickupLocation,
         drop_off_location: dropOffLocation.location,
-        drop_off_location_geo: `POINT(${dropOffLocation.lng} ${dropOffLocation.lat})`
+        drop_off_location_geo: `POINT(${dropOffLocation.lng} ${dropOffLocation.lat})`,
+        delivery_charge: totalDeliveryFee
       }
 
       const { data: insertedContract, error: contractError } = await supabase
@@ -296,14 +324,33 @@ const MakeContracts = () => {
       if (contractError) throw contractError
 
       // Insert luggage information
-      const formattedData = contracts.map(contract => ({
-        case_number: contract.caseNumber,
-        luggage_owner: contract.name,
-        contact_number: contract.contact,
-        item_description: contract.itemDescription,
-        weight: contract.weight,
-        quantity: contract.quantity,
-        contract_id: insertedContract.id
+      const formattedData = await Promise.all(contracts.map(async (contract) => {
+        let luggageTrackingID
+        let collisionCheck
+
+        do {
+          luggageTrackingID = generateLuggageTrackingID()
+
+          const { data: existing, error: checkError } = await supabase
+            .from('contract_luggage_information')
+            .select('id')
+            .eq('id', luggageTrackingID)
+
+          if (checkError) throw checkError
+          collisionCheck = existing.length > 0
+        } while (collisionCheck)
+
+        return {
+          id: luggageTrackingID,
+          case_number: contract.caseNumber,
+          luggage_owner: contract.name,
+          contact_number: contract.contact,
+          item_description: contract.itemDescription,
+          weight: contract.weight,
+          quantity: contract.quantity,
+          flight_number: contract.flightNumber,
+          contract_id: insertedContract.id
+        }
       }))
 
       const { error: luggageError } = await supabase
@@ -432,11 +479,6 @@ const MakeContracts = () => {
       ))}
     </Menu>
   ), [showPickupMenu, pickupLocation, pickupError, pickupBays, colors])
-
-  // Calculate total delivery fee based on number of contracts
-  const totalDeliveryFee = useMemo(() => {
-    return deliveryFee * contracts.length;
-  }, [deliveryFee, contracts.length]);
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>

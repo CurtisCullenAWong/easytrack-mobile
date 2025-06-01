@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native'
+import { View, ScrollView, StyleSheet, RefreshControl, Image } from 'react-native'
 import { Text, Card, Divider, useTheme, Appbar, Button, Portal, Dialog, TextInput } from 'react-native-paper'
 import { useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../../../../lib/supabaseAdmin'
@@ -30,7 +30,8 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
                 contract_status:contract_status_id(*),
                 pickup_location,
                 current_location,
-                drop_off_location
+                drop_off_location,
+                payment:payment_id(*)
             `)
             .eq('id', id)
             .single()
@@ -283,7 +284,18 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
                                 (1 - (contractData.discount || 0) / 100))}
                         </Text>
                     </View>
-
+                    <View style={styles.infoRow}>
+                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Remarks:</Text>
+                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} numberOfLines={3} ellipsizeMode="tail">
+                            {contractData.remarks || 'No remarks'}
+                        </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Payment ID:</Text>
+                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable>
+                            {contractData.payment_id || 'Not set'}
+                        </Text>
+                    </View>
                     <View style={styles.adminActions}>
                         <Button
                             mode="outlined"
@@ -293,8 +305,10 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
                             contentStyle={styles.buttonContent}
                             labelStyle={[styles.buttonLabel, { color: colors.primary }]}
                         >
-                            Add Surcharge
+                            Adjust Surcharge
                         </Button>
+                    </View>
+                    <View style={styles.adminActions}>
                         <Button
                             mode="outlined"
                             icon="minus"
@@ -303,8 +317,40 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
                             contentStyle={styles.buttonContent}
                             labelStyle={[styles.buttonLabel, { color: colors.primary }]}
                         >
-                            Add Discount
+                            Adjust Discount
                         </Button>
+                    </View>
+                    <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
+                        Passenger Information
+                    </Text>
+                    <Divider style={{ marginBottom: 10 }} />
+
+                    <View style={styles.imageSection}>
+                        <View style={[styles.imageContainer, { backgroundColor: colors.surfaceVariant }]}>
+                            <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant, marginBottom: 8 }]}>Passenger ID</Text>
+                            {contractData.passenger_id ? (
+                                <Image
+                                    source={{ uri: contractData.passenger_id }}
+                                    style={styles.landscapeImage}
+                                    resizeMode="contain"
+                                />
+                            ) : (
+                                <Text style={[fonts.bodyMedium, { color: colors.onSurfaceVariant }]}>No ID image available</Text>
+                            )}
+                        </View>
+
+                        <View style={[styles.imageContainer, { backgroundColor: colors.surfaceVariant }]}>
+                            <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant, marginBottom: 8 }]}>Passenger Form</Text>
+                            {contractData.passenger_form ? (
+                                <Image
+                                    source={{ uri: contractData.passenger_form }}
+                                    style={styles.portraitImage}
+                                    resizeMode="contain"
+                                />
+                            ) : (
+                                <Text style={[fonts.bodyMedium, { color: colors.onSurfaceVariant }]}>No form image available</Text>
+                            )}
+                        </View>
                     </View>
 
                     <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
@@ -340,6 +386,10 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
                             <View style={styles.infoRow}>
                                 <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Owner:</Text>
                                 <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{luggage.luggage_owner || 'N/A'}</Text>
+                            </View>
+                            <View style={styles.infoRow}>
+                                <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Flight Number:</Text>
+                                <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{luggage.flight_number || 'N/A'}</Text>
                             </View>
                             <View style={styles.infoRow}>
                                 <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Quantity:</Text>
@@ -515,6 +565,29 @@ const styles = StyleSheet.create({
     buttonLabel: {
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    imageSection: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 16,
+        marginBottom: 16,
+    },
+    imageContainer: {
+        flex: 1,
+        minWidth: 300,
+        borderRadius: 8,
+        padding: 16,
+        alignItems: 'center',
+    },
+    landscapeImage: {
+        width: '100%',
+        height: 200,
+        borderRadius: 8,
+    },
+    portraitImage: {
+        width: 200,
+        height: 300,
+        borderRadius: 8,
     },
 })
 

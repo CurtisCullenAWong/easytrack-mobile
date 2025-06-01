@@ -26,7 +26,8 @@ const ContractDetails = ({ navigation, route }) => {
                 contract_status:contract_status_id(*),
                 pickup_location,
                 current_location,
-                drop_off_location
+                drop_off_location,
+                payment:payment_id(*)
             `)
             .eq('id', id)
             .single()
@@ -323,6 +324,10 @@ const ContractDetails = ({ navigation, route }) => {
                                 <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{luggage.luggage_owner || 'N/A'}</Text>
                             </View>
                             <View style={styles.infoRow}>
+                                <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Flight Number:</Text>
+                                <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{luggage.flight_number || 'N/A'}</Text>
+                            </View>
+                            <View style={styles.infoRow}>
                                 <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Quantity:</Text>
                                 <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable>{luggage.quantity || 'N/A'}</Text>
                             </View>
@@ -381,6 +386,31 @@ const ContractDetails = ({ navigation, route }) => {
                             <Text style={[fonts.bodyMedium, { color: colors.error }]}>{formatDate(contractData.cancelled_at)}</Text>
                         </View>
                     )}
+
+                    <View style={styles.infoRow}>
+                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Remarks:</Text>
+                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} numberOfLines={3} ellipsizeMode="tail">
+                            {contractData.remarks || 'No remarks'}
+                        </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Payment ID:</Text>
+                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable>
+                            {contractData.payment_id || 'Not set'}
+                        </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Passenger ID:</Text>
+                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable>
+                            {contractData.passenger_id || 'Not set'}
+                        </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Passenger Form:</Text>
+                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} numberOfLines={3} ellipsizeMode="tail">
+                            {contractData.passenger_form || 'Not set'}
+                        </Text>
+                    </View>
                 </Card.Content>
             </Card>
         </ScrollView>

@@ -24,6 +24,7 @@ import UserManagement from '../screens/admin/UserManagement'
 import TransactionManagement from '../screens/admin/TransactionManagement'
 import ContractDetailsAdmin from '../screens/admin/subscreen/ContractDetailsAdmin'
 import AdminTrackLuggage from '../screens/admin/AdminTrackLuggage'
+import BookingHistoryAdmin from '../screens/admin/subscreen/BookingHistoryAdmin'
 import AddAccount from '../screens/admin/subscreen/AddAccount'
 import ViewAccountScreen from '../screens/admin/subscreen/ViewAccountScreen'
 import DeliveryRates from '../screens/admin/DeliveryRates'
@@ -36,6 +37,7 @@ import AirlineBookingManagement from '../screens/airline/BookingManagement'
 // Delivery Screens
 import DeliveryHome from '../screens/delivery/DeliveryHome'
 import DeliveryBookingManagement from '../screens/delivery/BookingManagement'
+import DeliveryConfirmation from '../screens/delivery/subscreen/DeliveryConfirmation'
 
 // Import Navigators
 import AdminNavigator from './AdminNavigator'
@@ -56,6 +58,7 @@ const AdminDrawer = () => (
       <Drawer.Screen name="TransactionManagement" component={TransactionManagement} />
       <Drawer.Screen name="ContractDetailsAdmin" component={ContractDetailsAdmin} />
       <Drawer.Screen name="AdminTrackLuggage" component={AdminTrackLuggage} />
+      <Drawer.Screen name="BookingHistoryAdmin" component={BookingHistoryAdmin} />
       <Drawer.Screen name="DeliveryRates" component={DeliveryRates} />
       <Drawer.Screen
         name="AddAccount"
@@ -113,6 +116,7 @@ const DeliveryDrawer = () => (
       <Drawer.Screen name="BookingManagement" component={DeliveryBookingManagement} />
       <Drawer.Screen name="ContractDetails" component={ContractDetails} />
       <Drawer.Screen name="CheckLocation" component={CheckLocation} />
+      <Drawer.Screen name="DeliveryConfirmation" component={DeliveryConfirmation} />
 
       {/* SHARED SCREENS */}
       <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />

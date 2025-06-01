@@ -20,20 +20,20 @@ const generateTransactionReportHTML = (transactions, summary, date, time) => {
   const generatedDateTime = `${date} ${time}`
 
   // Calculate total amount
-  const totalAmount = transactions.reduce((sum, transaction) => sum + (transaction.total_amount || 0), 0)
+  const totalAmount = transactions.reduce((sum, transaction) => sum + (transaction.amount_per_passenger || 0), 0)
 
   // Format transactions for the table
   const formattedTransactions = transactions.map((transaction, index) => `
     <tr>
       <td>${index + 1}</td>
       <td>${transaction.id}</td>
-      <td>${transaction.airline_name}</td>
+      <td>${transaction.luggage_owner || 'N/A'}</td>
       <td>${transaction.flight_number || 'N/A'}</td>
       <td>${transaction.drop_off_location}</td>
-      <td>${transaction.created_at}</td>
+      <td>${transaction.completion_date}</td>
       <td>${transaction.status}</td>
-      <td class="amount">₱${transaction.total_amount.toFixed(2)}</td>
-      <td>${transaction.remarks || ''}</td>
+      <td class="amount">₱${transaction.amount_per_passenger.toFixed(2)}</td>
+      <td>${transaction.remarks || ' '}</td>
     </tr>
   `).join('')
 
@@ -63,16 +63,19 @@ const generateTransactionReportHTML = (transactions, summary, date, time) => {
             width: 100%; 
             border-collapse: collapse;
             margin-top: 10px;
-            font-size: 9px;
+            font-size: 7px;
           }
           th, td { 
             border: 1px solid #000; 
-            padding: 3px; 
+            padding: 2px; 
             text-align: left;
+            word-wrap: break-word;
+            max-width: 80px;
           }
           th { 
             background-color: #f5f5f5;
             font-weight: bold;
+            text-align: center;
           }
           .footer {
             margin-top: 10px;
@@ -113,21 +116,20 @@ const generateTransactionReportHTML = (transactions, summary, date, time) => {
             <tr>
               <th>No.</th>
               <th>Tracking ID</th>
-              <th>NAME</th>
-              <th>FLIGHT No.</th>
-              <th>ADDRESS</th>
-              <th>DATE RECEIVED</th>
-              <th>STATUS</th>
-              <th>AMOUNT</th>
-              <th>REMARKS</th>
+              <th>Luggage Owner</th>
+              <th>Flight No.</th>
+              <th>Address</th>
+              <th>Date Received</th>
+              <th>Status</th>
+              <th>Amount</th>
+              <th>Remarks</th>
             </tr>
           </thead>
           <tbody>
             ${formattedTransactions}
             <tr class="total-row">
-              <td colspan="7">TOTAL</td>
+              <td colspan="8">TOTAL</td>
               <td class="amount">₱${totalAmount.toFixed(2)}</td>
-              <td></td>
             </tr>
           </tbody>
         </table>
@@ -138,7 +140,7 @@ const generateTransactionReportHTML = (transactions, summary, date, time) => {
           </div>
           <div class="footer-line2">
             <div>AIRLINE'S REPRESENTATIVE</div>
-            <div>*************SUBMITTED ALL ORIGINAL SIGNED PIR*****</div>
+            <div>****************************************************SUBMITTED ALL ORIGINAL SIGNED PIR****************************************************</div>
           </div>
           <div class="footer-line3">
             Total PIR submitted: ${transactions.length}
