@@ -14,12 +14,12 @@ import {
 } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabaseAdmin'
-import useSnackbar from '../../../components/hooks/useSnackbar'
+import useSnackbar from '../../hooks/useSnackbar'
 
 const COLUMN_WIDTH = 180
 const FULL_NAME_WIDTH = 200
 
-const AssignLuggage = ({ navigation }) => {
+const AdminBookingManagement = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
@@ -202,7 +202,7 @@ const AssignLuggage = ({ navigation }) => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      <Header navigation={navigation} title="Luggage Management" />
+      <Header navigation={navigation} title="Booking Management" />
       {SnackbarElement}
 
       <View style={styles.searchActionsRow}>
@@ -215,7 +215,8 @@ const AssignLuggage = ({ navigation }) => {
       </View>
 
       <View style={styles.buttonContainer}>
-        <View style={[styles.buttonContainer1]}>
+        <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Filter by:</Text>
+        <View style={styles.menuAnchor}>
           <Menu
             visible={filterMenuVisible}
             onDismiss={() => setFilterMenuVisible(false)}
@@ -224,14 +225,14 @@ const AssignLuggage = ({ navigation }) => {
                 mode="contained"
                 icon="filter-variant"
                 onPress={() => setFilterMenuVisible(true)}
-                style={[styles.button, { borderColor: colors.primary, minWidth: 'auto'}]}
+                style={[styles.button, { borderColor: colors.primary, flex: 1 }]}
                 contentStyle={styles.buttonContent}
                 labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
               >
                 {filterOptions.find(opt => opt.value === searchColumn)?.label}
               </Button>
             }
-            contentStyle={{ backgroundColor: colors.surface }}
+            contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
           >
             {filterOptions.map(option => (
               <Menu.Item
@@ -462,12 +463,21 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
     marginHorizontal: 16,
-    gap: 8,
+    gap: 10,
   },
-  buttonContainer1: {
-    marginHorizontal: 'auto'
+  filterLabel: {
+    marginRight: 8,
+  },
+  menuAnchor: {
+    flex: 1,
+    position: 'relative',
+  },
+  menuContent: {
+    width: '100%',
+    left: 0,
+    right: 0,
   },
   button: {
     marginVertical: 10,
@@ -486,7 +496,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 16,
     borderRadius: 8,
-    minHeight: 'auto',
+    minHeight: '70%',
     overflow: 'hidden',
   },
   table: {
@@ -561,8 +571,8 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
 })
 
-export default AssignLuggage
+export default AdminBookingManagement

@@ -210,7 +210,8 @@ const UserManagement = ({ navigation }) => {
       </View>
 
       <View style={styles.buttonContainer}>
-        <View style={[styles.buttonContainer1]}>
+        <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Filter by:</Text>
+        <View style={styles.menuAnchor}>
           <Menu
             visible={filterMenuVisible}
             onDismiss={() => setFilterMenuVisible(false)}
@@ -219,14 +220,14 @@ const UserManagement = ({ navigation }) => {
                 mode="contained"
                 icon="filter-variant"
                 onPress={() => setFilterMenuVisible(true)}
-                style={[styles.button, { borderColor: colors.primary, minWidth: 'auto'}]}
+                style={[styles.button, { borderColor: colors.primary, flex: 1 }]}
                 contentStyle={styles.buttonContent}
                 labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
               >
                 {filterOptions.find(opt => opt.value === searchColumn)?.label}
               </Button>
             }
-            contentStyle={{ backgroundColor: colors.surface }}
+            contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
           >
             {filterOptions.map(option => (
               <Menu.Item
@@ -272,24 +273,24 @@ const UserManagement = ({ navigation }) => {
         <View style={styles.tableContainer}>
           <ScrollView horizontal>
             <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
-              <DataTable.Header style={[styles.table, { backgroundColor: colors.surfaceVariant, alignItems: 'center' }]}>
-                <DataTable.Title style={{ width: AVATAR_COLUMN_WIDTH, justifyContent: 'center' }}>
-                  <Text style={[{ color: colors.onSurface }, fonts.labelLarge]}>Avatar</Text>
+              <DataTable.Header style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
+                <DataTable.Title style={{ width: AVATAR_COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
+                  <Text style={[styles.headerText, { color: colors.onSurface }]}>Avatar</Text>
                 </DataTable.Title>
                 {columns.map(({ key, label, width }) => (
                   <DataTable.Title
                     key={key}
-                    style={{ width: width || COLUMN_WIDTH, justifyContent: 'center' }}
+                    style={{ width: width || COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}
                     onPress={() => handleSort(key)}
                   >
                     <View style={styles.sortableHeader}>
-                      <Text style={[{ color: colors.onSurface }, fonts.labelLarge]}>{label}</Text>
+                      <Text style={[styles.headerText, { color: colors.onSurface }]}>{label}</Text>
                       <Text style={[styles.sortIcon, { color: colors.onSurface }]}>{getSortIcon(key)}</Text>
                     </View>
                   </DataTable.Title>
                 ))}
-                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center' }} numeric>
-                  <Text style={[{ color: colors.onSurface }, fonts.labelLarge]}>Actions</Text>
+                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
+                  <Text style={[styles.headerText, { color: colors.onSurface }]}>Actions</Text>
                 </DataTable.Title>
               </DataTable.Header>
 
@@ -304,7 +305,7 @@ const UserManagement = ({ navigation }) => {
               ) : (
                 paginatedUsers.map(user => (
                   <DataTable.Row key={user.id}>
-                    <DataTable.Cell style={{ width: AVATAR_COLUMN_WIDTH, justifyContent: 'center' }}>
+                    <DataTable.Cell style={{ width: AVATAR_COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
                       {user.pfp_id ? (
                         <Avatar.Image size={40} source={{ uri: user.pfp_id }} />
                       ) : (
@@ -324,12 +325,12 @@ const UserManagement = ({ navigation }) => {
                     ].map(({ value, width }, idx) => (
                       <DataTable.Cell
                         key={idx}
-                        style={{ width, justifyContent: 'center', paddingVertical: 8 }}
+                        style={{ width, justifyContent: 'center', paddingVertical: 12 }}
                       >
                         <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>{value}</Text>
                       </DataTable.Cell>
                     ))}
-                    <DataTable.Cell numeric style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 8 }}>
+                    <DataTable.Cell numeric style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
                       <Menu
                         visible={actionMenuVisible === user.id}
                         onDismiss={() => setActionMenuVisible(null)}
@@ -477,11 +478,21 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
     marginHorizontal: 16,
+    gap: 10,
   },
-  buttonContainer1: {
-    marginHorizontal:'auto'
+  filterLabel: {
+    marginRight: 8,
+  },
+  menuAnchor: {
+    flex: 1,
+    position: 'relative',
+  },
+  menuContent: {
+    width: '100%',
+    left: 0,
+    right: 0,
   },
   button: {
     marginVertical: 10,
@@ -500,7 +511,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 16,
     borderRadius: 8,
-    minHeight: 'auto',
+    minHeight: '60%',
     overflow: 'hidden',
   },
   table: {
@@ -535,6 +546,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-evenly',
     borderTopWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.12)',
+  },
+  tableHeader: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.12)',
+  },
+  headerText: {
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 })
 

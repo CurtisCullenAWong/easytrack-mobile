@@ -15,7 +15,7 @@ const ADMIN_SECTIONS = [
     icon: 'package',
     items: [
       { icon: 'account-group-outline', label: 'User Management', screen: 'UserManagement' },
-      { icon: 'map-marker-path', label: 'Luggage Management', screen: 'AdminTrackLuggage' },
+      { icon: 'map-marker-path', label: 'Booking Management', screen: 'AdminBookingManagement' },
       { icon: 'bank-transfer', label: 'Transaction Management', screen: 'TransactionManagement' },
       { icon: 'currency-php', label: 'Delivery Rates', screen: 'DeliveryRates' },
     ],
@@ -26,7 +26,7 @@ const ADMIN_SECTIONS = [
     icon: 'chart-bar',
     items: [
       { icon: 'credit-card-clock-outline', label: 'Transaction History', screen: 'TransactionHistory' },
-      { icon: 'history', label: 'Booking History (Completed)', screen: 'BookingHistoryAdmin' },
+      { icon: 'history', label: 'Booking History (Completed)', screen: 'AdminBookingHistory' },
       { icon: 'chart-line', label: 'Performance Statistics', screen: 'PerformanceStatistics' },
     ],
   },

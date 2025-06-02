@@ -335,7 +335,8 @@ const TransactionManagement = ({ navigation }) => {
       </View>
 
       <View style={styles.buttonContainer}>
-        <View style={[styles.buttonContainer1]}>
+        <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Filter by:</Text>
+        <View style={styles.menuAnchor}>
           <Menu
             visible={filterMenuVisible}
             onDismiss={() => setFilterMenuVisible(false)}
@@ -344,14 +345,14 @@ const TransactionManagement = ({ navigation }) => {
                 mode="contained"
                 icon="filter-variant"
                 onPress={() => setFilterMenuVisible(true)}
-                style={[styles.button, { borderColor: colors.primary, minWidth: 'auto'}]}
+                style={[styles.button, { borderColor: colors.primary, flex: 1 }]}
                 contentStyle={styles.buttonContent}
                 labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
               >
                 {filterOptions.find(opt => opt.value === searchColumn)?.label}
               </Button>
             }
-            contentStyle={{ backgroundColor: colors.surface }}
+            contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
           >
             {filterOptions.map(option => (
               <Menu.Item
@@ -375,12 +376,12 @@ const TransactionManagement = ({ navigation }) => {
           </Menu>
         </View>
       </View>
-      <View style={styles.summaryButtonsContainer}>
-        <Button
+      <View style={styles.buttonContainer}>
+      <Button
           mode="contained"
           icon="file-document-outline"
           onPress={handleGenerateAllSummary}
-          style={[styles.button]}
+          style={[styles.button, { width: '100%' }]}
           contentStyle={styles.buttonContent}
           labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
         >
@@ -707,31 +708,40 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
     marginHorizontal: 16,
-    gap:8,
+    gap: 10,
   },
-  buttonContainer1: {
-    marginHorizontal:'auto'
+  filterLabel: {
+    marginRight: 8,
+  },
+  menuAnchor: {
+    flex: 1,
+    position: 'relative',
+  },
+  menuContent: {
+    width: '100%',
+    left: 0,
+    right: 0,
   },
   button: {
     marginVertical: 10,
-    height: 40,
+    height: 48,
     borderRadius: 8,
   },
   buttonContent: {
-    height: 40,
+    height: 48,
   },
   buttonLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   tableContainer: {
     flex: 1,
     marginHorizontal: 16,
     marginBottom: 16,
     borderRadius: 8,
-    minHeight: 'auto',
+    minHeight: '60%',
     overflow: 'hidden',
   },
   table: {
@@ -740,11 +750,9 @@ const styles = StyleSheet.create({
   sortableHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
   },
   sortIcon: {
-    fontSize: 12,
+    marginLeft: 4,
   },
   actionButton: {
     borderRadius: 8,
@@ -811,6 +819,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 16,
     width: '100%',
+    marginBottom: 16,
   },
   pdfButton: {
     minWidth: 120,
@@ -842,12 +851,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontSize: 14,
-    fontWeight: '600',
-  },
-  summaryButtonsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'center'
+    fontWeight: 'bold',
   },
 })
 

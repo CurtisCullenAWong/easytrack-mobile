@@ -50,7 +50,7 @@ const Header = ({ navigation, title }) => {
                     iconColor={colors.primary}
                     onPress={() => navigation.openDrawer()}
                 />
-                <Text style={[styles.title, fonts.headlineSmall, {color:colors.onBackground, fontWeight: 'bold' }]}>{title}</Text>
+                <Text style={[styles.title, fonts.titleLarge, {color:colors.onBackground, fontWeight: 'bold' }]}>{title}</Text>
                 <TouchableOpacity onPress={handleProfilePress}>
                     {profilePicture ? (
                         <Avatar.Image 

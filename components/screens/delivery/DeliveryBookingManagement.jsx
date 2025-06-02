@@ -5,7 +5,7 @@ import Header from '../../customComponents/Header'
 import AcceptContracts from './subscreen/AcceptContracts'
 import ContractsInTransit from './subscreen/ContractsInTransit'
 
-const BookingManagement = ({ navigation }) => {
+const DeliveryBookingManagement = ({ navigation }) => {
   const { colors } = useTheme()
   const [mode, setMode] = useState(1)
   return (
@@ -49,4 +49,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default BookingManagement
+export default DeliveryBookingManagement

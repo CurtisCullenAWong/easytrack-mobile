@@ -21,7 +21,7 @@ const AdminHome = ({ navigation }) => {
 
   const buttons = [
     { label: 'User Management', icon: 'account-group', screen: 'UserManagement' },
-    { label: 'Luggage Management', icon: 'map-marker-path', screen: 'AdminTrackLuggage' },
+    { label: 'Booking Management', icon: 'map-marker-path', screen: 'AdminBookingManagement' },
     { label: 'Transaction Management', icon: 'bank-transfer', screen: 'TransactionManagement' },
   ]
 

@@ -23,20 +23,21 @@ import AdminHome from '../screens/admin/AdminHome'
 import UserManagement from '../screens/admin/UserManagement'
 import TransactionManagement from '../screens/admin/TransactionManagement'
 import ContractDetailsAdmin from '../screens/admin/subscreen/ContractDetailsAdmin'
-import AdminTrackLuggage from '../screens/admin/AdminTrackLuggage'
-import BookingHistoryAdmin from '../screens/admin/subscreen/BookingHistoryAdmin'
+import AdminBookingManagement from '../screens/admin/AdminBookingManagement'
+import AdminBookingHistory from '../screens/admin/AdminBookingHistory'
 import AddAccount from '../screens/admin/subscreen/AddAccount'
 import ViewAccountScreen from '../screens/admin/subscreen/ViewAccountScreen'
 import DeliveryRates from '../screens/admin/DeliveryRates'
 import LocationSelection from '../screens/airline/subscreen/LocationSelection'
+
 // Airline Screens
 import AirlineHome from '../screens/airline/AirlineHome'
 import TrackLuggage from '../screens/airline/AirlineTrackLuggage'
-import AirlineBookingManagement from '../screens/airline/BookingManagement'
+import AirlineBookingManagement from '../screens/airline/AirlineBookingManagement'
 
 // Delivery Screens
 import DeliveryHome from '../screens/delivery/DeliveryHome'
-import DeliveryBookingManagement from '../screens/delivery/BookingManagement'
+import DeliveryBookingManagement from '../screens/delivery/DeliveryBookingManagement'
 import DeliveryConfirmation from '../screens/delivery/subscreen/DeliveryConfirmation'
 
 // Import Navigators
@@ -57,8 +58,8 @@ const AdminDrawer = () => (
       <Drawer.Screen name="UserManagement" component={UserManagement} />
       <Drawer.Screen name="TransactionManagement" component={TransactionManagement} />
       <Drawer.Screen name="ContractDetailsAdmin" component={ContractDetailsAdmin} />
-      <Drawer.Screen name="AdminTrackLuggage" component={AdminTrackLuggage} />
-      <Drawer.Screen name="BookingHistoryAdmin" component={BookingHistoryAdmin} />
+      <Drawer.Screen name="AdminBookingManagement" component={AdminBookingManagement} />
+      <Drawer.Screen name="AdminBookingHistory" component={AdminBookingHistory} />
       <Drawer.Screen name="DeliveryRates" component={DeliveryRates} />
       <Drawer.Screen
         name="AddAccount"
