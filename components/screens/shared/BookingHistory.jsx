@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react'
-import { View, FlatList, StyleSheet } from 'react-native'
-import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, SegmentedButtons } from 'react-native-paper'
+import { View, ScrollView, StyleSheet, RefreshControl, Dimensions } from 'react-native'
+import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, DataTable, Portal, Modal, SegmentedButtons } from 'react-native-paper'
 import { supabase } from '../../../lib/supabase'
 import useSnackbar from '../../hooks/useSnackbar'
 import Header from '../../customComponents/Header'
+
+const COLUMN_WIDTH = 180
+const ID_COLUMN_WIDTH = 120
+const LOCATION_COLUMN_WIDTH = 200
+const TIMELINE_COLUMN_WIDTH = 300
+const STATUS_COLUMN_WIDTH = 150
 
 // Contract Card Component
 const ContractCard = ({ contract, colors, fonts, handleShowDetails, formatDate }) => {    
@@ -329,14 +335,58 @@ const ContractList = ({ navigation, statusIds, emptyMessage, contracts, loading,
 
 // Main BookingHistory Component
 const BookingHistory = ({ navigation }) => {
-  const { colors } = useTheme()
-  const [mode, setMode] = useState('delivered')
+  const { colors, fonts } = useTheme()
   const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [userRole, setUserRole] = useState(null)
+  const [page, setPage] = useState(0)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [sortColumn, setSortColumn] = useState('created_at')
+  const [sortDirection, setSortDirection] = useState('descending')
+  const [showStatusMenu, setShowStatusMenu] = useState(false)
+  const [statusFilter, setStatusFilter] = useState('all')
+
+  useEffect(() => {
+    fetchUserRole()
+  }, [])
 
   useEffect(() => {
     fetchContracts()
-  }, [mode])
+  }, [statusFilter, searchQuery])
+
+  const fetchUserRole = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
+
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role_id')
+        .eq('id', user.id)
+        .single()
+
+      if (error) throw error
+      setUserRole(profile.role_id)
+    } catch (error) {
+      console.error('Error fetching user role:', error.message)
+    }
+  }
+
+  const getStatusOptions = () => {
+    const baseOptions = [
+      { label: 'All', value: 'all' },
+      { label: 'Delivered', value: '5' },
+      { label: 'Failed', value: '6' },
+    ]
+    
+    if (userRole !== 2) {
+      baseOptions.splice(2, 0, { label: 'Cancelled', value: '2' })
+    }
+    
+    return baseOptions
+  }
 
   const fetchContracts = async () => {
     try {
@@ -344,9 +394,7 @@ const BookingHistory = ({ navigation }) => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
-      const statusIds = mode === 'delivered' ? [5] : mode === 'cancelled' ? [2] : [6]
-
-      const { data, error } = await supabase
+      let query = supabase
         .from('contract')
         .select(`
           *,
@@ -367,156 +415,390 @@ const BookingHistory = ({ navigation }) => {
           )
         `)
         .or(`airline_id.eq.${user.id},delivery_id.eq.${user.id}`)
-        .in('contract_status_id', statusIds)
         .order('created_at', { ascending: false })
+
+      // Apply status filter
+      if (statusFilter !== 'all') {
+        query = query.eq('contract_status_id', statusFilter)
+      }
+
+      // Apply search filter
+      if (searchQuery) {
+        query = query.or(`id.ilike.%${searchQuery}%`)
+      }
+
+      const { data, error } = await query
 
       if (error) throw error
 
       setContracts(data || [])
     } catch (error) {
-      showSnackbar(error)
+      console.error('Error fetching contracts:', error.message)
     } finally {
       setLoading(false)
     }
   }
 
+  const onRefresh = async () => {
+    setRefreshing(true)
+    await fetchContracts()
+    setRefreshing(false)
+  }
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Not set'
+    return new Date(dateString).toLocaleString('en-PH', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'Asia/Manila',
+    })
+  }
+
+  const handleSort = (column) => {
+    setSortDirection(prev =>
+      sortColumn === column && prev === 'ascending' ? 'descending' : 'ascending'
+    )
+    setSortColumn(column)
+  }
+
+  const getSortIcon = (column) =>
+    sortColumn === column ? (sortDirection === 'ascending' ? '▲' : '▼') : ''
+
+  const filteredAndSortedContracts = contracts
+    .filter(contract => {
+      const searchValue = String(contract.id || '').toLowerCase()
+      const query = searchQuery.toLowerCase()
+      return searchValue.includes(query)
+    })
+    .sort((a, b) => {
+      const valA = a[sortColumn]
+      const valB = b[sortColumn]
+
+      if (['created_at', 'delivered_at', 'cancelled_at'].includes(sortColumn)) {
+        if (!valA) return sortDirection === 'ascending' ? -1 : 1
+        if (!valB) return sortDirection === 'ascending' ? 1 : -1
+        return sortDirection === 'ascending' 
+          ? new Date(valA) - new Date(valB)
+          : new Date(valB) - new Date(valA)
+      }
+
+      if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
+      if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
+      return 0
+    })
+
+  const from = page * itemsPerPage
+  const to = Math.min((page + 1) * itemsPerPage, filteredAndSortedContracts.length)
+  const paginatedContracts = filteredAndSortedContracts.slice(from, to)
+
+  const columns = [
+    { key: 'id', label: 'Contract ID', width: ID_COLUMN_WIDTH },
+    { key: 'pickup_location', label: 'Pickup Location', width: LOCATION_COLUMN_WIDTH },
+    { key: 'drop_off_location', label: 'Drop-off Location', width: LOCATION_COLUMN_WIDTH },
+    { key: 'status', label: 'Status', width: STATUS_COLUMN_WIDTH },
+    { key: 'timeline', label: 'Timeline', width: TIMELINE_COLUMN_WIDTH },
+  ]
+
+  const getStatusColor = (statusId) => {
+    const statusColors = {
+      1: colors.primary,    // Pickup
+      2: colors.error,      // Cancelled
+      3: colors.primary,    // Accepted
+      4: colors.primary,    // In Transit
+      5: colors.primary,    // Delivered
+      6: colors.error,      // Failed
+    }
+    return statusColors[statusId] || colors.primary
+  }
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <ScrollView 
+      style={{ flex: 1, backgroundColor: colors.background }}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+      }
+    >
       <Header navigation={navigation} title="Booking History" />
 
-      <View style={styles.segmentContainer}>
-        <SegmentedButtons
-          value={mode}
-          onValueChange={setMode}
-          buttons={[
-            { value: 'delivered', label: 'Delivered' },
-            { value: 'cancelled', label: 'Cancelled' },
-            { value: 'failed', label: 'Failed' },
-          ]}
-          style={{ marginHorizontal: 16 }}
+      <View style={styles.searchActionsRow}>
+        <Searchbar
+          placeholder="Search by Contract ID"
+          onChangeText={setSearchQuery}
+          value={searchQuery}
+          style={[styles.searchbar, { backgroundColor: colors.surface }]}
         />
       </View>
 
-      <View style={styles.content}>
-        {mode === 'delivered' ? (
-          <ContractList 
-            navigation={navigation} 
-            statusIds={[5]} 
-            emptyMessage="No delivered contracts available."
-            contracts={contracts}
-            loading={loading}
-            onRefresh={fetchContracts}
-          />
-        ) : mode === 'cancelled' ? (
-          <ContractList 
-            navigation={navigation} 
-            statusIds={[2]} 
-            emptyMessage="No cancelled contracts available."
-            contracts={contracts}
-            loading={loading}
-            onRefresh={fetchContracts}
-          />
-        ) : (
-          <ContractList 
-            navigation={navigation} 
-            statusIds={[6]} 
-            emptyMessage="No failed contracts available."
-            contracts={contracts}
-            loading={loading}
-            onRefresh={fetchContracts}
-          />
-        )}
+      <View style={styles.buttonContainer}>
+        <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Filter by Status:</Text>
+        <View style={styles.menuAnchor}>
+          <Menu
+            visible={showStatusMenu}
+            onDismiss={() => setShowStatusMenu(false)}
+            anchor={
+              <Button
+                mode="contained"
+                icon="filter-variant"
+                onPress={() => setShowStatusMenu(true)}
+                style={[styles.button, { borderColor: colors.primary, flex: 1 }]}
+                contentStyle={styles.buttonContent}
+                labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
+              >
+                {getStatusOptions().find(opt => opt.value === statusFilter)?.label || 'All'}
+              </Button>
+            }
+            contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+          >
+            {getStatusOptions().map((option) => (
+              <Menu.Item
+                key={option.value}
+                onPress={() => {
+                  setStatusFilter(option.value)
+                  setShowStatusMenu(false)
+                }}
+                title={option.label}
+                titleStyle={[
+                  {
+                    color: statusFilter === option.value
+                      ? colors.primary
+                      : colors.onSurface,
+                  },
+                  fonts.bodyLarge,
+                ]}
+                leadingIcon={statusFilter === option.value ? 'check' : undefined}
+              />
+            ))}
+          </Menu>
+        </View>
       </View>
-    </View>
+
+      {loading ? (
+        <Text style={[styles.loadingText, { color: colors.onSurface }, fonts.bodyMedium]}>
+          Loading bookings...
+        </Text>
+      ) : (
+        <View style={styles.tableContainer}>
+          <ScrollView horizontal>
+            <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
+              <DataTable.Header style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
+                {columns.map(({ key, label, width }) => (
+                  <DataTable.Title
+                    key={key}
+                    style={{ width: width || COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}
+                    onPress={() => handleSort(key)}
+                  >
+                    <View style={styles.sortableHeader}>
+                      <Text style={[styles.headerText, { color: colors.onSurface }]}>{label}</Text>
+                      <Text style={[styles.sortIcon, { color: colors.onSurface }]}>{getSortIcon(key)}</Text>
+                    </View>
+                  </DataTable.Title>
+                ))}
+                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
+                  <Text style={[styles.headerText, { color: colors.onSurface }]}>Actions</Text>
+                </DataTable.Title>
+              </DataTable.Header>
+
+              {filteredAndSortedContracts.length === 0 ? (
+                <DataTable.Row>
+                  <DataTable.Cell style={styles.noDataCell}>
+                    <Text style={[{ color: colors.onSurface, textAlign: 'center' }, fonts.bodyMedium]}>
+                      No bookings found
+                    </Text>
+                  </DataTable.Cell>
+                </DataTable.Row>
+              ) : (
+                paginatedContracts.map((contract) => (
+                  <DataTable.Row key={contract.id}>
+                    {columns.map(({ key, width }) => (
+                      <DataTable.Cell
+                        key={key}
+                        style={{ width: width || COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}
+                      >
+                        {key === 'status' ? (
+                          <Text style={[styles.statusText, { color: getStatusColor(contract.contract_status_id) }]}>
+                            {contract.contract_status?.status_name}
+                          </Text>
+                        ) : key === 'timeline' ? (
+                          <View style={styles.timelineContainer}>
+                            <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>
+                              Created: {formatDate(contract.created_at)}
+                            </Text>
+                            {contract.pickup_at && (
+                              <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>
+                                Pickup: {formatDate(contract.pickup_at)}
+                              </Text>
+                            )}
+                            {contract.delivered_at && (
+                              <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>
+                                Delivered: {formatDate(contract.delivered_at)}
+                              </Text>
+                            )}
+                            {contract.cancelled_at && (
+                              <Text style={[{ color: colors.error }, fonts.bodyMedium]}>
+                                Cancelled: {formatDate(contract.cancelled_at)}
+                              </Text>
+                            )}
+                          </View>
+                        ) : (
+                          <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]} selectable>
+                            {contract[key] || 'N/A'}
+                          </Text>
+                        )}
+                      </DataTable.Cell>
+                    ))}
+                    <DataTable.Cell style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
+                      <Button
+                        mode="outlined"
+                        onPress={() => navigation.navigate('ContractDetails', { id: contract.id })}
+                        style={[styles.actionButton, { borderColor: colors.primary }]}
+                        contentStyle={styles.buttonContent}
+                        labelStyle={[styles.buttonLabel, { color: colors.primary }]}
+                      >
+                        View Details
+                      </Button>
+                    </DataTable.Cell>
+                  </DataTable.Row>
+                ))
+              )}
+            </DataTable>
+          </ScrollView>
+
+          <View style={[styles.paginationContainer, { backgroundColor: colors.surface }]}>
+            <DataTable.Pagination
+              page={page}
+              numberOfPages={Math.ceil(filteredAndSortedContracts.length / itemsPerPage)}
+              onPageChange={page => setPage(page)}
+              label={`${from + 1}-${to} of ${filteredAndSortedContracts.length}`}
+              labelStyle={[{ color: colors.onSurface }, fonts.bodyMedium]}
+              showFirstPageButton
+              showLastPageButton
+              showFastPaginationControls
+              numberOfItemsPerPageList={[5, 10, 20, 50]}
+              numberOfItemsPerPage={itemsPerPage}
+              onItemsPerPageChange={setItemsPerPage}
+              selectPageDropdownLabel={'Rows per page'}
+              style={[styles.pagination, { backgroundColor: colors.surfaceVariant }]}
+              theme={{
+                colors: {
+                  onSurface: colors.onSurface,
+                  text: colors.onSurface,
+                  elevation: {
+                    level2: colors.surface,
+                  },
+                },
+                fonts: {
+                  bodyMedium: fonts.bodyMedium,
+                  labelMedium: fonts.labelMedium,
+                },
+              }}
+            />
+          </View>
+        </View>
+      )}
+    </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 2,
-  },
-  segmentContainer: {
-    marginTop: '10%',
-    marginBottom: 5,
-  },
-  content: {
-    flex: 9,
-  },
   searchActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 16,
+    marginTop: 16,
     gap: 10,
   },
   searchbar: {
     flex: 1,
   },
-  buttonGroup: {
-    alignSelf: 'center',
+  buttonContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    gap: 10,
+  },
+  filterLabel: {
+    marginRight: 8,
+  },
+  button: {
+    marginVertical: 10,
+    height: 48,
+    borderRadius: 8,
+  },
+  menuAnchor: {
+    flex: 1,
+    position: 'relative',
+  },
+  menuContent: {
+    width: '100%',
+    left: 0,
+    right: 0,
+  },
+  tableContainer: {
+    flex: 1,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 8,
+    minHeight: '60%',
+    overflow: 'hidden',
+  },
+  table: {
+    flex: 1,
+  },
+  sortableHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sortIcon: {
+    marginLeft: 4,
+  },
+  statusText: {
+    fontWeight: 'bold',
   },
   actionButton: {
     borderRadius: 8,
-    minWidth: 120,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    gap: 10,
+    minWidth: 100,
   },
   buttonContent: {
-    height: 40,
+    height: 48,
   },
-  contractCard: {
-    marginTop: 10,
-    marginBottom: 10,
-    marginHorizontal: 10,
-    borderRadius: 12,
-    elevation: 2,
-  },
-  contractCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  passengerInfoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  avatarImage: {
-    marginRight: 10,
-  },
-  statusContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-  },
-  statusLabel: {
+  buttonLabel: {
+    fontSize: 16,
     fontWeight: 'bold',
   },
-  statusValue: {
-    fontWeight: 'bold',
-  },
-  locationContainer: {
-    paddingVertical: 10,
-  },
-  locationRow: {
-    flexDirection: 'row',
+  noDataCell: {
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 5,
-  },
-  locationTextContainer: {
-    flex: 1,
-    marginLeft: 8,
-  },
-  locationText: {
+    paddingVertical: 16,
     flex: 1,
   },
-  detailsContainer: {
-    marginTop: 10,
-    marginBottom: 10,
+  loadingText: {
+    textAlign: 'center',
+    marginTop: 20,
   },
-  flatListContent: {
-    paddingBottom: 20,
+  paginationContainer: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.12)',
+  },
+  pagination: {
+    justifyContent: 'space-evenly',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.12)',
+  },
+  timelineContainer: {
+    alignItems: 'flex-start',
+    gap: 4,
+  },
+  tableHeader: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.12)',
+  },
+  headerText: {
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 })
 

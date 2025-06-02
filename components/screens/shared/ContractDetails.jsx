@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native'
+import { View, ScrollView, StyleSheet, RefreshControl, Image, Dimensions } from 'react-native'
 import { Text, Card, Divider, useTheme, Appbar, Button } from 'react-native-paper'
 import { useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../../../lib/supabase'
@@ -119,29 +119,6 @@ const ContractDetails = ({ navigation, route }) => {
             timeZone: 'Asia/Manila',
         })
     }
-
-    // const updateLocationInSupabase = async (coords) => {
-    //     if (!coords || !contractData?.id) return
-
-    //     const { latitude, longitude } = coords
-    //     const geoPoint = `SRID=4326;POINT(${longitude} ${latitude})`
-    //     const locationText = `${latitude},${longitude}`
-
-    //     const { error } = await supabase
-    //         .from('contract')
-    //         .update({
-    //             current_location: locationText,
-    //             current_location_geo: geoPoint,
-    //         })
-    //         .eq('id', contractData.id)
-
-    //     if (error) {
-    //         console.log('Failed to update location:', error.message)
-    //     } else {
-    //         console.log('Location forwarded to Supabase!')
-    //     }
-    // }
-
     if (!contractData) {
         return (
             <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -165,66 +142,6 @@ const ContractDetails = ({ navigation, route }) => {
                 <Appbar.BackAction onPress={() => navigation.navigate('BookingManagement')} />
                 <Appbar.Content title="Contract Details" />
             </Appbar.Header>
-        {/* {location && (
-        <>
-            <MapView
-                style={styles.map}
-                initialRegion={{
-                latitude: 14.4776,
-                longitude: 121.0103,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-                }}
-                showsUserLocation={true}                    
-            >
-                <Marker
-                coordinate={{
-                    latitude: location.latitude,
-                    longitude: location.longitude,
-                }}
-                title="You are here"
-                />
-            </MapView>
-            <View style={{ margin: 16 }}>
-            <Button
-                mode="contained"
-                onPress={async () => {
-                try {
-                    if (!location) {
-                        console.log('No location available')
-                        return
-                    }
-
-                    const { latitude, longitude } = location
-
-                    const geoPoint = `SRID=4326;POINT(${longitude} ${latitude})`
-
-                    console.log('Setting current location:', geoPoint)
-
-                    const { data, error } = await supabase
-                        .from('contract') // change this
-                        .update({
-                        current_location_geo: geoPoint
-                        })
-                        .eq('id', contractData.id) // or another identifier
-                        .select('current_location_geo')
-                    if (error) {
-                        console.log('Failed to update location:', error.message)
-                    } else {
-                        console.log('Current location set!', data)
-                        setLocation(location)
-                    }
-                    } catch (err) {
-                    console.error('Unexpected error:', err)
-                    }
-                }}
-            >
-                Set as Current Location
-            </Button>
-            </View>
-        </>
-        )} */}
-            
             <Card style={[styles.card, { backgroundColor: colors.surface }]}>
                 <Card.Content>
                     <Text style={[fonts.titleMedium, { color: colors.primary, marginBottom: 10 }]}>
@@ -401,15 +318,27 @@ const ContractDetails = ({ navigation, route }) => {
                     </View>
                     <View style={styles.infoRow}>
                         <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Passenger ID:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable>
-                            {contractData.passenger_id || 'Not set'}
-                        </Text>
+                        {contractData.passenger_id ? (
+                            <Image
+                                source={{ uri: contractData.passenger_id }}
+                                style={styles.landscapeImage}
+                                resizeMode="contain"
+                            />
+                        ) : (
+                            <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>Not set</Text>
+                        )}
                     </View>
                     <View style={styles.infoRow}>
                         <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Passenger Form:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} numberOfLines={3} ellipsizeMode="tail">
-                            {contractData.passenger_form || 'Not set'}
-                        </Text>
+                        {contractData.passenger_form ? (
+                            <Image
+                                source={{ uri: contractData.passenger_form }}
+                                style={styles.portraitImage}
+                                resizeMode="contain"
+                            />
+                        ) : (
+                            <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>Not set</Text>
+                        )}
                     </View>
                 </Card.Content>
             </Card>
@@ -434,6 +363,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginVertical: 5,
+        alignItems: 'center',
     },
     luggageSection: {
         marginVertical: 8,
@@ -441,6 +371,16 @@ const styles = StyleSheet.create({
     errorText: {
         textAlign: 'center',
         marginTop: 20,
+    },
+    landscapeImage: {
+        width: Dimensions.get('window').width * 0.4,
+        height: 150,
+        borderRadius: 8,
+    },
+    portraitImage: {
+        width: Dimensions.get('window').width * 0.4,
+        height: 300,
+        borderRadius: 8,
     },
 })
 

@@ -24,6 +24,7 @@ import UserManagement from '../screens/admin/UserManagement'
 import TransactionManagement from '../screens/admin/TransactionManagement'
 import ContractDetailsAdmin from '../screens/admin/subscreen/ContractDetailsAdmin'
 import AdminBookingManagement from '../screens/admin/AdminBookingManagement'
+import TransactionSummary from '../screens/admin/TransactionSummary'
 import AdminBookingHistory from '../screens/admin/AdminBookingHistory'
 import AddAccount from '../screens/admin/subscreen/AddAccount'
 import ViewAccountScreen from '../screens/admin/subscreen/ViewAccountScreen'
@@ -57,6 +58,7 @@ const AdminDrawer = () => (
       <Drawer.Screen name="AdminHome" component={AdminHome} />
       <Drawer.Screen name="UserManagement" component={UserManagement} />
       <Drawer.Screen name="TransactionManagement" component={TransactionManagement} />
+      <Drawer.Screen name="TransactionSummary" component={TransactionSummary} />
       <Drawer.Screen name="ContractDetailsAdmin" component={ContractDetailsAdmin} />
       <Drawer.Screen name="AdminBookingManagement" component={AdminBookingManagement} />
       <Drawer.Screen name="AdminBookingHistory" component={AdminBookingHistory} />

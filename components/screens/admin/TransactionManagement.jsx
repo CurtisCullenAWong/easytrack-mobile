@@ -8,14 +8,10 @@ import {
   Text,
   useTheme,
   Menu,
-  Dialog,
-  Portal,
-  TextInput,
-  Checkbox,
+  SegmentedButtons,
 } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabaseAdmin'
-import { printPDF, sharePDF } from '../../../utils/pdfUtils'
 import useSnackbar from '../../../components/hooks/useSnackbar'
 
 const COLUMN_WIDTH = 180
@@ -35,18 +31,11 @@ const TransactionManagement = ({ navigation }) => {
   const [page, setPage] = useState(0)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [refreshing, setRefreshing] = useState(false)
-  const [selectedTransaction, setSelectedTransaction] = useState(null)
-  const [showSurchargeDialog, setShowSurchargeDialog] = useState(false)
-  const [showDiscountDialog, setShowDiscountDialog] = useState(false)
-  const [surchargeAmount, setSurchargeAmount] = useState('')
-  const [discountAmount, setDiscountAmount] = useState('')
-  const [actionMenuVisible, setActionMenuVisible] = useState(false)
-  const [showSummaryDialog, setShowSummaryDialog] = useState(false)
-  const [summaryData, setSummaryData] = useState(null)
+  const [receiptSegment, setReceiptSegment] = useState('pending')
 
   const fetchTransactions = async () => {
     setLoading(true)
-    const { data, error } = await supabase
+    let query = supabase
       .from('contract')
       .select(`
         *,
@@ -74,7 +63,15 @@ const TransactionManagement = ({ navigation }) => {
         )
       `)
       .in('contract_status_id', [5, 6]) // 5 for delivered, 6 for failed
-      .order('created_at', { ascending: false })
+
+    // Add payment_id filter based on segment
+    if (receiptSegment === 'pending') {
+      query = query.is('payment_id', null)
+    } else {
+      query = query.not('payment_id', 'is', null)
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching transactions:', error)
@@ -126,6 +123,7 @@ const TransactionManagement = ({ navigation }) => {
           created_at: transaction.created_at
             ? new Date(transaction.created_at).toLocaleString()
             : 'N/A',
+          payment_id: transaction.payment_id || 'N/A',
         }]
       }
 
@@ -151,6 +149,7 @@ const TransactionManagement = ({ navigation }) => {
           created_at: transaction.created_at
             ? new Date(transaction.created_at).toLocaleString()
             : 'N/A',
+          payment_id: transaction.payment_id || 'N/A',
         }
       })
     })
@@ -162,7 +161,7 @@ const TransactionManagement = ({ navigation }) => {
   useFocusEffect(
     useCallback(() => {
       fetchTransactions()
-    }, [])
+    }, [receiptSegment])
   )
 
   const handleSort = (column) => {
@@ -185,7 +184,7 @@ const TransactionManagement = ({ navigation }) => {
       const valA = a[sortColumn]
       const valB = b[sortColumn]
 
-      if (['created_at', 'updated_at'].includes(sortColumn)) {
+      if (['created_at', 'updated_at', 'completion_date'].includes(sortColumn)) {
         if (valA === 'N/A') return sortDirection === 'ascending' ? -1 : 1
         if (valB === 'N/A') return sortDirection === 'ascending' ? 1 : -1
         if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
@@ -202,17 +201,40 @@ const TransactionManagement = ({ navigation }) => {
   const to = Math.min((page + 1) * itemsPerPage, filteredAndSortedTransactions.length)
   const paginatedTransactions = filteredAndSortedTransactions.slice(from, to)
 
-  const filterOptions = [
-    { label: 'Status', value: 'status' },
-    { label: 'Drop-off Location', value: 'drop_off_location' },
-    { label: 'Airline Name', value: 'airline_name' },
-    { label: 'Delivery Name', value: 'delivery_name' },
-  ]
+  const filterOptions = {
+    pending: [
+      { label: 'Status', value: 'status' },
+      { label: 'Drop-off Location', value: 'drop_off_location' },
+      { label: 'Luggage Owner', value: 'luggage_owner' },
+      { label: 'Contract ID', value: 'id' },
+    ],
+    completed: [
+      { label: 'Invoice No.', value: 'payment_id' },
+      { label: 'Status', value: 'status' },
+      { label: 'Drop-off Location', value: 'drop_off_location' },
+      { label: 'Luggage Owner', value: 'luggage_owner' },
+      { label: 'Contract ID', value: 'id' },
+    ]
+  }
 
   const columns = [
     { key: 'select', label: '', width: 50 },
     { key: 'id', label: 'Contract ID', width: COLUMN_WIDTH },
-    { key: 'luggage_owner', label: 'Luggage Owner', width: COLUMN_WIDTH },
+    { key: 'luggage_owner', label: 'Luggage Owner', width: FULL_NAME_WIDTH },
+    { key: 'drop_off_location', label: 'Address', width: COLUMN_WIDTH },
+    { key: 'completion_date', label: 'Date Received', width: COLUMN_WIDTH },
+    { key: 'status', label: 'Status', width: COLUMN_WIDTH },
+    { key: 'amount_per_passenger', label: 'Amount', width: COLUMN_WIDTH },
+    { key: 'remarks', label: 'Remarks', width: COLUMN_WIDTH },
+    { key: 'created_at', label: 'Created At', width: COLUMN_WIDTH },
+  ]
+
+  // Add payment_id column for completed receipts
+  const completedColumns = [
+    { key: 'select', label: '', width: 50 },
+    { key: 'payment_id', label: 'Invoice No.', width: COLUMN_WIDTH },
+    { key: 'id', label: 'Contract ID', width: COLUMN_WIDTH },
+    { key: 'luggage_owner', label: 'Luggage Owner', width: FULL_NAME_WIDTH },
     { key: 'drop_off_location', label: 'Address', width: COLUMN_WIDTH },
     { key: 'completion_date', label: 'Date Received', width: COLUMN_WIDTH },
     { key: 'status', label: 'Status', width: COLUMN_WIDTH },
@@ -230,40 +252,6 @@ const TransactionManagement = ({ navigation }) => {
     navigation.navigate('ContractDetailsAdmin', { id: transaction.id })
   }
 
-  const handleAddSurcharge = async () => {
-    try {
-      const { error } = await supabase
-        .from('contract')
-        .update({ surcharge: parseFloat(surchargeAmount) })
-        .eq('id', selectedTransaction.id)
-
-      if (error) throw error
-
-      setShowSurchargeDialog(false)
-      setSurchargeAmount('')
-      fetchTransactions()
-    } catch (error) {
-      console.error('Error adding surcharge:', error)
-    }
-  }
-
-  const handleAddDiscount = async () => {
-    try {
-      const { error } = await supabase
-        .from('contract')
-        .update({ discount: parseFloat(discountAmount) })
-        .eq('id', selectedTransaction.id)
-
-      if (error) throw error
-
-      setShowDiscountDialog(false)
-      setDiscountAmount('')
-      fetchTransactions()
-    } catch (error) {
-      console.error('Error adding discount:', error)
-    }
-  }
-
   const formatCurrency = (amount) => {
     return `₱${parseFloat(amount).toFixed(2)}`
   }
@@ -275,8 +263,10 @@ const TransactionManagement = ({ navigation }) => {
   const handleGenerateAllSummary = async () => {
     try {
       const summary = generateSummary(filteredAndSortedTransactions)
-      setSummaryData(summary)
-      setShowSummaryDialog(true)
+      navigation.navigate('TransactionSummary', {
+        summaryData: summary,
+        transactions: filteredAndSortedTransactions
+      })
     } catch (error) {
       console.error('Error generating all summary:', error)
       showSnackbar(`Failed to generate summary: ${error.message}`)
@@ -325,9 +315,25 @@ const TransactionManagement = ({ navigation }) => {
       <Header navigation={navigation} title="Transaction Management" />
       {SnackbarElement}
 
+      <View style={styles.segmentContainer}>
+        <SegmentedButtons
+          value={receiptSegment}
+          onValueChange={(value) => {
+            setReceiptSegment(value)
+            setSearchQuery('')
+            setSearchColumn(value === 'completed' ? 'payment_id' : 'status')
+          }}
+          buttons={[
+            { value: 'pending', label: 'Pending Receipts' },
+            { value: 'completed', label: 'Completed Receipts' },
+          ]}
+          style={{ marginHorizontal: 16 }}
+        />
+      </View>
+
       <View style={styles.searchActionsRow}>
         <Searchbar
-          placeholder={`Search by ${filterOptions.find(opt => opt.value === searchColumn)?.label}`}
+          placeholder={`Search by ${filterOptions[receiptSegment].find(opt => opt.value === searchColumn)?.label}`}
           onChangeText={setSearchQuery}
           value={searchQuery}
           style={[styles.searchbar, { backgroundColor: colors.surface }]}
@@ -349,12 +355,12 @@ const TransactionManagement = ({ navigation }) => {
                 contentStyle={styles.buttonContent}
                 labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
               >
-                {filterOptions.find(opt => opt.value === searchColumn)?.label}
+                {filterOptions[receiptSegment].find(opt => opt.value === searchColumn)?.label}
               </Button>
             }
             contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
           >
-            {filterOptions.map(option => (
+            {filterOptions[receiptSegment].map(option => (
               <Menu.Item
                 key={option.value}
                 onPress={() => {
@@ -376,18 +382,20 @@ const TransactionManagement = ({ navigation }) => {
           </Menu>
         </View>
       </View>
-      <View style={styles.buttonContainer}>
-      <Button
-          mode="contained"
-          icon="file-document-outline"
-          onPress={handleGenerateAllSummary}
-          style={[styles.button, { width: '100%' }]}
-          contentStyle={styles.buttonContent}
-          labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
-        >
-          Generate Summary
-        </Button>
-      </View>
+      {receiptSegment === 'pending' && (
+        <View style={styles.buttonContainer}>
+          <Button
+            mode="contained"
+            icon="file-document-outline"
+            onPress={handleGenerateAllSummary}
+            style={[styles.button, { width: '100%' }]}
+            contentStyle={styles.buttonContent}
+            labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
+          >
+            Generate Summary
+          </Button>
+        </View>
+      )}
       {loading ? (
         <Text style={[styles.loadingText, { color: colors.onSurface }, fonts.bodyMedium]}>
           Loading transactions...
@@ -397,7 +405,7 @@ const TransactionManagement = ({ navigation }) => {
           <ScrollView horizontal>
             <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
               <DataTable.Header style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
-                {columns.slice(1).map(({ key, label, width }) => (
+                {(receiptSegment === 'completed' ? completedColumns : columns).slice(1).map(({ key, label, width }) => (
                   <DataTable.Title
                     key={key}
                     style={{ width, justifyContent: 'center', paddingVertical: 12 }}
@@ -425,13 +433,13 @@ const TransactionManagement = ({ navigation }) => {
               ) : (
                 paginatedTransactions.map(transaction => (
                   <DataTable.Row key={transaction.key}>
-                    {columns.slice(1).map(({ key, width }, idx) => (
+                    {(receiptSegment === 'completed' ? completedColumns : columns).slice(1).map(({ key, width }, idx) => (
                       <DataTable.Cell
                         key={idx}
                         style={{ width, justifyContent: 'center', paddingVertical: 12 }}
                       >
                         <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>
-                          {['delivery_charge', 'surcharge', 'total_amount'].includes(key)
+                          {['delivery_charge', 'surcharge', 'total_amount', 'amount_per_passenger'].includes(key)
                             ? formatCurrency(transaction[key])
                             : key === 'discount'
                             ? formatPercentage(transaction[key])
@@ -440,69 +448,16 @@ const TransactionManagement = ({ navigation }) => {
                       </DataTable.Cell>
                     ))}
                     <DataTable.Cell numeric style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
-                      <Menu
-                        visible={actionMenuVisible && selectedTransaction?.id === transaction.id}
-                        onDismiss={() => setActionMenuVisible(false)}
-                        anchor={
-                          <Button
-                            mode="outlined"
-                            icon="dots-vertical"
-                            onPress={(e) => {
-                              setSelectedTransaction(transaction)
-                              setActionMenuVisible(true)
-                            }}
-                            style={[styles.actionButton, { borderColor: colors.primary }]}
-                            contentStyle={styles.buttonContent}
-                            labelStyle={[styles.buttonLabel, { color: colors.primary }]}
-                          >
-                            Actions
-                          </Button>
-                        }
-                        contentStyle={{ backgroundColor: colors.surface }}
+                      <Button
+                        mode="outlined"
+                        icon="eye"
+                        onPress={() => handleViewDetails(transaction)}
+                        style={[styles.actionButton, { borderColor: colors.primary }]}
+                        contentStyle={styles.buttonContent}
+                        labelStyle={[styles.buttonLabel, { color: colors.primary }]}
                       >
-                        <Menu.Item
-                          onPress={() => {
-                            setActionMenuVisible(false)
-                            handleViewDetails(transaction)
-                          }}
-                          title="View Details"
-                          leadingIcon="eye"
-                          titleStyle={[
-                            {
-                              color: colors.onSurface,
-                            },
-                            fonts.bodyLarge,
-                          ]}
-                        />
-                        <Menu.Item
-                          onPress={() => {
-                            setActionMenuVisible(false)
-                            setShowSurchargeDialog(true)
-                          }}
-                          title="Adjust Surcharge"
-                          leadingIcon="plus"
-                          titleStyle={[
-                            {
-                              color: colors.onSurface,
-                            },
-                            fonts.bodyLarge,
-                          ]}
-                        />
-                        <Menu.Item
-                          onPress={() => {
-                            setActionMenuVisible(false)
-                            setShowDiscountDialog(true)
-                          }}
-                          title="Adjust Discount"
-                          leadingIcon="minus"
-                          titleStyle={[
-                            {
-                              color: colors.onSurface,
-                            },
-                            fonts.bodyLarge,
-                          ]}
-                        />
-                      </Menu>
+                        View Details
+                      </Button>
                     </DataTable.Cell>
                   </DataTable.Row>
                 ))
@@ -540,155 +495,6 @@ const TransactionManagement = ({ navigation }) => {
               }}
             />
           </View>
-
-          <Portal>
-            <Dialog
-              visible={showSurchargeDialog}
-              onDismiss={() => setShowSurchargeDialog(false)}
-              style={[styles.dialog, { backgroundColor: colors.surface }]}
-            >
-              <Dialog.Title style={[styles.dialogTitle, { color: colors.onSurface }]}>Adjust Surcharge</Dialog.Title>
-              <Dialog.Content style={styles.dialogContent}>
-                <TextInput
-                  label="Surcharge Amount"
-                  value={surchargeAmount}
-                  onChangeText={setSurchargeAmount}
-                  keyboardType="numeric"
-                  mode="outlined"
-                  style={styles.dialogInput}
-                  right={<TextInput.Affix text="₱" />}
-                />
-              </Dialog.Content>
-              <Dialog.Actions style={styles.dialogActions}>
-                <Button onPress={() => setShowSurchargeDialog(false)}>Cancel</Button>
-                <Button onPress={handleAddSurcharge}>Adjust</Button>
-              </Dialog.Actions>
-            </Dialog>
-          </Portal>
-
-          <Portal>
-            <Dialog
-              visible={showDiscountDialog}
-              onDismiss={() => setShowDiscountDialog(false)}
-              style={[styles.dialog, { backgroundColor: colors.surface }]}
-            >
-              <Dialog.Title style={[styles.dialogTitle, { color: colors.onSurface }]}>Adjust Discount</Dialog.Title>
-              <Dialog.Content style={styles.dialogContent}>
-                <TextInput
-                  label="Discount Percentage"
-                  value={discountAmount}
-                  onChangeText={(text) => {
-                    // Only allow numbers and decimal point
-                    const filtered = text.replace(/[^0-9.]/g, '')
-                    // Ensure only one decimal point
-                    const parts = filtered.split('.')
-                    if (parts.length > 2) {
-                      setDiscountAmount(parts[0] + '.' + parts.slice(1).join(''))
-                    } else {
-                      setDiscountAmount(filtered)
-                    }
-                  }}
-                  keyboardType="numeric"
-                  mode="outlined"
-                  style={styles.dialogInput}
-                  right={<TextInput.Affix text="%" />}
-                />
-                <Text style={[styles.dialogHelperText, { color: colors.onSurfaceVariant }]}>
-                  Enter a percentage between 0 and 100
-                </Text>
-              </Dialog.Content>
-              <Dialog.Actions style={styles.dialogActions}>
-                <Button onPress={() => setShowDiscountDialog(false)}>Cancel</Button>
-                <Button 
-                  onPress={() => {
-                    const percentage = parseFloat(discountAmount)
-                    if (percentage >= 0 && percentage <= 100) {
-                      handleAddDiscount()
-                    }
-                  }}
-                  disabled={!discountAmount || parseFloat(discountAmount) < 0 || parseFloat(discountAmount) > 100}
-                >
-                  Adjust
-                </Button>
-              </Dialog.Actions>
-            </Dialog>
-          </Portal>
-
-          <Portal>
-            <Dialog
-              visible={showSummaryDialog}
-              onDismiss={() => {
-                setShowSummaryDialog(false)
-              }}
-              style={[styles.dialog, { backgroundColor: colors.surface }]}
-            >
-              <Dialog.Title style={[styles.dialogTitle, { color: colors.onSurface }]}>Transaction Summary</Dialog.Title>
-              <Dialog.Content style={styles.dialogContent}>
-                {summaryData && (
-                  <View style={styles.summaryContent}>
-                    <Text style={[styles.summaryText, { color: colors.onSurface }]}>
-                      Total Transactions: {summaryData.totalTransactions}
-                    </Text>
-                    <Text style={[styles.summaryText, { color: colors.onSurface }]}>
-                      Total Amount: {formatCurrency(summaryData.totalAmount)}
-                    </Text>
-                    <Text style={[styles.summaryText, { color: colors.onSurface }]}>
-                      Total Surcharge: {formatCurrency(summaryData.totalSurcharge)}
-                    </Text>
-                    <Text style={[styles.summaryText, { color: colors.onSurface }]}>
-                      Total Discount: {formatCurrency(summaryData.totalDiscount)}
-                    </Text>
-                    <Text style={[styles.summaryText, { color: colors.onSurface, marginTop: 16 }]}>
-                      Status Breakdown:
-                    </Text>
-                    {Object.entries(summaryData.statusCounts).map(([status, count]) => (
-                      <Text key={status} style={[styles.summaryText, { color: colors.onSurface, marginLeft: 16 }]}>
-                        {status}: {count}
-                      </Text>
-                    ))}
-                  </View>
-                )}
-              </Dialog.Content>
-              <Dialog.Actions style={styles.summaryDialogActions}>
-                <View style={styles.pdfButtonsContainer}>
-                  <Button
-                    icon="printer"
-                    onPress={async () => {
-                      try {
-                        await printPDF(filteredAndSortedTransactions, summaryData)
-                      } catch (error) {
-                        Alert.alert('Error', error.message)
-                      }
-                    }}
-                    style={styles.pdfButton}
-                  >
-                    Print
-                  </Button>
-                  <Button
-                    icon="share"
-                    onPress={async () => {
-                      try {
-                        await sharePDF(filteredAndSortedTransactions, summaryData)
-                      } catch (error) {
-                        Alert.alert('Error', error.message)
-                      }
-                    }}
-                    style={styles.pdfButton}
-                  >
-                    Share/View
-                  </Button>
-                </View>
-                <Button 
-                  onPress={() => {
-                    setShowSummaryDialog(false)
-                  }}
-                  style={styles.closeButton}
-                >
-                  Close
-                </Button>
-              </Dialog.Actions>
-            </Dialog>
-          </Portal>
         </View>
       )}
     </ScrollView>
@@ -741,7 +547,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 16,
     borderRadius: 8,
-    minHeight: '60%',
+    minHeight: '55%',
     overflow: 'hidden',
   },
   table: {
@@ -852,6 +658,20 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  segmentContainer: {
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  invoiceInputContainer: {
+    marginTop: 24,
+    gap: 12,
+  },
+  invoiceInput: {
+    marginBottom: 8,
+  },
+  assignButton: {
+    marginTop: 8,
   },
 })
 
