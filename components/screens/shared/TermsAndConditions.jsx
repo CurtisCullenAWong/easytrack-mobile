@@ -9,11 +9,7 @@ const TermsAndConditions = ({ navigation }) => {
   return (
     <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
       <Header navigation={navigation} title="Terms and Conditions" />
-      
       <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
-        <Text style={[styles.title, { color: colors.onSurface, ...fonts.headlineMedium }]}>
-          Terms and Conditions
-        </Text>
 
         <Text style={[styles.sectionTitle, { color: colors.onSurface, ...fonts.titleLarge }]}>
           Service Delivery
@@ -106,7 +102,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   sectionTitle: {
-    marginTop: 24,
     marginBottom: 16,
   },
   text: {

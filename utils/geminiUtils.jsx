@@ -13,7 +13,8 @@ export const analyzeDeliveryStats = async (stats) => {
     Total Revenue: ₱${stats.totalRevenue.toLocaleString()}
     Average Delivery Time: ${stats.averageDeliveryTime} minutes
     Deliveries by Region: ${JSON.stringify(stats.deliveriesByRegion)}
-
+    For context, there are 3 actors in the system: delivery personnel (employees), administrator (supervisors), airlines (clients).
+    The airlines are the ones that make the booking and EGC-GHE delivers the assigned luggage.
     Please provide:
     1. A brief summary of overall performance
     2. Key strengths and areas for improvement

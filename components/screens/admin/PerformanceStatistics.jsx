@@ -4,9 +4,11 @@ import { useTheme, Card, Text, ProgressBar, Divider, Button, ActivityIndicator }
 import Header from '../../../components/customComponents/Header'
 import { supabase } from '../../../lib/supabaseAdmin'
 import { analyzeDeliveryStats } from '../../../utils/geminiUtils'
+import useSnackbar from '../../../components/hooks/useSnackbar'
 
 const PerformanceStatisticsScreen = ({ navigation }) => {
   const { colors } = useTheme()
+  const { showSnackbar, SnackbarElement } = useSnackbar()
   const [stats, setStats] = useState({
     totalDeliveries: 0,
     successfulDeliveries: 0,
@@ -38,6 +40,10 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
         deliveriesByRegion: stats.deliveriesByRegion,
       })
       
+      if (!insights) {
+        throw new Error('No insights were generated')
+      }
+
       // Format the insights text
       const formattedInsights = insights
         .replace(/\*/g, '•') // Replace asterisks with bullet points
@@ -49,6 +55,16 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
       setAiInsights(formattedInsights)
     } catch (error) {
       console.error('Error generating insights:', error)
+      let errorMessage = 'Failed to generate insights'
+      
+      if (error.message?.includes('overloaded')) {
+        errorMessage = 'The AI service is currently busy. Please try again in a few moments.'
+      } else if (error.message?.includes('No insights')) {
+        errorMessage = 'Unable to generate insights at this time. Please try again.'
+      }
+      
+      showSnackbar(errorMessage, false)
+      setAiInsights(null)
     } finally {
       setAnalyzing(false)
     }
@@ -180,6 +196,7 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
         />
       }>
       <Header navigation={navigation} title="Statistics" />
+      {SnackbarElement}
 
       {loading ? (
         <Card style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
@@ -303,6 +320,7 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
               </Text>
               <Text variant="bodySmall" style={[styles.insightsDescription, { color: colors.onSurfaceVariant }]}>
                 Get AI-powered analysis of your delivery performance and actionable recommendations.
+                Powered by Gemini 1.5 Pro
               </Text>
               
               {!aiInsights && !analyzing && (

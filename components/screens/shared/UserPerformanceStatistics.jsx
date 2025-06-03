@@ -4,9 +4,11 @@ import { useTheme, Card, Text, ProgressBar, Divider, Button, ActivityIndicator }
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabase'
 import { analyzeDeliveryStats } from '../../../utils/geminiUtils'
+import useSnackbar from '../../hooks/useSnackbar'
 
 const UserPerformanceStatisticsScreen = ({ navigation }) => {
   const { colors } = useTheme()
+  const { showSnackbar, SnackbarElement } = useSnackbar()
   const [user, setUser] = useState(null)
   const [stats, setStats] = useState({
     totalDeliveries: 0,
@@ -33,7 +35,6 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       
       if (authError) {
-        console.error('Auth error:', authError)
         setLoading(false)
         navigation.navigate('Login')
         return
@@ -53,7 +54,6 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
         .single()
       
       if (roleError) {
-        console.error('Error fetching user role:', roleError)
         setLoading(false)
         return
       }
@@ -65,7 +65,6 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
       // Only fetch statistics after we have both user and role data
       await fetchStatistics(user, isDelivery)
     } catch (error) {
-      console.error('Error in fetchUser:', error)
       setLoading(false)
       navigation.navigate('Login')
     }
@@ -107,7 +106,6 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
         .or(`delivery_id.eq.${userData.id},airline_id.eq.${userData.id}`) // Fetch contracts where user is either delivery or airline
       
       if (deliveriesError) {
-        console.error('Error fetching deliveries:', deliveriesError)
         setLoading(false)
         return
       }
@@ -120,7 +118,6 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
         .select('id, region')
       
       if (regionError) {
-        console.error('Error fetching regions:', regionError)
         setLoading(false)
         return
       }
@@ -136,7 +133,6 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
         .select('city, region_id')
 
       if (pricingError) {
-        console.error('Error fetching pricing data:', pricingError)
         setLoading(false)
         return
       }
@@ -223,7 +219,6 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
         deliveriesByRegion,
       })
     } catch (error) {
-      console.error('Error fetching statistics:', error)
     } finally {
       setLoading(false)
     }
@@ -242,6 +237,10 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
         deliveriesByRegion: stats.deliveriesByRegion,
       })
       
+      if (!insights) {
+        throw new Error('No insights were generated')
+      }
+
       // Format the insights text
       const formattedInsights = insights
         .replace(/\*/g, '•') // Replace asterisks with bullet points
@@ -252,7 +251,16 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
 
       setAiInsights(formattedInsights)
     } catch (error) {
-      console.error('Error generating insights:', error)
+      let errorMessage = 'Failed to generate insights'
+      
+      if (error.message?.includes('overloaded')) {
+        errorMessage = 'The AI service is currently busy. Please try again in a few moments.'
+      } else if (error.message?.includes('No insights')) {
+        errorMessage = 'Unable to generate insights at this time. Please try again.'
+      }
+      
+      showSnackbar(errorMessage, false)
+      setAiInsights(null)
     } finally {
       setAnalyzing(false)
     }
@@ -270,6 +278,7 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
         />
       }>
       <Header navigation={navigation} title="My Statistics" />
+      {SnackbarElement}
 
       {loading ? (
         <Card style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
@@ -395,6 +404,7 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
               </Text>
               <Text variant="bodySmall" style={[styles.insightsDescription, { color: colors.onSurfaceVariant }]}>
                 Get AI-powered analysis of your delivery performance and actionable recommendations.
+                Powered by Gemini 1.5 Pro
               </Text>
               
               {!aiInsights && !analyzing && (
