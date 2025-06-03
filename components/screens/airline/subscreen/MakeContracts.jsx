@@ -134,6 +134,16 @@ const MakeContracts = () => {
   const [dropOffError, setDropOffError] = useState(false)
   const [deliveryFee, setDeliveryFee] = useState(0)
 
+  // Reset form when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      setContracts([{ ...INITIAL_CONTRACT }])
+      setDropOffLocation({ location: '', lat: null, lng: null })
+      setPickupLocation('')
+      setDeliveryFee(0)
+    }, [])
+  )
+
   // Calculate total delivery fee based on number of contracts
   const totalDeliveryFee = useMemo(() => {
     return deliveryFee * contracts.length;

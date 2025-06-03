@@ -8,13 +8,14 @@ import {
   Text,
   useTheme,
   Menu,
+  Portal,
+  Dialog,
 } from 'react-native-paper'
-import { supabase } from '../../../lib/supabaseAdmin'
-import useSnackbar from '../../../components/hooks/useSnackbar'
-import { printPDF, sharePDF } from '../../../utils/pdfUtils'
+import { supabase } from '../../../../lib/supabaseAdmin'
+import useSnackbar from '../../../hooks/useSnackbar'
+import { printPDF, sharePDF } from '../../../../utils/pdfUtils'
 
 const COLUMN_WIDTH = 180
-const FULL_NAME_WIDTH = 200
 
 const CompletedReceipts = ({ navigation }) => {
   const { colors, fonts } = useTheme()
@@ -32,6 +33,8 @@ const CompletedReceipts = ({ navigation }) => {
   const [page, setPage] = useState(0)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [refreshing, setRefreshing] = useState(false)
+  const [confirmDialogVisible, setConfirmDialogVisible] = useState(false)
+  const [transactionToUpdate, setTransactionToUpdate] = useState(null)
 
   const filterOptions = [
     { label: 'Invoice No.', value: 'payment_id' },
@@ -45,6 +48,7 @@ const CompletedReceipts = ({ navigation }) => {
     { key: 'payment_id', label: 'Invoice No.', width: COLUMN_WIDTH },
     { key: 'payment_status', label: 'Payment Status', width: COLUMN_WIDTH },
     { key: 'created_at', label: 'Created At', width: COLUMN_WIDTH },
+    { key: 'updated_at', label: 'Updated At', width: COLUMN_WIDTH },
     { key: 'due_date', label: 'Due Date', width: COLUMN_WIDTH },
     { key: 'total_charge', label: 'Total Charge', width: COLUMN_WIDTH },
   ]
@@ -56,10 +60,11 @@ const CompletedReceipts = ({ navigation }) => {
       .select(`
         payment_id,
         payment:payment_id (
-          payment_status:payment_status_id (status_name),
+          payment_status:payment_status_id (status_name, id),
           due_date,
           total_charge,
           created_at,
+          updated_at,
           invoice_image
         ),
         id,
@@ -135,10 +140,15 @@ const CompletedReceipts = ({ navigation }) => {
         // Create a base transaction object
         const baseTransaction = {
           key: paymentId,
-          payment_id: paymentId,
+          payment_id: '#'+paymentId,
+          actual_payment_id: paymentId,
           payment_status: transaction.payment?.payment_status?.status_name || 'N/A',
+          payment_status_id: transaction.payment?.payment_status?.id || null,
           created_at: transaction.payment?.created_at 
             ? new Date(transaction.payment.created_at).toLocaleString()
+            : 'N/A',
+          updated_at: transaction.payment?.updated_at 
+            ? new Date(transaction.payment.updated_at).toLocaleString()
             : 'N/A',
           due_date: transaction.payment?.due_date 
             ? new Date(transaction.payment.due_date).toLocaleString('en-US', {
@@ -240,6 +250,23 @@ const CompletedReceipts = ({ navigation }) => {
     }
   }
 
+  const handleMarkAsPaid = async (transaction) => {
+    try {
+      const { error } = await supabase
+        .from('payment')
+        .update({ payment_status_id: 2, updated_at: new Date().toISOString() }) // Assuming 2 is the ID for "Paid" status
+        .eq('id', transaction.actual_payment_id) // Use the actual ID without the # prefix
+
+      if (error) throw error
+
+      showSnackbar('Payment status updated successfully', true)
+      fetchTransactions() // Refresh the list
+    } catch (error) {
+      console.error('Error updating payment status:', error)
+      showSnackbar(`Failed to update payment status: ${error.message}`)
+    }
+  }
+
   const handleSort = (column) => {
     setSortDirection(prev =>
       sortColumn === column && prev === 'ascending' ? 'descending' : 'ascending'
@@ -294,6 +321,41 @@ const CompletedReceipts = ({ navigation }) => {
       }
     >
       {SnackbarElement}
+
+      <Portal>
+        <Dialog
+          visible={confirmDialogVisible}
+          onDismiss={() => setConfirmDialogVisible(false)}
+          style={{ backgroundColor: colors.surface }}
+        >
+          <Dialog.Title style={{ color: colors.onSurface }}>
+            Confirm Payment Status Update
+          </Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ color: colors.onSurface }}>
+              Are you sure you want to mark this receipt as paid?
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button
+              onPress={() => setConfirmDialogVisible(false)}
+              textColor={colors.primary}
+            >
+              Cancel
+            </Button>
+            <Button
+              onPress={() => {
+                handleMarkAsPaid(transactionToUpdate)
+                setConfirmDialogVisible(false)
+                setTransactionToUpdate(null)
+              }}
+              textColor={colors.primary}
+            >
+              Confirm
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
 
       <View style={styles.searchActionsRow}>
         <Searchbar
@@ -453,6 +515,19 @@ const CompletedReceipts = ({ navigation }) => {
                           leadingIcon="share"
                           titleStyle={[{ color: colors.onSurface }, fonts.bodyLarge]}
                         />
+                        {transaction.payment_status_id === 1 && (
+                          <Menu.Item
+                            onPress={() => {
+                              setTransactionToUpdate(transaction)
+                              setConfirmDialogVisible(true)
+                              setActionsMenuVisible(false)
+                              setSelectedTransaction(null)
+                            }}
+                            title="Mark as Paid"
+                            leadingIcon="check-circle"
+                            titleStyle={[{ color: colors.onSurface }, fonts.bodyLarge]}
+                          />
+                        )}
                       </Menu>
                     </View>
                   </DataTable.Cell>

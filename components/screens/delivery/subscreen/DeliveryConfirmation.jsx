@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useCallback } from 'react'
 import { View, StyleSheet, Image, ScrollView } from 'react-native'
 import { Text, Card, Button, useTheme, Portal, Dialog, Appbar } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system'
 import { decode } from 'base64-arraybuffer'
 import useSnackbar from '../../../hooks/useSnackbar'
+import { useFocusEffect } from '@react-navigation/native'
 
 const DeliveryConfirmation = ({ navigation, route }) => {
   const { contract } = route.params
@@ -26,13 +27,15 @@ const DeliveryConfirmation = ({ navigation, route }) => {
     currentImageType: null
   })
 
-  // Clear images when component mounts
-  useEffect(() => {
-    updateImages({
-      passenger_id: null,
-      passenger_form: null
-    })
-  }, [])
+  // Clear images when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      updateImages({
+        passenger_id: null,
+        passenger_form: null
+      })
+    }, [])
+  )
 
   const updateState = (updates) => setState(prev => ({ ...prev, ...updates }))
   const updateImages = (updates) => setState(prev => ({ 

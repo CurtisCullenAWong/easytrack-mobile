@@ -2,8 +2,8 @@ import React, { useState } from 'react'
 import { View, StyleSheet } from 'react-native'
 import { useTheme, SegmentedButtons } from 'react-native-paper'
 import Header from '../../customComponents/Header'
-import PendingReceipts from './PendingReceipts'
-import CompletedReceipts from './CompletedReceipts'
+import PendingReceipts from './subscreen/PendingReceipts'
+import CompletedReceipts from './subscreen/CompletedReceipts'
 
 const TransactionManagement = ({ navigation, route }) => {
   const { colors } = useTheme()

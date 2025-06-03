@@ -9,8 +9,8 @@ import {
   useTheme,
   Menu,
 } from 'react-native-paper'
-import { supabase } from '../../../lib/supabaseAdmin'
-import useSnackbar from '../../../components/hooks/useSnackbar'
+import { supabase } from '../../../../lib/supabaseAdmin'
+import useSnackbar from '../../../hooks/useSnackbar'
 
 const COLUMN_WIDTH = 180
 const FULL_NAME_WIDTH = 200

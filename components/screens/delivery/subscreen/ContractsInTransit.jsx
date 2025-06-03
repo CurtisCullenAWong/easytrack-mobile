@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { View, FlatList, StyleSheet } from 'react-native'
 import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, Portal, Dialog, TextInput } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 import { useLocation } from '../../../hooks/useLocation'
+import { useFocusEffect } from '@react-navigation/native'
 
 const ContractsInTransit = ({ navigation }) => {
   const { colors, fonts } = useTheme()
@@ -44,24 +45,26 @@ const ContractsInTransit = ({ navigation }) => {
     { label: 'Cancellation Date', value: 'cancelled_at' },
   ]
 
-  useEffect(() => {
-    fetchContracts()
-    const updateTime = () =>
-      setCurrentTime(
-        new Date().toLocaleString('en-PH', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: false,
-          timeZone: 'Asia/Manila',
-        })
-      )
-    updateTime()
+  useFocusEffect(
+    useCallback(() => {
+      fetchContracts()
+      const updateTime = () =>
+        setCurrentTime(
+          new Date().toLocaleString('en-PH', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: false,
+            timeZone: 'Asia/Manila',
+          })
+        )
+      updateTime()
 
-    checkContractsAndManageTracking()
-  }, [contracts.length])
+      checkContractsAndManageTracking()
+    }, [contracts.length])
+  )
 
   const checkContractsAndManageTracking = async () => {
     try {
