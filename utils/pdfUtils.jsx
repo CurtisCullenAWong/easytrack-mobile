@@ -8,16 +8,18 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
   const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
   const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
   
-  // Format dates with 3-letter month
+  // Format dates with dd/mm/yyyy format
   const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    })
+    if (!date) return 'N/A'
+    const dateObj = new Date(date)
+    const day = dateObj.getDate().toString().padStart(2, '0')
+    const month = (dateObj.getMonth() + 1).toString().padStart(2, '0')
+    const year = dateObj.getFullYear()
+    const hours = dateObj.getHours().toString().padStart(2, '0')
+    const minutes = dateObj.getMinutes().toString().padStart(2, '0')
+    const ampm = dateObj.getHours() >= 12 ? 'PM' : 'AM'
+    
+    return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`
   }
   
   const dateRange = `${formatDate(firstDay)} TO ${formatDate(lastDay)}`
@@ -97,7 +99,7 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
             <td>N/A</td>
             <td>N/A</td>
             <td>${contract.drop_off_location || 'N/A'}</td>
-            <td>${contract.delivered_at || contract.cancelled_at || 'N/A'}</td>
+            <td>${formatDate(contract.delivered_at || contract.cancelled_at)}</td>
             <td>${contract.contract_status?.status_name || 'N/A'}</td>
             <td class="amount">₱${((contract.delivery_charge || 0) + (contract.surcharge || 0)).toFixed(2)}</td>
             <td>${contract.remarks || ' '}</td>
@@ -112,7 +114,7 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
           <td>${luggage.luggage_owner || 'N/A'}</td>
           <td>${luggage.flight_number || 'N/A'}</td>
           <td>${contract.drop_off_location || 'N/A'}</td>
-          <td>${contract.delivered_at || contract.cancelled_at || 'N/A'}</td>
+          <td>${formatDate(contract.delivered_at || contract.cancelled_at)}</td>
           <td>${contract.contract_status?.status_name || 'N/A'}</td>
           <td class="amount">₱${((contract.delivery_charge || 0) + (contract.surcharge || 0)).toFixed(2)}</td>
           <td>${contract.remarks || ' '}</td>

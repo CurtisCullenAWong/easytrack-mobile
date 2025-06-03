@@ -61,7 +61,7 @@ const DeliveryConfirmation = ({ navigation, route }) => {
     
     try {
       const options = { 
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         quality: 1,
         aspect: state.currentImageType === 'passenger_form' ? [9, 16] : [16, 9],

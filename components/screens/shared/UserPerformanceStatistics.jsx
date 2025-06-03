@@ -65,6 +65,7 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
 
   const fetchStatistics = async () => {
     if (!user) {
+      console.log('No user found, skipping statistics fetch')
       setLoading(false)
       return
     }
@@ -74,6 +75,10 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
       // Get the start of the current month
       const now = new Date()
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+      
+      console.log('Fetching deliveries for user:', user.id)
+      console.log('Start of month:', startOfMonth)
+      console.log('Is delivery user:', isDeliveryUser)
       
       // Fetch completed deliveries for the current month
       const { data: deliveries, error: deliveriesError } = await supabase
@@ -91,6 +96,8 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
         setLoading(false)
         return
       }
+
+      console.log('Fetched deliveries:', deliveries?.length || 0)
 
       // Fetch region names from pricing_region table
       const { data: regionData, error: regionError } = await supabase

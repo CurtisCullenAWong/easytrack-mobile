@@ -7,7 +7,7 @@ import {
     StyleSheet,
     RefreshControl,
 } from 'react-native'
-import { Text, TextInput, Button, Surface, useTheme, Card, Divider, IconButton, Avatar, Menu, Portal, Dialog } from 'react-native-paper'
+import { Text, TextInput, Button, Surface, useTheme, Card, Divider, IconButton, Avatar } from 'react-native-paper'
 import MapView, { Marker } from 'react-native-maps'
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabaseAdmin'
@@ -66,11 +66,6 @@ const AdminTrackLuggage = ({ navigation, route }) => {
     const [contractData, setContractData] = useState(null)
     const [refreshing, setRefreshing] = useState(false)
     const [mapRegion, setMapRegion] = useState(null)
-    const [showActionMenu, setShowActionMenu] = useState(false)
-    const [showCancelDialog, setShowCancelDialog] = useState(false)
-    const [showReassignDialog, setShowReassignDialog] = useState(false)
-    const [availableDeliveryPersonnel, setAvailableDeliveryPersonnel] = useState([])
-    const [selectedDeliveryPerson, setSelectedDeliveryPerson] = useState(null)
     const mapRef = useRef(null)
     const { colors, fonts } = useTheme()
     const { showSnackbar, SnackbarElement } = useSnackbar()
@@ -107,23 +102,6 @@ const AdminTrackLuggage = ({ navigation, route }) => {
             hour12: false,
             timeZone: 'Asia/Manila',
         })
-    }
-
-    const fetchAvailableDeliveryPersonnel = async () => {
-        try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('role_id', 2)
-                .eq('verify_status_id', 1)
-                .eq('user_status_id', 1)
-
-            if (error) throw error
-            setAvailableDeliveryPersonnel(data || [])
-        } catch (error) {
-            console.error('Error fetching delivery personnel:', error)
-            showSnackbar('Failed to fetch available delivery personnel')
-        }
     }
 
     const handleTrackLuggage = async () => {
@@ -192,51 +170,6 @@ const AdminTrackLuggage = ({ navigation, route }) => {
         } finally {
             setLoading(false)
             setRefreshing(false)
-        }
-    }
-
-    const handleCancelContract = async () => {
-        try {
-            const { error } = await supabase
-                .from('contract')
-                .update({
-                    contract_status_id: 5, // Cancelled status
-                    cancelled_at: new Date().toISOString(),
-                })
-                .eq('id', trackingNumber)
-
-            if (error) throw error
-
-            showSnackbar('Contract cancelled successfully')
-            setShowCancelDialog(false)
-            handleTrackLuggage()
-        } catch (error) {
-            showSnackbar('Error cancelling contract: ' + error.message)
-        }
-    }
-
-    const handleReassignDelivery = async () => {
-        try {
-            if (!selectedDeliveryPerson) {
-                showSnackbar('Please select a delivery personnel')
-                return
-            }
-
-            const { error } = await supabase
-                .from('contract')
-                .update({
-                    delivery_id: selectedDeliveryPerson.id,
-                    updated_at: new Date().toISOString(),
-                })
-                .eq('id', trackingNumber)
-
-            if (error) throw error
-
-            showSnackbar('Delivery personnel reassigned successfully')
-            setShowReassignDialog(false)
-            handleTrackLuggage()
-        } catch (error) {
-            showSnackbar('Error reassigning delivery personnel: ' + error.message)
         }
     }
 
@@ -422,34 +355,6 @@ const AdminTrackLuggage = ({ navigation, route }) => {
                         <Text style={[fonts.titleMedium, { color: colors.primary, marginVertical: 10 }]}>
                             Contract Information
                         </Text>
-                        <Menu
-                            visible={showActionMenu}
-                            onDismiss={() => setShowActionMenu(false)}
-                            anchor={
-                                <IconButton
-                                    icon="dots-vertical"
-                                    onPress={() => setShowActionMenu(true)}
-                                />
-                            }
-                        >
-                            <Menu.Item
-                                onPress={() => {
-                                    setShowActionMenu(false)
-                                    fetchAvailableDeliveryPersonnel()
-                                    setShowReassignDialog(true)
-                                }}
-                                title="Reassign Delivery"
-                                leadingIcon="account-switch"
-                            />
-                            <Menu.Item
-                                onPress={() => {
-                                    setShowActionMenu(false)
-                                    setShowCancelDialog(true)
-                                }}
-                                title="Cancel Contract"
-                                leadingIcon="cancel"
-                            />
-                        </Menu>
                     </View>
                     <Divider style={{ marginBottom: 10 }} />
                     
@@ -585,49 +490,6 @@ const AdminTrackLuggage = ({ navigation, route }) => {
                 source={require('../../../assets/delivery-bg.png')}
                 style={styles.image}
             />
-
-            {/* Cancel Dialog */}
-            <Portal>
-                <Dialog visible={showCancelDialog} onDismiss={() => setShowCancelDialog(false)}>
-                    <Dialog.Title>Cancel Contract</Dialog.Title>
-                    <Dialog.Content>
-                        <Text>Are you sure you want to cancel this contract? This action cannot be undone.</Text>
-                    </Dialog.Content>
-                    <Dialog.Actions>
-                        <Button onPress={() => setShowCancelDialog(false)}>No</Button>
-                        <Button onPress={handleCancelContract} textColor={colors.error}>Yes, Cancel</Button>
-                    </Dialog.Actions>
-                </Dialog>
-            </Portal>
-
-            {/* Reassign Dialog */}
-            <Portal>
-                <Dialog visible={showReassignDialog} onDismiss={() => setShowReassignDialog(false)}>
-                    <Dialog.Title>Reassign Delivery Personnel</Dialog.Title>
-                    <Dialog.Content>
-                        <Text style={{ marginBottom: 10 }}>Select a new delivery personnel:</Text>
-                        {availableDeliveryPersonnel.map((person) => (
-                            <Button
-                                key={person.id}
-                                mode={selectedDeliveryPerson?.id === person.id ? "contained" : "outlined"}
-                                onPress={() => setSelectedDeliveryPerson(person)}
-                                style={{ marginVertical: 5 }}
-                            >
-                                {[
-                                    person.first_name,
-                                    person.middle_initial+'.',
-                                    person.last_name,
-                                    person.suffix
-                                ].filter(Boolean).join(' ')}
-                            </Button>
-                        ))}
-                    </Dialog.Content>
-                    <Dialog.Actions>
-                        <Button onPress={() => setShowReassignDialog(false)}>Cancel</Button>
-                        <Button onPress={handleReassignDelivery}>Reassign</Button>
-                    </Dialog.Actions>
-                </Dialog>
-            </Portal>
         </ScrollView>
     )
 }
