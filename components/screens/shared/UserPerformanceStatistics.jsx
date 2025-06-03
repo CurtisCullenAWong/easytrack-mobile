@@ -71,7 +71,11 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
     try {
       setLoading(true)
       
-      // Fetch all completed deliveries for the current user
+      // Get the start of the current month
+      const now = new Date()
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+      
+      // Fetch completed deliveries for the current month
       const { data: deliveries, error: deliveriesError } = await supabase
         .from('contract')
         .select(`
@@ -79,7 +83,9 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
           contract_status:contract_status_id (status_name)
         `)
         .in('contract_status_id', [5, 6]) // 5 for delivered, 6 for failed
-        .or(`airline_id.eq.${user.id},delivery_id.eq.${user.id}`) // Filter by user's ID
+        .gte('created_at', startOfMonth) // Only fetch contracts from current month
+        .eq(isDeliveryUser ? 'delivery_id' : 'airline_id', user.id) // Filter by user's role
+      
       if (deliveriesError) {
         console.error('Error fetching deliveries:', deliveriesError)
         setLoading(false)
@@ -267,7 +273,7 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
               <Text variant="titleMedium" style={{ color: colors.primary }}>
                 Failed Deliveries
               </Text>
-              <Text variant="displaySmall" style={[styles.valueText, { color: colors.error }]}>
+              <Text variant="displaySmall" style={[styles.valueText, { color: colors.primary }]}>
                 {stats.failedDeliveries}
               </Text>
             </Card.Content>
@@ -290,20 +296,6 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
             </Card.Content>
           </Card>
 
-          {/* Earnings Card (only for delivery personnel) */}
-          {isDeliveryUser && stats.totalEarnings > 0 && (
-            <Card style={[styles.statCard, { backgroundColor: colors.surface }]}>
-              <Card.Content>
-                <Text variant="titleMedium" style={{ color: colors.primary }}>
-                  Total Earnings
-                </Text>
-                <Text variant="displaySmall" style={[styles.valueText, { color: colors.onSurface }]}>
-                  ₱{stats.totalEarnings.toLocaleString()}
-                </Text>
-              </Card.Content>
-            </Card>
-          )}
-
           {/* Expenses Card (only for non-delivery users) */}
           {!isDeliveryUser && stats.totalExpenses > 0 && (
             <Card style={[styles.statCard, { backgroundColor: colors.surface }]}>
@@ -311,7 +303,7 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
                 <Text variant="titleMedium" style={{ color: colors.primary }}>
                   Total Expenses
                 </Text>
-                <Text variant="displaySmall" style={[styles.valueText, { color: colors.error }]}>
+                <Text variant="displaySmall" style={[styles.valueText, { color: colors.onSurface }]}>
                   ₱{stats.totalExpenses.toLocaleString()}
                 </Text>
               </Card.Content>

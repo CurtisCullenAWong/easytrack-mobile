@@ -226,10 +226,10 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
           {/* Revenue Card */}
           <Card style={[styles.statCard, { backgroundColor: colors.surface }]}>
             <Card.Content>
-              <Text variant="titleMedium" style={{ color: colors.primary }}>
+              <Text variant="titleMedium" style={{ color: colors.onSurface }}>
                 Total Revenue
               </Text>
-              <Text variant="displaySmall" style={[styles.valueText, { color: colors.onSurface }]}>
+              <Text variant="displaySmall" style={[styles.valueText, { color: colors.primary }]}>
                 ₱{stats.totalRevenue.toLocaleString()}
               </Text>
             </Card.Content>
