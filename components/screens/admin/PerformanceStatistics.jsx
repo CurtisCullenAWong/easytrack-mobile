@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { ScrollView, StyleSheet, View, RefreshControl } from 'react-native'
-import { useTheme, Card, Text, ProgressBar, Divider, Button } from 'react-native-paper'
+import { useTheme, Card, Text, ProgressBar, Divider, Button, ActivityIndicator } from 'react-native-paper'
 import Header from '../../../components/customComponents/Header'
 import { supabase } from '../../../lib/supabaseAdmin'
+import { analyzeDeliveryStats } from '../../../utils/geminiUtils'
 
 const PerformanceStatisticsScreen = ({ navigation }) => {
-  const { colors, fonts } = useTheme()
+  const { colors } = useTheme()
   const [stats, setStats] = useState({
     totalDeliveries: 0,
     successfulDeliveries: 0,
@@ -17,10 +18,41 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
   })
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [aiInsights, setAiInsights] = useState(null)
+  const [analyzing, setAnalyzing] = useState(false)
 
   useEffect(() => {
     fetchStatistics()
   }, [])
+
+  const generateInsights = async () => {
+    try {
+      setAnalyzing(true)
+      const insights = await analyzeDeliveryStats({
+        totalDeliveries: stats.totalDeliveries,
+        successfulDeliveries: stats.successfulDeliveries,
+        failedDeliveries: stats.failedDeliveries,
+        successRate: stats.successRate,
+        totalRevenue: stats.totalRevenue,
+        averageDeliveryTime: stats.averageDeliveryTime,
+        deliveriesByRegion: stats.deliveriesByRegion,
+      })
+      
+      // Format the insights text
+      const formattedInsights = insights
+        .replace(/\*/g, '•') // Replace asterisks with bullet points
+        .split('\n') // Split into lines
+        .map(line => line.trim()) // Trim each line
+        .filter(line => line) // Remove empty lines
+        .join('\n'); // Join back with newlines
+
+      setAiInsights(formattedInsights)
+    } catch (error) {
+      console.error('Error generating insights:', error)
+    } finally {
+      setAnalyzing(false)
+    }
+  }
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -127,6 +159,8 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
         averageDeliveryTime,
         deliveriesByRegion,
       })
+
+      // Remove automatic insight generation
     } catch (error) {
       console.error('Error fetching statistics:', error)
     } finally {
@@ -261,6 +295,68 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
             </Card.Content>
           </Card>
 
+          {/* AI Insights Card */}
+          <Card style={[styles.statCard, { backgroundColor: colors.surface }]}>
+            <Card.Content>
+              <Text variant="titleMedium" style={{ color: colors.primary }}>
+                AI-Powered Insights
+              </Text>
+              <Text variant="bodySmall" style={[styles.insightsDescription, { color: colors.onSurfaceVariant }]}>
+                Get AI-powered analysis of your delivery performance and actionable recommendations.
+              </Text>
+              
+              {!aiInsights && !analyzing && (
+                <Button 
+                  mode="contained" 
+                  onPress={generateInsights}
+                  style={styles.insightsButton}
+                >
+                  Generate Insights
+                </Button>
+              )}
+
+              {analyzing ? (
+                <View style={styles.analyzingContainer}>
+                  <ActivityIndicator color={colors.primary} />
+                  <Text style={{ color: colors.onSurface, marginTop: 8 }}>
+                    Analyzing performance data...
+                  </Text>
+                </View>
+              ) : aiInsights ? (
+                <View style={styles.insightsContainer}>
+                  <Text variant="bodyMedium" style={[styles.insightsText, { color: colors.onSurface }]}>
+                    {aiInsights.split('\n').map((line, index) => {
+                      // Check if line starts with a number followed by a dot
+                      if (/^\d+\./.test(line)) {
+                        return (
+                          <Text key={index} style={{ fontWeight: 'bold' }}>
+                            {line}{'\n'}
+                          </Text>
+                        );
+                      }
+                      // Check if line starts with a bullet point
+                      if (line.trim().startsWith('•')) {
+                        return (
+                          <Text key={index}>
+                            {'\n'}{line}{'\n'}
+                          </Text>
+                        );
+                      }
+                      return <Text key={index}>{line}{'\n'}</Text>;
+                    })}
+                  </Text>
+                  <Button 
+                    mode="outlined" 
+                    onPress={generateInsights}
+                    style={styles.refreshButton}
+                  >
+                    Refresh Insights
+                  </Button>
+                </View>
+              ) : null}
+            </Card.Content>
+          </Card>
+
           {/* Target Achievement and Call to Action */}
           {/* <Card style={[styles.targetCard, { backgroundColor: colors.surface }]}>
             <Card.Content>
@@ -342,6 +438,27 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontStyle: 'italic',
     textAlign: 'center',
+  },
+  analyzingContainer: {
+    alignItems: 'center',
+    padding: 16,
+  },
+  insightsDescription: {
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  insightsButton: {
+    marginTop: 8,
+  },
+  insightsContainer: {
+    marginTop: 16,
+  },
+  insightsText: {
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  refreshButton: {
+    marginTop: 8,
   },
 })
 

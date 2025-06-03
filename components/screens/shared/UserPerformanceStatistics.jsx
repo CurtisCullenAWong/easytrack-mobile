@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { ScrollView, StyleSheet, View, RefreshControl } from 'react-native'
-import { useTheme, Card, Text, ProgressBar, Divider } from 'react-native-paper'
+import { useTheme, Card, Text, ProgressBar, Divider, Button, ActivityIndicator } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabase'
+import { analyzeDeliveryStats } from '../../../utils/geminiUtils'
 
 const UserPerformanceStatisticsScreen = ({ navigation }) => {
   const { colors } = useTheme()
@@ -20,6 +21,8 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [isDeliveryUser, setIsDeliveryUser] = useState(false)
+  const [aiInsights, setAiInsights] = useState(null)
+  const [analyzing, setAnalyzing] = useState(false)
 
   useEffect(() => {
     fetchUser()
@@ -27,13 +30,20 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
 
   const fetchUser = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      
+      if (authError) {
+        console.error('Auth error:', authError)
+        setLoading(false)
+        navigation.navigate('Login')
+        return
+      }
+
       if (!user) {
         setLoading(false)
         navigation.navigate('Login')
         return
       }
-      setUser(user)
       
       // Check if user is a delivery personnel
       const { data: userRole, error: roleError } = await supabase
@@ -48,10 +58,14 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
         return
       }
       
-      setIsDeliveryUser(userRole?.role_id === 2) // Assuming 2 is the role_id for delivery personnel
-      await fetchStatistics()
+      const isDelivery = userRole?.role_id === 2 // Assuming 2 is the role_id for delivery personnel
+      setUser(user)
+      setIsDeliveryUser(isDelivery)
+      
+      // Only fetch statistics after we have both user and role data
+      await fetchStatistics(user, isDelivery)
     } catch (error) {
-      console.error('Error fetching user:', error)
+      console.error('Error in fetchUser:', error)
       setLoading(false)
       navigation.navigate('Login')
     }
@@ -63,12 +77,13 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
     setRefreshing(false)
   }, [])
 
-  const fetchStatistics = async () => {
-    if (!user) {
-      console.log('No user found, skipping statistics fetch')
+  const fetchStatistics = async (userData, isDelivery) => {
+    if (!userData) {
+      console.log('No user data provided, skipping statistics fetch')
       setLoading(false)
       return
     }
+
     try {
       setLoading(true)
       
@@ -76,9 +91,9 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
       const now = new Date()
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
       
-      console.log('Fetching deliveries for user:', user.id)
+      console.log('Fetching deliveries for user:', userData.id)
       console.log('Start of month:', startOfMonth)
-      console.log('Is delivery user:', isDeliveryUser)
+      console.log('Is delivery user:', isDelivery)
       
       // Fetch completed deliveries for the current month
       const { data: deliveries, error: deliveriesError } = await supabase
@@ -89,7 +104,7 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
         `)
         .in('contract_status_id', [5, 6]) // 5 for delivered, 6 for failed
         .gte('created_at', startOfMonth) // Only fetch contracts from current month
-        .eq(isDeliveryUser ? 'delivery_id' : 'airline_id', user.id) // Filter by user's role
+        .or(`delivery_id.eq.${userData.id},airline_id.eq.${userData.id}`) // Fetch contracts where user is either delivery or airline
       
       if (deliveriesError) {
         console.error('Error fetching deliveries:', deliveriesError)
@@ -156,9 +171,9 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
       let totalEarnings = 0
       let totalExpenses = 0
 
-      if (isDeliveryUser) {
+      if (isDelivery) {
         totalEarnings = deliveries.reduce((sum, delivery) => {
-          if (delivery.delivery_id === user.id) {
+          if (delivery.delivery_id === userData.id) {
             const baseAmount = (delivery.delivery_charge || 0) + (delivery.surcharge || 0)
             const discountedAmount = baseAmount * (1 - ((delivery.discount || 0) / 100))
             return sum + discountedAmount
@@ -167,7 +182,7 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
         }, 0)
       } else {
         totalExpenses = deliveries.reduce((sum, delivery) => {
-          if (delivery.airline_id === user.id) {
+          if (delivery.airline_id === userData.id) {
             const baseAmount = (delivery.delivery_charge || 0) + (delivery.surcharge || 0)
             const discountedAmount = baseAmount * (1 - ((delivery.discount || 0) / 100))
             return sum + discountedAmount
@@ -211,6 +226,35 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
       console.error('Error fetching statistics:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const generateInsights = async () => {
+    try {
+      setAnalyzing(true)
+      const insights = await analyzeDeliveryStats({
+        totalDeliveries: stats.totalDeliveries,
+        successfulDeliveries: stats.successfulDeliveries,
+        failedDeliveries: stats.failedDeliveries,
+        successRate: stats.successRate,
+        totalRevenue: isDeliveryUser ? stats.totalEarnings : stats.totalExpenses,
+        averageDeliveryTime: stats.averageDeliveryTime,
+        deliveriesByRegion: stats.deliveriesByRegion,
+      })
+      
+      // Format the insights text
+      const formattedInsights = insights
+        .replace(/\*/g, '•') // Replace asterisks with bullet points
+        .split('\n') // Split into lines
+        .map(line => line.trim()) // Trim each line
+        .filter(line => line) // Remove empty lines
+        .join('\n'); // Join back with newlines
+
+      setAiInsights(formattedInsights)
+    } catch (error) {
+      console.error('Error generating insights:', error)
+    } finally {
+      setAnalyzing(false)
     }
   }
 
@@ -342,6 +386,68 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
               ))}
             </Card.Content>
           </Card>
+
+          {/* AI Insights Card */}
+          <Card style={[styles.statCard, { backgroundColor: colors.surface }]}>
+            <Card.Content>
+              <Text variant="titleMedium" style={{ color: colors.primary }}>
+                AI-Powered Insights
+              </Text>
+              <Text variant="bodySmall" style={[styles.insightsDescription, { color: colors.onSurfaceVariant }]}>
+                Get AI-powered analysis of your delivery performance and actionable recommendations.
+              </Text>
+              
+              {!aiInsights && !analyzing && (
+                <Button 
+                  mode="contained" 
+                  onPress={generateInsights}
+                  style={styles.insightsButton}
+                >
+                  Generate Insights
+                </Button>
+              )}
+
+              {analyzing ? (
+                <View style={styles.analyzingContainer}>
+                  <ActivityIndicator color={colors.primary} />
+                  <Text style={{ color: colors.onSurface, marginTop: 8 }}>
+                    Analyzing performance data...
+                  </Text>
+                </View>
+              ) : aiInsights ? (
+                <View style={styles.insightsContainer}>
+                  <Text variant="bodyMedium" style={[styles.insightsText, { color: colors.onSurface }]}>
+                    {aiInsights.split('\n').map((line, index) => {
+                      // Check if line starts with a number followed by a dot
+                      if (/^\d+\./.test(line)) {
+                        return (
+                          <Text key={index} style={{ fontWeight: 'bold' }}>
+                            {line}{'\n'}
+                          </Text>
+                        );
+                      }
+                      // Check if line starts with a bullet point
+                      if (line.trim().startsWith('•')) {
+                        return (
+                          <Text key={index}>
+                            {'\n'}{line}{'\n'}
+                          </Text>
+                        );
+                      }
+                      return <Text key={index}>{line}{'\n'}</Text>;
+                    })}
+                  </Text>
+                  <Button 
+                    mode="outlined" 
+                    onPress={generateInsights}
+                    style={styles.refreshButton}
+                  >
+                    Refresh Insights
+                  </Button>
+                </View>
+              ) : null}
+            </Card.Content>
+          </Card>
         </>
       )}
     </ScrollView>
@@ -385,6 +491,27 @@ const styles = StyleSheet.create({
   successRateText: {
     marginTop: 8,
     alignSelf: 'flex-end',
+  },
+  analyzingContainer: {
+    alignItems: 'center',
+    padding: 16,
+  },
+  insightsDescription: {
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  insightsButton: {
+    marginTop: 8,
+  },
+  insightsContainer: {
+    marginTop: 16,
+  },
+  insightsText: {
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  refreshButton: {
+    marginTop: 8,
   },
 })
 

@@ -32,6 +32,7 @@ const DELIVERY_SECTIONS = [
     icon: 'help',
     items: [
       { icon: 'message-outline', label: 'Message Center', screen: 'MessageCenter' },
+      { icon: 'file-document-outline', label: 'Terms and Conditions', screen: 'TermsAndConditions' },
     ],
   },
 ]

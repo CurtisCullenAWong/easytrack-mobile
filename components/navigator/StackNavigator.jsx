@@ -10,6 +10,7 @@ import CheckLocation from '../screens/delivery/subscreen/CheckLocation'
 import UserPerformanceStatistics from '../screens/shared/UserPerformanceStatistics'
 import MessageCenter from '../screens/MessageCenter'
 import BookingHistory from '../screens/shared/BookingHistory'
+import TermsAndConditions from '../screens/shared/TermsAndConditions'
 
 // Profile Screens
 import Profile from '../screens/profiles/Profile'
@@ -85,6 +86,7 @@ const AdminDrawer = () => (
       <Drawer.Screen name="EditProfile" component={EditProfileSubScreen} />
       <Drawer.Screen name="Verification" component={Verification} />
       <Drawer.Screen name="MessageCenter" component={MessageCenter} />
+      <Drawer.Screen name="TermsAndConditions" component={TermsAndConditions} />
   </Drawer.Navigator>
 )
 
@@ -111,6 +113,7 @@ const AirlineDrawer = () => (
       <Drawer.Screen name="AirlineTrackLuggage" component={AirlineTrackLuggage} />
       <Drawer.Screen name="UserPerformanceStatistics" component={UserPerformanceStatistics} />
       <Drawer.Screen name="MessageCenter" component={MessageCenter} />
+      <Drawer.Screen name="TermsAndConditions" component={TermsAndConditions} />
   </Drawer.Navigator>
 )
 
@@ -135,6 +138,7 @@ const DeliveryDrawer = () => (
       <Drawer.Screen name="Verification" component={Verification} />
       <Drawer.Screen name="UserPerformanceStatistics" component={UserPerformanceStatistics} />
       <Drawer.Screen name="MessageCenter" component={MessageCenter} />
+      <Drawer.Screen name="TermsAndConditions" component={TermsAndConditions} />
   </Drawer.Navigator>
 )
 
