@@ -312,9 +312,22 @@ const PendingReceipts = ({ navigation }) => {
             mode="contained"
             icon="file-document-outline"
             onPress={handleGenerateSummary}
-            style={[styles.button, { backgroundColor: colors.primary, width:'100%' }]}
+            style={[
+              styles.button, 
+              { 
+                backgroundColor: transactions.length === 0 ? colors.surfaceDisabled : colors.primary,
+                width: '100%',
+                opacity: transactions.length === 0 ? 0.6 : 1
+              }
+            ]}
             contentStyle={styles.buttonContent}
-            labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
+            labelStyle={[
+              styles.buttonLabel, 
+              { 
+                color: transactions.length === 0 ? colors.onSurfaceDisabled : colors.onPrimary 
+              }
+            ]}
+            disabled={transactions.length === 0}
         >
             Generate Summary
         </Button>

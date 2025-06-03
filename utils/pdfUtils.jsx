@@ -1,7 +1,8 @@
 import * as Print from 'expo-print'
 import * as Sharing from 'expo-sharing'
+import { supabase } from '../lib/supabaseAdmin'
 
-const generateTransactionReportHTML = (transactions, summary, date, time, invoiceImageUrl = null) => {
+const generateTransactionReportHTML = async (transactions, summary, date, time, invoiceImageUrl = null) => {
   // Get the first and last day of the current month
   const now = new Date()
   const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -19,34 +20,115 @@ const generateTransactionReportHTML = (transactions, summary, date, time, invoic
   const dateRange = `${formatDate(firstDay)} TO ${formatDate(lastDay)}`
   const generatedDateTime = `${date} ${time}`
 
-  // Calculate total amount
-  const totalAmount = transactions.reduce((sum, transaction) => sum + (transaction.amount_per_passenger || 0), 0)
+  // Fetch contract data for each transaction
+  const contractData = await Promise.all(transactions.map(async (transaction) => {
+    const { data, error } = await supabase
+      .from('contract')
+      .select(`
+        id,
+        contract_status:contract_status_id (status_name),
+        delivery_charge,
+        surcharge,
+        discount,
+        remarks,
+        passenger_form,
+        drop_off_location,
+        delivered_at,
+        cancelled_at,
+        luggage_info:contract_luggage_information (
+          luggage_owner,
+          quantity,
+          case_number,
+          item_description,
+          weight,
+          contact_number,
+          flight_number
+        )
+      `)
+      .eq('payment_id', transaction.payment_id)
+
+    if (error) {
+      console.error('Error fetching contract data:', error)
+      return null
+    }
+
+    return data
+  }))
+
+  // Calculate total amount from all contracts
+  const totalAmount = contractData.reduce((sum, contracts) => {
+    if (!contracts) return sum
+    return sum + contracts.reduce((contractSum, contract) => {
+      const baseAmount = (contract.delivery_charge || 0) + (contract.surcharge || 0)
+      const discountedAmount = baseAmount * (1 - ((contract.discount || 0) / 100))
+      return contractSum + discountedAmount
+    }, 0)
+  }, 0)
 
   // Format transactions for the table
-  const formattedTransactions = transactions.map((transaction, index) => `
-    <tr>
-      <td>${index + 1}</td>
-      <td>${transaction.id}</td>
-      <td>${transaction.luggage_owner || 'N/A'}</td>
-      <td>${transaction.flight_number || 'N/A'}</td>
-      <td>${transaction.drop_off_location}</td>
-      <td>${transaction.completion_date}</td>
-      <td>${transaction.status}</td>
-      <td class="amount">₱${transaction.amount_per_passenger.toFixed(2)}</td>
-      <td>${transaction.remarks || ' '}</td>
-    </tr>
-  `).join('')
+  const formattedTransactions = contractData.flatMap((contracts, transactionIndex) => {
+    if (!contracts || contracts.length === 0) {
+      return `
+        <tr>
+          <td>${transactionIndex + 1}</td>
+          <td>${transactions[transactionIndex].payment_id}</td>
+          <td>N/A</td>
+          <td>N/A</td>
+          <td>N/A</td>
+          <td>N/A</td>
+          <td>N/A</td>
+          <td class="amount">₱0.00</td>
+          <td>N/A</td>
+        </tr>
+      `
+    }
+
+    // Return one row per contract's luggage item
+    return contracts.flatMap((contract, contractIndex) => {
+      if (!contract.luggage_info || contract.luggage_info.length === 0) {
+        return `
+          <tr>
+            <td>${contractIndex + 1}</td>
+            <td>${contract.id}</td>
+            <td>N/A</td>
+            <td>N/A</td>
+            <td>${contract.drop_off_location || 'N/A'}</td>
+            <td>${contract.delivered_at || contract.cancelled_at || 'N/A'}</td>
+            <td>${contract.contract_status?.status_name || 'N/A'}</td>
+            <td class="amount">₱${((contract.delivery_charge || 0) + (contract.surcharge || 0)).toFixed(2)}</td>
+            <td>${contract.remarks || ' '}</td>
+          </tr>
+        `
+      }
+
+      return contract.luggage_info.map((luggage, luggageIndex) => `
+        <tr>
+          <td>${luggageIndex + 1}</td>
+          <td>${contract.id}</td>
+          <td>${luggage.luggage_owner || 'N/A'}</td>
+          <td>${luggage.flight_number || 'N/A'}</td>
+          <td>${contract.drop_off_location || 'N/A'}</td>
+          <td>${contract.delivered_at || contract.cancelled_at || 'N/A'}</td>
+          <td>${contract.contract_status?.status_name || 'N/A'}</td>
+          <td class="amount">₱${((contract.delivery_charge || 0) + (contract.surcharge || 0)).toFixed(2)}</td>
+          <td>${contract.remarks || ' '}</td>
+        </tr>
+      `).join('')
+    }).join('')
+  }).join('')
 
   // Filter out transactions without passenger forms
-  const transactionsWithForms = transactions.filter(t => t.passenger_form)
+  const transactionsWithForms = contractData.flatMap(contracts => 
+    contracts?.filter(contract => contract.passenger_form) || []
+  )
   
   // Generate HTML for passenger forms
-  const formPages = transactionsWithForms.map((transaction, index) => `
+  const formPages = transactionsWithForms.map((contract, index) => `
     <div class="page-break"></div>
     <div class="form-container">
-      <img src="${transaction.passenger_form}" class="form-image" />
+      <img src="${contract.passenger_form}" class="form-image" />
       <div class="form-info">
-        Contract ID: ${transaction.id} | Amount: ₱${transaction.amount_per_passenger.toFixed(2)} | Page ${index + 1} of ${transactionsWithForms.length}
+        Contract ID: ${contract.id} | Amount: ₱${((contract.delivery_charge || 0) + (contract.surcharge || 0)).toFixed(2)} | Page ${index + 1} of ${transactionsWithForms.length}
       </div>
     </div>
   `).join('')
@@ -212,7 +294,7 @@ const generateTransactionReportHTML = (transactions, summary, date, time, invoic
             <div>****************************************************SUBMITTED ALL ORIGINAL SIGNED PIR****************************************************</div>
           </div>
           <div class="footer-line3">
-            Total PIR submitted: ${transactions.length}
+            Total PIR submitted: ${contractData.reduce((sum, contracts) => sum + (contracts?.length || 0), 0)}
           </div>
         </div>
         ${formPages}
@@ -227,7 +309,7 @@ export const printPDF = async (transactions, summary, invoiceImageUrl = null, pr
       throw new Error('Transactions and summary data are required')
     }
 
-    const html = generateTransactionReportHTML(
+    const html = await generateTransactionReportHTML(
       transactions,
       summary,
       new Date().toLocaleDateString(),
@@ -253,7 +335,7 @@ export const sharePDF = async (transactions, summary, invoiceImageUrl = null) =>
       throw new Error('Transactions and summary data are required')
     }
 
-    const html = generateTransactionReportHTML(
+    const html = await generateTransactionReportHTML(
       transactions,
       summary,
       new Date().toLocaleDateString(),

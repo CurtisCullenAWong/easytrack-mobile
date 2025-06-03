@@ -132,7 +132,8 @@ const CompletedReceipts = ({ navigation }) => {
         const baseAmount = (transaction.delivery_charge || 0) + (transaction.surcharge || 0)
         const discountedAmount = baseAmount * (1 - ((transaction.discount || 0) / 100))
 
-        acc[paymentId] = {
+        // Create a base transaction object
+        const baseTransaction = {
           key: paymentId,
           payment_id: paymentId,
           payment_status: transaction.payment?.payment_status?.status_name || 'N/A',
@@ -150,7 +151,6 @@ const CompletedReceipts = ({ navigation }) => {
               })
             : 'N/A',
           total_charge: transaction.payment?.total_charge || 0,
-          // Add fields needed for actions
           id: transaction.id,
           status: transaction.contract_status?.status_name || 'N/A',
           delivery_charge: transaction.delivery_charge || 0,
@@ -163,11 +163,27 @@ const CompletedReceipts = ({ navigation }) => {
           completion_date: completionDate,
           airline: transaction.airline,
           delivery: transaction.delivery,
-          luggage_info: transaction.luggage_info || [],
           amount_per_passenger: discountedAmount,
-          luggage_owner: transaction.luggage_info?.[0]?.luggage_owner || 'N/A',
-          flight_number: transaction.luggage_info?.[0]?.flight_number || 'N/A'
+          contracts: [] // Array to store all contracts with this payment_id
         }
+
+        acc[paymentId] = baseTransaction
+      }
+
+      // Add this contract's luggage info to the payment group
+      if (transaction.luggage_info && transaction.luggage_info.length > 0) {
+        transaction.luggage_info.forEach(luggage => {
+          acc[paymentId].contracts.push({
+            contract_id: transaction.id,
+            luggage_owner: luggage.luggage_owner || 'N/A',
+            flight_number: luggage.flight_number || 'N/A',
+            quantity: luggage.quantity || 0,
+            case_number: luggage.case_number || 'N/A',
+            item_description: luggage.item_description || 'N/A',
+            weight: luggage.weight || 0,
+            contact_number: luggage.contact_number || 'N/A'
+          })
+        })
       }
       
       return acc
@@ -195,7 +211,7 @@ const CompletedReceipts = ({ navigation }) => {
   const handlePrint = async (transaction) => {
     try {
       const summary = {
-        totalTransactions: 1,
+        totalTransactions: transaction.contracts.length,
         totalAmount: transaction.amount_per_passenger,
         totalSurcharge: transaction.surcharge || 0,
         totalDiscount: transaction.discount || 0,
@@ -211,7 +227,7 @@ const CompletedReceipts = ({ navigation }) => {
   const handleShare = async (transaction) => {
     try {
       const summary = {
-        totalTransactions: 1,
+        totalTransactions: transaction.contracts.length,
         totalAmount: transaction.amount_per_passenger,
         totalSurcharge: transaction.surcharge || 0,
         totalDiscount: transaction.discount || 0,
