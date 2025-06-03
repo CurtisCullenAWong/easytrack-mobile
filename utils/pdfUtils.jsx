@@ -66,11 +66,12 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
   }, 0)
 
   // Format transactions for the table
+  let rowCounter = 1; // Add counter for sequential numbering
   const formattedTransactions = contractData.flatMap((contracts, transactionIndex) => {
     if (!contracts || contracts.length === 0) {
       return `
         <tr>
-          <td>${transactionIndex + 1}</td>
+          <td>${rowCounter++}</td>
           <td>${transactions[transactionIndex].payment_id}</td>
           <td>N/A</td>
           <td>N/A</td>
@@ -88,7 +89,7 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
       if (!contract.luggage_info || contract.luggage_info.length === 0) {
         return `
           <tr>
-            <td>${contractIndex + 1}</td>
+            <td>${rowCounter++}</td>
             <td>${contract.id}</td>
             <td>N/A</td>
             <td>N/A</td>
@@ -103,7 +104,7 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
 
       return contract.luggage_info.map((luggage, luggageIndex) => `
         <tr>
-          <td>${luggageIndex + 1}</td>
+          <td>${rowCounter++}</td>
           <td>${contract.id}</td>
           <td>${luggage.luggage_owner || 'N/A'}</td>
           <td>${luggage.flight_number || 'N/A'}</td>
@@ -294,7 +295,7 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
             <div>****************************************************SUBMITTED ALL ORIGINAL SIGNED PIR****************************************************</div>
           </div>
           <div class="footer-line3">
-            Total PIR submitted: ${contractData.reduce((sum, contracts) => sum + (contracts?.length || 0), 0)}
+            Total PIR submitted: ${rowCounter - 1}
           </div>
         </div>
         ${formPages}

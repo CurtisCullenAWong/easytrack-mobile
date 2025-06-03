@@ -164,6 +164,7 @@ const PendingReceipts = ({ navigation }) => {
 
   const filteredAndSortedTransactions = transactions
     .filter(transaction => {
+      if (!searchQuery) return true;
       const searchValue = String(transaction[searchColumn] || '').toLowerCase()
       const query = searchQuery.toLowerCase()
       return searchValue.includes(query)
