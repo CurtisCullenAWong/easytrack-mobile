@@ -1,31 +1,35 @@
 import { useState } from 'react'
-import { Alert, Modal, View, Text, ActivityIndicator } from 'react-native'
 import * as Updates from 'expo-updates'
+import { Portal, Modal, ActivityIndicator, Text, useTheme } from 'react-native-paper'
+import useSnackbar from './useSnackbar'
 
-const UpdateModal = ({ visible, status, theme }) => (
-  <Modal transparent={true} visible={visible} animationType="fade">
-    <View style={{
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: 'rgba(0,0,0,0.5)'
-    }}>
-      <View style={{
-        backgroundColor: 'white',
-        padding: 20,
-        borderRadius: 10,
-        alignItems: 'center'
-      }}>
+const UpdateModal = ({ visible, status }) => {
+  const theme = useTheme()
+  
+  return (
+    <Portal>
+      <Modal
+        visible={visible}
+        onDismiss={() => {}}
+        contentContainerStyle={{
+          backgroundColor: 'white',
+          padding: 20,
+          margin: 20,
+          borderRadius: 10,
+          alignItems: 'center'
+        }}
+      >
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={{ marginTop: 10 }}>{status}</Text>
-      </View>
-    </View>
-  </Modal>
-)
+        <Text variant="bodyLarge" style={{ marginTop: 10 }}>{status}</Text>
+      </Modal>
+    </Portal>
+  )
+}
 
 const useAppUpdate = () => {
   const [isUpdating, setIsUpdating] = useState(false)
   const [updateStatus, setUpdateStatus] = useState('')
+  const { showSnackbar, SnackbarElement } = useSnackbar()
 
   const handleAppUpdate = async (showPrompt = true) => {
     if (__DEV__) return
@@ -55,7 +59,7 @@ const useAppUpdate = () => {
                     setUpdateStatus('')
                     setIsUpdating(false)
                     if (!__DEV__) {
-                      Alert.alert("Update Error", "Failed to check for updates. Please try again later.")
+                      showSnackbar("Failed to install update. Please try again later.", false)
                     }
                   }
                 }
@@ -80,12 +84,12 @@ const useAppUpdate = () => {
       setUpdateStatus('')
       setIsUpdating(false)
       if (!__DEV__) {
-        Alert.alert("Update Error", "Failed to check for updates. Please try again later.")
+        showSnackbar("Failed to check for updates. Please try again later.", false)
       }
     }
   }
 
-  return { isUpdating, updateStatus, handleAppUpdate, UpdateModal }
+  return { isUpdating, updateStatus, handleAppUpdate, UpdateModal, SnackbarElement }
 }
 
 export default useAppUpdate
