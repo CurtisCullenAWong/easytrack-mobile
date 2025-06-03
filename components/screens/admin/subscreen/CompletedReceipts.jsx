@@ -140,8 +140,7 @@ const CompletedReceipts = ({ navigation }) => {
         // Create a base transaction object
         const baseTransaction = {
           key: paymentId,
-          payment_id: '#'+paymentId,
-          actual_payment_id: paymentId,
+          payment_id: paymentId,
           payment_status: transaction.payment?.payment_status?.status_name || 'N/A',
           payment_status_id: transaction.payment?.payment_status?.id || null,
           created_at: transaction.payment?.created_at 
@@ -214,10 +213,6 @@ const CompletedReceipts = ({ navigation }) => {
     fetchTransactions().finally(() => setRefreshing(false))
   }, [])
 
-  const handleViewDetails = (transaction) => {
-    navigation.navigate('ContractDetailsAdmin', { id: transaction.id })
-  }
-
   const handlePrint = async (transaction) => {
     try {
       const summary = {
@@ -255,7 +250,7 @@ const CompletedReceipts = ({ navigation }) => {
       const { error } = await supabase
         .from('payment')
         .update({ payment_status_id: 2, updated_at: new Date().toISOString() }) // Assuming 2 is the ID for "Paid" status
-        .eq('id', transaction.actual_payment_id) // Use the actual ID without the # prefix
+        .eq('id', transaction.payment_id)
 
       if (error) throw error
 
@@ -485,16 +480,6 @@ const CompletedReceipts = ({ navigation }) => {
                         }
                         contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
                       >
-                        <Menu.Item
-                          onPress={() => {
-                            handleViewDetails(transaction)
-                            setActionsMenuVisible(false)
-                            setSelectedTransaction(null)
-                          }}
-                          title="View Details"
-                          leadingIcon="eye"
-                          titleStyle={[{ color: colors.onSurface }, fonts.bodyLarge]}
-                        />
                         <Menu.Item
                           onPress={() => {
                             handlePrint(transaction)

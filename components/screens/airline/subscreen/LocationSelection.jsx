@@ -60,7 +60,7 @@ const MemoizedGooglePlacesAutocomplete = React.memo(({ onPlaceSelect, colors, fo
   />
 ))
 
-const LocationSelection = ({ navigation, route }) => {
+const LocationSelection = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const [selectedLocation, setSelectedLocation] = useState(null)
   const [isMapExpanded, setIsMapExpanded] = useState(true)
@@ -377,4 +377,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default React.memo(LocationSelection)
+export default LocationSelection

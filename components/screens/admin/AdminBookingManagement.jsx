@@ -343,7 +343,7 @@ const AdminBookingManagement = ({ navigation }) => {
                           <Menu.Item
                             onPress={() => {
                               setActionMenuVisible(null)
-                              navigation.navigate('ContractDetailsAdmin', { id: contract.id })
+                              navigation.navigate('AdminTrackLuggage', { contractId: contract.id })
                             }}
                             title="Track Luggage"
                             leadingIcon="map-marker"
@@ -355,6 +355,21 @@ const AdminBookingManagement = ({ navigation }) => {
                             ]}
                           />
                         )}
+
+                        <Menu.Item
+                          onPress={() => {
+                            setActionMenuVisible(null)
+                            navigation.navigate('ContractDetailsAdmin', { id: contract.id })
+                          }}
+                          title="Contract Details"
+                          leadingIcon="file-document"
+                          titleStyle={[
+                            {
+                              color: colors.onSurface,
+                            },
+                            fonts.bodyLarge,
+                          ]}
+                        />
                       </Menu>
                     </DataTable.Cell>
                   </DataTable.Row>

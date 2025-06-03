@@ -52,6 +52,10 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
         mode="outlined"
         style={{ marginBottom: 12 }}
         error={contract.errors?.caseNumber}
+        maxLength={10}
+        inputMode="numeric"
+        left={<TextInput.Affix text="AHLMNLZ" />}
+        placeholder='xxxxxxxxxx'
       />
       <TextInput
         label="Name"
@@ -75,33 +79,44 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
         onChangeText={(text) => onInputChange(index, "contact", text)}
         mode="outlined"
         style={{ marginBottom: 12 }}
+        keyboardType="phone-pad"
+        left={<TextInput.Affix text="+63" />}
         error={contract.errors?.contact}
+        maxLength={10}
+        inputMode="numeric"
       />
       <TextInput
         label="Weight (kg)"
         value={contract.weight}
         onChangeText={(text) => onInputChange(index, "weight", text)}
-        keyboardType="numeric"
+        inputMode="numeric"
         mode="outlined"
         style={{ marginBottom: 12 }}
         error={contract.errors?.weight}
+        maxLength={2}
+        placeholder="Max 20kg"
       />
       <TextInput
         label="Quantity"
         value={contract.quantity}
         onChangeText={(text) => onInputChange(index, "quantity", text)}
-        keyboardType="numeric"
+        inputMode="numeric"
         mode="outlined"
         style={{ marginBottom: 12 }}
         error={contract.errors?.quantity}
+        maxLength={2}
+        placeholder="Max 14"
       />
       <TextInput
         label="Flight Number"
         value={contract.flightNumber}
         onChangeText={(text) => onInputChange(index, "flightNumber", text)}
         mode="outlined"
+        inputMode="numeric"
         style={{ marginBottom: 12 }}
         error={contract.errors?.flightNumber}
+        maxLength={5}
+        placeholder="Max 5 digits"
       />
       <Button
         mode="outlined"
@@ -138,9 +153,6 @@ const MakeContracts = () => {
   useFocusEffect(
     useCallback(() => {
       setContracts([{ ...INITIAL_CONTRACT }])
-      setDropOffLocation({ location: '', lat: null, lng: null })
-      setPickupLocation('')
-      setDeliveryFee(0)
     }, [])
   )
 
@@ -264,8 +276,8 @@ const MakeContracts = () => {
       caseNumber: !contract.caseNumber.trim(),
       itemDescription: !contract.itemDescription.trim(),
       contact: !contract.contact.trim(),
-      weight: !contract.weight.trim() || isNaN(contract.weight) || Number(contract.weight) <= 0,
-      quantity: !contract.quantity.trim() || isNaN(contract.quantity) || Number(contract.quantity) <= 0,
+      weight: !contract.weight.trim() || isNaN(contract.weight) || Number(contract.weight) <= 0 || Number(contract.weight) > 20,
+      quantity: !contract.quantity.trim() || isNaN(contract.quantity) || Number(contract.quantity) <= 0 || Number(contract.quantity) > 14,
       flightNumber: !contract.flightNumber.trim()
     }
   }, [])
@@ -386,7 +398,7 @@ const MakeContracts = () => {
 
         return {
           id: luggageTrackingID,
-          case_number: contract.caseNumber,
+          case_number: 'AHLMNLZ'+contract.caseNumber,
           luggage_owner: contract.name,
           contact_number: contract.contact,
           item_description: contract.itemDescription,

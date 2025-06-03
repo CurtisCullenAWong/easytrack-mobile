@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { View, FlatList, StyleSheet } from 'react-native'
 import { Text, Card, Divider, useTheme, Avatar, Button } from 'react-native-paper'
-import Header from '../customComponents/Header'
+import Header from '../../customComponents/Header'
 
 const MOCK_TRANSACTIONS = [
   { id: '1', transactionId: 'TXN-981237', date: '2025-04-25', passengerName: 'Naiza F. Albina', amount: '₱ 185', status: 'Paid' },
@@ -31,7 +31,7 @@ const TransactionHistory = ({ navigation }) => {
         </View>
         <Divider />
         <View style={styles.passengerInfoContainer}>
-          <Avatar.Image size={40} source={require('../../assets/profile-placeholder.png')} style={styles.avatarImage} />
+          <Avatar.Image size={40} source={require('../../../assets/profile-placeholder.png')} style={styles.avatarImage} />
           <View>
             <Text style={[fonts.labelSmall, { fontWeight: 'bold', color: colors.primary }]}>{transaction.passengerName}</Text>
             <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Date: {transaction.date}</Text>

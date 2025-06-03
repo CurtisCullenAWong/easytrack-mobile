@@ -7,10 +7,10 @@ import {
     StyleSheet,
     RefreshControl,
 } from 'react-native'
-import { Text, TextInput, Button, Surface, useTheme, Card, Divider, IconButton, Avatar } from 'react-native-paper'
+import { Text, TextInput, Button, Surface, useTheme, Card, Divider, IconButton, Avatar, Menu, Portal, Dialog } from 'react-native-paper'
 import MapView, { Marker } from 'react-native-maps'
 import Header from '../../customComponents/Header'
-import { supabase } from '../../../lib/supabase'
+import { supabase } from '../../../lib/supabaseAdmin'
 import useSnackbar from '../../hooks/useSnackbar'
 
 const { width, height } = Dimensions.get('window')
@@ -60,12 +60,17 @@ const LuggageInfo = ({ luggage, index, colors, fonts, isLast }) => (
     </View>
 )
 
-const AirlineTrackLuggage = ({ navigation, route }) => {
+const AdminTrackLuggage = ({ navigation, route }) => {
     const [trackingNumber, setTrackingNumber] = useState('')
     const [loading, setLoading] = useState(false)
     const [contractData, setContractData] = useState(null)
     const [refreshing, setRefreshing] = useState(false)
     const [mapRegion, setMapRegion] = useState(null)
+    const [showActionMenu, setShowActionMenu] = useState(false)
+    const [showCancelDialog, setShowCancelDialog] = useState(false)
+    const [showReassignDialog, setShowReassignDialog] = useState(false)
+    const [availableDeliveryPersonnel, setAvailableDeliveryPersonnel] = useState([])
+    const [selectedDeliveryPerson, setSelectedDeliveryPerson] = useState(null)
     const mapRef = useRef(null)
     const { colors, fonts } = useTheme()
     const { showSnackbar, SnackbarElement } = useSnackbar()
@@ -80,7 +85,7 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
         }
     }, [contractId, initialContractData])
 
-    // Auto refresh every 30 seconds if we have a tracking number
+    // Auto refresh every 15 seconds if we have a tracking number
     useEffect(() => {
         if (trackingNumber) {
             const interval = setInterval(() => {
@@ -104,6 +109,23 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
         })
     }
 
+    const fetchAvailableDeliveryPersonnel = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('role_id', 2)
+                .eq('verify_status_id', 1)
+                .eq('user_status_id', 1)
+
+            if (error) throw error
+            setAvailableDeliveryPersonnel(data || [])
+        } catch (error) {
+            console.error('Error fetching delivery personnel:', error)
+            showSnackbar('Failed to fetch available delivery personnel')
+        }
+    }
+
     const handleTrackLuggage = async () => {
         try {
             setLoading(true)
@@ -121,6 +143,13 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
                         contact_number
                     ),
                     delivery_profile:delivery_id (
+                        pfp_id,
+                        first_name,
+                        middle_initial,
+                        last_name,
+                        suffix
+                    ),
+                    airline_profile:airline_id (
                         pfp_id,
                         first_name,
                         middle_initial,
@@ -163,6 +192,51 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
         } finally {
             setLoading(false)
             setRefreshing(false)
+        }
+    }
+
+    const handleCancelContract = async () => {
+        try {
+            const { error } = await supabase
+                .from('contract')
+                .update({
+                    contract_status_id: 5, // Cancelled status
+                    cancelled_at: new Date().toISOString(),
+                })
+                .eq('id', trackingNumber)
+
+            if (error) throw error
+
+            showSnackbar('Contract cancelled successfully')
+            setShowCancelDialog(false)
+            handleTrackLuggage()
+        } catch (error) {
+            showSnackbar('Error cancelling contract: ' + error.message)
+        }
+    }
+
+    const handleReassignDelivery = async () => {
+        try {
+            if (!selectedDeliveryPerson) {
+                showSnackbar('Please select a delivery personnel')
+                return
+            }
+
+            const { error } = await supabase
+                .from('contract')
+                .update({
+                    delivery_id: selectedDeliveryPerson.id,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('id', trackingNumber)
+
+            if (error) throw error
+
+            showSnackbar('Delivery personnel reassigned successfully')
+            setShowReassignDialog(false)
+            handleTrackLuggage()
+        } catch (error) {
+            showSnackbar('Error reassigning delivery personnel: ' + error.message)
         }
     }
 
@@ -344,9 +418,39 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
                     </>
                 )}
                 <Card.Content>
-                    <Text style={[fonts.titleMedium, { color: colors.primary, marginVertical: 10 }]}>
-                        Contract Information
-                    </Text>
+                    <View style={styles.headerRow}>
+                        <Text style={[fonts.titleMedium, { color: colors.primary, marginVertical: 10 }]}>
+                            Contract Information
+                        </Text>
+                        <Menu
+                            visible={showActionMenu}
+                            onDismiss={() => setShowActionMenu(false)}
+                            anchor={
+                                <IconButton
+                                    icon="dots-vertical"
+                                    onPress={() => setShowActionMenu(true)}
+                                />
+                            }
+                        >
+                            <Menu.Item
+                                onPress={() => {
+                                    setShowActionMenu(false)
+                                    fetchAvailableDeliveryPersonnel()
+                                    setShowReassignDialog(true)
+                                }}
+                                title="Reassign Delivery"
+                                leadingIcon="account-switch"
+                            />
+                            <Menu.Item
+                                onPress={() => {
+                                    setShowActionMenu(false)
+                                    setShowCancelDialog(true)
+                                }}
+                                title="Cancel Contract"
+                                leadingIcon="cancel"
+                            />
+                        </Menu>
+                    </View>
                     <Divider style={{ marginBottom: 10 }} />
                     
                     <View style={styles.infoRow}>
@@ -428,7 +532,7 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
                         { ...fonts.headlineMedium, color: colors.primary },
                     ]}
                 >
-                    Track your shipment
+                    Track Shipment
                 </Text>
                 <Text
                     style={[
@@ -436,7 +540,7 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
                         { ...fonts.default, color: colors.onBackground },
                     ]}
                 >
-                    Please enter your tracking number
+                    Enter tracking number to view details
                 </Text>
 
                 <View style={styles.inputContainer}>
@@ -472,7 +576,7 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
                             { ...fonts.default, color: colors.onSurface },
                         ]}
                     >
-                        "Quickly check the status and location of your luggage in real-time. Your journey, our priority."
+                        "Monitor and manage luggage deliveries with administrative controls."
                     </Text>
                 </Surface>
             </View>
@@ -481,6 +585,49 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
                 source={require('../../../assets/delivery-bg.png')}
                 style={styles.image}
             />
+
+            {/* Cancel Dialog */}
+            <Portal>
+                <Dialog visible={showCancelDialog} onDismiss={() => setShowCancelDialog(false)}>
+                    <Dialog.Title>Cancel Contract</Dialog.Title>
+                    <Dialog.Content>
+                        <Text>Are you sure you want to cancel this contract? This action cannot be undone.</Text>
+                    </Dialog.Content>
+                    <Dialog.Actions>
+                        <Button onPress={() => setShowCancelDialog(false)}>No</Button>
+                        <Button onPress={handleCancelContract} textColor={colors.error}>Yes, Cancel</Button>
+                    </Dialog.Actions>
+                </Dialog>
+            </Portal>
+
+            {/* Reassign Dialog */}
+            <Portal>
+                <Dialog visible={showReassignDialog} onDismiss={() => setShowReassignDialog(false)}>
+                    <Dialog.Title>Reassign Delivery Personnel</Dialog.Title>
+                    <Dialog.Content>
+                        <Text style={{ marginBottom: 10 }}>Select a new delivery personnel:</Text>
+                        {availableDeliveryPersonnel.map((person) => (
+                            <Button
+                                key={person.id}
+                                mode={selectedDeliveryPerson?.id === person.id ? "contained" : "outlined"}
+                                onPress={() => setSelectedDeliveryPerson(person)}
+                                style={{ marginVertical: 5 }}
+                            >
+                                {[
+                                    person.first_name,
+                                    person.middle_initial+'.',
+                                    person.last_name,
+                                    person.suffix
+                                ].filter(Boolean).join(' ')}
+                            </Button>
+                        ))}
+                    </Dialog.Content>
+                    <Dialog.Actions>
+                        <Button onPress={() => setShowReassignDialog(false)}>Cancel</Button>
+                        <Button onPress={handleReassignDelivery}>Reassign</Button>
+                    </Dialog.Actions>
+                </Dialog>
+            </Portal>
         </ScrollView>
     )
 }
@@ -542,6 +689,11 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         marginVertical: 5,
     },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
     mapContainer: {
         height: 500,
         marginHorizontal: 10,
@@ -565,4 +717,4 @@ const styles = StyleSheet.create({
     },
 })
 
-export default AirlineTrackLuggage
+export default AdminTrackLuggage 

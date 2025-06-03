@@ -294,7 +294,6 @@ const ContractsMade = ({ navigation }) => {
             mode="contained" 
             onPress={() => navigation.navigate('AirlineTrackLuggage', { 
               contractId: contract.id,
-              contractData: contract 
             })} 
             style={[styles.actionButton, { backgroundColor: colors.primary }]}
           >

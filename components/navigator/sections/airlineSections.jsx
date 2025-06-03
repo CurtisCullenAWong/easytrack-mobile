@@ -24,7 +24,7 @@ const AIRLINE_SECTIONS = [
     icon: 'chart-bar',
     items: [
       { icon: 'history', label: 'Booking History (Completed)', screen: 'BookingHistory' },
-      { icon: 'chart-line', label: 'Performance Statistics', screen: 'PerformanceStatistics' },
+      { icon: 'chart-line', label: 'Performance Statistics', screen: 'UserPerformanceStatistics' },
     ],
   },
   {

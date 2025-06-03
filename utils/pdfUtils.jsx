@@ -13,12 +13,15 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
     return date.toLocaleDateString('en-US', {
       day: 'numeric',
       month: 'short',
-      year: 'numeric'
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
     })
   }
   
   const dateRange = `${formatDate(firstDay)} TO ${formatDate(lastDay)}`
-  const generatedDateTime = `${date} ${time}`
+  const generatedDateTime = formatDate(new Date())
 
   // Fetch contract data for each transaction
   const contractData = await Promise.all(transactions.map(async (transaction) => {
