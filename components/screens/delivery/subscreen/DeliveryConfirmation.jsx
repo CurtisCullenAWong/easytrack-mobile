@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { View, StyleSheet, Image, ScrollView } from 'react-native'
 import { Text, Card, Button, useTheme, Portal, Dialog, Appbar } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
@@ -25,6 +25,14 @@ const DeliveryConfirmation = ({ navigation, route }) => {
     },
     currentImageType: null
   })
+
+  // Clear images when component mounts
+  useEffect(() => {
+    updateImages({
+      passenger_id: null,
+      passenger_form: null
+    })
+  }, [])
 
   const updateState = (updates) => setState(prev => ({ ...prev, ...updates }))
   const updateImages = (updates) => setState(prev => ({ 

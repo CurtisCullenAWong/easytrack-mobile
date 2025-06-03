@@ -205,10 +205,10 @@ const ContractsInTransit = ({ navigation }) => {
     if (!selectedContract) return
     try {
       if (dialogType === 'deliver') {
+        navigation.navigate('DeliveryConfirmation', { contract: selectedContract })
         setDialogVisible(false)
         setSelectedContract(null)
         setRemarks('')
-        navigation.navigate('DeliveryConfirmation', { contract: selectedContract })
       }
       else if (dialogType === 'cancel') {
         setLoading(true)
@@ -230,7 +230,6 @@ const ContractsInTransit = ({ navigation }) => {
         setSelectedContract(null)
         setRemarks('')
         fetchContracts()
-        navigation.navigate('BookingHistory')
       }
     } catch (error) {
       showSnackbar('Error updating contract: ' + error.message)

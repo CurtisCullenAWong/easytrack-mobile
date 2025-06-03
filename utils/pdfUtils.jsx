@@ -1,7 +1,7 @@
 import * as Print from 'expo-print'
 import * as Sharing from 'expo-sharing'
 
-const generateTransactionReportHTML = (transactions, summary, date, time) => {
+const generateTransactionReportHTML = (transactions, summary, date, time, invoiceImageUrl = null) => {
   // Get the first and last day of the current month
   const now = new Date()
   const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -50,6 +50,13 @@ const generateTransactionReportHTML = (transactions, summary, date, time) => {
       </div>
     </div>
   `).join('')
+
+  // Generate invoice image HTML if available
+  const invoiceImageHTML = invoiceImageUrl ? `
+    <div class="invoice-container">
+      <img src="${invoiceImageUrl}" class="invoice-image" />
+    </div>
+  ` : ''
 
   return `
     <!DOCTYPE html>
@@ -146,9 +153,29 @@ const generateTransactionReportHTML = (transactions, summary, date, time) => {
             padding: 10px;
             background-color: #fff;
           }
+          .invoice-container {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+          }
+          .invoice-container h3 {
+            margin-bottom: 10px;
+            font-size: 12px;
+          }
+          .invoice-image {
+            width: 100%;
+            height: calc(100vh - 40px);
+            object-fit: contain;
+          }
         </style>
       </head>
       <body>
+        ${invoiceImageHTML}
         <div class="header">
           GHE TRANSMITTAL - AIRPORT CLIENTS PROPERTY IRREGULARITY SUMMARY REPORT<br>
           ${dateRange}
@@ -194,7 +221,7 @@ const generateTransactionReportHTML = (transactions, summary, date, time) => {
   `
 }
 
-export const printPDF = async (transactions, summary, printerUrl = null) => {
+export const printPDF = async (transactions, summary, invoiceImageUrl = null, printerUrl = null) => {
   try {
     if (!transactions || !summary) {
       throw new Error('Transactions and summary data are required')
@@ -204,7 +231,8 @@ export const printPDF = async (transactions, summary, printerUrl = null) => {
       transactions,
       summary,
       new Date().toLocaleDateString(),
-      new Date().toLocaleTimeString()
+      new Date().toLocaleTimeString(),
+      invoiceImageUrl
     )
 
     await Print.printAsync({
@@ -219,7 +247,7 @@ export const printPDF = async (transactions, summary, printerUrl = null) => {
   }
 }
 
-export const sharePDF = async (transactions, summary) => {
+export const sharePDF = async (transactions, summary, invoiceImageUrl = null) => {
   try {
     if (!transactions || !summary) {
       throw new Error('Transactions and summary data are required')
@@ -229,7 +257,8 @@ export const sharePDF = async (transactions, summary) => {
       transactions,
       summary,
       new Date().toLocaleDateString(),
-      new Date().toLocaleTimeString()
+      new Date().toLocaleTimeString(),
+      invoiceImageUrl
     )
 
     const { uri } = await Print.printToFileAsync({

@@ -197,7 +197,24 @@ const MakeContracts = () => {
   const clearSingleContract = useCallback((index) => {
     setContracts(prev => {
       const updated = [...prev]
-      updated[index] = JSON.parse(JSON.stringify(INITIAL_CONTRACT))
+      updated[index] = {
+        name: "",
+        caseNumber: "",
+        itemDescription: "",
+        contact: "",
+        weight: "",
+        quantity: "",
+        flightNumber: "",
+        errors: {
+          name: false,
+          caseNumber: false,
+          itemDescription: false,
+          contact: false,
+          weight: false,
+          quantity: false,
+          flightNumber: false
+        }
+      }
       return updated
     })
   }, [])
@@ -211,7 +228,24 @@ const MakeContracts = () => {
   }, [contracts.length, showSnackbar])
 
   const addContract = useCallback(() => {
-    setContracts(prev => [...prev, JSON.parse(JSON.stringify(INITIAL_CONTRACT))])
+    setContracts(prev => [...prev, {
+      name: "",
+      caseNumber: "",
+      itemDescription: "",
+      contact: "",
+      weight: "",
+      quantity: "",
+      flightNumber: "",
+      errors: {
+        name: false,
+        caseNumber: false,
+        itemDescription: false,
+        contact: false,
+        weight: false,
+        quantity: false,
+        flightNumber: false
+      }
+    }])
   }, [])
 
   const validateContract = useCallback((contract) => {

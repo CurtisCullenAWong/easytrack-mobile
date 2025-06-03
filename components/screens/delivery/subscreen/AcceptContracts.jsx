@@ -194,35 +194,6 @@ const AcceptContracts = ({ navigation }) => {
     setSelectedContract(contract)
     setPickupDialogVisible(true)
   }
-
-  const confirmAcceptContract = async () => {
-    if (!selectedContract) return
-    setAccepting(true)
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('User not authenticated')
-
-      const { error } = await supabase
-        .from('contract')
-        .update({
-          contract_status_id: 3, // Accepted - Awaiting Pickup
-          accepted_at: new Date().toISOString(),
-          delivery_id: user.id,
-        })
-        .eq('id', selectedContract.id)
-
-      if (error) throw error
-
-      showSnackbar('Contract accepted successfully', true)
-      fetchContracts()
-    } catch (error) {
-      showSnackbar('Error accepting contract: ' + error.message)
-    } finally {
-      setAccepting(false)
-      setAcceptDialogVisible(false)
-      setSelectedContract(null)
-    }
-  }
   
   const confirmPickupLuggage = async () => {
     if (!selectedContract) return
