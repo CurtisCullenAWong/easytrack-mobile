@@ -779,7 +779,7 @@ const EditProfileSubScreen = ({ navigation }) => {
         </Dialog>
       </Portal>
 
-      <Portal>
+      {/* <Portal>
         <Dialog
           visible={state.dialogs.emailConfirm}
           onDismiss={() => updateDialog('emailConfirm', false)}
@@ -796,7 +796,7 @@ const EditProfileSubScreen = ({ navigation }) => {
             <Button onPress={handleEmailChange} loading={state.saving} disabled={state.saving}>Confirm</Button>
           </Dialog.Actions>
         </Dialog>
-      </Portal>
+      </Portal> */}
       {SnackbarElement}
     </SafeAreaView>
   )

@@ -120,7 +120,11 @@ const PendingReceipts = ({ navigation }) => {
       return transaction.luggage_info.map((luggage, index) => {
         const baseAmount = (transaction.delivery_charge || 0) + (transaction.surcharge || 0)
         const discountedAmount = baseAmount * (1 - ((transaction.discount || 0) / 100))
-        const perPassengerAmount = discountedAmount / transaction.luggage_info.length
+        // Count how many rows have the same tracking ID
+        const sameTrackingIdCount = transaction.luggage_info.filter(
+          l => l.tracking_id === luggage.tracking_id
+        ).length
+        const perPassengerAmount = discountedAmount / sameTrackingIdCount
         return {
           key: `${transaction.id}_${index}`,
           id: transaction.id,
@@ -131,7 +135,7 @@ const PendingReceipts = ({ navigation }) => {
           surcharge: transaction.surcharge || 0,
           discount: transaction.discount || 0,
           luggage_owner: luggage.luggage_owner || 'N/A',
-          amount_per_passenger: perPassengerAmount * transaction.luggage_info.length,
+          amount_per_passenger: perPassengerAmount,
           remarks: transaction.remarks || ' ',
           flight_number: luggage.flight_number || 'N/A',
           passenger_form: transaction.passenger_form || null,
@@ -461,6 +465,7 @@ const styles = StyleSheet.create({
   menuAnchor: {
     flex: 1,
     position: 'relative',
+    width:'auto'
   },
   menuContent: {
     width: '100%',

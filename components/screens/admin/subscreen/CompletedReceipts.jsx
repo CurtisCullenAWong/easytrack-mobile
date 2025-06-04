@@ -363,7 +363,7 @@ const CompletedReceipts = ({ navigation }) => {
 
       <View style={styles.buttonContainer}>
         <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Filter by:</Text>
-        <View style={styles.menuAnchor}>
+        <View style={[styles.menuAnchor, {width:'60%'}]}>
           <Menu
             visible={filterMenuVisible}
             onDismiss={() => setFilterMenuVisible(false)}
@@ -578,11 +578,12 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   menuAnchor: {
+    flex: 1,
     position: 'relative',
     width: 'auto',
   },
   menuContent: {
-    width: 200,
+    width: '100%',
     left: 0,
     right: 0,
   },

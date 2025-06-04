@@ -2,9 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { View, ScrollView, StyleSheet, Alert, Image } from 'react-native'
 import { useTheme, Text, Button, TextInput, Portal, Dialog, Appbar, Card } from 'react-native-paper'
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'
-import Header from '../../../customComponents/Header'
 import { supabase } from '../../../../lib/supabaseAdmin'
-import { printPDF, sharePDF } from '../../../../utils/pdfUtils'
 import useSnackbar from '../../../hooks/useSnackbar'
 import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system'
@@ -161,18 +159,15 @@ const TransactionSummary = () => {
       // Upload invoice image if selected
       const invoiceImageUrl = await uploadInvoiceImage()
 
-      // Calculate total charge
-      const totalCharge = transactions.reduce((sum, t) => {
-        const baseAmount = (t.delivery_charge || 0) + (t.surcharge || 0)
-        const discountedAmount = baseAmount * (1 - ((t.discount || 0) / 100))
-        return sum + discountedAmount
-      }, 0)
+      // Get the total amount from summary data
+      // This ensures consistency between displayed amount and database value
+      const totalCharge = summaryData.totalAmount
 
-      // Calculate due date (30 days from now)
+      // Set payment due date to 30 days from now
       const dueDate = new Date()
       dueDate.setDate(dueDate.getDate() + 30)
 
-      // Insert into payment table with full invoice number
+      // Insert payment record with invoice details
       const { data: payment, error: paymentError } = await supabase
         .from('payment')
         .insert({
@@ -241,13 +236,6 @@ const TransactionSummary = () => {
           <Text style={[styles.summaryText, { color: colors.onSurface }]}>
             Total Amount: {formatCurrency(summaryData.totalAmount)}
           </Text>
-          <Text style={[styles.summaryText, { color: colors.onSurface }]}>
-            Total Surcharge: {formatCurrency(summaryData.totalSurcharge)}
-          </Text>
-          <Text style={[styles.summaryText, { color: colors.onSurface }]}>
-            Total Discount: {formatCurrency(summaryData.totalDiscount)}
-          </Text>
-          
           <Text style={[styles.summaryText, { color: colors.onSurface, marginTop: 16 }]}>
             Status Breakdown:
           </Text>

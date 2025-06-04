@@ -81,7 +81,7 @@ const TermsAndConditions = ({ navigation }) => {
           14. We will provide you a confirmation receipt and delivery receipt of every baggage delivered thru your official email.
         </Text>
         <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyLarge }]}>
-          15. Billing is every 15TH day of each month.
+          15. Billing is every 30th day of each month.
         </Text>
       </Surface>
     </ScrollView>

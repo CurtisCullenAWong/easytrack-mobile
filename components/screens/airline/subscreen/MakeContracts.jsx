@@ -104,8 +104,8 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
         mode="outlined"
         style={{ marginBottom: 12 }}
         error={contract.errors?.quantity}
-        maxLength={2}
-        placeholder="Max 14"
+        maxLength={1}
+        placeholder="Max 8"
       />
       <TextInput
         label="Flight Number"
@@ -277,7 +277,7 @@ const MakeContracts = () => {
       itemDescription: !contract.itemDescription.trim(),
       contact: !contract.contact.trim(),
       weight: !contract.weight.trim() || isNaN(contract.weight) || Number(contract.weight) <= 0 || Number(contract.weight) > 20,
-      quantity: !contract.quantity.trim() || isNaN(contract.quantity) || Number(contract.quantity) <= 0 || Number(contract.quantity) > 14,
+      quantity: !contract.quantity.trim() || isNaN(contract.quantity) || Number(contract.quantity) <= 0 || Number(contract.quantity) > 8,
       flightNumber: !contract.flightNumber.trim()
     }
   }, [])

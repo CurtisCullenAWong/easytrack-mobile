@@ -90,7 +90,7 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
     }
 
     // Return one row per contract's luggage item
-    return contracts.flatMap((contract, contractIndex) => {
+    return contracts.flatMap((contract) => {
       if (!contract.luggage_info || contract.luggage_info.length === 0) {
         return `
           <tr>
@@ -107,19 +107,26 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
         `
       }
 
-      return contract.luggage_info.map((luggage, luggageIndex) => `
-        <tr>
-          <td>${rowCounter++}</td>
-          <td>${contract.id}</td>
-          <td>${luggage.luggage_owner || 'N/A'}</td>
-          <td>${luggage.flight_number || 'N/A'}</td>
-          <td>${contract.drop_off_location || 'N/A'}</td>
-          <td>${formatDate(contract.delivered_at || contract.cancelled_at)}</td>
-          <td>${contract.contract_status?.status_name || 'N/A'}</td>
-          <td class="amount">₱${((contract.delivery_charge || 0) + (contract.surcharge || 0)).toFixed(2)}</td>
-          <td>${contract.remarks || ' '}</td>
-        </tr>
-      `).join('')
+      return contract.luggage_info.map((luggage) => {
+        // Calculate the amount per row by dividing the total contract amount by the number of luggage items
+        const baseAmount = (contract.delivery_charge || 0) + (contract.surcharge || 0)
+        const discountedAmount = baseAmount * (1 - ((contract.discount || 0) / 100))
+        const amountPerRow = discountedAmount / contract.luggage_info.length
+
+        return `
+          <tr>
+            <td>${rowCounter++}</td>
+            <td>${contract.id}</td>
+            <td>${luggage.luggage_owner || 'N/A'}</td>
+            <td>${luggage.flight_number || 'N/A'}</td>
+            <td>${contract.drop_off_location || 'N/A'}</td>
+            <td>${formatDate(contract.delivered_at || contract.cancelled_at)}</td>
+            <td>${contract.contract_status?.status_name || 'N/A'}</td>
+            <td class="amount">₱${amountPerRow.toFixed(2)}</td>
+            <td>${contract.remarks || ' '}</td>
+          </tr>
+        `
+      }).join('')
     }).join('')
   }).join('')
 
@@ -134,7 +141,7 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
     <div class="form-container">
       <img src="${contract.passenger_form}" class="form-image" />
       <div class="form-info">
-        Contract ID: ${contract.id} | Amount: ₱${((contract.delivery_charge || 0) + (contract.surcharge || 0)).toFixed(2)} | Page ${index + 1} of ${transactionsWithForms.length}
+        Contract ID: ${contract.id} | Page ${index + 1} of ${transactionsWithForms.length}
       </div>
     </div>
   `).join('')
