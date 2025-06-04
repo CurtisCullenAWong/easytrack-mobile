@@ -30,7 +30,7 @@ const MAP_ZOOM_LEVEL = {
 const LuggageInfo = ({ luggage, index, colors, fonts, isLast }) => (
     <View style={{ marginBottom: 10 }}>
         <Text style={[fonts.labelMedium, { color: colors.primary }]}>
-            Luggage #{index + 1}
+            Passenger #{index + 1}
         </Text>
         <View style={styles.infoRow}>
             <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Owner:</Text>
@@ -365,7 +365,7 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
                     </View>
 
                     <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
-                        Luggage Information
+                        Passenger Information
                     </Text>
                     <Divider style={{ marginBottom: 10 }} />
 

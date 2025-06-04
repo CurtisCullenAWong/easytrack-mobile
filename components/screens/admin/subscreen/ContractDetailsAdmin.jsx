@@ -374,7 +374,7 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
                     </View>
 
                     <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
-                        Luggage Information
+                        Passenger Information
                     </Text>
                     <Divider style={{ marginBottom: 10 }} />
 

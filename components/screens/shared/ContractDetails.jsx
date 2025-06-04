@@ -227,14 +227,14 @@ const ContractDetails = ({ navigation, route }) => {
                     </View>
 
                     <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
-                        Luggage Information
+                        Passenger Information
                     </Text>
                     <Divider style={{ marginBottom: 10 }} />
 
                     {contractData.luggage_info?.map((luggage, index) => (
                         <View key={index} style={styles.luggageSection}>
                             <Text style={[fonts.titleSmall, { color: colors.primary, marginBottom: 8 }]}>
-                                Passenger {index + 1}
+                                Passenger #{index + 1}
                             </Text>
                             <View style={styles.infoRow}>
                                 <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Owner:</Text>
