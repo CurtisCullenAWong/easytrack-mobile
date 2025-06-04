@@ -10,6 +10,7 @@ const ID_COLUMN_WIDTH = 120
 const LOCATION_COLUMN_WIDTH = 200
 const TIMELINE_COLUMN_WIDTH = 300
 const STATUS_COLUMN_WIDTH = 150
+const PAYMENT_COLUMN_WIDTH = 150
 
 const BookingHistoryAdmin = ({ navigation }) => {
     const { colors, fonts } = useTheme()
@@ -173,6 +174,7 @@ const BookingHistoryAdmin = ({ navigation }) => {
 
     const columns = [
         { key: 'id', label: 'Contract ID', width: ID_COLUMN_WIDTH },
+        { key: 'payment', label: 'Invoice Number', width: PAYMENT_COLUMN_WIDTH },
         { key: 'pickup_location', label: 'Pickup Location', width: LOCATION_COLUMN_WIDTH },
         { key: 'drop_off_location', label: 'Drop-off Location', width: LOCATION_COLUMN_WIDTH },
         { key: 'status', label: 'Status', width: STATUS_COLUMN_WIDTH },
@@ -282,7 +284,11 @@ const BookingHistoryAdmin = ({ navigation }) => {
                                                 key={key}
                                                 style={{ width: width || COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}
                                             >
-                                                {key === 'status' ? (
+                                                {key === 'payment' ? (
+                                                    <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]} selectable>
+                                                        {contract.payment_id || 'N/A'}
+                                                    </Text>
+                                                ) : key === 'status' ? (
                                                     <Chip
                                                         style={[styles.statusChip, { backgroundColor: getStatusColor(contract.contract_status_id) }]}
                                                         textStyle={{ color: colors.surface }}

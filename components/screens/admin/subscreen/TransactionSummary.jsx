@@ -47,6 +47,21 @@ const TransactionSummary = () => {
     return `₱${parseFloat(amount).toFixed(2)}`
   }
 
+  // Function to format the full invoice number with year
+  const getFullInvoiceNumber = () => {
+    const currentYear = new Date().getFullYear()
+    return `${currentYear}${invoiceNumber}`
+  }
+
+  // Function to handle invoice number input
+  const handleInvoiceNumberChange = (text) => {
+    // Only allow numbers and limit to 4 digits
+    const numbersOnly = text.replace(/[^0-9]/g, '')
+    if (numbersOnly.length <= 4) {
+      setInvoiceNumber(numbersOnly)
+    }
+  }
+
   const handleImageSource = async (source) => {
     setDialogs(prev => ({ ...prev, imageSource: false }))
     
@@ -131,8 +146,8 @@ const TransactionSummary = () => {
 
   const handleAssignInvoice = async () => {
     try {
-      if (!invoiceNumber.trim()) {
-        showSnackbar('Please enter an invoice number')
+      if (!invoiceNumber.trim() || invoiceNumber.length !== 4) {
+        showSnackbar('Please enter a 4-digit invoice number')
         return
       }
 
@@ -157,11 +172,11 @@ const TransactionSummary = () => {
       const dueDate = new Date()
       dueDate.setDate(dueDate.getDate() + 30)
 
-      // Insert into payment table
+      // Insert into payment table with full invoice number
       const { data: payment, error: paymentError } = await supabase
         .from('payment')
         .insert({
-          id: invoiceNumber,
+          id: getFullInvoiceNumber(),
           total_charge: totalCharge,
           due_date: dueDate.toISOString(),
           invoice_image: invoiceImageUrl
@@ -171,10 +186,10 @@ const TransactionSummary = () => {
 
       if (paymentError) throw paymentError
 
-      // Update all contracts with the invoice number
+      // Update all contracts with the full invoice number
       const { error: contractError } = await supabase
         .from('contract')
-        .update({ payment_id: invoiceNumber })
+        .update({ payment_id: getFullInvoiceNumber() })
         .in('id', transactions.map(t => t.id))
 
       if (contractError) throw contractError
@@ -250,11 +265,16 @@ const TransactionSummary = () => {
           <TextInput
             label="Invoice Number"
             value={invoiceNumber}
-            onChangeText={setInvoiceNumber}
+            onChangeText={handleInvoiceNumberChange}
             mode="outlined"
             style={styles.invoiceInput}
-            placeholder="Enter invoice number - YYYYMMDDxx"
+            placeholder="Enter 4 digits (e.g., 0001)"
+            keyboardType="numeric"
+            maxLength={4}
           />
+          <Text style={[styles.invoicePreview, { color: colors.onSurfaceVariant }]}>
+            Full Invoice Number: {invoiceNumber ? getFullInvoiceNumber() : 'YYYYxxxx'}
+          </Text>
           
           <Button
             mode="outlined"
@@ -406,6 +426,12 @@ const styles = StyleSheet.create({
   },
   assignButton: {
     marginTop: 8,
+  },
+  invoicePreview: {
+    fontSize: 14,
+    marginTop: -12,
+    marginBottom: 16,
+    marginLeft: 4,
   },
 })
 

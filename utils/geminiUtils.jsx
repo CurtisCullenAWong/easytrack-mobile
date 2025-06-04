@@ -5,7 +5,9 @@ const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY })
 
 export const analyzeDeliveryStats = async (stats) => {
   try {
-    const prompt = `Analyze the following delivery statistics and provide insights:
+    const prompt = `
+    Don't use ** or * for formatting.
+    Analyze the following delivery statistics and provide insights:
     Total Deliveries: ${stats.totalDeliveries}
     Successful Deliveries: ${stats.successfulDeliveries}
     Failed Deliveries: ${stats.failedDeliveries}
@@ -20,8 +22,7 @@ export const analyzeDeliveryStats = async (stats) => {
     2. Key strengths and areas for improvement
     3. Specific recommendations for optimization
     4. Regional performance insights
-    Keep the response concise, readable, and actionable.
-    Avoid using ** or *, use proper formatting.`
+    Keep the response concise, readable for end users, and actionable.`
 
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash",
