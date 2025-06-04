@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, ScrollView, StyleSheet, RefreshControl, Dimensions } from 'react-native'
+import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native'
 import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, DataTable, Portal, Modal, SegmentedButtons } from 'react-native-paper'
 import { supabase } from '../../../lib/supabase'
 import useSnackbar from '../../hooks/useSnackbar'
@@ -147,22 +147,26 @@ const ContractList = ({ navigation, statusIds, emptyMessage, contracts, loading,
   ]
 
   const handleSort = (column) => {
-    if (sortColumn === column) {
-      setSortDirection(prev => prev === 'ascending' ? 'descending' : 'ascending')
-    } else {
-      setSortColumn(column)
-      setSortDirection('ascending')
+    setSortDirection(prev =>
+      sortColumn === column && prev === 'ascending' ? 'descending' : 'ascending'
+    )
+    setSortColumn(column)
+  }
+
+  const getSortIcon = (column) =>
+    sortColumn === column ? (sortDirection === 'ascending' ? '▲' : '▼') : ''
+
+  const getSortValue = (contract, column) => {
+    switch (column) {
+      case 'status':
+        return contract.contract_status?.status_name || ''
+      case 'timeline':
+        return contract.created_at || ''
+      case 'payment':
+        return contract.payment_id || ''
+      default:
+        return contract[column] || ''
     }
-  }
-
-  const getSortIcon = (column) => {
-    if (sortColumn !== column) return ''
-    return sortDirection === 'ascending' ? '▲' : '▼'
-  }
-
-  const getSortLabel = () => {
-    const option = sortOptions.find(opt => opt.value === sortColumn)
-    return `${option?.label || 'Sort By'} ${getSortIcon(sortColumn)}`
   }
 
   const formatDate = (dateString) => {
@@ -184,40 +188,33 @@ const ContractList = ({ navigation, statusIds, emptyMessage, contracts, loading,
 
   const filteredAndSortedContracts = contracts
     .filter(contract => {
-      const searchValue = String(
-        searchColumn === 'luggage_owner' || searchColumn === 'case_number'
-          ? contract.luggage_info?.[0]?.[searchColumn] || ''
-          : contract[searchColumn] || ''
-      ).toLowerCase()
+      const searchValue = String(contract.id || '').toLowerCase()
       const query = searchQuery.toLowerCase()
       return searchValue.includes(query)
     })
     .sort((a, b) => {
-      let valA, valB
+      const valA = getSortValue(a, sortColumn)
+      const valB = getSortValue(b, sortColumn)
 
-      if (sortColumn === 'luggage_owner' || sortColumn === 'case_number') {
-        valA = a.luggage_info?.[0]?.[sortColumn] || ''
-        valB = b.luggage_info?.[0]?.[sortColumn] || ''
-      } else if (sortColumn === 'contract_status.status_name') {
-        valA = a.contract_status?.status_name || ''
-        valB = b.contract_status?.status_name || ''
-      } else {
-        valA = a[sortColumn] || ''
-        valB = b[sortColumn] || ''
-      }
-
-      // Special handling for date columns
-      if (['created_at', 'pickup_at', 'delivered_at', 'cancelled_at'].includes(sortColumn)) {
+      // Handle date columns
+      if (['created_at', 'pickup_at', 'delivered_at', 'cancelled_at', 'timeline'].includes(sortColumn)) {
         if (!valA) return sortDirection === 'ascending' ? -1 : 1
         if (!valB) return sortDirection === 'ascending' ? 1 : -1
-        return sortDirection === 'ascending'
+        return sortDirection === 'ascending' 
           ? new Date(valA) - new Date(valB)
           : new Date(valB) - new Date(valA)
       }
 
-      // Default sorting for non-date columns
-      if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
-      if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
+      // Handle numeric columns
+      if (typeof valA === 'number' && typeof valB === 'number') {
+        return sortDirection === 'ascending' ? valA - valB : valB - valA
+      }
+
+      // Handle string columns
+      const strA = String(valA).toLowerCase()
+      const strB = String(valB).toLowerCase()
+      if (strA < strB) return sortDirection === 'ascending' ? -1 : 1
+      if (strA > strB) return sortDirection === 'ascending' ? 1 : -1
       return 0
     })
 
@@ -281,7 +278,7 @@ const ContractList = ({ navigation, statusIds, emptyMessage, contracts, loading,
               contentStyle={styles.buttonContent}
               labelStyle={fonts.labelMedium}
             >
-              {getSortLabel()}
+              {getSortIcon(sortColumn)}
             </Button>
           }
           contentStyle={{ backgroundColor: colors.surface }}
@@ -469,6 +466,19 @@ const BookingHistory = ({ navigation }) => {
   const getSortIcon = (column) =>
     sortColumn === column ? (sortDirection === 'ascending' ? '▲' : '▼') : ''
 
+  const getSortValue = (contract, column) => {
+    switch (column) {
+      case 'status':
+        return contract.contract_status?.status_name || ''
+      case 'timeline':
+        return contract.created_at || ''
+      case 'payment':
+        return contract.payment_id || ''
+      default:
+        return contract[column] || ''
+    }
+  }
+
   const filteredAndSortedContracts = contracts
     .filter(contract => {
       const searchValue = String(contract.id || '').toLowerCase()
@@ -476,10 +486,11 @@ const BookingHistory = ({ navigation }) => {
       return searchValue.includes(query)
     })
     .sort((a, b) => {
-      const valA = a[sortColumn]
-      const valB = b[sortColumn]
+      const valA = getSortValue(a, sortColumn)
+      const valB = getSortValue(b, sortColumn)
 
-      if (['created_at', 'delivered_at', 'cancelled_at'].includes(sortColumn)) {
+      // Handle date columns
+      if (['created_at', 'pickup_at', 'delivered_at', 'cancelled_at', 'timeline'].includes(sortColumn)) {
         if (!valA) return sortDirection === 'ascending' ? -1 : 1
         if (!valB) return sortDirection === 'ascending' ? 1 : -1
         return sortDirection === 'ascending' 
@@ -487,8 +498,16 @@ const BookingHistory = ({ navigation }) => {
           : new Date(valB) - new Date(valA)
       }
 
-      if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
-      if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
+      // Handle numeric columns
+      if (typeof valA === 'number' && typeof valB === 'number') {
+        return sortDirection === 'ascending' ? valA - valB : valB - valA
+      }
+
+      // Handle string columns
+      const strA = String(valA).toLowerCase()
+      const strB = String(valB).toLowerCase()
+      if (strA < strB) return sortDirection === 'ascending' ? -1 : 1
+      if (strA > strB) return sortDirection === 'ascending' ? 1 : -1
       return 0
     })
 

@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { View, ScrollView, StyleSheet, RefreshControl, Image, Dimensions } from 'react-native'
-import { Text, Button, Divider, useTheme, Appbar, Chip, Searchbar, Menu, DataTable, Portal, Modal } from 'react-native-paper'
+import { Text, Button, useTheme, Chip, Searchbar, Menu, DataTable, Portal, Modal } from 'react-native-paper'
 import { useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../../../lib/supabaseAdmin'
 import Header from '../../customComponents/Header'
@@ -145,6 +145,19 @@ const BookingHistoryAdmin = ({ navigation }) => {
     const getSortIcon = (column) =>
         sortColumn === column ? (sortDirection === 'ascending' ? '▲' : '▼') : ''
 
+    const getSortValue = (contract, column) => {
+        switch (column) {
+            case 'status':
+                return contract.contract_status?.status_name || ''
+            case 'timeline':
+                return contract.created_at || ''
+            case 'payment':
+                return contract.payment_id || ''
+            default:
+                return contract[column] || ''
+        }
+    }
+
     const filteredAndSortedContracts = contracts
         .filter(contract => {
             const searchValue = String(contract.id || '').toLowerCase()
@@ -152,10 +165,11 @@ const BookingHistoryAdmin = ({ navigation }) => {
             return searchValue.includes(query)
         })
         .sort((a, b) => {
-            const valA = a[sortColumn]
-            const valB = b[sortColumn]
+            const valA = getSortValue(a, sortColumn)
+            const valB = getSortValue(b, sortColumn)
 
-            if (['created_at', 'delivered_at', 'cancelled_at'].includes(sortColumn)) {
+            // Handle date columns
+            if (['created_at', 'pickup_at', 'delivered_at', 'cancelled_at', 'timeline'].includes(sortColumn)) {
                 if (!valA) return sortDirection === 'ascending' ? -1 : 1
                 if (!valB) return sortDirection === 'ascending' ? 1 : -1
                 return sortDirection === 'ascending' 
@@ -163,8 +177,16 @@ const BookingHistoryAdmin = ({ navigation }) => {
                     : new Date(valB) - new Date(valA)
             }
 
-            if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
-            if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
+            // Handle numeric columns
+            if (typeof valA === 'number' && typeof valB === 'number') {
+                return sortDirection === 'ascending' ? valA - valB : valB - valA
+            }
+
+            // Handle string columns
+            const strA = String(valA).toLowerCase()
+            const strB = String(valB).toLowerCase()
+            if (strA < strB) return sortDirection === 'ascending' ? -1 : 1
+            if (strA > strB) return sortDirection === 'ascending' ? 1 : -1
             return 0
         })
 

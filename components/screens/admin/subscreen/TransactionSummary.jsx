@@ -161,7 +161,7 @@ const TransactionSummary = () => {
 
       // Get the total amount from summary data
       // This ensures consistency between displayed amount and database value
-      const totalCharge = summaryData.totalAmount
+      const totalCharge = Math.round(summaryData.totalAmount)
 
       // Set payment due date to 30 days from now
       const dueDate = new Date()
