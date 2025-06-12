@@ -84,6 +84,7 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
         error={contract.errors?.contact}
         maxLength={10}
         inputMode="numeric"
+        placeholder="9xxxxxxxxx"
       />
       <TextInput
         label="Weight (kg)"
@@ -344,45 +345,45 @@ const MakeContracts = () => {
       if (userError) throw userError
       if (!user) throw new Error('User not authenticated')
 
-      // Generate unique tracking ID
-      let trackingID
-      let collisionCheck
-
-      do {
-        trackingID = generateTrackingID()
-
-        const { data: existing, error: checkError } = await supabase
-          .from('contract')
-          .select('id')
-          .eq('id', trackingID)
-
-        if (checkError) throw checkError
-        collisionCheck = existing.length > 0
-      } while (collisionCheck)
-
-      // Insert contract with properly formatted location data and tracking ID
-      const contractData = {
-        id: trackingID,
-        luggage_quantity: totalLuggageQuantity,
-        airline_id: user.id,
-        pickup_location: pickupLocation,
-        drop_off_location: dropOffLocation.location,
-        drop_off_location_geo: `POINT(${dropOffLocation.lng} ${dropOffLocation.lat})`,
-        delivery_charge: totalDeliveryFee
-      }
-
-      const { data: insertedContract, error: contractError } = await supabase
-        .from('contract')
-        .insert(contractData)
-        .select()
-        .single()
-
-      if (contractError) throw contractError
-
-      // Insert luggage information
-      const formattedData = await Promise.all(contracts.map(async (contract) => {
-        let luggageTrackingID
+      // Create one contract per passenger
+      const contractPromises = contracts.map(async (contract) => {
+        // Generate unique tracking ID for each contract
+        let trackingID
         let collisionCheck
+
+        do {
+          trackingID = generateTrackingID()
+
+          const { data: existing, error: checkError } = await supabase
+            .from('contract')
+            .select('id')
+            .eq('id', trackingID)
+
+          if (checkError) throw checkError
+          collisionCheck = existing.length > 0
+        } while (collisionCheck)
+
+        // Insert contract with properly formatted location data and tracking ID
+        const contractData = {
+          id: trackingID,
+          airline_id: user.id,
+          pickup_location: pickupLocation,
+          drop_off_location: dropOffLocation.location,
+          drop_off_location_geo: `POINT(${dropOffLocation.lng} ${dropOffLocation.lat})`,
+          delivery_charge: deliveryFee // Use base delivery fee since it's per passenger
+        }
+
+        const { data: insertedContract, error: contractError } = await supabase
+          .from('contract')
+          .insert(contractData)
+          .select()
+          .single()
+
+        if (contractError) throw contractError
+
+        // Generate unique luggage tracking ID
+        let luggageTrackingID
+        let luggageCollisionCheck
 
         do {
           luggageTrackingID = generateLuggageTrackingID()
@@ -393,31 +394,36 @@ const MakeContracts = () => {
             .eq('id', luggageTrackingID)
 
           if (checkError) throw checkError
-          collisionCheck = existing.length > 0
-        } while (collisionCheck)
+          luggageCollisionCheck = existing.length > 0
+        } while (luggageCollisionCheck)
 
-        return {
+        // Insert luggage information
+        const luggageData = {
           id: luggageTrackingID,
           case_number: 'AHLMNLZ'+contract.caseNumber,
           luggage_owner: contract.name,
-          contact_number: contract.contact,
+          contact_number: '+63' + contract.contact,
           item_description: contract.itemDescription,
           weight: contract.weight,
           quantity: contract.quantity,
           flight_number: contract.flightNumber,
           contract_id: insertedContract.id
         }
-      }))
 
-      const { error: luggageError } = await supabase
-        .from('contract_luggage_information')
-        .insert(formattedData)
+        const { error: luggageError } = await supabase
+          .from('contract_luggage_information')
+          .insert(luggageData)
 
-      if (luggageError) throw luggageError
+        if (luggageError) throw luggageError
 
-      showSnackbar('Contract created successfully', true)
+        return insertedContract
+      })
 
-      
+      // Wait for all contracts to be created
+      await Promise.all(contractPromises)
+
+      showSnackbar('Contracts created successfully', true)
+
       // Reset form
       setDropOffLocation({ location: '', lat: null, lng: null })
       setPickupLocation('')
@@ -426,7 +432,7 @@ const MakeContracts = () => {
       // Navigate to contracts made screen
       navigation.navigate('BookingManagement', { screen: 'made' })
     } catch (error) {
-      showSnackbar('Error creating contract: ' + error.message)
+      showSnackbar('Error creating contracts: ' + error.message)
     } finally {
       setLoading(false)
     }
@@ -578,7 +584,7 @@ const MakeContracts = () => {
             loading={loading}
             disabled={loading}
           >
-            Send Contract
+            Send Contracts
           </Button>
         </View>
       </View>

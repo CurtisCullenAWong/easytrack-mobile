@@ -147,18 +147,14 @@ const AdminBookingManagement = ({ navigation }) => {
 
   const filterOptions = [
     { label: 'Status', value: 'status' },
-    { label: 'Drop-off Location', value: 'drop_off_location' },
     { label: 'Contractor Name', value: 'airline_name' },
-    { label: 'Sub-contractor Name', value: 'delivery_name' },
   ]
 
   const columns = [
     { key: 'id', label: 'Contract ID', width: COLUMN_WIDTH },
     { key: 'status', label: 'Status', width: COLUMN_WIDTH },
     { key: 'luggage_quantity', label: 'Luggage Quantity', width: COLUMN_WIDTH },
-    { key: 'drop_off_location', label: 'Drop-off Location', width: COLUMN_WIDTH },
     { key: 'airline_name', label: 'Contractor Name', width: FULL_NAME_WIDTH },
-    { key: 'delivery_name', label: 'Sub-contractor Name', width: FULL_NAME_WIDTH },
     { key: 'created_at', label: 'Created At', width: COLUMN_WIDTH },
   ]
 
@@ -266,6 +262,9 @@ const AdminBookingManagement = ({ navigation }) => {
           <ScrollView horizontal>
             <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
               <DataTable.Header style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
+                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
+                  <Text style={[styles.headerText, { color: colors.onSurface }]}>Actions</Text>
+                </DataTable.Title>
                 {columns.map(({ key, label, width }) => (
                   <DataTable.Title
                     key={key}
@@ -278,9 +277,6 @@ const AdminBookingManagement = ({ navigation }) => {
                     </View>
                   </DataTable.Title>
                 ))}
-                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
-                  <Text style={[styles.headerText, { color: colors.onSurface }]}>Actions</Text>
-                </DataTable.Title>
               </DataTable.Header>
 
               {filteredAndSortedContracts.length === 0 ? (
@@ -294,17 +290,7 @@ const AdminBookingManagement = ({ navigation }) => {
               ) : (
                 paginatedContracts.map(contract => (
                   <DataTable.Row key={contract.id}>
-                    {columns.map(({ key, width }, idx) => (
-                      <DataTable.Cell
-                        key={idx}
-                        style={{ width, justifyContent: 'center', paddingVertical: 12 }}
-                      >
-                        <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>
-                          {contract[key]}
-                        </Text>
-                      </DataTable.Cell>
-                    ))}                    
-                    <DataTable.Cell numeric style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
+                                        <DataTable.Cell numeric style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
                       <Menu
                         visible={actionMenuVisible === contract.id}
                         onDismiss={() => setActionMenuVisible(null)}
@@ -372,6 +358,16 @@ const AdminBookingManagement = ({ navigation }) => {
                         />
                       </Menu>
                     </DataTable.Cell>
+                    {columns.map(({ key, width }, idx) => (
+                      <DataTable.Cell
+                        key={idx}
+                        style={{ width, justifyContent: 'center', paddingVertical: 12 }}
+                      >
+                        <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>
+                          {contract[key]}
+                        </Text>
+                      </DataTable.Cell>
+                    ))}                    
                   </DataTable.Row>
                 ))
               )}

@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { SegmentedButtons, useTheme } from 'react-native-paper';
 import Header from '../../customComponents/Header';
-import MakeContracts from './subscreen/MakeContracts';
-import ContractsMade from './subscreen/ContractsMade';
+import Booking from './subscreen/Booking';
+import BookingList from './subscreen/BookingList';
 const AirlineBookingManagement = ({ navigation }) => {
   const { colors } = useTheme();
   const [mode, setMode] = useState('create');
@@ -17,8 +17,8 @@ const AirlineBookingManagement = ({ navigation }) => {
           value={mode}
           onValueChange={setMode}
           buttons={[
-            { value: 'create', label: 'Make Contract' },
-            { value: 'made', label: 'Contracts Made' },
+            { value: 'create', label: 'Booking' },
+            { value: 'made', label: 'Booking List' },
           ]}
           style={{ marginHorizontal: 16 }}
         />
@@ -26,9 +26,9 @@ const AirlineBookingManagement = ({ navigation }) => {
 
       <View style={styles.content}>
         {mode === 'made' ? (
-          <ContractsMade navigation={navigation} />
+          <BookingList navigation={navigation} />
         ) : (
-          <MakeContracts navigation={navigation} />
+          <Booking navigation={navigation} />
         )}
       </View>
     </View>
