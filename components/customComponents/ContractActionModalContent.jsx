@@ -126,9 +126,10 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
         throw new Error('User not authenticated')
       }
 
-      const bucket = 'proof-of-delivery'
-      const fileName = `${contract.id}_${dialogType}_${Date.now()}.png`
-      const filePath = fileName
+      const bucket = 'passenger-files'
+      const folder = 'proof_of_delivery'
+      const fileName = `${contract.tracking_id || contract.id}.png`
+      const filePath = `${folder}/${fileName}`
 
       const base64 = await FileSystem.readAsStringAsync(imageUri, {
         encoding: FileSystem.EncodingType.Base64,
@@ -171,7 +172,7 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
       return
     }
 
-    if (!proofOfDeliveryImage && !isCancelAction) {
+    if (!proofOfDeliveryImage && !isCancelAction && !isDeliverAction) {
       showSnackbar('Please upload proof of delivery image')
       return
     }
@@ -213,7 +214,7 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
     }
 
     const imageUrl = proofOfDeliveryImage ? await uploadImage(proofOfDeliveryImage) : null
-    if (!imageUrl && !isCancelAction) {
+    if (!imageUrl && !isCancelAction && !isDeliverAction) {
       showSnackbar('Failed to upload proof of delivery image')
       return
     }
@@ -227,7 +228,7 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
   }
 
   const getButtonText = () => {
-    if (showCancelConfirmation) return 'Confirm'
+    if (showCancelConfirmation) return 'Cancel'
     return 'Confirm'
   }
 
@@ -257,7 +258,7 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
             disabled={loading}
           />
         )}
-        {!isCancelAction && (
+        {!isCancelAction && !isDeliverAction && (
           <View style={styles.imageSection}>
             <Text style={[fonts.titleSmall, styles.imageLabel]}>
               Proof of Delivery Image
@@ -284,9 +285,9 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
           <Button
             mode="outlined"
             onPress={onClose}
-            style={styles.button}
-            textColor={colors.error}
-            disabled={loading}
+            style={[styles.button, { borderColor: colors.primary }]}
+            textColor={colors.primary}
+            disabled={loading || checkingVicinity}
           >
             Cancel
           </Button>

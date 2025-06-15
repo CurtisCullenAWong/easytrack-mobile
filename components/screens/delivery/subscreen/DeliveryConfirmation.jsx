@@ -9,7 +9,7 @@ import useSnackbar from '../../../hooks/useSnackbar'
 import { useFocusEffect } from '@react-navigation/native'
 
 const DeliveryConfirmation = ({ navigation, route }) => {
-  const { contract, proofOfDeliveryImageUrl } = route.params
+  const { contract } = route.params
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   
@@ -18,7 +18,8 @@ const DeliveryConfirmation = ({ navigation, route }) => {
     saving: false,
     images: {
       passenger_id: null,
-      passenger_form: null
+      passenger_form: null,
+      proof_of_delivery: null
     },
     dialogs: {
       imageSource: false,
@@ -32,7 +33,8 @@ const DeliveryConfirmation = ({ navigation, route }) => {
     useCallback(() => {
       updateImages({
         passenger_id: null,
-        passenger_form: null
+        passenger_form: null,
+        proof_of_delivery: null
       })
     }, [])
   )
@@ -64,7 +66,7 @@ const DeliveryConfirmation = ({ navigation, route }) => {
         mediaTypes: 'images',
         allowsEditing: true,
         quality: 1,
-        aspect: state.currentImageType === 'passenger_form' ? [9, 16] : [16, 9],
+        aspect: state.currentImageType === 'passenger_form' ? [9, 16] : [4, 3],
       }
 
       const result = source === 'camera' 
@@ -94,7 +96,7 @@ const DeliveryConfirmation = ({ navigation, route }) => {
       }
 
       const bucket = 'passenger-files'
-      const folder = type === 'passenger_id' ? 'passenger_id' : 'passenger_form'
+      const folder = type === 'proof_of_delivery' ? 'proof_of_delivery' : type === 'passenger_id' ? 'passenger_id' : 'passenger_form'
       const fileName = `${contract.id}_${type}.png`
 
       // Delete existing file if any
@@ -146,18 +148,19 @@ const DeliveryConfirmation = ({ navigation, route }) => {
     try {
       updateState({ saving: true })
 
-      if (!state.images.passenger_id || !state.images.passenger_form) {
-        showSnackbar('Please upload both required images')
+      if (!state.images.passenger_id || !state.images.passenger_form || !state.images.proof_of_delivery) {
+        showSnackbar('Please upload all required images')
         return
       }
 
-      // Upload both images only when confirming
-      const [passengerIdUrl, passengerFormUrl] = await Promise.all([
+      // Upload all images only when confirming
+      const [passengerIdUrl, passengerFormUrl, proofOfDeliveryUrl] = await Promise.all([
         uploadImage(state.images.passenger_id, 'passenger_id'),
-        uploadImage(state.images.passenger_form, 'passenger_form')
+        uploadImage(state.images.passenger_form, 'passenger_form'),
+        uploadImage(state.images.proof_of_delivery, 'proof_of_delivery')
       ])
 
-      if (!passengerIdUrl || !passengerFormUrl) {
+      if (!passengerIdUrl || !passengerFormUrl || !proofOfDeliveryUrl) {
         showSnackbar('Failed to upload one or more images')
         return
       }
@@ -170,7 +173,7 @@ const DeliveryConfirmation = ({ navigation, route }) => {
           contract_status_id: 5, // Delivered
           passenger_id: passengerIdUrl,
           passenger_form: passengerFormUrl,
-          proof_of_delivery: proofOfDeliveryImageUrl
+          proof_of_delivery: proofOfDeliveryUrl
         })
         .eq('id', contract.id)
 
@@ -191,7 +194,7 @@ const DeliveryConfirmation = ({ navigation, route }) => {
     return (
       <View style={[
         styles.imagePreviewContainer,
-        type === 'passenger_form' && styles.verticalImageContainer
+        type === 'passenger_form' ? styles.verticalImageContainer : styles.horizontalImageContainer
       ]}>
         <Image 
           source={{ uri }} 
@@ -244,12 +247,25 @@ const DeliveryConfirmation = ({ navigation, route }) => {
             {state.images.passenger_form ? 'Change Passenger Form' : 'Upload Passenger Form'}
           </Button>
 
+          <Text style={[styles.subLabel, { color: colors.onSurface, ...fonts.titleSmall }]}>
+            Proof of Delivery
+          </Text>
+          <ImagePreview uri={state.images.proof_of_delivery} type="proof_of_delivery" />
+          <Button
+            mode="outlined"
+            onPress={() => pickImage('proof_of_delivery')}
+            style={styles.button}
+            textColor={colors.primary}
+          >
+            {state.images.proof_of_delivery ? 'Change Proof of Delivery' : 'Upload Proof of Delivery'}
+          </Button>
+
           <Button
             mode="contained"
             onPress={() => updateDialog('confirm', true)}
             style={[styles.confirmButton, { backgroundColor: colors.primary }]}
             loading={state.saving}
-            disabled={state.saving || !state.images.passenger_id || !state.images.passenger_form}
+            disabled={state.saving || !state.images.passenger_id || !state.images.passenger_form || !state.images.proof_of_delivery}
           >
             Confirm Delivery
           </Button>
@@ -361,10 +377,12 @@ const styles = StyleSheet.create({
     position: 'relative',
     alignSelf: 'center',
     width: '100%',
-    aspectRatio: 16/9,
     backgroundColor: '#f0f0f0',
     borderRadius: 8,
     overflow: 'hidden',
+  },
+  horizontalImageContainer: {
+    aspectRatio: 4/3,
   },
   verticalImageContainer: {
     aspectRatio: 9/16,
