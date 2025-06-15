@@ -1,15 +1,63 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { View, FlatList, StyleSheet } from 'react-native'
-import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, Portal, Dialog, TextInput } from 'react-native-paper'
+import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
-import useSnackbar from '../../../hooks/useSnackbar'
 import { useLocation } from '../../../hooks/useLocation'
-import { useFocusEffect } from '@react-navigation/native'
+import BottomModal from '../../../customComponents/BottomModal'
+import ContractActionModalContent from '../../../customComponents/ContractActionModalContent'
+import useSnackbar from '../../../hooks/useSnackbar'
 
+// Constants
+const FILTER_OPTIONS = [
+  { label: 'Contract ID', value: 'id' },
+  { label: 'Luggage Owner', value: 'luggage_owner' },
+  { label: 'Case Number', value: 'case_number' },
+  { label: 'Status', value: 'status' },
+  { label: 'Pickup Location', value: 'pickup_location' },
+  { label: 'Current Location', value: 'current_location' },
+  { label: 'Drop-off Location', value: 'drop_off_location' },
+]
+
+const SORT_OPTIONS = [
+  { label: 'Contract ID', value: 'id' },
+  { label: 'Luggage Owner', value: 'luggage_owner' },
+  { label: 'Case Number', value: 'case_number' },
+  { label: 'Status', value: 'contract_status.status_name' },
+  { label: 'Created Date', value: 'created_at' },
+  { label: 'Pickup Date', value: 'pickup_at' },
+  { label: 'Delivery Date', value: 'delivered_at' },
+  { label: 'Cancellation Date', value: 'cancelled_at' },
+]
+
+// Utility functions
+const formatDate = (dateString) => {
+  if (!dateString) return 'Not set'
+  return new Date(dateString).toLocaleString('en-PH', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Manila',
+  })
+}
+
+const getSortIcon = (column, sortColumn, sortDirection) => 
+  sortColumn === column ? (sortDirection === 'ascending' ? '▲' : '▼') : ''
+
+const getSortLabel = (sortColumn, sortOptions, getSortIcon) => {
+  const option = sortOptions.find(opt => opt.value === sortColumn)
+  return `${option?.label || 'Sort By'} ${getSortIcon(sortColumn)}`
+}
+
+// Main Component
 const ContractsInTransit = ({ navigation }) => {
   const { colors, fonts } = useTheme()
-  const { showSnackbar, SnackbarElement } = useSnackbar()
   const { startTracking, stopTracking } = useLocation()
+  const { showSnackbar } = useSnackbar()
+  
+  // State management
   const [currentTime, setCurrentTime] = useState('')
   const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -19,53 +67,66 @@ const ContractsInTransit = ({ navigation }) => {
   const [sortMenuVisible, setSortMenuVisible] = useState(false)
   const [sortColumn, setSortColumn] = useState('created_at')
   const [sortDirection, setSortDirection] = useState('descending')
-  const [dialogVisible, setDialogVisible] = useState(false)
+  const [modalVisible, setModalVisible] = useState(false)
   const [dialogType, setDialogType] = useState(null)
   const [selectedContract, setSelectedContract] = useState(null)
-  const [remarks, setRemarks] = useState('')
+  const [showCancelConfirmation, setShowCancelConfirmation] = useState(false)
+  const [actionLoading, setActionLoading] = useState(false)
 
-  const filterOptions = [
-    { label: 'Contract ID', value: 'id' },
-    { label: 'Luggage Owner', value: 'luggage_owner' },
-    { label: 'Case Number', value: 'case_number' },
-    { label: 'Status', value: 'status' },
-    { label: 'Pickup Location', value: 'pickup_location' },
-    { label: 'Current Location', value: 'current_location' },
-    { label: 'Drop-off Location', value: 'drop_off_location' },
-  ]
+  // Memoized date formatter
+  const getFormattedDates = useCallback((contract) => {
+    return {
+      created: formatDate(contract.created_at),
+      pickup: contract.pickup_at ? formatDate(contract.pickup_at) : null,
+      delivered: contract.delivered_at ? formatDate(contract.delivered_at) : null,
+      cancelled: contract.cancelled_at ? formatDate(contract.cancelled_at) : null,
+    }
+  }, [])
 
-  const sortOptions = [
-    { label: 'Contract ID', value: 'id' },
-    { label: 'Luggage Owner', value: 'luggage_owner' },
-    { label: 'Case Number', value: 'case_number' },
-    { label: 'Status', value: 'contract_status.status_name' },
-    { label: 'Created Date', value: 'created_at' },
-    { label: 'Pickup Date', value: 'pickup_at' },
-    { label: 'Delivery Date', value: 'delivered_at' },
-    { label: 'Cancellation Date', value: 'cancelled_at' },
-  ]
+  // Time update effect
+  useEffect(() => {
+    const updateTime = () => setCurrentTime(formatDate(new Date()))
+    updateTime()
+    const interval = setInterval(updateTime, 1000)
+    return () => clearInterval(interval)
+  }, [])
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchContracts()
-      const updateTime = () =>
-        setCurrentTime(
-          new Date().toLocaleString('en-PH', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: false,
-            timeZone: 'Asia/Manila',
-          })
+  // Initial data fetch effect
+  useEffect(() => {
+    fetchContracts()
+    checkContractsAndManageTracking()
+  }, [])
+
+  // Real-time subscription effect
+  useEffect(() => {
+    const setupSubscription = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const subscription = supabase
+        .channel('contracts_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'contract',
+            filter: `delivery_id=eq.${user.id}`
+          },
+          async () => {
+            await fetchContracts()
+            await checkContractsAndManageTracking()
+          }
         )
-      updateTime()
+        .subscribe()
 
-      checkContractsAndManageTracking()
-    }, [contracts.length])
-  )
+      return () => subscription.unsubscribe()
+    }
 
+    setupSubscription()
+  }, [])
+
+  // Data fetching functions
   const checkContractsAndManageTracking = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -78,14 +139,9 @@ const ContractsInTransit = ({ navigation }) => {
         .eq('contract_status_id', 4)
 
       if (countError) throw countError
-
-      if (count > 0) {
-        await startTracking()
-      } else {
-        await stopTracking()
-        showSnackbar('No contracts in transit. Location tracking inactive.', true)
-      }
+      count > 0 ? await startTracking() : await stopTracking()
     } catch (error) {
+      console.error('Error managing location tracking:', error)
       showSnackbar('Error managing location tracking: ' + error.message)
     }
   }
@@ -123,148 +179,134 @@ const ContractsInTransit = ({ navigation }) => {
       if (error) throw error
       setContracts(data || [])
     } catch (error) {
+      console.error('Error loading contracts:', error)
       showSnackbar('Error loading contracts: ' + error.message)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleSort = (column) => {
+  // Sorting and filtering functions
+  const handleSort = useCallback((column) => {
     if (sortColumn === column) {
       setSortDirection(prev => prev === 'ascending' ? 'descending' : 'ascending')
     } else {
       setSortColumn(column)
       setSortDirection('ascending')
     }
-  }
+  }, [sortColumn])
 
-  const getSortIcon = (column) => {
-    if (sortColumn !== column) return ''
-    return sortDirection === 'ascending' ? '▲' : '▼'
-  }
+  const filteredAndSortedContracts = useMemo(() => {
+    return contracts
+      .filter(contract => {
+        const searchValue = String(
+          searchColumn === 'luggage_owner' || searchColumn === 'case_number'
+            ? contract.luggage_info?.[0]?.[searchColumn] || ''
+            : contract[searchColumn] || ''
+        ).toLowerCase()
+        return searchValue.includes(searchQuery.toLowerCase())
+      })
+      .sort((a, b) => {
+        let valA, valB
 
-  const getSortLabel = () => {
-    const option = sortOptions.find(opt => opt.value === sortColumn)
-    return `${option?.label || 'Sort By'} ${getSortIcon(sortColumn)}`
-  }
-
-  const filteredAndSortedContracts = contracts
-    .filter(contract => {
-      const searchValue = String(
-        searchColumn === 'luggage_owner' || searchColumn === 'case_number'
-          ? contract.luggage_info?.[0]?.[searchColumn] || ''
-          : contract[searchColumn] || ''
-      ).toLowerCase()
-      const query = searchQuery.toLowerCase()
-      return searchValue.includes(query)
-    })
-    .sort((a, b) => {
-      let valA, valB
-
-      if (sortColumn === 'luggage_owner' || sortColumn === 'case_number') {
-        valA = a.luggage_info?.[0]?.[sortColumn] || ''
-        valB = b.luggage_info?.[0]?.[sortColumn] || ''
-      } else if (sortColumn === 'contract_status.status_name') {
-        valA = a.contract_status?.status_name || ''
-        valB = b.contract_status?.status_name || ''
-      } else {
-        valA = a[sortColumn] || ''
-        valB = b[sortColumn] || ''
-      }
-
-      // Special handling for date columns
-      if (['created_at', 'pickup_at', 'delivered_at', 'cancelled_at'].includes(sortColumn)) {
-        if (!valA) return sortDirection === 'ascending' ? -1 : 1
-        if (!valB) return sortDirection === 'ascending' ? 1 : -1
-        return sortDirection === 'ascending'
-          ? new Date(valA) - new Date(valB)
-          : new Date(valB) - new Date(valA)
-      }
-
-      // Default sorting for non-date columns
-      if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
-      if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
-      return 0
-    })
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Not set'
-    return new Date(dateString).toLocaleString('en-PH', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'Asia/Manila',
-    })
-  }
-
-  const handleShowDetails = (contract) => {
-    navigation.navigate('ContractDetails', { id: contract.id})
-  }
-
-  const handleDialogAction = async () => {
-    if (!selectedContract) return
-    try {
-      if (dialogType === 'deliver') {
-        navigation.navigate('DeliveryConfirmation', { contract: selectedContract })
-        setDialogVisible(false)
-        setSelectedContract(null)
-        setRemarks('')
-      }
-      else if (dialogType === 'cancel') {
-        setLoading(true)
-        const updateObj = {
-          cancelled_at: new Date().toISOString(),
-          contract_status_id: 6, // Failed
-          remarks: remarks
+        if (sortColumn === 'luggage_owner' || sortColumn === 'case_number') {
+          valA = a.luggage_info?.[0]?.[sortColumn] || ''
+          valB = b.luggage_info?.[0]?.[sortColumn] || ''
+        } else if (sortColumn === 'contract_status.status_name') {
+          valA = a.contract_status?.status_name || ''
+          valB = b.contract_status?.status_name || ''
+        } else {
+          valA = a[sortColumn] || ''
+          valB = b[sortColumn] || ''
         }
+
+        if (['created_at', 'pickup_at', 'delivered_at', 'cancelled_at'].includes(sortColumn)) {
+          if (!valA) return sortDirection === 'ascending' ? -1 : 1
+          if (!valB) return sortDirection === 'ascending' ? 1 : -1
+          return sortDirection === 'ascending'
+            ? new Date(valA) - new Date(valB)
+            : new Date(valB) - new Date(valA)
+        }
+
+        return sortDirection === 'ascending'
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA)
+      })
+  }, [contracts, searchQuery, searchColumn, sortColumn, sortDirection])
+
+  // Dialog action handlers
+  const handleDialogAction = async (remarks, proofOfDeliveryImageUrl) => {
+    if (!selectedContract) return
+
+    try {
+      setActionLoading(true)
+      if (dialogType === 'deliver') {
+        navigation.navigate('DeliveryConfirmation', { 
+          contract: selectedContract,
+          proofOfDeliveryImageUrl 
+        })
+        setModalVisible(false)
+        setSelectedContract(null)
+      }
+      else if (dialogType === 'failed' || dialogType === 'cancel') {
+        if (!showCancelConfirmation) {
+          setShowCancelConfirmation(true)
+          setActionLoading(false)
+          return
+        }
+        
         const { error } = await supabase
           .from('contract')
-          .update(updateObj)
+          .update({
+            cancelled_at: new Date().toISOString(),
+            contract_status_id: 6,
+            remarks: remarks,
+            proof_of_delivery: proofOfDeliveryImageUrl
+          })
           .eq('id', selectedContract.id)
         if (error) throw error
 
-        checkContractsAndManageTracking()
-
-        showSnackbar('Contract marked as failed.', true)
-        setDialogVisible(false)
+        await checkContractsAndManageTracking()
+        setModalVisible(false)
         setSelectedContract(null)
-        setRemarks('')
-        fetchContracts()
+        setShowCancelConfirmation(false)
+        await fetchContracts()
+        showSnackbar(`Contract ${dialogType === 'failed' ? 'marked as failed' : 'cancelled'} successfully`, true)
       }
     } catch (error) {
+      console.error('Error updating contract:', error)
       showSnackbar('Error updating contract: ' + error.message)
     } finally {
-      setLoading(false)
+      setActionLoading(false)
     }
   }
 
-  const ContractCard = ({ contract }) => {    
+  const ContractCard = ({ contract }) => {
+    // Memoize formatted dates for this contract
+    const formattedDates = useMemo(() => getFormattedDates(contract), [contract, getFormattedDates])
+    
     return (
       <Card style={[styles.contractCard, { backgroundColor: colors.surface }]}>
         <Card.Content>
           <View style={styles.contractCardHeader}>
             <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>CONTRACT ID</Text>
-            <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>{contract.id || 'N/A'}</Text>
+            <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]} >{contract.id || 'N/A'}</Text>
           </View>
           <Divider />
           <View style={styles.passengerInfoContainer}>
-            
             {contract.airline_profile?.pfp_id ? (
-                <Avatar.Image 
-                    size={40} 
-                    source={{ uri: contract.airline_profile?.pfp_id }}
-                    style={[styles.avatarImage,{ backgroundColor: colors.primary }]}
-                />
+              <Avatar.Image 
+                size={40} 
+                source={{ uri: contract.airline_profile?.pfp_id }}
+                style={[styles.avatarImage,{ backgroundColor: colors.primary }]}
+              />
             ) : (
-                <Avatar.Text 
-                    size={40} 
-                    label={contract.airline_profile?.first_name ? contract.airline_profile?.first_name[0].toUpperCase() : 'U'}
-                    style={[styles.avatarImage,{ backgroundColor: colors.primary }]}
-                    labelStyle={{ color: colors.onPrimary }}
-                />
+              <Avatar.Text 
+                size={40} 
+                label={contract.airline_profile?.first_name ? contract.airline_profile?.first_name[0].toUpperCase() : 'U'}
+                style={[styles.avatarImage,{ backgroundColor: colors.primary }]}
+                labelStyle={{ color: colors.onPrimary }}
+              />
             )}
             <View>
               <View style={{ flexDirection: 'row', gap: 5 }}>
@@ -310,32 +352,30 @@ const ContractsInTransit = ({ navigation }) => {
           </View>
           <Divider />
           <View style={styles.detailsContainer}>
-            <Text style={[fonts.labelLarge, styles.statusLabel]}>
-              Timeline:
-            </Text>
+            <Text style={[fonts.labelLarge, styles.statusLabel]}>Timeline:</Text>
             <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
-              Created: {formatDate(contract.created_at)}
+              Created: {formattedDates.created}
             </Text>
-            {contract.pickup_at && (
+            {formattedDates.pickup && (
               <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
-                Pickup: {formatDate(contract.pickup_at)}
+                Pickup: {formattedDates.pickup}
               </Text>
             )}
-            {contract.delivered_at && (
+            {formattedDates.delivered && (
               <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
-                Delivered: {formatDate(contract.delivered_at)}
+                Delivered: {formattedDates.delivered}
               </Text>
             )}
-            {contract.cancelled_at && (
+            {formattedDates.cancelled && (
               <Text style={[fonts.labelSmall, { color: colors.error }]}>
-                Cancelled: {formatDate(contract.cancelled_at)}
+                Cancelled: {formattedDates.cancelled}
               </Text>
             )}
           </View>
           <Divider />
           <Button 
             mode="contained" 
-            onPress={() => handleShowDetails(contract)} 
+            onPress={() => navigation.navigate('ContractDetails', { id: contract.id})} 
             style={[styles.actionButton, { backgroundColor: colors.primary }]}
           >
             Show Details
@@ -357,7 +397,7 @@ const ContractsInTransit = ({ navigation }) => {
             onPress={() => {
               setSelectedContract(contract)
               setDialogType('deliver')
-              setDialogVisible(true)
+              setModalVisible(true)
             }}
             style={[styles.actionButton, { backgroundColor: colors.primary }]}
             disabled={contract.contract_status_id === 5 || contract.contract_status_id === 6}
@@ -368,13 +408,27 @@ const ContractsInTransit = ({ navigation }) => {
             mode="contained"
             onPress={() => {
               setSelectedContract(contract)
-              setDialogType('cancel')
-              setDialogVisible(true)
+              setDialogType('failed')
+              setShowCancelConfirmation(false)
+              setModalVisible(true)
             }}
             style={[styles.actionButton, { backgroundColor: colors.error }]}
             disabled={contract.contract_status_id === 6 || contract.contract_status_id === 5}
           >
             Mark as Failed
+          </Button>
+          <Button
+            mode="contained"
+            onPress={() => {
+              setSelectedContract(contract)
+              setDialogType('cancel')
+              setShowCancelConfirmation(false)
+              setModalVisible(true)
+            }}
+            style={[styles.actionButton, { backgroundColor: colors.error }]}
+            disabled={contract.contract_status_id === 6 || contract.contract_status_id === 5}
+          >
+            Cancel Contract
           </Button>
         </Card.Content>
       </Card>
@@ -383,7 +437,6 @@ const ContractsInTransit = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {SnackbarElement}
       <View style={{ backgroundColor: colors.background }}>
         <Card style={[styles.timeCard, { backgroundColor: colors.surface, elevation: colors.elevation.level3 }]}>
           <Card.Content style={styles.timeCardContent}>
@@ -393,89 +446,88 @@ const ContractsInTransit = ({ navigation }) => {
       </View>
       <View style={styles.searchActionsRow}>
         <Searchbar
-          placeholder={`Search by ${filterOptions.find(opt => opt.value === searchColumn)?.label}`}
+          placeholder={`Search by ${FILTER_OPTIONS.find(opt => opt.value === searchColumn)?.label}`}
           onChangeText={setSearchQuery}
           value={searchQuery}
           style={[styles.searchbar, { backgroundColor: colors.surface }]}
         />
       </View>
-        <View style={styles.buttonGroup}>
-          <Menu
-            visible={filterMenuVisible}
-            onDismiss={() => setFilterMenuVisible(false)}
-            anchor={
-              <Button
-                mode="contained"
-                icon="filter-variant"
-                onPress={() => setFilterMenuVisible(true)}
-                style={[styles.actionButton, { backgroundColor: colors.primary }]}
-                contentStyle={styles.buttonContent}
-                labelStyle={fonts.labelMedium}
-              >
-                {filterOptions.find(opt => opt.value === searchColumn)?.label}
-              </Button>
-            }
-            contentStyle={{ backgroundColor: colors.surface }}
-          >
-            {filterOptions.map(option => (
-              <Menu.Item
-                key={option.value}
-                onPress={() => {
-                  setSearchColumn(option.value)
-                  setFilterMenuVisible(false)
-                }}
-                title={option.label}
-                titleStyle={[
-                  {
-                    color: searchColumn === option.value
-                      ? colors.primary
-                      : colors.onSurface,
-                  },
-                  fonts.bodyLarge,
-                ]}
-                leadingIcon={searchColumn === option.value ? 'check' : undefined}
-              />
-            ))}
-          </Menu>
-          <Menu
-            visible={sortMenuVisible}
-            onDismiss={() => setSortMenuVisible(false)}
-            anchor={
-              <Button
-                mode="contained"
-                icon="sort"
-                onPress={() => setSortMenuVisible(true)}
-                style={[styles.actionButton, { backgroundColor: colors.primary }]}
-                contentStyle={styles.buttonContent}
-                labelStyle={fonts.labelMedium}
-              >
-                {getSortLabel()}
-              </Button>
-            }
-            contentStyle={{ backgroundColor: colors.surface }}
-          >
-            {sortOptions.map(option => (
-              <Menu.Item
-                key={option.value}
-                onPress={() => {
-                  handleSort(option.value)
-                  setSortMenuVisible(false)
-                }}
-                title={option.label}
-                titleStyle={[
-                  {
-                    color: sortColumn === option.value
-                      ? colors.primary
-                      : colors.onSurface,
-                  },
-                  fonts.bodyLarge,
-                ]}
-                leadingIcon={sortColumn === option.value ? 'check' : undefined}
-              />
-            ))}
-          </Menu>    
-        </View>
-      {/* Indication for contracts availability */}
+      <View style={styles.buttonGroup}>
+        <Menu
+          visible={filterMenuVisible}
+          onDismiss={() => setFilterMenuVisible(false)}
+          anchor={
+            <Button
+              mode="contained"
+              icon="filter-variant"
+              onPress={() => setFilterMenuVisible(true)}
+              style={[styles.actionButton, { backgroundColor: colors.primary }]}
+              contentStyle={styles.buttonContent}
+              labelStyle={fonts.labelMedium}
+            >
+              {FILTER_OPTIONS.find(opt => opt.value === searchColumn)?.label}
+            </Button>
+          }
+          contentStyle={{ backgroundColor: colors.surface }}
+        >
+          {FILTER_OPTIONS.map(option => (
+            <Menu.Item
+              key={option.value}
+              onPress={() => {
+                setSearchColumn(option.value)
+                setFilterMenuVisible(false)
+              }}
+              title={option.label}
+              titleStyle={[
+                {
+                  color: searchColumn === option.value
+                    ? colors.primary
+                    : colors.onSurface,
+                },
+                fonts.bodyLarge,
+              ]}
+              leadingIcon={searchColumn === option.value ? 'check' : undefined}
+            />
+          ))}
+        </Menu>
+        <Menu
+          visible={sortMenuVisible}
+          onDismiss={() => setSortMenuVisible(false)}
+          anchor={
+            <Button
+              mode="contained"
+              icon="sort"
+              onPress={() => setSortMenuVisible(true)}
+              style={[styles.actionButton, { backgroundColor: colors.primary }]}
+              contentStyle={styles.buttonContent}
+              labelStyle={fonts.labelMedium}
+            >
+              {getSortLabel(sortColumn, SORT_OPTIONS, getSortIcon)}
+            </Button>
+          }
+          contentStyle={{ backgroundColor: colors.surface }}
+        >
+          {SORT_OPTIONS.map(option => (
+            <Menu.Item
+              key={option.value}
+              onPress={() => {
+                handleSort(option.value)
+                setSortMenuVisible(false)
+              }}
+              title={option.label}
+              titleStyle={[
+                {
+                  color: sortColumn === option.value
+                    ? colors.primary
+                    : colors.onSurface,
+                },
+                fonts.bodyLarge,
+              ]}
+              leadingIcon={sortColumn === option.value ? 'check' : undefined}
+            />
+          ))}
+        </Menu>    
+      </View>
       {loading ? null : filteredAndSortedContracts.length === 0 && (
         <Text style={[fonts.bodyMedium,{ textAlign: 'center', color: colors.onSurfaceVariant, marginTop: 30, marginBottom: 10 }]}>
           No contracts available.
@@ -489,43 +541,24 @@ const ContractsInTransit = ({ navigation }) => {
         refreshing={loading}
         onRefresh={fetchContracts}
       />
-            <Portal>
-        <Dialog
-          visible={dialogVisible}
-          onDismiss={() => setDialogVisible(false)}
-          style={{ backgroundColor: colors.surface }}
-        >
-          <Dialog.Title>
-            {dialogType === 'deliver' ? 'Mark as Delivered' : 'Mark as Failed'}
-          </Dialog.Title>
-          <Dialog.Content>
-            <Text>
-              {dialogType === 'deliver'
-                ? 'Are you sure you want to mark this contract as delivered?'
-                : 'Are you sure you want to mark this contract as failed?'}
-            </Text>
-            <TextInput
-              mode="outlined"
-              label="Remarks"
-              value={remarks}
-              onChangeText={setRemarks}
-              multiline
-              numberOfLines={3}
-              style={{ marginTop: 16 }}
-              placeholder="Enter remarks here..."
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => {
-              setDialogVisible(false)
-              setRemarks('')
-            }}>No</Button>
-            <Button onPress={handleDialogAction}>Yes</Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
+      <BottomModal visible={modalVisible} onDismiss={() => {
+        setModalVisible(false)
+        setShowCancelConfirmation(false)
+        setActionLoading(false)
+      }}>
+        <ContractActionModalContent
+          dialogType={dialogType}
+          onClose={() => {
+            setModalVisible(false)
+            setShowCancelConfirmation(false)
+            setActionLoading(false)
+          }}
+          onConfirm={handleDialogAction}
+          loading={actionLoading}
+          contract={selectedContract}
+          showCancelConfirmation={showCancelConfirmation}
+        />
+      </BottomModal>
     </View>
   )
 }

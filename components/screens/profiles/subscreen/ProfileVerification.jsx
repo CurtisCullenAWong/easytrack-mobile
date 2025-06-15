@@ -184,7 +184,7 @@ const ProfileVerification = ({ navigation }) => {
     
     try {
       const options = { 
-        mediaTypes: ['images'],
+        mediaTypes: 'images',
         allowsEditing: true,
         quality: 1,
         aspect: [16, 9],

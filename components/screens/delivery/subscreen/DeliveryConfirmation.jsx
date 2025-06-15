@@ -9,7 +9,7 @@ import useSnackbar from '../../../hooks/useSnackbar'
 import { useFocusEffect } from '@react-navigation/native'
 
 const DeliveryConfirmation = ({ navigation, route }) => {
-  const { contract } = route.params
+  const { contract, proofOfDeliveryImageUrl } = route.params
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   
@@ -61,7 +61,7 @@ const DeliveryConfirmation = ({ navigation, route }) => {
     
     try {
       const options = { 
-        mediaTypes: ['images'],
+        mediaTypes: 'images',
         allowsEditing: true,
         quality: 1,
         aspect: state.currentImageType === 'passenger_form' ? [9, 16] : [16, 9],
@@ -169,7 +169,8 @@ const DeliveryConfirmation = ({ navigation, route }) => {
           delivered_at: new Date().toISOString(),
           contract_status_id: 5, // Delivered
           passenger_id: passengerIdUrl,
-          passenger_form: passengerFormUrl
+          passenger_form: passengerFormUrl,
+          proof_of_delivery: proofOfDeliveryImageUrl
         })
         .eq('id', contract.id)
 

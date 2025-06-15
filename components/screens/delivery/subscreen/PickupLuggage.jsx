@@ -3,10 +3,8 @@ import { View, FlatList, StyleSheet } from 'react-native'
 import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, Portal, Dialog } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
-import { useLocation } from '../../../hooks/useLocation'
 
-const AcceptContracts = ({ navigation }) => {
-  const { startTracking } = useLocation()
+const PickupLuggage = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   const [currentTime, setCurrentTime] = useState('')
@@ -18,34 +16,29 @@ const AcceptContracts = ({ navigation }) => {
   const [sortMenuVisible, setSortMenuVisible] = useState(false)
   const [sortColumn, setSortColumn] = useState('created_at')
   const [sortDirection, setSortDirection] = useState('descending')
-  const [acceptDialogVisible, setAcceptDialogVisible] = useState(false)
   const [pickupDialogVisible, setPickupDialogVisible] = useState(false)
   const [selectedContract, setSelectedContract] = useState(null)
-  const [accepting, setAccepting] = useState(false)
   const [pickingup, setPickingup] = useState(false)
 
   const filterOptions = [
-    { label: 'Contract ID', value: 'id' },
-    { label: 'Luggage Owner', value: 'luggage_owner' },
-    { label: 'Luggage Quantity', value: 'luggage_quantity' },
-    { label: 'Case Number', value: 'case_number' },
+    { label: 'Tracking ID', value: 'id' },
+    { label: 'Airline Name', value: 'airline_name' },
+    { label: 'Delivery Name', value: 'delivery_name' },
+    { label: 'Remarks', value: 'remarks' },
     { label: 'Status', value: 'status' },
-    { label: 'Pickup Location', value: 'pickup_location' },
-    { label: 'Current Location', value: 'current_location' },
-    { label: 'Drop-off Location', value: 'drop_off_location' },
+    { label: 'Created At', value: 'created_at' },
+    { label: 'Cancelled At', value: 'cancelled_at' },
+    { label: 'Accepted At', value: 'accepted_at' },
+    { label: 'Pickup At', value: 'pickup_at' },
+    { label: 'Delivered At', value: 'delivered_at' },
   ]
 
   const sortOptions = [
-    { label: 'Contract ID', value: 'id' },
-    { label: 'Luggage Owner', value: 'luggage_owner' },
-    { label: 'Luggage Quantity', value: 'luggage_quantity' },
-    { label: 'Case Number', value: 'case_number' },
-    { label: 'Status', value: 'contract_status.status_name' },
-    { label: 'Created Date', value: 'created_at' },
-    { label: 'Accept Date', value: 'accepted_at' },
-    { label: 'Pickup Date', value: 'pickup_at' },
-    { label: 'Delivery Date', value: 'delivered_at' },
-    { label: 'Cancellation Date', value: 'cancelled_at' },
+    { label: 'Created At', value: 'created_at' },
+    { label: 'Quantity', value: 'luggage_quantity' },
+    { label: 'Delivery Charge', value: 'delivery_charge' },
+    { label: 'Surcharge', value: 'surcharge' },
+    { label: 'Discount', value: 'discount' },
   ]
 
   useEffect(() => {
@@ -184,11 +177,6 @@ const AcceptContracts = ({ navigation }) => {
     navigation.navigate('ContractDetails', { id: contract.id })
   }
 
-  // Accept contract logic
-  const handleAcceptContract = (contract) => {
-    setSelectedContract(contract)
-    setAcceptDialogVisible(true)
-  }
   // Pickup luggage logic
   const handlePickupLuggage = async (contract) => {
     setSelectedContract(contract)
@@ -212,10 +200,8 @@ const AcceptContracts = ({ navigation }) => {
       if (error) throw error
 
       // Start location tracking after successful pickup
-      await startTracking()
       
       showSnackbar('Luggage picked up successfully', true)
-      navigation.navigate('ContractDetails', { id: selectedContract.id })
       fetchContracts()
     } catch (error) {
       showSnackbar('Error accepting contract: ' + error.message)
@@ -480,28 +466,6 @@ const AcceptContracts = ({ navigation }) => {
         refreshing={loading}
         onRefresh={fetchContracts}
       />
-      {/* Accept Contract Dialog
-      <Portal>
-        <Dialog
-          visible={acceptDialogVisible}
-          onDismiss={() => setAcceptDialogVisible(false)}
-          style={{backgroundColor: colors.surface}}
-        >
-          <Dialog.Title>Accept Contract</Dialog.Title>
-          <Dialog.Content>
-            <Text>
-              Are you sure you want to accept this contract? This will assign it to you and set the pickup time.
-            </Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setAcceptDialogVisible(false)} disabled={accepting}>Cancel</Button>
-            <Button onPress={confirmAcceptContract} loading={accepting} disabled={accepting}>
-              Accept
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal> */}
-      {/* Pickup Luggage Dialog */}
       <Portal>
         <Dialog
           visible={pickupDialogVisible}
@@ -618,4 +582,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default AcceptContracts
+export default PickupLuggage

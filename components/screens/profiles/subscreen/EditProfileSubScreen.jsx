@@ -240,8 +240,8 @@ const EditProfileSubScreen = ({ navigation }) => {
     updateDialog('imageSource', false)
     try {
       const result = source === 'camera' 
-        ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], allowsEditing: true, quality: 1, aspect: [1, 1] })
-        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, quality: 1, aspect: [1, 1] })
+        ? await ImagePicker.launchCameraAsync({ mediaTypes: 'images', allowsEditing: true, quality: 1, aspect: [1, 1] })
+        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', allowsEditing: true, quality: 1, aspect: [1, 1] })
 
       if (!result.canceled) {
         handleChange('pfp_id', result.assets[0].uri)
@@ -778,25 +778,6 @@ const EditProfileSubScreen = ({ navigation }) => {
           </Dialog.Actions>
         </Dialog>
       </Portal>
-
-      {/* <Portal>
-        <Dialog
-          visible={state.dialogs.emailConfirm}
-          onDismiss={() => updateDialog('emailConfirm', false)}
-          style={{ backgroundColor: colors.surface }}>
-          <Dialog.Title>Change Email Address</Dialog.Title>
-          <Dialog.Content>
-            <Text variant='bodyMedium'>
-              Are you sure you want to change your email address to {state.form.email}? 
-              You will receive a confirmation email to verify this change.
-            </Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => updateDialog('emailConfirm', false)} disabled={state.saving}>Cancel</Button>
-            <Button onPress={handleEmailChange} loading={state.saving} disabled={state.saving}>Confirm</Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal> */}
       {SnackbarElement}
     </SafeAreaView>
   )

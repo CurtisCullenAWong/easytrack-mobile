@@ -2,16 +2,16 @@ import React, { useState } from 'react'
 import { View, StyleSheet } from 'react-native'
 import { SegmentedButtons, useTheme } from 'react-native-paper'
 import Header from '../../customComponents/Header'
-import AcceptContracts from './subscreen/AcceptContracts'
+import PickupLuggage from './subscreen/PickupLuggage'
 import ContractsInTransit from './subscreen/ContractsInTransit'
 
 const DeliveryBookingManagement = ({ navigation }) => {
   const { colors } = useTheme()
   const [mode, setMode] = useState(1)
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Header navigation={navigation} title="Booking Management" />
-
       <View style={styles.segmentContainer}>
         <SegmentedButtons
           value={mode}
@@ -20,17 +20,16 @@ const DeliveryBookingManagement = ({ navigation }) => {
             { value: 1, label: 'Pickup Luggage' },
             { value: 2, label: 'In Transit' },
           ]}
-          style={{ marginHorizontal: 16 }}
+          style={styles.segmentedButtons}
         />
       </View>
 
       <View style={styles.content}>
         {mode === 1 ? (
-          <AcceptContracts navigation={navigation} />
+          <PickupLuggage navigation={navigation} />
         ) : (
           <ContractsInTransit navigation={navigation} />
         )}
-
       </View>
     </View>
   )
@@ -41,11 +40,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   segmentContainer: {
-    marginTop: '10%',
-    marginBottom: 5,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    width: '100%',
+  },
+  segmentedButtons: {
+    width: '100%',
   },
   content: {
-    flex: 9, // ensures content expands to fill space and doesn't center
+    flex: 1,
   },
 })
 

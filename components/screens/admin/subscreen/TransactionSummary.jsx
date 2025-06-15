@@ -65,7 +65,7 @@ const TransactionSummary = () => {
     
     try {
       const options = { 
-        mediaTypes: ['images'],
+        mediaTypes: 'images',
         allowsEditing: true,
         quality: 1,
         aspect: [3, 4],
