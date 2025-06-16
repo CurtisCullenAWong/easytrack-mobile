@@ -157,13 +157,17 @@ const BookingHistory = ({ navigation }) => {
     
     const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1)
     const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+    const thisYear = new Date(today.getFullYear(), 0, 1)
+    const lastYear = new Date(today.getFullYear() - 1, 0, 1)
 
     return [
       { label: 'All Time', value: 'all' },
       { label: 'Today', value: 'today' },
       { label: 'Yesterday', value: 'yesterday' },
       { label: 'This Month', value: 'this_month' },
-      { label: 'Last Month', value: 'last_month' }
+      { label: 'Last Month', value: 'last_month' },
+      { label: 'This Year', value: 'this_year' },
+      { label: 'Last Year', value: 'last_year' }
     ]
   }
 
@@ -187,6 +191,12 @@ const BookingHistory = ({ navigation }) => {
     
     const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
     lastMonth.setHours(0, 0, 0, 0) // Start of last month
+    
+    const thisYear = new Date(today.getFullYear(), 0, 1)
+    thisYear.setHours(0, 0, 0, 0) // Start of this year
+    
+    const lastYear = new Date(today.getFullYear() - 1, 0, 1)
+    lastYear.setHours(0, 0, 0, 0) // Start of last year
 
     switch (dateFilter) {
       case 'today':
@@ -200,6 +210,11 @@ const BookingHistory = ({ navigation }) => {
       case 'last_month':
         const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999)
         return createdDate >= lastMonth && createdDate <= lastMonthEnd
+      case 'this_year':
+        return createdDate >= thisYear && createdDate <= today
+      case 'last_year':
+        const lastYearEnd = new Date(today.getFullYear(), 0, 0, 23, 59, 59, 999)
+        return createdDate >= lastYear && createdDate <= lastYearEnd
       default:
         return true
     }

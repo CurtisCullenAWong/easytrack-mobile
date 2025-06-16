@@ -471,12 +471,11 @@ const ContractsInTransit = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={{ backgroundColor: colors.background }}>
-        <Card style={[styles.timeCard, { backgroundColor: colors.surface, elevation: colors.elevation.level3 }]}>
-          <Card.Content style={styles.timeCardContent}>
-            <Text style={fonts.titleSmall}>{currentTime}</Text>
-          </Card.Content>
-        </Card>
+      <View style={[styles.warningContainer, { backgroundColor: colors.surfaceVariant }]}>
+        <IconButton icon="information" size={24} iconColor={colors.primary} />
+        <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant, flex: 1 }]}>
+          Important: Keep this app running in the foreground to ensure real-time location tracking for your active deliveries. Closing the app will stop location updates.
+        </Text>
       </View>
       <View style={styles.searchActionsRow}>
         <Searchbar
@@ -689,6 +688,12 @@ const styles = StyleSheet.create({
   },
   flatListContent: {
     paddingBottom: 20,
+  },
+  warningContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    marginBottom:10
   },
 })
 

@@ -7,7 +7,7 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/331299d7-8679-4705-8d76-f5ce82339871"
+      "url": "https://u.expo.dev/4f7faf57-3a1d-4031-ba72-c5d5b5b084de"
     },
     "scheme": "easytrack",
     "owner": "thewalkingdev_numoa",
@@ -42,7 +42,7 @@
       "googleMapsApiKey": "AIzaSyDFmfy3j09egUbTeDImVNnMCFgOjVvLUUM",
       "googleMapsPlacesApiKey": "AIzaSyDFznm1jJhwsN7Y_OPKZ_EmiT63tO2G9MI",
       "eas": {
-        "projectId": "331299d7-8679-4705-8d76-f5ce82339871"
+        "projectId": "4f7faf57-3a1d-4031-ba72-c5d5b5b084de"
       }
     },
     "plugins": [

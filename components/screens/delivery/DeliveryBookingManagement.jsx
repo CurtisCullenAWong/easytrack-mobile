@@ -25,11 +25,12 @@ const DeliveryBookingManagement = ({ navigation }) => {
       </View>
 
       <View style={styles.content}>
-        {mode === 1 ? (
+        <View style={[styles.tabContent, { display: mode === 1 ? 'flex' : 'none' }]}>
           <PickupLuggage navigation={navigation} />
-        ) : (
+        </View>
+        <View style={[styles.tabContent, { display: mode === 2 ? 'flex' : 'none' }]}>
           <ContractsInTransit navigation={navigation} />
-        )}
+        </View>
       </View>
     </View>
   )
@@ -48,6 +49,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   content: {
+    flex: 1,
+  },
+  tabContent: {
     flex: 1,
   },
 })
