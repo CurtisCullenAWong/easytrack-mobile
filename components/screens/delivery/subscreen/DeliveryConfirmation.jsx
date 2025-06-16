@@ -97,7 +97,7 @@ const DeliveryConfirmation = ({ navigation, route }) => {
 
       const bucket = 'passenger-files'
       const folder = type === 'proof_of_delivery' ? 'proof_of_delivery' : type === 'passenger_id' ? 'passenger_id' : 'passenger_form'
-      const fileName = `${contract.id}_${type}.png`
+      const fileName = `${contract.id}.png`
 
       // Delete existing file if any
       const filePath = `${folder}/${fileName}`

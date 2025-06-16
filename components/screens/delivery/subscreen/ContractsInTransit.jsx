@@ -11,8 +11,6 @@ import useSnackbar from '../../../hooks/useSnackbar'
 const FILTER_OPTIONS = [
   { label: 'Contract ID', value: 'id' },
   { label: 'Luggage Owner', value: 'luggage_owner' },
-  { label: 'Case Number', value: 'case_number' },
-  { label: 'Status', value: 'status' },
   { label: 'Pickup Location', value: 'pickup_location' },
   { label: 'Current Location', value: 'current_location' },
   { label: 'Drop-off Location', value: 'drop_off_location' },
@@ -21,12 +19,8 @@ const FILTER_OPTIONS = [
 const SORT_OPTIONS = [
   { label: 'Contract ID', value: 'id' },
   { label: 'Luggage Owner', value: 'luggage_owner' },
-  { label: 'Case Number', value: 'case_number' },
-  { label: 'Status', value: 'contract_status.status_name' },
   { label: 'Created Date', value: 'created_at' },
   { label: 'Pickup Date', value: 'pickup_at' },
-  { label: 'Delivery Date', value: 'delivered_at' },
-  { label: 'Cancellation Date', value: 'cancelled_at' },
 ]
 
 // Utility functions
@@ -199,40 +193,62 @@ const ContractsInTransit = ({ navigation }) => {
   const filteredAndSortedContracts = useMemo(() => {
     return contracts
       .filter(contract => {
-        const searchValue = String(
-          searchColumn === 'luggage_owner' || searchColumn === 'case_number'
-            ? contract.luggage_info?.[0]?.[searchColumn] || ''
-            : contract[searchColumn] || ''
-        ).toLowerCase()
-        return searchValue.includes(searchQuery.toLowerCase())
-      })
-      .sort((a, b) => {
-        let valA, valB
+        if (!searchQuery) return true;
+        
+        const searchValue = searchQuery.toLowerCase();
+        let fieldValue = '';
 
-        if (sortColumn === 'luggage_owner' || sortColumn === 'case_number') {
-          valA = a.luggage_info?.[0]?.[sortColumn] || ''
-          valB = b.luggage_info?.[0]?.[sortColumn] || ''
-        } else if (sortColumn === 'contract_status.status_name') {
-          valA = a.contract_status?.status_name || ''
-          valB = b.contract_status?.status_name || ''
-        } else {
-          valA = a[sortColumn] || ''
-          valB = b[sortColumn] || ''
+        switch (searchColumn) {
+          case 'luggage_owner':
+            fieldValue = contract.luggage_info?.[0]?.[searchColumn] || '';
+            break;
+          case 'pickup_location':
+          case 'current_location':
+          case 'drop_off_location':
+            fieldValue = contract[searchColumn] || '';
+            break;
+          default:
+            fieldValue = contract[searchColumn] || '';
         }
 
-        if (['created_at', 'pickup_at', 'delivered_at', 'cancelled_at'].includes(sortColumn)) {
-          if (!valA) return sortDirection === 'ascending' ? -1 : 1
-          if (!valB) return sortDirection === 'ascending' ? 1 : -1
+        return String(fieldValue).toLowerCase().includes(searchValue);
+      })
+      .sort((a, b) => {
+        let valA, valB;
+
+        switch (sortColumn) {
+          case 'luggage_owner':
+            valA = a.luggage_info?.[0]?.[sortColumn] || '';
+            valB = b.luggage_info?.[0]?.[sortColumn] || '';
+            break;
+          case 'created_at':
+          case 'pickup_at':
+            valA = a[sortColumn] ? new Date(a[sortColumn]) : null;
+            valB = b[sortColumn] ? new Date(b[sortColumn]) : null;
+            
+            if (!valA && !valB) return 0;
+            if (!valA) return sortDirection === 'ascending' ? -1 : 1;
+            if (!valB) return sortDirection === 'ascending' ? 1 : -1;
+            
+            return sortDirection === 'ascending' 
+              ? valA.getTime() - valB.getTime()
+              : valB.getTime() - valA.getTime();
+          default:
+            valA = a[sortColumn] || '';
+            valB = b[sortColumn] || '';
+        }
+
+        if (typeof valA === 'string' && typeof valB === 'string') {
           return sortDirection === 'ascending'
-            ? new Date(valA) - new Date(valB)
-            : new Date(valB) - new Date(valA)
+            ? valA.localeCompare(valB)
+            : valB.localeCompare(valA);
         }
 
         return sortDirection === 'ascending'
-          ? valA.localeCompare(valB)
-          : valB.localeCompare(valA)
-      })
-  }, [contracts, searchQuery, searchColumn, sortColumn, sortDirection])
+          ? valA > valB ? 1 : -1
+          : valA < valB ? 1 : -1;
+      });
+  }, [contracts, searchQuery, searchColumn, sortColumn, sortDirection]);
 
   // Dialog action handlers
   const handleDialogAction = async (remarks, proofOfDeliveryImageUrl) => {
@@ -248,7 +264,25 @@ const ContractsInTransit = ({ navigation }) => {
         setModalVisible(false)
         setSelectedContract(null)
       }
-      else if (dialogType === 'failed' || dialogType === 'cancel') {
+      else if (dialogType === 'failed') {
+        const { error } = await supabase
+          .from('contract')
+          .update({
+            cancelled_at: new Date().toISOString(),
+            contract_status_id: 6,
+            remarks: remarks,
+            proof_of_delivery: proofOfDeliveryImageUrl
+          })
+          .eq('id', selectedContract.id)
+        if (error) throw error
+
+        await checkContractsAndManageTracking()
+        setModalVisible(false)
+        setSelectedContract(null)
+        await fetchContracts()
+        showSnackbar('Contract marked as failed successfully', true)
+      }
+      else if (dialogType === 'cancel') {
         if (!showCancelConfirmation) {
           setShowCancelConfirmation(true)
           setActionLoading(false)
@@ -271,7 +305,7 @@ const ContractsInTransit = ({ navigation }) => {
         setSelectedContract(null)
         setShowCancelConfirmation(false)
         await fetchContracts()
-        showSnackbar(`Contract ${dialogType === 'failed' ? 'marked as failed' : 'cancelled'} successfully`, true)
+        showSnackbar('Contract cancelled successfully', true)
       }
     } catch (error) {
       console.error('Error updating contract:', error)
@@ -290,7 +324,7 @@ const ContractsInTransit = ({ navigation }) => {
         <Card.Content>
           <View style={styles.contractCardHeader}>
             <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>CONTRACT ID</Text>
-            <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]} >{contract.id || 'N/A'}</Text>
+            <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]} selectable>{contract.id || 'N/A'}</Text>
           </View>
           <Divider />
           <View style={styles.passengerInfoContainer}>

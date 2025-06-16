@@ -8,6 +8,7 @@ const Header = ({ navigation, title }) => {
     const { colors, fonts } = useTheme()
     const [firstName, setFirstName] = useState('')
     const [profilePicture, setProfilePicture] = useState(null)
+    const [userRole, setUserRole] = useState('')
 
     const fetchUserProfile = async () => {
         try {
@@ -16,7 +17,7 @@ const Header = ({ navigation, title }) => {
 
             const { data, error } = await supabase
                 .from('profiles')
-                .select('first_name, pfp_id')
+                .select('first_name, pfp_id, role_id(role_name)')
                 .eq('id', user.id)
                 .single()
 
@@ -27,6 +28,7 @@ const Header = ({ navigation, title }) => {
 
             setFirstName(data?.first_name || '')
             setProfilePicture(data?.pfp_id || null)
+            setUserRole(data?.role_id?.role_name || '')
         } catch (error) {
             console.error('Error in fetchUserProfile:', error)
         }
@@ -51,7 +53,7 @@ const Header = ({ navigation, title }) => {
                     onPress={() => navigation.openDrawer()}
                 />
                 <Text style={[styles.title, fonts.titleLarge, {color:colors.onBackground, fontWeight: 'bold' }]}>{title}</Text>
-                <TouchableOpacity onPress={handleProfilePress}>
+                <TouchableOpacity onPress={handleProfilePress} style={styles.profileContainer}>
                     {profilePicture ? (
                         <Avatar.Image 
                             size={40} 
@@ -67,6 +69,13 @@ const Header = ({ navigation, title }) => {
                         />
                     )}
                 </TouchableOpacity>
+                {userRole && (
+                    <View style={[styles.roleBadge, { backgroundColor: colors.primary + '40' }]}>
+                        <Text style={[styles.roleText, { color: colors.primary }]}>
+                            {firstName} - {userRole}
+                        </Text>
+                    </View>
+                )}
             </Appbar.Header>
             {/* Header */}
         </View>
@@ -88,6 +97,23 @@ const styles = StyleSheet.create({
         resizeMode: 'contain',
         width: 50,
         height: 50,
+    },
+    profileContainer: {
+        position: 'relative',
+    },
+    roleBadge: {
+        position: 'absolute',
+        bottom: -5,
+        right: 0,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: 'transparent',
+    },
+    roleText: {
+        fontSize: 10,
+        fontWeight: 'bold',
     },
 })
 

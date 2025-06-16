@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { View, FlatList, StyleSheet } from 'react-native'
 import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, Portal, Dialog } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
@@ -24,21 +24,12 @@ const PickupLuggage = ({ navigation }) => {
     { label: 'Tracking ID', value: 'id' },
     { label: 'Airline Name', value: 'airline_name' },
     { label: 'Delivery Name', value: 'delivery_name' },
-    { label: 'Remarks', value: 'remarks' },
-    { label: 'Status', value: 'status' },
     { label: 'Created At', value: 'created_at' },
-    { label: 'Cancelled At', value: 'cancelled_at' },
-    { label: 'Accepted At', value: 'accepted_at' },
-    { label: 'Pickup At', value: 'pickup_at' },
-    { label: 'Delivered At', value: 'delivered_at' },
   ]
 
   const sortOptions = [
     { label: 'Created At', value: 'created_at' },
     { label: 'Quantity', value: 'luggage_quantity' },
-    { label: 'Delivery Charge', value: 'delivery_charge' },
-    { label: 'Surcharge', value: 'surcharge' },
-    { label: 'Discount', value: 'discount' },
   ]
 
   useEffect(() => {
@@ -121,44 +112,71 @@ const PickupLuggage = ({ navigation }) => {
     return `${option?.label || 'Sort By'} ${getSortIcon(sortColumn)}`
   }
 
-  const filteredAndSortedContracts = contracts
-    .filter(contract => {
-      const searchValue = String(
-        searchColumn === 'luggage_owner' || searchColumn === 'case_number'
-          ? contract.luggage_info?.[0]?.[searchColumn] || ''
-          : contract[searchColumn] || ''
-      ).toLowerCase()
-      const query = searchQuery.toLowerCase()
-      return searchValue.includes(query)
-    })
-    .sort((a, b) => {
-      let valA, valB
+  const filteredAndSortedContracts = useMemo(() => {
+    return contracts
+      .filter(contract => {
+        if (!searchQuery) return true;
+        
+        const searchValue = searchQuery.toLowerCase();
+        let fieldValue = '';
 
-      if (sortColumn === 'luggage_owner' || sortColumn === 'case_number') {
-        valA = a.luggage_info?.[0]?.[sortColumn] || ''
-        valB = b.luggage_info?.[0]?.[sortColumn] || ''
-      } else if (sortColumn === 'contract_status.status_name') {
-        valA = a.contract_status?.status_name || ''
-        valB = b.contract_status?.status_name || ''
-      } else {
-        valA = a[sortColumn] || ''
-        valB = b[sortColumn] || ''
-      }
+        switch (searchColumn) {
+          case 'airline_name':
+            fieldValue = contract.airline_profile?.first_name || '';
+            break;
+          case 'delivery_name':
+            fieldValue = contract.luggage_info?.[0]?.luggage_owner || '';
+            break;
+          case 'created_at':
+            fieldValue = contract[searchColumn] || '';
+            break;
+          default:
+            fieldValue = contract[searchColumn] || '';
+        }
 
-      // Special handling for date columns
-      if (['created_at', 'accepted_at', 'pickup_at', 'delivered_at', 'cancelled_at'].includes(sortColumn)) {
-        if (!valA) return sortDirection === 'ascending' ? -1 : 1
-        if (!valB) return sortDirection === 'ascending' ? 1 : -1
+        return String(fieldValue).toLowerCase().includes(searchValue);
+      })
+      .sort((a, b) => {
+        let valA, valB;
+
+        switch (sortColumn) {
+          case 'luggage_quantity':
+            valA = Number(a[sortColumn]) || 0;
+            valB = Number(b[sortColumn]) || 0;
+            break;
+          case 'created_at':
+            valA = a[sortColumn] ? new Date(a[sortColumn]) : null;
+            valB = b[sortColumn] ? new Date(b[sortColumn]) : null;
+            
+            if (!valA && !valB) return 0;
+            if (!valA) return sortDirection === 'ascending' ? -1 : 1;
+            if (!valB) return sortDirection === 'ascending' ? 1 : -1;
+            
+            return sortDirection === 'ascending' 
+              ? valA.getTime() - valB.getTime()
+              : valB.getTime() - valA.getTime();
+          default:
+            valA = a[sortColumn] || '';
+            valB = b[sortColumn] || '';
+        }
+
+        if (typeof valA === 'number' && typeof valB === 'number') {
+          return sortDirection === 'ascending'
+            ? valA - valB
+            : valB - valA;
+        }
+
+        if (typeof valA === 'string' && typeof valB === 'string') {
+          return sortDirection === 'ascending'
+            ? valA.localeCompare(valB)
+            : valB.localeCompare(valA);
+        }
+
         return sortDirection === 'ascending'
-          ? new Date(valA) - new Date(valB)
-          : new Date(valB) - new Date(valA)
-      }
-
-      // Default sorting for non-date columns
-      if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
-      if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
-      return 0
-    })
+          ? valA > valB ? 1 : -1
+          : valA < valB ? 1 : -1;
+      });
+  }, [contracts, searchQuery, searchColumn, sortColumn, sortDirection]);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Not set'

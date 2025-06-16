@@ -29,7 +29,7 @@ const DeliveryHome = ({ navigation }) => {
     const buttons = [
         { label: 'Booking Management', icon: 'clipboard-edit-outline', screen: 'BookingManagement' },
         { label: 'History', icon: 'history', screen: 'BookingHistory' },
-        { label: 'Performance Statistics', icon: 'chart-line', screen: 'PerformanceStatistics' },
+        { label: 'Performance Statistics', icon: 'chart-line', screen: 'UserPerformanceStatistics' },
     ]
 
     return (
