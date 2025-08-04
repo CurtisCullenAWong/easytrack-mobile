@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import { ScrollView, StyleSheet, View, RefreshControl } from 'react-native'
 import {
@@ -23,6 +23,24 @@ const AdminBookingManagement = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
+  // Helper function to format contract data
+  const formatContract = (contract) => {
+    return {
+      id: contract.id,
+      status: contract.contract_status?.status_name || 'N/A',
+      contract_status_id: contract.contract_status_id,
+      luggage_quantity: contract.luggage_quantity || 'N/A',
+      luggage_weight: contract.luggage_weight || 'N/A',
+      flight_number: contract.flight_number || 'N/A',
+      drop_off_location: contract.drop_off_location || 'N/A',
+      airline_name: `${contract.airline?.first_name || ''} ${contract.airline?.middle_initial || ''} ${contract.airline?.last_name || ''} ${contract.airline?.suffix || ''}`.trim() || 'N/A',
+      delivery_name: contract.delivery ? `${contract.delivery?.first_name || ''} ${contract.delivery?.middle_initial || ''} ${contract.delivery?.last_name || ''} ${contract.delivery?.suffix || ''}`.trim() : 'Not Assigned',
+      created_at: contract.created_at
+        ? new Date(contract.created_at).toLocaleString()
+        : 'N/A',
+    }
+  }
+
   const [searchQuery, setSearchQuery] = useState('')
   const [searchColumn, setSearchColumn] = useState('status')
   const [filterMenuVisible, setFilterMenuVisible] = useState(false)
@@ -38,12 +56,97 @@ const AdminBookingManagement = ({ navigation }) => {
   const [showAssignDialog, setShowAssignDialog] = useState(false)
   const [selectedDeliveryPerson, setSelectedDeliveryPerson] = useState(null)
   const [actionMenuVisible, setActionMenuVisible] = useState(null)
+  const [showDateMenu, setShowDateMenu] = useState(false)
+  const [dateFilter, setDateFilter] = useState('all')
+
+  const getDateFilterOptions = () => {
+    const today = new Date()
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    
+    const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+    const thisYear = new Date(today.getFullYear(), 0, 1)
+    const lastYear = new Date(today.getFullYear() - 1, 0, 1)
+
+    return [
+      { label: 'All Time', value: 'all' },
+      { label: 'Today', value: 'today' },
+      { label: 'Yesterday', value: 'yesterday' },
+      { label: 'This Month', value: 'this_month' },
+      { label: 'Last Month', value: 'last_month' },
+      { label: 'This Year', value: 'this_year' },
+      { label: 'Last Year', value: 'last_year' }
+    ]
+  }
+
+  const getDateFilterLabel = (value) => {
+    return getDateFilterOptions().find(opt => opt.value === value)?.label || 'All Time'
+  }
+
+  const getDateRange = () => {
+    const today = new Date()
+    today.setHours(23, 59, 59, 999) // End of today
+    
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    yesterday.setHours(0, 0, 0, 0) // Start of yesterday
+    
+    const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+    thisMonth.setHours(0, 0, 0, 0) // Start of this month
+    
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+    lastMonth.setHours(0, 0, 0, 0) // Start of last month
+    
+    const thisYear = new Date(today.getFullYear(), 0, 1)
+    thisYear.setHours(0, 0, 0, 0) // Start of this year
+    
+    const lastYear = new Date(today.getFullYear() - 1, 0, 1)
+    lastYear.setHours(0, 0, 0, 0) // Start of last year
+
+    switch (dateFilter) {
+      case 'today':
+        return {
+          start: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0).toISOString(),
+          end: today.toISOString()
+        }
+      case 'yesterday':
+        return {
+          start: yesterday.toISOString(),
+          end: new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999).toISOString()
+        }
+      case 'this_month':
+        return {
+          start: thisMonth.toISOString(),
+          end: today.toISOString()
+        }
+      case 'last_month':
+        const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999)
+        return {
+          start: lastMonth.toISOString(),
+          end: lastMonthEnd.toISOString()
+        }
+      case 'this_year':
+        return {
+          start: thisYear.toISOString(),
+          end: today.toISOString()
+        }
+      case 'last_year':
+        const lastYearEnd = new Date(today.getFullYear(), 0, 0, 23, 59, 59, 999)
+        return {
+          start: lastYear.toISOString(),
+          end: lastYearEnd.toISOString()
+        }
+      default:
+        return null
+    }
+  }
 
   const fetchContracts = async () => {
     setLoading(true)
     
-    const { data: contractsData, error: contractsError } = await supabase
-      .from('contract')
+    let query = supabase
+      .from('contracts')
       .select(`
         *,
         contract_status:contract_status_id (status_name),
@@ -62,6 +165,14 @@ const AdminBookingManagement = ({ navigation }) => {
       `)
       .in('contract_status_id', [1, 3, 4])
       .order('created_at', { ascending: false })
+
+    // Apply date filter if selected
+    const dateRange = getDateRange()
+    if (dateRange) {
+      query = query.gte('created_at', dateRange.start).lte('created_at', dateRange.end)
+    }
+
+    const { data: contractsData, error: contractsError } = await query
 
     if (contractsError) {
       console.error('Error fetching contracts:', contractsError)
@@ -82,30 +193,104 @@ const AdminBookingManagement = ({ navigation }) => {
       return
     }
 
-    const formatted = contractsData.map(contract => {
-      return {
-        id: contract.id,
-        status: contract.contract_status?.status_name || 'N/A',
-        contract_status_id: contract.contract_status_id,
-        luggage_quantity: contract.luggage_quantity || 'N/A',
-        drop_off_location: contract.drop_off_location || 'N/A',
-        airline_name: `${contract.airline?.first_name || ''} ${contract.airline?.middle_initial || ''} ${contract.airline?.last_name || ''} ${contract.airline?.suffix || ''}`.trim() || 'N/A',
-        delivery_name: contract.delivery ? `${contract.delivery?.first_name || ''} ${contract.delivery?.middle_initial || ''} ${contract.delivery?.last_name || ''} ${contract.delivery?.suffix || ''}`.trim() : 'Not Assigned',
-        created_at: contract.created_at
-          ? new Date(contract.created_at).toLocaleString()
-          : 'N/A',
-      }
-    })
+    const formatted = contractsData.map(formatContract)
 
     setContracts(formatted)
     setDeliveryPersonnel(personnelData)
     setLoading(false)
   }
 
+  // Set up realtime subscription
+  useEffect(() => {
+    const subscription = supabase
+      .channel('contracts_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'contracts',
+          filter: 'contract_status_id=in.(1,3,4)'
+        },
+        async (payload) => {          
+          // Handle different types of changes
+          if (payload.eventType === 'INSERT') {
+            // Fetch the new contract with full details
+            const { data: newContract, error } = await supabase
+              .from('contracts')
+              .select(`
+                *,
+                contract_status:contract_status_id (status_name),
+                airline:airline_id (
+                  first_name,
+                  middle_initial,
+                  last_name,
+                  suffix
+                ),
+                delivery:delivery_id (
+                  first_name,
+                  middle_initial,
+                  last_name,
+                  suffix
+                )
+              `)
+              .eq('id', payload.new.id)
+              .single()
+
+            if (!error && newContract) {
+              const formattedContract = formatContract(newContract)
+              setContracts(prev => [formattedContract, ...prev])
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            // Update existing contract in state
+            const { data: updatedContract, error } = await supabase
+              .from('contracts')
+              .select(`
+                *,
+                contract_status:contract_status_id (status_name),
+                airline:airline_id (
+                  first_name,
+                  middle_initial,
+                  last_name,
+                  suffix
+                ),
+                delivery:delivery_id (
+                  first_name,
+                  middle_initial,
+                  last_name,
+                  suffix
+                )
+              `)
+              .eq('id', payload.new.id)
+              .single()
+
+            if (!error && updatedContract) {
+              const formattedContract = formatContract(updatedContract)
+              setContracts(prev => 
+                prev.map(contract => 
+                  contract.id === formattedContract.id ? formattedContract : contract
+                )
+              )
+            }
+          } else if (payload.eventType === 'DELETE') {
+            // Remove deleted contract from state
+            setContracts(prev => 
+              prev.filter(contract => contract.id !== payload.old.id)
+            )
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
+
   useFocusEffect(
     useCallback(() => {
       fetchContracts()
-    }, [])
+    }, [dateFilter])
   )
 
   const handleSort = (column) => {
@@ -148,13 +333,18 @@ const AdminBookingManagement = ({ navigation }) => {
   const filterOptions = [
     { label: 'Status', value: 'status' },
     { label: 'Contractor Name', value: 'airline_name' },
+    { label: 'Flight Number', value: 'flight_number' },
+    { label: 'Contract ID', value: 'id' },
   ]
 
   const columns = [
     { key: 'id', label: 'Contract ID', width: COLUMN_WIDTH },
     { key: 'status', label: 'Status', width: COLUMN_WIDTH },
-    { key: 'luggage_quantity', label: 'Luggage Quantity', width: COLUMN_WIDTH },
+    { key: 'luggage_quantity', label: 'Luggage Qty', width: 120 },
+    { key: 'luggage_weight', label: 'Weight', width: 100 },
+    { key: 'flight_number', label: 'Flight #', width: 120 },
     { key: 'airline_name', label: 'Contractor Name', width: FULL_NAME_WIDTH },
+    { key: 'delivery_name', label: 'Delivery Personnel', width: FULL_NAME_WIDTH },
     { key: 'created_at', label: 'Created At', width: COLUMN_WIDTH },
   ]
 
@@ -171,7 +361,7 @@ const AdminBookingManagement = ({ navigation }) => {
 
     try {
       const { error } = await supabase
-        .from('contract')
+        .from('contracts')
         .update({ 
           delivery_id: selectedDeliveryPerson.id,
           contract_status_id: 3, // Update status to assigned
@@ -210,48 +400,91 @@ const AdminBookingManagement = ({ navigation }) => {
         />
       </View>
 
-      <View style={styles.buttonContainer}>
-        <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Filter by:</Text>
-        <View style={styles.menuAnchor}>
-          <Menu
-            visible={filterMenuVisible}
-            onDismiss={() => setFilterMenuVisible(false)}
-            anchor={
-              <Button
-                mode="contained"
-                icon="filter-variant"
-                onPress={() => setFilterMenuVisible(true)}
-                style={[styles.button, { borderColor: colors.primary, flex: 1 }]}
-                contentStyle={styles.buttonContent}
-                labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
-              >
-                {filterOptions.find(opt => opt.value === searchColumn)?.label}
-              </Button>
-            }
-            contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
-          >
-            {filterOptions.map(option => (
-              <Menu.Item
-                key={option.value}
-                onPress={() => {
-                  setSearchColumn(option.value)
-                  setFilterMenuVisible(false)
-                }}
-                title={option.label}
-                titleStyle={[
-                  {
-                    color: searchColumn === option.value
-                      ? colors.primary
-                      : colors.onSurface,
-                  },
-                  fonts.bodyLarge,
-                ]}
-                leadingIcon={searchColumn === option.value ? 'check' : undefined}
-              />
-            ))}
-          </Menu>
-        </View>
-      </View>
+                  <View style={styles.buttonContainer}>
+              <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Filter by:</Text>
+              <View style={styles.menuAnchor}>
+                <Menu
+                  visible={filterMenuVisible}
+                  onDismiss={() => setFilterMenuVisible(false)}
+                  anchor={
+                    <Button
+                      mode="contained"
+                      icon="filter-variant"
+                      onPress={() => setFilterMenuVisible(true)}
+                      style={[styles.button, { borderColor: colors.primary, flex: 1 }]}
+                      contentStyle={styles.buttonContent}
+                      labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
+                    >
+                      {filterOptions.find(opt => opt.value === searchColumn)?.label}
+                    </Button>
+                  }
+                  contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+                >
+                  {filterOptions.map(option => (
+                    <Menu.Item
+                      key={option.value}
+                      onPress={() => {
+                        setSearchColumn(option.value)
+                        setFilterMenuVisible(false)
+                      }}
+                      title={option.label}
+                      titleStyle={[
+                        {
+                          color: searchColumn === option.value
+                            ? colors.primary
+                            : colors.onSurface,
+                        },
+                        fonts.bodyLarge,
+                      ]}
+                      leadingIcon={searchColumn === option.value ? 'check' : undefined}
+                    />
+                  ))}
+                </Menu>
+              </View>
+            </View>
+
+            <View style={styles.buttonContainer}>
+              <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Date Range:</Text>
+              <View style={styles.menuAnchor}>
+                <Menu
+                  visible={showDateMenu}
+                  onDismiss={() => setShowDateMenu(false)}
+                  anchor={
+                    <Button
+                      mode="outlined"
+                      icon="calendar"
+                      onPress={() => setShowDateMenu(true)}
+                      style={[styles.button, { borderColor: colors.primary, flex: 1 }]}
+                      contentStyle={styles.buttonContent}
+                      labelStyle={[styles.buttonLabel, { color: colors.primary }]}
+                    >
+                      {getDateFilterLabel(dateFilter)}
+                    </Button>
+                  }
+                  contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+                >
+                  {getDateFilterOptions().map((option) => (
+                    <Menu.Item
+                      key={option.value}
+                      onPress={() => {
+                        setDateFilter(option.value)
+                        setShowDateMenu(false)
+                      }}
+                      title={option.label}
+                      titleStyle={[
+                        {
+                          color: dateFilter === option.value
+                            ? colors.primary
+                            : colors.onSurface,
+                        },
+                        fonts.bodyLarge,
+                      ]}
+                      leadingIcon={dateFilter === option.value ? 'check' : undefined}
+                    />
+                  ))}
+                </Menu>
+              </View>
+            </View>
 
       {loading ? (
         <Text style={[styles.loadingText, { color: colors.onSurface }, fonts.bodyMedium]}>

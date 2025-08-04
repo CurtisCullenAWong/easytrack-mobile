@@ -274,6 +274,9 @@ const UserManagement = ({ navigation }) => {
           <ScrollView horizontal>
             <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
               <DataTable.Header style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
+                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
+                  <Text style={[styles.headerText, { color: colors.onSurface }]}>Actions</Text>
+                </DataTable.Title>
                 <DataTable.Title style={{ width: AVATAR_COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
                   <Text style={[styles.headerText, { color: colors.onSurface }]}>Avatar</Text>
                 </DataTable.Title>
@@ -289,9 +292,6 @@ const UserManagement = ({ navigation }) => {
                     </View>
                   </DataTable.Title>
                 ))}
-                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
-                  <Text style={[styles.headerText, { color: colors.onSurface }]}>Actions</Text>
-                </DataTable.Title>
               </DataTable.Header>
 
               {filteredAndSortedUsers.length === 0 ? (
@@ -305,31 +305,6 @@ const UserManagement = ({ navigation }) => {
               ) : (
                 paginatedUsers.map(user => (
                   <DataTable.Row key={user.id}>
-                    <DataTable.Cell style={{ width: AVATAR_COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
-                      {user.pfp_id ? (
-                        <Avatar.Image size={40} source={{ uri: user.pfp_id }} />
-                      ) : (
-                        <Avatar.Text size={40} label={user.avatar} />
-                      )}
-                    </DataTable.Cell>
-                    {[
-                      { value: user.full_name, width: FULL_NAME_WIDTH },
-                      { value: user.email, width: EMAIL_COLUMN_WIDTH },
-                      { value: user.contact_number, width: COLUMN_WIDTH },
-                      { value: user.role, width: COLUMN_WIDTH },
-                      { value: user.status, width: COLUMN_WIDTH },
-                      { value: user.verify_status, width: COLUMN_WIDTH },
-                      { value: user.dateCreated, width: COLUMN_WIDTH },
-                      { value: user.lastLogin, width: COLUMN_WIDTH },
-                      { value: user.lastUpdated, width: COLUMN_WIDTH },
-                    ].map(({ value, width }, idx) => (
-                      <DataTable.Cell
-                        key={idx}
-                        style={{ width, justifyContent: 'center', paddingVertical: 12 }}
-                      >
-                        <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>{value}</Text>
-                      </DataTable.Cell>
-                    ))}
                     <DataTable.Cell numeric style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
                       <Menu
                         visible={actionMenuVisible === user.id}
@@ -382,6 +357,31 @@ const UserManagement = ({ navigation }) => {
                         />
                       </Menu>
                     </DataTable.Cell>
+                    <DataTable.Cell style={{ width: AVATAR_COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
+                      {user.pfp_id ? (
+                        <Avatar.Image size={40} source={{ uri: user.pfp_id }} />
+                      ) : (
+                        <Avatar.Text size={40} label={user.avatar} />
+                      )}
+                    </DataTable.Cell>
+                    {[
+                      { value: user.full_name, width: FULL_NAME_WIDTH },
+                      { value: user.email, width: EMAIL_COLUMN_WIDTH },
+                      { value: user.contact_number, width: COLUMN_WIDTH },
+                      { value: user.role, width: COLUMN_WIDTH },
+                      { value: user.status, width: COLUMN_WIDTH },
+                      { value: user.verify_status, width: COLUMN_WIDTH },
+                      { value: user.dateCreated, width: COLUMN_WIDTH },
+                      { value: user.lastLogin, width: COLUMN_WIDTH },
+                      { value: user.lastUpdated, width: COLUMN_WIDTH },
+                    ].map(({ value, width }, idx) => (
+                      <DataTable.Cell
+                        key={idx}
+                        style={{ width, justifyContent: 'center', paddingVertical: 12 }}
+                      >
+                        <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>{value}</Text>
+                      </DataTable.Cell>
+                    ))}
                   </DataTable.Row>
                 ))
               )}

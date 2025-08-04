@@ -1,8 +1,123 @@
-import { useEffect, useState, useCallback } from 'react'
-import { View, ScrollView, StyleSheet, RefreshControl, Image } from 'react-native'
-import { Text, Card, Divider, useTheme, Appbar, Button, Portal, Dialog, TextInput } from 'react-native-paper'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { View, ScrollView, StyleSheet, RefreshControl, Image, Dimensions } from 'react-native'
+import { Text, Card, Divider, useTheme, Appbar, Button, Portal, Dialog, TextInput, ProgressBar } from 'react-native-paper'
 import { useFocusEffect } from '@react-navigation/native'
+import Constants from 'expo-constants'
 import { supabase } from '../../../../lib/supabaseAdmin'
+
+const { width } = Dimensions.get('window')
+const GOOGLE_MAPS_API_KEY = Constants.expoConfig.extra.googleMapsPlacesApiKey
+
+const calculateRouteDetails = async (origin, destination) => {
+    if (!origin || !destination) return { distance: null, duration: null }
+    
+    try {
+        const response = await fetch(
+            `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&key=${GOOGLE_MAPS_API_KEY}`
+        )
+        const data = await response.json()
+        
+        if (data.routes && data.routes.length > 0) {
+            const route = data.routes[0].legs[0]
+            return {
+                distance: route.distance.value / 1000, // Convert meters to kilometers
+                duration: route.duration.value // Duration in seconds
+            }
+        }
+        return { distance: null, duration: null }
+    } catch (error) {
+        console.error('Error calculating route:', error)
+        return { distance: null, duration: null }
+    }
+}
+
+const formatDuration = (seconds) => {
+    if (!seconds) return 'Calculating...'
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    
+    if (hours === 0) {
+        return `${minutes} min`
+    } else if (minutes === 0) {
+        return `${hours} hr`
+    } else {
+        return `${hours} hr ${minutes} min`
+    }
+}
+
+// ProgressMeter component
+const ProgressMeter = ({ colors, contractData }) => {
+    const [routeDetails, setRouteDetails] = useState({ distance: null, duration: null })
+    const [totalRouteDetails, setTotalRouteDetails] = useState({ distance: null, duration: null })
+
+    const parseGeometry = (geoString) => {
+        if (!geoString) return null
+        try {
+            if (typeof geoString === 'string') {
+                const coords = geoString.replace('POINT(', '').replace(')', '').split(' ')
+                return {
+                    longitude: parseFloat(coords[0]),
+                    latitude: parseFloat(coords[1]),
+                }
+            } else if (typeof geoString === 'object' && geoString.coordinates) {
+                return {
+                    longitude: parseFloat(geoString.coordinates[0]),
+                    latitude: parseFloat(geoString.coordinates[1]),
+                }
+            }
+        } catch (error) {
+            console.error('Error parsing geometry:', error)
+        }
+        return null
+    }
+
+    const pickupCoords = parseGeometry(contractData?.pickup_location_geo)
+    const currentCoords = parseGeometry(contractData?.current_location_geo)
+    const dropOffCoords = parseGeometry(contractData?.drop_off_location_geo)
+
+    useEffect(() => {
+        const fetchRouteDetails = async () => {
+            if (currentCoords && dropOffCoords) {
+                const details = await calculateRouteDetails(currentCoords, dropOffCoords)
+                setRouteDetails(details)
+            }
+            if (pickupCoords && dropOffCoords) {
+                const totalDetails = await calculateRouteDetails(pickupCoords, dropOffCoords)
+                setTotalRouteDetails(totalDetails)
+            }
+        }
+        fetchRouteDetails()
+    }, [currentCoords, dropOffCoords, pickupCoords])
+
+    const progress = totalRouteDetails.distance ? 
+        Math.max(0, Math.min(1, 1 - (routeDetails.distance / totalRouteDetails.distance))) : 0
+
+    return (
+        <View style={styles.progressContainer}>
+            <View style={styles.progressInfo}>
+                <Text style={[styles.progressText, { color: colors.primary }]}>
+                    Distance Remaining: {routeDetails.distance ? `${routeDetails.distance.toFixed(1)} km, ` : 'Calculating...'}
+                </Text>
+                <Text style={[styles.progressText, { color: colors.primary }]}>
+                    ETA: {formatDuration(routeDetails.duration)}
+                </Text>
+            </View>
+            <ProgressBar
+                progress={progress}
+                color={colors.primary}
+                style={styles.progressBar}
+            />
+        </View>
+    )
+}
+
+// Info Row Component
+const InfoRow = ({ label, value, colors, fonts, style }) => (
+    <View style={[styles.infoRow, style]}>
+        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>{label}</Text>
+        <Text style={[fonts.bodyMedium, { color: colors.onSurface, flex: 1, textAlign: 'right' }]} selectable numberOfLines={3}>{value || 'N/A'}</Text>
+    </View>
+)
 
 const ContractDetailsAdmin = ({ navigation, route }) => {
     const { colors, fonts } = useTheme()
@@ -15,6 +130,19 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
     const [showDiscountDialog, setShowDiscountDialog] = useState(false)
     const [surchargeAmount, setSurchargeAmount] = useState('')
     const [discountAmount, setDiscountAmount] = useState('')
+    const subscriptionRef = useRef(null)
+
+    const getStatusColor = (statusId) => {
+        const statusColors = {
+            1: colors.primary,    // Pickup
+            2: colors.error,      // Cancelled
+            3: colors.primary,    // Accepted
+            4: colors.primary,    // In Transit
+            5: colors.primary,    // Delivered
+            6: colors.error,      // Failed
+        }
+        return statusColors[statusId] || colors.primary
+    }
 
     // Fetch contract data by id
     const fetchContract = async () => {
@@ -22,16 +150,12 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
             console.log('No contract id provided');
             return;
         }
-        // Fetch contract data
+        // Fetch contract data from the new contracts table
         const { data: contract, error: contractError } = await supabase
-            .from('contract')
+            .from('contracts')
             .select(`
                 *,
-                contract_status:contract_status_id(*),
-                pickup_location,
-                current_location,
-                drop_off_location,
-                payment:payment_id(*)
+                contract_status:contract_status_id(*)
             `)
             .eq('id', id)
             .single()
@@ -41,21 +165,7 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
             return
         }
 
-        // Fetch luggage info from contract_luggage table
-        const { data: luggageInfo, error: luggageError } = await supabase
-            .from('contract_luggage_information')
-            .select('*')
-            .eq('contract_id', id)
-
-        if (luggageError) {
-            console.log('Error fetching luggage info:', luggageError.message)
-        }
-
-        // Attach luggage info to contract data
-        setContractData({
-            ...contract,
-            luggage_info: luggageInfo || [],
-        })
+        setContractData(contract)
     }
 
     // Fetch profiles for contractor and subcontractor
@@ -125,18 +235,18 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
     }
 
     const formatCurrency = (amount) => {
-        return `₱${parseFloat(amount).toFixed(2)}`
+        return `₱${parseFloat(amount || 0).toFixed(2)}`
     }
 
     const formatPercentage = (amount) => {
-        return `${parseFloat(amount).toFixed(2)}%`
+        return `${parseFloat(amount || 0).toFixed(2)}%`
     }
 
     const handleAddSurcharge = async () => {
         try {
             const { error } = await supabase
-                .from('contract')
-                .update({ surcharge: parseFloat(surchargeAmount) })
+                .from('contracts')
+                .update({ delivery_surcharge: parseFloat(surchargeAmount) })
                 .eq('id', id)
 
             if (error) throw error
@@ -152,8 +262,8 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
     const handleAddDiscount = async () => {
         try {
             const { error } = await supabase
-                .from('contract')
-                .update({ discount: parseFloat(discountAmount) })
+                .from('contracts')
+                .update({ delivery_discount: parseFloat(discountAmount) })
                 .eq('id', id)
 
             if (error) throw error
@@ -165,6 +275,35 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
             console.error('Error adding discount:', error)
         }
     }
+
+    // Set up real-time subscription
+    useEffect(() => {
+        if (!id) return
+
+        // Subscribe to contract changes
+        subscriptionRef.current = supabase
+            .channel(`contract-${id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'contracts',
+                    filter: `id=eq.${id}`
+                },
+                async (payload) => {
+                    await fetchContract()
+                }
+            )
+            .subscribe()
+
+        // Cleanup subscriptions on unmount
+        return () => {
+            if (subscriptionRef.current) {
+                subscriptionRef.current.unsubscribe()
+            }
+        }
+    }, [id])
 
     if (!contractData) {
         return (
@@ -192,110 +331,118 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
             
             <Card style={[styles.card, { backgroundColor: colors.surface }]}>
                 <Card.Content>
-                    <Text style={[fonts.titleMedium, { color: colors.primary, marginBottom: 10 }]}>
+                    <Text style={[fonts.titleMedium, { color: colors.primary, marginVertical: 10 }]}>
                         Contract Information
                     </Text>
                     <Divider style={{ marginBottom: 10 }} />
                     
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Contract ID:</Text>
-                        <Text style={[fonts.bodySmall, { color: colors.onSurface }]} selectable>{contractData.id}</Text>
-                    </View>
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Total Luggage Quantity:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>
-                            {contractData?.luggage_quantity || 'N/A'}
-                        </Text>
-                    </View>
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Contractor Name:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.primary }]}>
-                            {formatProfileName(contractor)}
-                        </Text>
-                    </View>
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Contractor Email:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>
-                            {contractor?.email || 'N/A'}
-                        </Text>
-                    </View>
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Contractor Contact:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>
-                            {contractor?.contact_number || 'N/A'}
-                        </Text>
-                    </View>
-                    {contractData.delivery_id && (
-                    <>
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Subcontractor Name:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.primary }]}>
-                            {formatProfileName(subcontractor)}
-                        </Text>
-                    </View>
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Subcontractor Email:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>
-                            {subcontractor?.email || 'N/A'}
-                        </Text>
-                    </View>
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Subcontractor Contact:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable>
-                            {subcontractor?.contact_number || 'N/A'}
-                        </Text>
-                    </View>
-                    </>
-                    )}
+                    <InfoRow label="Contract ID:" value={contractData.id} colors={colors} fonts={fonts}/>
                     <View style={styles.infoRow}>
                         <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Status:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.primary }]}>
-                            {contractData.contract_status?.status_name || 'Unknown'}
+                        <Text style={[fonts.bodyMedium, { color: getStatusColor(contractData.contract_status_id), fontWeight: 'bold' }]}>
+                            {contractData.contract_status?.status_name || 'N/A'}
                         </Text>
                     </View>
+                    <InfoRow label="Total Luggage:" value={contractData?.luggage_quantity} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Remarks:" value={contractData.remarks} colors={colors} fonts={fonts} />
+                    
+                    {contractData.contract_status_id === 4 && (
+                        <>
+                            <Text style={[fonts.titleMedium, { color: colors.primary, margin: 10 }]}>
+                                Location Tracking
+                            </Text>
+                            <Divider style={{ marginBottom: 10 }} />
+                            <ProgressMeter
+                                colors={colors}
+                                contractData={contractData}
+                            />
+                            <InfoRow 
+                                label="Pickup Location:" 
+                                value={contractData.pickup_location} 
+                                colors={colors} 
+                                fonts={fonts}
+                                style={{ marginHorizontal: '2%' }}
+                            />
+                            <InfoRow 
+                                label="Recent Location:" 
+                                value={contractData.current_location} 
+                                colors={colors} 
+                                fonts={fonts}
+                                style={{ marginHorizontal: '2%' }}
+                            />
+                            <InfoRow 
+                                label="Drop-Off Location:" 
+                                value={contractData.drop_off_location} 
+                                colors={colors} 
+                                fonts={fonts}
+                                style={{ marginHorizontal: '2%' }}
+                            />
+                        </>
+                    )}
 
                     <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
-                        Financial Information
+                        Contractor Information
+                    </Text>
+                    <Divider style={{ marginBottom: 10 }} />
+                    
+                    <InfoRow label="Name:" value={formatProfileName(contractor)} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Email:" value={contractor?.email} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Contact:" value={contractor?.contact_number} colors={colors} fonts={fonts}/>
+
+                    {contractData.delivery_id && (
+                        <>
+                            <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
+                                Subcontractor Information
+                            </Text>
+                            <Divider style={{ marginBottom: 10 }} />
+                            
+                            <InfoRow label="Name:" value={formatProfileName(subcontractor)} colors={colors} fonts={fonts}/>
+                            <InfoRow label="Email:" value={subcontractor?.email} colors={colors} fonts={fonts}/>
+                            <InfoRow label="Contact:" value={subcontractor?.contact_number} colors={colors} fonts={fonts}/>
+                        </>
+                    )}
+
+                    <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
+                        Passenger Information
                     </Text>
                     <Divider style={{ marginBottom: 10 }} />
 
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Delivery Charge:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>
-                            {formatCurrency(contractData.delivery_charge || 0)}
-                        </Text>
-                    </View>
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Surcharge:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>
-                            {formatCurrency(contractData.surcharge || 0)}
-                        </Text>
-                    </View>
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Discount:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>
-                            {formatPercentage(contractData.discount || 0)}
-                        </Text>
-                    </View>
+                    <InfoRow label="Owner Name:" value={`${contractData.owner_first_name || ''} ${contractData.owner_middle_initial || ''} ${contractData.owner_last_name || ''}`.trim()} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Owner Contact:" value={contractData.owner_contact} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Flight Number:" value={contractData.flight_number} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Case Number:" value={contractData.case_number} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Luggage Description:" value={contractData.luggage_description} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Luggage Weight:" value={contractData.luggage_weight ? `${contractData.luggage_weight} kg` : 'N/A'} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Luggage Quantity:" value={contractData.luggage_quantity} colors={colors} fonts={fonts}/>
+
+                    <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
+                        Delivery Information
+                    </Text>
+                    <Divider style={{ marginBottom: 10 }} />
+
+                    <InfoRow label="Delivery Address:" value={contractData.delivery_address} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Address Line 1:" value={contractData.address_line_1} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Address Line 2:" value={contractData.address_line_2} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Pickup Location:" value={contractData.pickup_location} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Current Location:" value={contractData.current_location} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Drop-off Location:" value={contractData.drop_off_location} colors={colors} fonts={fonts}/>
+
+                    <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
+                        Payment Information
+                    </Text>
+                    <Divider style={{ marginBottom: 10 }} />
+
+                    <InfoRow label="Delivery Charge:" value={formatCurrency(contractData.delivery_charge)} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Delivery Surcharge:" value={formatCurrency(contractData.delivery_surcharge)} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Delivery Discount:" value={formatPercentage(contractData.delivery_discount)} colors={colors} fonts={fonts}/>
                     <View style={styles.infoRow}>
                         <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Total Amount:</Text>
                         <Text style={[fonts.bodyMedium, { color: colors.primary, fontWeight: 'bold' }]}>
-                            {formatCurrency(((contractData.delivery_charge || 0) + (contractData.surcharge || 0)) * 
-                                (1 - (contractData.discount || 0) / 100))}
+                            {formatCurrency(((contractData.delivery_charge || 0) + (contractData.delivery_surcharge || 0)) * 
+                                (1 - (contractData.delivery_discount || 0) / 100))}
                         </Text>
                     </View>
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Remarks:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} numberOfLines={3} ellipsizeMode="tail">
-                            {contractData.remarks || 'No remarks'}
-                        </Text>
-                    </View>
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Payment ID:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable>
-                            {contractData.payment_id || 'Not set'}
-                        </Text>
-                    </View>
+                    
                     <View style={styles.adminActions}>
                         <Button
                             mode="outlined"
@@ -320,136 +467,73 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
                             Adjust Discount
                         </Button>
                     </View>
-                    <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
-                        Passenger Information
-                    </Text>
-                    <Divider style={{ marginBottom: 10 }} />
-
-                    <View style={styles.imageSection}>
-                        <View style={[styles.imageContainer, { backgroundColor: colors.surfaceVariant }]}>
-                            <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant, marginBottom: 8 }]}>Passenger ID</Text>
-                            {contractData.passenger_id ? (
-                                <Image
-                                    source={{ uri: contractData.passenger_id }}
-                                    style={styles.landscapeImage}
-                                    resizeMode="contain"
-                                />
-                            ) : (
-                                <Text style={[fonts.bodyMedium, { color: colors.onSurfaceVariant }]}>No ID image available</Text>
-                            )}
-                        </View>
-
-                        <View style={[styles.imageContainer, { backgroundColor: colors.surfaceVariant }]}>
-                            <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant, marginBottom: 8 }]}>Passenger Form</Text>
-                            {contractData.passenger_form ? (
-                                <Image
-                                    source={{ uri: contractData.passenger_form }}
-                                    style={styles.portraitImage}
-                                    resizeMode="contain"
-                                />
-                            ) : (
-                                <Text style={[fonts.bodyMedium, { color: colors.onSurfaceVariant }]}>No form image available</Text>
-                            )}
-                        </View>
-                    </View>
-
-                    <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
-                        Location Information
-                    </Text>
-                    <Divider style={{ marginBottom: 10 }} />
-
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Pickup:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable numberOfLines={2} ellipsizeMode="tail">{contractData.pickup_location || 'Not set'}</Text>
-                    </View>
-
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Current:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable numberOfLines={2} ellipsizeMode="tail">{contractData.current_location || 'Not set'}</Text>
-                    </View>
-
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Drop-off:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable numberOfLines={2} ellipsizeMode="tail">{contractData.drop_off_location || 'Not set'}</Text>
-                    </View>
-
-                    <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
-                        Passenger Information
-                    </Text>
-                    <Divider style={{ marginBottom: 10 }} />
-
-                    {contractData.luggage_info?.map((luggage, index) => (
-                        <View key={index} style={styles.luggageSection}>
-                            <Text style={[fonts.titleSmall, { color: colors.primary, marginBottom: 8 }]}>
-                                Passenger {index + 1}
-                            </Text>
-                            <View style={styles.infoRow}>
-                                <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Owner:</Text>
-                                <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{luggage.luggage_owner || 'N/A'}</Text>
-                            </View>
-                            <View style={styles.infoRow}>
-                                <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Flight Number:</Text>
-                                <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{luggage.flight_number || 'N/A'}</Text>
-                            </View>
-                            <View style={styles.infoRow}>
-                                <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Quantity:</Text>
-                                <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable>{luggage.quantity || 'N/A'}</Text>
-                            </View>
-                            <View style={styles.infoRow}>
-                                <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Case Number:</Text>
-                                <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{luggage.case_number || 'N/A'}</Text>
-                            </View>
-                            <View style={styles.infoRow}>
-                                <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Description:</Text>
-                                <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{luggage.item_description || 'N/A'}</Text>
-                            </View>
-                            <View style={styles.infoRow}>
-                                <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Weight:</Text>
-                                <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{luggage.weight ? `${luggage.weight} kg` : 'N/A'}</Text>
-                            </View>
-                            <View style={styles.infoRow}>
-                                <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Contact:</Text>
-                                <Text style={[fonts.bodyMedium, { color: colors.onSurface }]} selectable>{luggage.contact_number || 'N/A'}</Text>
-                            </View>
-                            {index < contractData.luggage_info.length - 1 && <Divider style={{ marginVertical: 10 }} />}
-                        </View>
-                    ))}
 
                     <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
                         Timeline
                     </Text>
                     <Divider style={{ marginBottom: 10 }} />
 
-                    <View style={styles.infoRow}>
-                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Created:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{formatDate(contractData.created_at)}</Text>
-                    </View>
+                    <InfoRow label="Created:" value={formatDate(contractData.created_at)} colors={colors} fonts={fonts} />
                     {contractData.accepted_at && (
-                        <View style={styles.infoRow}>
-                            <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Accepted:</Text>
-                            <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{formatDate(contractData.accepted_at)}</Text>
-                        </View>
+                        <InfoRow label="Accepted:" value={formatDate(contractData.accepted_at)} colors={colors} fonts={fonts} />
                     )}
                     {contractData.pickup_at && (
-                        <View style={styles.infoRow}>
-                            <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Pickup:</Text>
-                            <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{formatDate(contractData.pickup_at)}</Text>
-                        </View>
+                        <InfoRow label="Pickup:" value={formatDate(contractData.pickup_at)} colors={colors} fonts={fonts} />
                     )}
-
                     {contractData.delivered_at && (
-                        <View style={styles.infoRow}>
-                            <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Delivered:</Text>
-                            <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>{formatDate(contractData.delivered_at)}</Text>
-                        </View>
+                        <InfoRow label="Delivered:" value={formatDate(contractData.delivered_at)} colors={colors} fonts={fonts} />
+                    )}
+                    {contractData.cancelled_at && (
+                        <InfoRow 
+                            label="Cancelled:" 
+                            value={formatDate(contractData.cancelled_at)} 
+                            colors={colors} 
+                            fonts={fonts}
+                            style={{ color: colors.error }}
+                        />
                     )}
 
-                    {contractData.cancelled_at && (
-                        <View style={styles.infoRow}>
-                            <Text style={[fonts.labelMedium, { color: colors.error }]}>Cancelled:</Text>
-                            <Text style={[fonts.bodyMedium, { color: colors.error }]}>{formatDate(contractData.cancelled_at)}</Text>
-                        </View>
-                    )}
+                    <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
+                        Documents
+                    </Text>
+                    <Divider style={{ marginBottom: 10 }} />
+
+                    <View style={styles.infoRow}>
+                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Passenger ID:</Text>
+                        {contractData.passenger_id ? (
+                            <Image
+                                source={{ uri: contractData.passenger_id }}
+                                style={styles.landscapeImage}
+                                resizeMode="contain"
+                            />
+                        ) : (
+                            <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>Not set</Text>
+                        )}
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Passenger Form:</Text>
+                        {contractData.passenger_form ? (
+                            <Image
+                                source={{ uri: contractData.passenger_form }}
+                                style={styles.portraitImage}
+                                resizeMode="contain"
+                            />
+                        ) : (
+                            <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>Not set</Text>
+                        )}
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Proof of Delivery:</Text>
+                        {contractData.proof_of_delivery ? (
+                            <Image
+                                source={{ uri: contractData.proof_of_delivery }}
+                                style={styles.portraitImage}
+                                resizeMode="contain"
+                            />
+                        ) : (
+                            <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>Not set</Text>
+                        )}
+                    </View>
                 </Card.Content>
             </Card>
 
@@ -541,6 +625,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginVertical: 5,
+        alignItems: 'center',
     },
     luggageSection: {
         marginVertical: 8,
@@ -566,28 +651,33 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
     },
-    imageSection: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 16,
-        marginBottom: 16,
-    },
-    imageContainer: {
-        flex: 1,
-        minWidth: 300,
-        borderRadius: 8,
-        padding: 16,
-        alignItems: 'center',
-    },
     landscapeImage: {
-        width: '100%',
-        height: 200,
+        width: width * 0.4,
+        height: 150,
         borderRadius: 8,
     },
     portraitImage: {
-        width: 200,
+        width: width * 0.4,
         height: 300,
         borderRadius: 8,
+    },
+    progressContainer: {
+        padding: 16,
+        marginHorizontal: '5%',
+        marginBottom: 10,
+    },
+    progressInfo: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 8,
+    },
+    progressText: {
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    progressBar: {
+        height: 8,
+        borderRadius: 4,
     },
 })
 

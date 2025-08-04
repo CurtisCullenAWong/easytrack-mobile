@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { View, ScrollView, StyleSheet, RefreshControl, Image, Dimensions } from 'react-native'
 import { Text, Button, useTheme, Chip, Searchbar, Menu, DataTable, Portal, Modal } from 'react-native-paper'
 import { useFocusEffect } from '@react-navigation/native'
@@ -9,7 +9,7 @@ const COLUMN_WIDTH = 180
 const ID_COLUMN_WIDTH = 120
 const LOCATION_COLUMN_WIDTH = 200
 const TIMELINE_COLUMN_WIDTH = 300
-const STATUS_COLUMN_WIDTH = 150
+const STATUS_COLUMN_WIDTH = 300
 const PAYMENT_COLUMN_WIDTH = 150
 
 const BookingHistoryAdmin = ({ navigation }) => {
@@ -17,8 +17,9 @@ const BookingHistoryAdmin = ({ navigation }) => {
     const [contracts, setContracts] = useState([])
     const [refreshing, setRefreshing] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
+    const [searchColumn, setSearchColumn] = useState('id')
+    const [filterMenuVisible, setFilterMenuVisible] = useState(false)
     const [statusFilter, setStatusFilter] = useState('all')
-    const [showStatusMenu, setShowStatusMenu] = useState(false)
     const [loading, setLoading] = useState(true)
     const [selectedImage, setSelectedImage] = useState(null)
     const [showImageModal, setShowImageModal] = useState(false)
@@ -26,28 +27,110 @@ const BookingHistoryAdmin = ({ navigation }) => {
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [sortColumn, setSortColumn] = useState('created_at')
     const [sortDirection, setSortDirection] = useState('descending')
+    const [showDateMenu, setShowDateMenu] = useState(false)
+    const [dateFilter, setDateFilter] = useState('all')
+
+    const getDateFilterOptions = () => {
+        const today = new Date()
+        const yesterday = new Date(today)
+        yesterday.setDate(yesterday.getDate() - 1)
+        
+        const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+        const thisYear = new Date(today.getFullYear(), 0, 1)
+        const lastYear = new Date(today.getFullYear() - 1, 0, 1)
+
+        return [
+            { label: 'All Time', value: 'all' },
+            { label: 'Today', value: 'today' },
+            { label: 'Yesterday', value: 'yesterday' },
+            { label: 'This Month', value: 'this_month' },
+            { label: 'Last Month', value: 'last_month' },
+            { label: 'This Year', value: 'this_year' },
+            { label: 'Last Year', value: 'last_year' }
+        ]
+    }
+
+    const getDateFilterLabel = (value) => {
+        return getDateFilterOptions().find(opt => opt.value === value)?.label || 'All Time'
+    }
+
+    const getDateRange = () => {
+        const today = new Date()
+        today.setHours(23, 59, 59, 999) // End of today
+        
+        const yesterday = new Date(today)
+        yesterday.setDate(yesterday.getDate() - 1)
+        yesterday.setHours(0, 0, 0, 0) // Start of yesterday
+        
+        const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+        thisMonth.setHours(0, 0, 0, 0) // Start of this month
+        
+        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+        lastMonth.setHours(0, 0, 0, 0) // Start of last month
+        
+        const thisYear = new Date(today.getFullYear(), 0, 1)
+        thisYear.setHours(0, 0, 0, 0) // Start of this year
+        
+        const lastYear = new Date(today.getFullYear() - 1, 0, 1)
+        lastYear.setHours(0, 0, 0, 0) // Start of last year
+
+        switch (dateFilter) {
+            case 'today':
+                return {
+                    start: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0).toISOString(),
+                    end: today.toISOString()
+                }
+            case 'yesterday':
+                return {
+                    start: yesterday.toISOString(),
+                    end: new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999).toISOString()
+                }
+            case 'this_month':
+                return {
+                    start: thisMonth.toISOString(),
+                    end: today.toISOString()
+                }
+            case 'last_month':
+                const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999)
+                return {
+                    start: lastMonth.toISOString(),
+                    end: lastMonthEnd.toISOString()
+                }
+            case 'this_year':
+                return {
+                    start: thisYear.toISOString(),
+                    end: today.toISOString()
+                }
+            case 'last_year':
+                const lastYearEnd = new Date(today.getFullYear(), 0, 0, 23, 59, 59, 999)
+                return {
+                    start: lastYear.toISOString(),
+                    end: lastYearEnd.toISOString()
+                }
+            default:
+                return null
+        }
+    }
 
     const fetchContracts = async () => {
         try {
             setLoading(true)
             let query = supabase
-                .from('contract')
+                .from('contracts')
                 .select(`
                     *,
                     contract_status:contract_status_id(*),
-                    profiles:airline_id(first_name, middle_initial, last_name, suffix),
+                    airline:airline_id(first_name, middle_initial, last_name, suffix),
                     delivery:delivery_id(first_name, middle_initial, last_name, suffix)
                 `)
                 .order('created_at', { ascending: false })
 
-            // Apply status filter
-            if (statusFilter !== 'all') {
-                query = query.eq('contract_status_id', statusFilter)
-            }
 
-            // Apply search filter
-            if (searchQuery) {
-                query = query.or(`id.ilike.%${searchQuery}%,passenger_id.ilike.%${searchQuery}%`)
+            // Apply date filter if selected
+            const dateRange = getDateRange()
+            if (dateRange) {
+                query = query.gte('created_at', dateRange.start).lte('created_at', dateRange.end)
             }
 
             const { data, error } = await query
@@ -65,14 +148,19 @@ const BookingHistoryAdmin = ({ navigation }) => {
     useFocusEffect(
         useCallback(() => {
             fetchContracts()
-        }, [statusFilter, searchQuery])
+        }, [])
     )
+
+    // Effect to refetch data when date filter changes
+    useEffect(() => {
+        fetchContracts()
+    }, [dateFilter])
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true)
         await fetchContracts()
         setRefreshing(false)
-    }, [statusFilter, searchQuery])
+    }, [])
 
     const formatDate = (dateString) => {
         if (!dateString) return 'Not set'
@@ -100,12 +188,11 @@ const BookingHistoryAdmin = ({ navigation }) => {
 
     const getStatusColor = (statusId) => {
         const statusColors = {
-            1: colors.primary,    // Pickup
+            1: colors.primary,    // Pending
             2: colors.error,      // Cancelled
             3: colors.primary,    // Accepted
             4: colors.primary,    // In Transit
             5: colors.primary,    // Delivered
-            6: colors.error,      // Failed (Cancelled)
         }
         return statusColors[statusId] || colors.primary
     }
@@ -113,10 +200,17 @@ const BookingHistoryAdmin = ({ navigation }) => {
     const getStatusOptions = () => [
         { label: 'All', value: 'all' },
         { label: 'Pending', value: '1' },
-        { label: 'Accepted', value: '2' },
-        { label: 'In Transit', value: '3' },
-        { label: 'Delivered', value: '4' },
-        { label: 'Cancelled', value: '5' },
+        { label: 'Cancelled', value: '2' },
+        { label: 'Accepted', value: '3' },
+        { label: 'In Transit', value: '4' },
+        { label: 'Delivered', value: '5' },
+    ]
+
+    const filterOptions = [
+        { label: 'Contract ID', value: 'id' },
+        { label: 'Status', value: 'status' },
+        { label: 'Drop-off Location', value: 'drop_off_location' },
+        { label: 'Flight Number', value: 'flight_number' },
     ]
 
     const handleImagePress = (imageUrl) => {
@@ -151,8 +245,8 @@ const BookingHistoryAdmin = ({ navigation }) => {
                 return contract.contract_status?.status_name || ''
             case 'timeline':
                 return contract.created_at || ''
-            case 'payment':
-                return contract.payment_id || ''
+            case 'delivery_charge':
+                return contract.delivery_charge || 0
             default:
                 return contract[column] || ''
         }
@@ -160,7 +254,7 @@ const BookingHistoryAdmin = ({ navigation }) => {
 
     const filteredAndSortedContracts = contracts
         .filter(contract => {
-            const searchValue = String(contract.id || '').toLowerCase()
+            const searchValue = String(contract[searchColumn] || '').toLowerCase()
             const query = searchQuery.toLowerCase()
             return searchValue.includes(query)
         })
@@ -169,7 +263,7 @@ const BookingHistoryAdmin = ({ navigation }) => {
             const valB = getSortValue(b, sortColumn)
 
             // Handle date columns
-            if (['created_at', 'pickup_at', 'delivered_at', 'cancelled_at', 'timeline'].includes(sortColumn)) {
+            if (['created_at', 'pickup_at', 'delivered_at', 'cancelled_at', 'accepted_at', 'timeline'].includes(sortColumn)) {
                 if (!valA) return sortDirection === 'ascending' ? -1 : 1
                 if (!valB) return sortDirection === 'ascending' ? 1 : -1
                 return sortDirection === 'ascending' 
@@ -196,10 +290,9 @@ const BookingHistoryAdmin = ({ navigation }) => {
 
     const columns = [
         { key: 'id', label: 'Contract ID', width: ID_COLUMN_WIDTH },
-        { key: 'payment', label: 'Invoice Number', width: PAYMENT_COLUMN_WIDTH },
-        { key: 'pickup_location', label: 'Pickup Location', width: LOCATION_COLUMN_WIDTH },
-        { key: 'drop_off_location', label: 'Drop-off Location', width: LOCATION_COLUMN_WIDTH },
         { key: 'status', label: 'Status', width: STATUS_COLUMN_WIDTH },
+        { key: 'delivery_charge', label: 'Delivery Charge', width: PAYMENT_COLUMN_WIDTH },
+        { key: 'drop_off_location', label: 'Drop-off Location', width: LOCATION_COLUMN_WIDTH },
         { key: 'timeline', label: 'Timeline', width: TIMELINE_COLUMN_WIDTH },
     ]
 
@@ -214,7 +307,7 @@ const BookingHistoryAdmin = ({ navigation }) => {
 
             <View style={styles.searchActionsRow}>
                 <Searchbar
-                    placeholder="Search by Contract ID"
+                    placeholder={`Search by ${filterOptions.find(opt => opt.value === searchColumn)?.label}`}
                     onChangeText={setSearchQuery}
                     value={searchQuery}
                     style={[styles.searchbar, { backgroundColor: colors.surface }]}
@@ -222,46 +315,89 @@ const BookingHistoryAdmin = ({ navigation }) => {
             </View>
 
             <View style={styles.buttonContainer}>
-                    <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Filter by Status:</Text>
-                    <View style={styles.menuAnchor}>
-                        <Menu
-                            visible={showStatusMenu}
-                            onDismiss={() => setShowStatusMenu(false)}
-                            anchor={
-                                <Button
-                                    mode="contained"
-                                    icon="filter-variant"
-                                    onPress={() => setShowStatusMenu(true)}
-                                    style={[styles.button, { borderColor: colors.primary, flex: 1 }]}
-                                    contentStyle={styles.buttonContent}
-                                    labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
-                                >
-                                    {getStatusOptions().find(opt => opt.value === statusFilter)?.label || 'All'}
-                                </Button>
-                            }
-                            contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
-                        >
-                            {getStatusOptions().map((option) => (
-                                <Menu.Item
-                                    key={option.value}
-                                    onPress={() => {
-                                        setStatusFilter(option.value)
-                                        setShowStatusMenu(false)
-                                    }}
-                                    title={option.label}
-                                    titleStyle={[
-                                        {
-                                            color: statusFilter === option.value
-                                                ? colors.primary
-                                                : colors.onSurface,
-                                        },
-                                        fonts.bodyLarge,
-                                    ]}
-                                    leadingIcon={statusFilter === option.value ? 'check' : undefined}
-                                />
-                            ))}
-                        </Menu>
-                    </View>
+                <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Filter by:</Text>
+                <View style={styles.menuAnchor}>
+                    <Menu
+                        visible={filterMenuVisible}
+                        onDismiss={() => setFilterMenuVisible(false)}
+                        anchor={
+                            <Button
+                                mode="contained"
+                                icon="filter-variant"
+                                onPress={() => setFilterMenuVisible(true)}
+                                style={[styles.button, { borderColor: colors.primary, flex: 1 }]}
+                                contentStyle={styles.buttonContent}
+                                labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
+                            >
+                                {filterOptions.find(opt => opt.value === searchColumn)?.label}
+                            </Button>
+                        }
+                        contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+                    >
+                        {filterOptions.map(option => (
+                            <Menu.Item
+                                key={option.value}
+                                onPress={() => {
+                                    setSearchColumn(option.value)
+                                    setFilterMenuVisible(false)
+                                }}
+                                title={option.label}
+                                titleStyle={[
+                                    {
+                                        color: searchColumn === option.value
+                                            ? colors.primary
+                                            : colors.onSurface,
+                                    },
+                                    fonts.bodyLarge,
+                                ]}
+                                leadingIcon={searchColumn === option.value ? 'check' : undefined}
+                            />
+                        ))}
+                    </Menu>
+                </View>
+            </View>
+
+            <View style={styles.buttonContainer}>
+                <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Date Range:</Text>
+                <View style={styles.menuAnchor}>
+                    <Menu
+                        visible={showDateMenu}
+                        onDismiss={() => setShowDateMenu(false)}
+                        anchor={
+                            <Button
+                                mode="outlined"
+                                icon="calendar"
+                                onPress={() => setShowDateMenu(true)}
+                                style={[styles.button, { borderColor: colors.primary, flex: 1 }]}
+                                contentStyle={styles.buttonContent}
+                                labelStyle={[styles.buttonLabel, { color: colors.primary }]}
+                            >
+                                {getDateFilterLabel(dateFilter)}
+                            </Button>
+                        }
+                        contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+                    >
+                        {getDateFilterOptions().map((option) => (
+                            <Menu.Item
+                                key={option.value}
+                                onPress={() => {
+                                    setDateFilter(option.value)
+                                    setShowDateMenu(false)
+                                }}
+                                title={option.label}
+                                titleStyle={[
+                                    {
+                                        color: dateFilter === option.value
+                                            ? colors.primary
+                                            : colors.onSurface,
+                                    },
+                                    fonts.bodyLarge,
+                                ]}
+                                leadingIcon={dateFilter === option.value ? 'check' : undefined}
+                            />
+                        ))}
+                    </Menu>
+                </View>
             </View>
 
             {loading ? (
@@ -272,7 +408,11 @@ const BookingHistoryAdmin = ({ navigation }) => {
                 <View style={styles.tableContainer}>
                     <ScrollView horizontal>
                         <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
+
                             <DataTable.Header style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
+                                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
+                                    <Text style={[styles.headerText, { color: colors.onSurface }]}>Actions</Text>
+                                </DataTable.Title>
                                 {columns.map(({ key, label, width }) => (
                                     <DataTable.Title
                                         key={key}
@@ -285,9 +425,6 @@ const BookingHistoryAdmin = ({ navigation }) => {
                                         </View>
                                     </DataTable.Title>
                                 ))}
-                                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
-                                    <Text style={[styles.headerText, { color: colors.onSurface }]}>Actions</Text>
-                                </DataTable.Title>
                             </DataTable.Header>
 
                             {filteredAndSortedContracts.length === 0 ? (
@@ -301,14 +438,25 @@ const BookingHistoryAdmin = ({ navigation }) => {
                             ) : (
                                 paginatedContracts.map((contract) => (
                                     <DataTable.Row key={contract.id}>
+                                        <DataTable.Cell style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
+                                            <Button
+                                                mode="outlined"
+                                                onPress={() => navigation.navigate('ContractDetailsAdmin', { id: contract.id })}
+                                                style={[styles.actionButton, { borderColor: colors.primary }]}
+                                                contentStyle={styles.buttonContent}
+                                                labelStyle={[styles.buttonLabel, { color: colors.primary }]}
+                                            >
+                                                View Details
+                                            </Button>
+                                        </DataTable.Cell>
                                         {columns.map(({ key, width }) => (
                                             <DataTable.Cell
                                                 key={key}
                                                 style={{ width: width || COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}
                                             >
-                                                {key === 'payment' ? (
+                                                {key === 'delivery_charge' ? (
                                                     <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]} selectable>
-                                                        {contract.payment_id || 'N/A'}
+                                                        {contract.delivery_charge ? `₱${contract.delivery_charge.toLocaleString()}` : 'N/A'}
                                                     </Text>
                                                 ) : key === 'status' ? (
                                                     <Chip
@@ -325,6 +473,11 @@ const BookingHistoryAdmin = ({ navigation }) => {
                                                         {contract.accepted_at && (
                                                             <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>
                                                                 Accepted: {formatDate(contract.accepted_at)}
+                                                            </Text>
+                                                        )}
+                                                        {contract.pickup_at && (
+                                                            <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>
+                                                                Picked up: {formatDate(contract.pickup_at)}
                                                             </Text>
                                                         )}
                                                         {contract.delivered_at && (
@@ -345,17 +498,6 @@ const BookingHistoryAdmin = ({ navigation }) => {
                                                 )}
                                             </DataTable.Cell>
                                         ))}
-                                        <DataTable.Cell style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
-                                            <Button
-                                                mode="outlined"
-                                                onPress={() => navigation.navigate('ContractDetailsAdmin', { id: contract.id })}
-                                                style={[styles.actionButton, { borderColor: colors.primary }]}
-                                                contentStyle={styles.buttonContent}
-                                                labelStyle={[styles.buttonLabel, { color: colors.primary }]}
-                                            >
-                                                View Details
-                                            </Button>
-                                        </DataTable.Cell>
                                     </DataTable.Row>
                                 ))
                             )}
@@ -436,15 +578,15 @@ const styles = StyleSheet.create({
     },
     button: {
         marginVertical: 10,
-        height: 48,
+        height: 40,
         borderRadius: 8,
     },
     buttonContent: {
-        height: 48,
+        height: 40,
     },
     buttonLabel: {
-        fontSize: 16,
-        fontWeight: 'bold',
+        fontSize: 14,
+        fontWeight: '500',
     },
     tableContainer: {
         flex: 1,
@@ -460,9 +602,11 @@ const styles = StyleSheet.create({
     sortableHeader: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
     },
     sortIcon: {
-        marginLeft: 4,
+        fontSize: 12,
     },
     statusChip: {
         height: 32,
