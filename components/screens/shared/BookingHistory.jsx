@@ -69,19 +69,12 @@ const BookingHistory = ({ navigation }) => {
       if (!user) throw new Error('User not authenticated')
 
       let query = supabase
-        .from('contract')
+        .from('contracts')
         .select(`
           *,
           contract_status:contract_status_id (status_name),
-          luggage_info:contract_luggage_information (
-            luggage_owner,
-            case_number,
-            item_description,
-            weight,
-            contact_number
-          ),
           airline_profile:airline_id (
-            pfp_id,
+            id,
             first_name,
             middle_initial,
             last_name,

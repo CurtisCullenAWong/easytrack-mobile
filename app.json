@@ -39,8 +39,8 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "googleMapsApiKey": "AIzaSyDFmfy3j09egUbTeDImVNnMCFgOjVvLUUM",
-      "googleMapsPlacesApiKey": "AIzaSyDFznm1jJhwsN7Y_OPKZ_EmiT63tO2G9MI",
+      "googleMapsApiKey": "AIzaSyDgO0lYpMw6kflmYWYKYp4STp-FctjFNx0",
+      "googleMapsPlacesApiKey": "AIzaSyDgO0lYpMw6kflmYWYKYp4STp-FctjFNx0",
       "eas": {
         "projectId": "4f7faf57-3a1d-4031-ba72-c5d5b5b084de"
       }

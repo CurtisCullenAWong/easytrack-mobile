@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { View, ScrollView, StyleSheet, RefreshControl, Image, Dimensions } from 'react-native'
-import { Text, Card, Divider, useTheme, Appbar, Button, ProgressBar } from 'react-native-paper'
+import { Text, Card, Divider, useTheme, Appbar, ProgressBar } from 'react-native-paper'
 import { useFocusEffect } from '@react-navigation/native'
 import Constants from 'expo-constants'
 import { supabase } from '../../../lib/supabase'
 
-const { width, height } = Dimensions.get('window')
+const { width } = Dimensions.get('window')
 const GOOGLE_MAPS_API_KEY = Constants.expoConfig.extra.googleMapsPlacesApiKey
 
 const calculateRouteDetails = async (origin, destination) => {
@@ -146,16 +146,12 @@ const ContractDetails = ({ navigation, route }) => {
             console.log('No contract id provided');
             return;
         }
-        // Fetch contract data
+        // Fetch contract data from the new contracts table
         const { data: contract, error: contractError } = await supabase
-            .from('contract')
+            .from('contracts')
             .select(`
                 *,
-                contract_status:contract_status_id(*),
-                pickup_location,
-                current_location,
-                drop_off_location,
-                payment:payment_id(*)
+                contract_status:contract_status_id(*)
             `)
             .eq('id', id)
             .single()
@@ -165,21 +161,7 @@ const ContractDetails = ({ navigation, route }) => {
             return
         }
 
-        // Fetch luggage info from contract_luggage table
-        const { data: luggageInfo, error: luggageError } = await supabase
-            .from('contract_luggage_information')
-            .select('*')
-            .eq('contract_id', id)
-
-        if (luggageError) {
-            console.log('Error fetching luggage info:', luggageError.message)
-        }
-
-        // Attach luggage info to contract data
-        setContractData({
-            ...contract,
-            luggage_info: luggageInfo || [],
-        })
+        setContractData(contract)
     }
 
     // Fetch profiles for contractor and subcontractor
@@ -260,28 +242,10 @@ const ContractDetails = ({ navigation, route }) => {
                 {
                     event: '*',
                     schema: 'public',
-                    table: 'contract',
+                    table: 'contracts',
                     filter: `id=eq.${id}`
                 },
                 async (payload) => {
-                    await fetchContract()
-                }
-            )
-            .subscribe()
-
-        // Subscribe to luggage info changes
-        const luggageSubscription = supabase
-            .channel(`contract-luggage-${id}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'contract_luggage_information',
-                    filter: `contract_id=eq.${id}`
-                },
-                async () => {
-                    console.log('Luggage info update received')
                     await fetchContract()
                 }
             )
@@ -292,7 +256,6 @@ const ContractDetails = ({ navigation, route }) => {
             if (subscriptionRef.current) {
                 subscriptionRef.current.unsubscribe()
             }
-            luggageSubscription.unsubscribe()
         }
     }, [id])
 
@@ -394,21 +357,34 @@ const ContractDetails = ({ navigation, route }) => {
                     </Text>
                     <Divider style={{ marginBottom: 10 }} />
 
-                    {contractData.luggage_info?.map((luggage, index) => (
-                        <View key={index} style={styles.luggageSection}>
-                            <Text style={[fonts.titleSmall, { color: colors.primary, marginBottom: 8 }]}>
-                                Passenger #{index + 1}
-                            </Text>
-                            <InfoRow label="Owner:" value={luggage.luggage_owner} colors={colors} fonts={fonts}/>
-                            <InfoRow label="Flight Number:" value={luggage.flight_number} colors={colors} fonts={fonts}/>
-                            <InfoRow label="Quantity:" value={luggage.quantity} colors={colors} fonts={fonts}/>
-                            <InfoRow label="Case Number:" value={luggage.case_number} colors={colors} fonts={fonts}/>
-                            <InfoRow label="Description:" value={luggage.item_description} colors={colors} fonts={fonts}/>
-                            <InfoRow label="Weight:" value={luggage.weight ? `${luggage.weight} kg` : 'N/A'} colors={colors} fonts={fonts}/>
-                            <InfoRow label="Contact:" value={luggage.contact_number} colors={colors} fonts={fonts}/>
-                            {index < contractData.luggage_info.length - 1 && <Divider style={{ marginVertical: 10 }} />}
-                        </View>
-                    ))}
+                    <InfoRow label="Owner Name:" value={`${contractData.owner_first_name || ''} ${contractData.owner_middle_initial || ''} ${contractData.owner_last_name || ''}`.trim()} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Owner Contact:" value={contractData.owner_contact} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Flight Number:" value={contractData.flight_number} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Case Number:" value={contractData.case_number} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Luggage Description:" value={contractData.luggage_description} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Luggage Weight:" value={contractData.luggage_weight ? `${contractData.luggage_weight} kg` : 'N/A'} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Luggage Quantity:" value={contractData.luggage_quantity} colors={colors} fonts={fonts}/>
+
+                    <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
+                        Delivery Information
+                    </Text>
+                    <Divider style={{ marginBottom: 10 }} />
+
+                    <InfoRow label="Delivery Address:" value={contractData.delivery_address} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Address Line 1:" value={contractData.address_line_1} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Address Line 2:" value={contractData.address_line_2} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Pickup Location:" value={contractData.pickup_location} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Current Location:" value={contractData.current_location} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Drop-off Location:" value={contractData.drop_off_location} colors={colors} fonts={fonts}/>
+
+                    <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
+                        Payment Information
+                    </Text>
+                    <Divider style={{ marginBottom: 10 }} />
+
+                    <InfoRow label="Delivery Charge:" value={contractData.delivery_charge ? `₱${contractData.delivery_charge}` : 'N/A'} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Delivery Surcharge:" value={contractData.delivery_surcharge ? `₱${contractData.delivery_surcharge}` : 'N/A'} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Delivery Discount:" value={contractData.delivery_discount ? `₱${contractData.delivery_discount}` : 'N/A'} colors={colors} fonts={fonts}/>
 
                     <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
                         Timeline

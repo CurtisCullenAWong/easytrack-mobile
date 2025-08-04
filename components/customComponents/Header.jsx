@@ -69,13 +69,13 @@ const Header = ({ navigation, title }) => {
                         />
                     )}
                 </TouchableOpacity>
-                {userRole && (
+                {/* {userRole && (
                     <View style={[styles.roleBadge, { backgroundColor: colors.primary + '40' }]}>
                         <Text style={[styles.roleText, { color: colors.primary }]}>
                             {firstName} - {userRole}
                         </Text>
                     </View>
-                )}
+                )} */}
             </Appbar.Header>
             {/* Header */}
         </View>

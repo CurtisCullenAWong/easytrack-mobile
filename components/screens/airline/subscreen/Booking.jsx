@@ -8,21 +8,29 @@ import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/nativ
 
 // Constants
 const INITIAL_CONTRACT = {
-  name: "",
   caseNumber: "",
-  itemDescription: "",
+  firstName: "",
+  middleInitial: "",
+  lastName: "",
   contact: "",
+  flightNumber: "",
+  itemDescription: "",
   weight: "",
   quantity: "",
-  flightNumber: "",
+  deliveryAddress: "",
+  addressLine1: "",
+  addressLine2: "",
   errors: {
-    name: false,
     caseNumber: false,
-    itemDescription: false,
+    firstName: false,
+    lastName: false,
     contact: false,
+    flightNumber: false,
+    itemDescription: false,
     weight: false,
     quantity: false,
-    flightNumber: false
+    deliveryAddress: false,
+    addressLine1: false
   }
 }
 
@@ -33,8 +41,8 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
   return (
     <View style={[styles.luggageBlock, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
       <View style={styles.headerContainer}>
-        <Text style={[fonts.titleSmall, { color: colors.primary }]}>
-          Delivery Information {index + 1}
+        <Text style={[fonts.titleMedium, { color: colors.primary }]}>
+          Passenger {index + 1}
         </Text>
         <IconButton
           icon="close"
@@ -45,36 +53,37 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
           iconColor={isLastContract ? colors.disabled : colors.error}
         />
       </View>
+              <View style={styles.nameRow}>
+          <TextInput
+            label="First Name"
+            value={contract.firstName}
+            onChangeText={(text) => onInputChange(index, "firstName", text)}
+            mode="outlined"
+            style={[styles.nameField, { marginRight: 8 }]}
+            error={contract.errors?.firstName}
+            placeholder="Enter first name"
+          />
+          <TextInput
+            label="M.I."
+            value={contract.middleInitial}
+            onChangeText={(text) => onInputChange(index, "middleInitial", text)}
+            mode="outlined"
+            style={[styles.middleInitialField]}
+            maxLength={1}
+            placeholder="M"
+          />
+        </View>
+        <TextInput
+          label="Last Name"
+          value={contract.lastName}
+          onChangeText={(text) => onInputChange(index, "lastName", text)}
+          mode="outlined"
+          style={{ marginBottom: 12 }}
+          error={contract.errors?.lastName}
+          placeholder="Enter last name"
+        />
       <TextInput
-        label="Case Number"
-        value={contract.caseNumber}
-        onChangeText={(text) => onInputChange(index, "caseNumber", text)}
-        mode="outlined"
-        style={{ marginBottom: 12 }}
-        error={contract.errors?.caseNumber}
-        maxLength={10}
-        inputMode="numeric"
-        left={<TextInput.Affix text="AHLMNLZ" />}
-        placeholder='xxxxxxxxxx'
-      />
-      <TextInput
-        label="Name"
-        value={contract.name}
-        onChangeText={(text) => onInputChange(index, "name", text)}
-        mode="outlined"
-        style={{ marginBottom: 12 }}
-        error={contract.errors?.name}
-      />
-      <TextInput
-        label="Item Description"
-        value={contract.itemDescription}
-        onChangeText={(text) => onInputChange(index, "itemDescription", text)}
-        mode="outlined"
-        style={{ marginBottom: 12 }}
-        error={contract.errors?.itemDescription}
-      />
-      <TextInput
-        label="Contact Number"
+        label="Owner's Contact Number"
         value={contract.contact}
         onChangeText={(text) => onInputChange(index, "contact", text)}
         mode="outlined"
@@ -85,6 +94,17 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
         maxLength={10}
         inputMode="numeric"
         placeholder="9xxxxxxxxx"
+      />
+      <TextInput
+        label="Luggage Description"
+        value={contract.itemDescription}
+        onChangeText={(text) => onInputChange(index, "itemDescription", text)}
+        mode="outlined"
+        style={{ marginBottom: 12 }}
+        error={contract.errors?.itemDescription}
+        placeholder="Describe the luggage contents"
+        multiline
+        numberOfLines={2}
       />
       <TextInput
         label="Weight (kg)"
@@ -113,18 +133,63 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
         value={contract.flightNumber}
         onChangeText={(text) => onInputChange(index, "flightNumber", text)}
         mode="outlined"
-        inputMode="numeric"
         style={{ marginBottom: 12 }}
         error={contract.errors?.flightNumber}
         maxLength={5}
-        placeholder="Max 5 digits"
+        placeholder="e.g., 1234"
       />
+      <TextInput
+        label="Case Number"
+        value={contract.caseNumber}
+        onChangeText={(text) => onInputChange(index, "caseNumber", text)}
+        mode="outlined"
+        style={{ marginBottom: 12 }}
+        error={contract.errors?.caseNumber}
+        maxLength={10}
+        inputMode="numeric"
+        left={<TextInput.Affix text="AHLMNLZ" />}
+        placeholder='xxxxxxxxxx'
+      />
+      <View style={styles.addressSection}>
+        <Text style={[fonts.titleSmall, { color: colors.primary, marginBottom: 8 }]}>
+          Delivery Address
+        </Text>
+        
+        <TextInput
+          label="Region, Province, Municipality, Barangay"
+          value={contract.deliveryAddress}
+          onChangeText={(text) => onInputChange(index, "deliveryAddress", text)}
+          mode="outlined"
+          style={{ marginBottom: 12 }}
+          error={contract.errors?.deliveryAddress}
+          placeholder="e.g., NCR, Manila, Tondo, Barangay 123"
+        />
+        <TextInput
+          label="Village/Building"
+          value={contract.addressLine1}
+          onChangeText={(text) => onInputChange(index, "addressLine1", text)}
+          mode="outlined"
+          style={{ marginBottom: 12 }}
+          error={contract.errors?.addressLine1}
+          placeholder="e.g., SM Mall of Asia, Greenbelt Tower"
+        />
+        <TextInput
+          label="Room/Unit No. (Optional)"
+          value={contract.addressLine2}
+          onChangeText={(text) => onInputChange(index, "addressLine2", text)}
+          mode="outlined"
+          style={{ marginBottom: 12 }}
+          placeholder="e.g., Unit 1234, Room 567"
+        />
+      </View>
+      
       <Button
         mode="outlined"
         onPress={() => onClear(index)}
         style={{ marginTop: 12 }}
+        icon="refresh"
       >
-        Clear Contract
+        Clear Form
       </Button>
     </View>
   )
@@ -162,7 +227,7 @@ const MakeContracts = () => {
     return deliveryFee * contracts.length;
   }, [deliveryFee, contracts.length]);
 
-  // Update drop-off location when returning from LocationSelection
+  // Update drop-off location when returning from SelectLocation
   useFocusEffect(
     useCallback(() => {
       if (route.params?.locationData) {
@@ -221,21 +286,29 @@ const MakeContracts = () => {
     setContracts(prev => {
       const updated = [...prev]
       updated[index] = {
-        name: "",
         caseNumber: "",
-        itemDescription: "",
+        firstName: "",
+        middleInitial: "",
+        lastName: "",
         contact: "",
+        flightNumber: "",
+        itemDescription: "",
         weight: "",
         quantity: "",
-        flightNumber: "",
+        deliveryAddress: "",
+        addressLine1: "",
+        addressLine2: "",
         errors: {
-          name: false,
           caseNumber: false,
-          itemDescription: false,
+          firstName: false,
+          lastName: false,
           contact: false,
+          flightNumber: false,
+          itemDescription: false,
           weight: false,
           quantity: false,
-          flightNumber: false
+          deliveryAddress: false,
+          addressLine1: false
         }
       }
       return updated
@@ -252,34 +325,45 @@ const MakeContracts = () => {
 
   const addContract = useCallback(() => {
     setContracts(prev => [...prev, {
-      name: "",
       caseNumber: "",
-      itemDescription: "",
+      firstName: "",
+      middleInitial: "",
+      lastName: "",
       contact: "",
+      flightNumber: "",
+      itemDescription: "",
       weight: "",
       quantity: "",
-      flightNumber: "",
+      deliveryAddress: "",
+      addressLine1: "",
+      addressLine2: "",
       errors: {
-        name: false,
         caseNumber: false,
-        itemDescription: false,
+        firstName: false,
+        lastName: false,
         contact: false,
+        flightNumber: false,
+        itemDescription: false,
         weight: false,
         quantity: false,
-        flightNumber: false
+        deliveryAddress: false,
+        addressLine1: false
       }
     }])
   }, [])
 
   const validateContract = useCallback((contract) => {
     return {
-      name: !contract.name.trim(),
       caseNumber: !contract.caseNumber.trim(),
-      itemDescription: !contract.itemDescription.trim(),
+      firstName: !contract.firstName.trim(),
+      lastName: !contract.lastName.trim(),
       contact: !contract.contact.trim(),
+      flightNumber: !contract.flightNumber.trim(),
+      itemDescription: !contract.itemDescription.trim(),
       weight: !contract.weight.trim() || isNaN(contract.weight) || Number(contract.weight) <= 0 || Number(contract.weight) > 20,
       quantity: !contract.quantity.trim() || isNaN(contract.quantity) || Number(contract.quantity) <= 0 || Number(contract.quantity) > 8,
-      flightNumber: !contract.flightNumber.trim()
+      deliveryAddress: !contract.deliveryAddress.trim(),
+      addressLine1: !contract.addressLine1.trim()
     }
   }, [])
 
@@ -330,15 +414,7 @@ const MakeContracts = () => {
         return `${year}${month}${day}MKTP${randomPart}`
       }
 
-      // Generate luggage tracking ID with format 'YYYYMMDDTRKLGxxxx'
-      function generateLuggageTrackingID() {
-        const now = new Date()
-        const year = now.getFullYear()
-        const month = String(now.getMonth() + 1).padStart(2, '0')
-        const day = String(now.getDate()).padStart(2, '0')
-        const randomPart = [...Array(4)].map(() => Math.random().toString(36)[2].toUpperCase()).join('')
-        return `${year}${month}${day}TRKLG${randomPart}`
-      }
+
 
       // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -355,7 +431,7 @@ const MakeContracts = () => {
           trackingID = generateTrackingID()
 
           const { data: existing, error: checkError } = await supabase
-            .from('contract')
+            .from('contracts')
             .select('id')
             .eq('id', trackingID)
 
@@ -363,10 +439,22 @@ const MakeContracts = () => {
           collisionCheck = existing.length > 0
         } while (collisionCheck)
 
-        // Insert contract with properly formatted location data and tracking ID
+        // Insert contract with all luggage information directly into contracts table
         const contractData = {
           id: trackingID,
           airline_id: user.id,
+          owner_first_name: contract.firstName,
+          owner_middle_initial: contract.middleInitial,
+          owner_last_name: contract.lastName,
+          owner_contact: '+63' + contract.contact,
+          luggage_description: contract.itemDescription,
+          luggage_weight: contract.weight,
+          luggage_quantity: contract.quantity,
+          flight_number: contract.flightNumber,
+          case_number: 'AHLMNLZ' + contract.caseNumber,
+          delivery_address: contract.deliveryAddress,
+          address_line_1: contract.addressLine1,
+          address_line_2: contract.addressLine2,
           pickup_location: pickupLocation,
           drop_off_location: dropOffLocation.location,
           drop_off_location_geo: `POINT(${dropOffLocation.lng} ${dropOffLocation.lat})`,
@@ -374,47 +462,12 @@ const MakeContracts = () => {
         }
 
         const { data: insertedContract, error: contractError } = await supabase
-          .from('contract')
+          .from('contracts')
           .insert(contractData)
           .select()
           .single()
 
         if (contractError) throw contractError
-
-        // Generate unique luggage tracking ID
-        let luggageTrackingID
-        let luggageCollisionCheck
-
-        do {
-          luggageTrackingID = generateLuggageTrackingID()
-
-          const { data: existing, error: checkError } = await supabase
-            .from('contract_luggage_information')
-            .select('id')
-            .eq('id', luggageTrackingID)
-
-          if (checkError) throw checkError
-          luggageCollisionCheck = existing.length > 0
-        } while (luggageCollisionCheck)
-
-        // Insert luggage information
-        const luggageData = {
-          id: luggageTrackingID,
-          case_number: 'AHLMNLZ'+contract.caseNumber,
-          luggage_owner: contract.name,
-          contact_number: '+63' + contract.contact,
-          item_description: contract.itemDescription,
-          weight: contract.weight,
-          quantity: contract.quantity,
-          flight_number: contract.flightNumber,
-          contract_id: insertedContract.id
-        }
-
-        const { error: luggageError } = await supabase
-          .from('contract_luggage_information')
-          .insert(luggageData)
-
-        if (luggageError) throw luggageError
 
         return insertedContract
       })
@@ -480,9 +533,9 @@ const MakeContracts = () => {
       </View>
       <Button
         mode="contained"
-        onPress={() => navigation.navigate('LocationSelection', {
+        onPress={() => navigation.navigate('SelectLocation', {
           params: {
-            screen: 'LocationSelection'
+            screen: 'SelectLocation'
           }
         })}
         icon="map-marker"
@@ -503,7 +556,7 @@ const MakeContracts = () => {
         </View>
       ) : (
         <Text style={[fonts.bodyMedium, { color: colors.onSurfaceVariant }]}>
-          No drop-off location selected
+          Please provide a drop-off location pin to help the delivery team the location more easily.
         </Text>
       )}
     </Surface>
@@ -575,16 +628,18 @@ const MakeContracts = () => {
             mode="outlined"
             onPress={addContract}
             style={{ marginRight: 8 }}
+            icon="plus"
           >
-            Add Another Form
+            Add Passenger
           </Button>
           <Button
             mode="contained"
             onPress={handleSubmit}
             loading={loading}
             disabled={loading}
+            icon="send"
           >
-            Send Contracts
+            Create Contracts
           </Button>
         </View>
       </View>
@@ -610,6 +665,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  addressSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  nameRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  nameField: {
+    flex: 1,
+  },
+  middleInitialField: {
+    width: 80,
   },
   buttonContainer: {
     flexDirection: 'row',

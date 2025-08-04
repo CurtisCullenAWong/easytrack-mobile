@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { View, FlatList, StyleSheet } from 'react-native'
-import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu } from 'react-native-paper'
+import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, Dialog, Portal } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 
@@ -16,10 +16,12 @@ const ContractsMade = ({ navigation }) => {
   const [sortMenuVisible, setSortMenuVisible] = useState(false)
   const [sortColumn, setSortColumn] = useState('created_at')
   const [sortDirection, setSortDirection] = useState('descending')
+  const [cancelDialogVisible, setCancelDialogVisible] = useState(false)
+  const [contractToCancel, setContractToCancel] = useState(null)
 
   const filterOptions = [
     { label: 'Contract ID', value: 'id' },
-    { label: 'Luggage Owner', value: 'luggage_owner' },
+    { label: 'Luggage Owner', value: 'owner_first_name' },
     { label: 'Case Number', value: 'case_number' },
     { label: 'Status', value: 'status' },
     { label: 'Pickup Location', value: 'pickup_location' },
@@ -29,7 +31,7 @@ const ContractsMade = ({ navigation }) => {
 
   const sortOptions = [
     { label: 'Contract ID', value: 'id' },
-    { label: 'Luggage Owner', value: 'luggage_owner' },
+    { label: 'Luggage Owner', value: 'owner_first_name' },
     { label: 'Case Number', value: 'case_number' },
     { label: 'Status', value: 'contract_status.status_name' },
     { label: 'Created Date', value: 'created_at' },
@@ -58,6 +60,44 @@ const ContractsMade = ({ navigation }) => {
 
   useEffect(() => {
     fetchContracts()
+    
+    // Set up realtime subscription
+    const setupRealtime = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const channel = supabase
+        .channel('contracts_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'contracts',
+            filter: `airline_id=eq.${user.id}`
+          },
+          (payload) => {
+            // Refresh the contracts list when changes occur
+            fetchContracts()
+          }
+        )
+        .subscribe()
+
+      // Store channel reference for cleanup
+      return channel
+    }
+
+    let channel
+    setupRealtime().then(ch => {
+      channel = ch
+    })
+
+    // Cleanup subscription on unmount
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
+    }
   }, [])
 
   const fetchContracts = async () => {
@@ -67,17 +107,10 @@ const ContractsMade = ({ navigation }) => {
       if (!user) throw new Error('User not authenticated')
 
       const { data, error } = await supabase
-        .from('contract')
+        .from('contracts')
         .select(`
           *,
           contract_status:contract_status_id (status_name),
-          luggage_info:contract_luggage_information (
-            luggage_owner,
-            case_number,
-            item_description,
-            weight,
-            contact_number
-          ),
           airline_profile:airline_id (
             pfp_id,
             first_name,
@@ -121,8 +154,8 @@ const ContractsMade = ({ navigation }) => {
   const filteredAndSortedContracts = contracts
     .filter(contract => {
       const searchValue = String(
-        searchColumn === 'luggage_owner' || searchColumn === 'case_number'
-          ? contract.luggage_info?.[0]?.[searchColumn] || ''
+        searchColumn === 'owner_first_name' || searchColumn === 'case_number'
+          ? contract[searchColumn] || ''
           : contract[searchColumn] || ''
       ).toLowerCase()
       const query = searchQuery.toLowerCase()
@@ -131,9 +164,9 @@ const ContractsMade = ({ navigation }) => {
     .sort((a, b) => {
       let valA, valB
 
-      if (sortColumn === 'luggage_owner' || sortColumn === 'case_number') {
-        valA = a.luggage_info?.[0]?.[sortColumn] || ''
-        valB = b.luggage_info?.[0]?.[sortColumn] || ''
+      if (sortColumn === 'owner_first_name' || sortColumn === 'case_number') {
+        valA = a[sortColumn] || ''
+        valB = b[sortColumn] || ''
       } else if (sortColumn === 'contract_status.status_name') {
         valA = a.contract_status?.status_name || ''
         valB = b.contract_status?.status_name || ''
@@ -174,20 +207,25 @@ const ContractsMade = ({ navigation }) => {
     navigation.navigate('ContractDetails', { id: contract.id})
   }
 
-  const handleCancelContract = async (contract) => {
-    try {
-      if (contract.contract_status_id !== 1) {
-        showSnackbar('Only contracts with status "Pending" can be cancelled', false)
-        return
-      }
+  const handleCancelContract = (contract) => {
+    if (contract.contract_status_id !== 1) {
+      showSnackbar('Only contracts with status "Pending" can be cancelled', false)
+      return
+    }
+    
+    setContractToCancel(contract)
+    setCancelDialogVisible(true)
+  }
 
+  const confirmCancelContract = async () => {
+    try {
       const { error } = await supabase
-        .from('contract')
+        .from('contracts')
         .update({
           contract_status_id: 2,
           cancelled_at: new Date().toISOString()
         })
-        .eq('id', contract.id)
+        .eq('id', contractToCancel.id)
 
       if (error) throw error
 
@@ -195,7 +233,15 @@ const ContractsMade = ({ navigation }) => {
       fetchContracts()
     } catch (error) {
       showSnackbar('Error cancelling contract: ' + error.message)
+    } finally {
+      setCancelDialogVisible(false)
+      setContractToCancel(null)
     }
+  }
+
+  const dismissCancelDialog = () => {
+    setCancelDialogVisible(false)
+    setContractToCancel(null)
   }
 
   const ContractCard = ({ contract }) => {    
@@ -204,36 +250,46 @@ const ContractsMade = ({ navigation }) => {
         <Card.Content>
           <View style={styles.contractCardHeader}>
             <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>CONTRACT ID</Text>
-            <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>{contract.id || 'N/A'}</Text>
+            <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]} selectable>{contract.id || 'N/A'}</Text>
           </View>
-          <Divider />
-          <View style={styles.passengerInfoContainer}>
-            
-            {contract.airline_profile?.pfp_id ? (
-                <Avatar.Image 
-                    size={40} 
-                    source={{ uri: contract.airline_profile?.pfp_id }}
-                    style={[styles.avatarImage,{ backgroundColor: colors.primary }]}
-                />
-            ) : (
-                <Avatar.Text 
-                    size={40} 
-                    label={contract.airline_profile?.first_name ? contract.airline_profile?.first_name[0].toUpperCase() : 'U'}
-                    style={[styles.avatarImage,{ backgroundColor: colors.primary }]}
-                    labelStyle={{ color: colors.onPrimary }}
-                />
-            )}
-            <View>
-              <View style={{ flexDirection: 'row', gap: 5 }}>
-                <Text style={[fonts.labelMedium, { fontWeight: 'bold', color: colors.primary }]}>
-                  Contractor Name:
-                </Text>
-                <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
-                  {[
+          <View style={styles.contractCardHeader}>
+            <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>CONTRACTOR NAME</Text>
+            <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
+              {[
                     contract.airline_profile?.first_name,
                     contract.airline_profile?.middle_initial,
                     contract.airline_profile?.last_name,
                     contract.airline_profile?.suffix
+              ].filter(Boolean).join(' ') || 'N/A'}
+            </Text>
+          </View>
+          <Divider />
+          <View style={styles.passengerInfoContainer}>
+          {/*             
+          {contract.airline_profile?.pfp_id ? (
+              <Avatar.Image 
+                  size={40} 
+                  source={{ uri: contract.airline_profile?.pfp_id }}
+                  style={[styles.avatarImage,{ backgroundColor: colors.primary }]}
+              />
+          ) : (
+              <Avatar.Text 
+                  size={40} 
+                  label={contract.airline_profile?.first_name ? contract.airline_profile?.first_name[0].toUpperCase() : 'U'}
+                  style={[styles.avatarImage,{ backgroundColor: colors.primary }]}
+                  labelStyle={{ color: colors.onPrimary }}
+              />
+          )} */}
+            <View>
+              <View style={{ flexDirection: 'row', gap: 5 }}>
+                <Text style={[fonts.labelMedium, { fontWeight: 'bold', color: colors.primary }]}>
+                Passenger Name:
+                </Text>
+                <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
+                  {[
+                    contract?.owner_first_name,
+                    contract?.owner_middle_initial,
+                    contract?.owner_last_name,
                   ].filter(Boolean).join(' ') || 'N/A'}
                 </Text>
               </View>
@@ -428,6 +484,55 @@ const ContractsMade = ({ navigation }) => {
         refreshing={loading}
         onRefresh={fetchContracts}
       />
+      
+      <Portal>
+        <Dialog
+          visible={cancelDialogVisible}
+          onDismiss={dismissCancelDialog}
+          style={{ backgroundColor: colors.surface }}>
+          <Dialog.Title style={{ color: colors.onSurface, ...fonts.titleLarge }}>
+            Confirm Cancellation
+          </Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ color: colors.onSurface, ...fonts.bodyMedium }}>
+              Are you sure you want to cancel this contract?
+            </Text>
+            {contractToCancel && (
+              <View style={styles.dialogContractInfo}>
+                <Text style={{ color: colors.onSurfaceVariant, ...fonts.labelMedium, marginTop: 8 }}>
+                  Contract ID: {contractToCancel.id}
+                </Text>
+                <Text style={{ color: colors.onSurfaceVariant, ...fonts.labelMedium }}>
+                  Passenger: {[
+                    contractToCancel.owner_first_name,
+                    contractToCancel.owner_middle_initial,
+                    contractToCancel.owner_last_name,
+                  ].filter(Boolean).join(' ') || 'N/A'}
+                </Text>
+                <Text style={{ color: colors.onSurfaceVariant, ...fonts.labelMedium }}>
+                  Case Number: {contractToCancel.case_number || 'N/A'}
+                </Text>
+              </View>
+            )}
+            <Text style={{ color: colors.error, ...fonts.bodySmall, marginTop: 8 }}>
+              This action cannot be undone.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={dismissCancelDialog} textColor={colors.error}>
+              Cancel
+            </Button>
+            <Button 
+              onPress={confirmCancelContract}
+              textColor={colors.onError}
+              mode="contained"
+              buttonColor={colors.error}
+            >
+              Confirm Cancellation
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   )
 }
@@ -478,7 +583,7 @@ const styles = StyleSheet.create({
   },
   contractCardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
+    justifyContent: 'space-between',
   },
   passengerInfoContainer: {
     flexDirection: 'row',
@@ -523,6 +628,12 @@ const styles = StyleSheet.create({
   },
   flatListContent: {
     paddingBottom: 20,
+  },
+  dialogContractInfo: {
+    marginTop: 8,
+    padding: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    borderRadius: 8,
   },
 })
 
