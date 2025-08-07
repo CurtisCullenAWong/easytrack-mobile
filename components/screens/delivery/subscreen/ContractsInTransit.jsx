@@ -10,7 +10,7 @@ import useSnackbar from '../../../hooks/useSnackbar'
 // Constants
 const FILTER_OPTIONS = [
   { label: 'Contract ID', value: 'id' },
-  { label: 'Luggage Owner', value: 'luggage_owner' },
+  { label: 'Owner Name', value: 'owner_name' },
   { label: 'Pickup Location', value: 'pickup_location' },
   { label: 'Current Location', value: 'current_location' },
   { label: 'Drop-off Location', value: 'drop_off_location' },
@@ -18,7 +18,7 @@ const FILTER_OPTIONS = [
 
 const SORT_OPTIONS = [
   { label: 'Contract ID', value: 'id' },
-  { label: 'Luggage Owner', value: 'luggage_owner' },
+  { label: 'Owner Name', value: 'owner_name' },
   { label: 'Created Date', value: 'created_at' },
   { label: 'Pickup Date', value: 'pickup_at' },
 ]
@@ -104,7 +104,7 @@ const ContractsInTransit = ({ navigation }) => {
           {
             event: '*',
             schema: 'public',
-            table: 'contract',
+            table: 'contracts',
             filter: `delivery_id=eq.${user.id}`
           },
           async () => {
@@ -127,7 +127,7 @@ const ContractsInTransit = ({ navigation }) => {
       if (!user) return
 
       const { count, error: countError } = await supabase
-        .from('contract')
+        .from('contracts')
         .select('*', { count: 'exact', head: true })
         .eq('delivery_id', user.id)
         .eq('contract_status_id', 4)
@@ -147,17 +147,10 @@ const ContractsInTransit = ({ navigation }) => {
       if (!user) throw new Error('User not authenticated')
 
       const { data, error } = await supabase
-        .from('contract')
+        .from('contracts')
         .select(`
           *,
           contract_status:contract_status_id (status_name),
-          luggage_info:contract_luggage_information (
-            luggage_owner,
-            case_number,
-            item_description,
-            weight,
-            contact_number
-          ),
           airline_profile:airline_id (
             pfp_id,
             first_name,
@@ -199,8 +192,12 @@ const ContractsInTransit = ({ navigation }) => {
         let fieldValue = '';
 
         switch (searchColumn) {
-          case 'luggage_owner':
-            fieldValue = contract.luggage_info?.[0]?.[searchColumn] || '';
+          case 'owner_name':
+            fieldValue = [
+              contract.owner_first_name,
+              contract.owner_middle_initial,
+              contract.owner_last_name
+            ].filter(Boolean).join(' ') || '';
             break;
           case 'pickup_location':
           case 'current_location':
@@ -217,9 +214,17 @@ const ContractsInTransit = ({ navigation }) => {
         let valA, valB;
 
         switch (sortColumn) {
-          case 'luggage_owner':
-            valA = a.luggage_info?.[0]?.[sortColumn] || '';
-            valB = b.luggage_info?.[0]?.[sortColumn] || '';
+          case 'owner_name':
+            valA = [
+              a.owner_first_name,
+              a.owner_middle_initial,
+              a.owner_last_name
+            ].filter(Boolean).join(' ') || '';
+            valB = [
+              b.owner_first_name,
+              b.owner_middle_initial,
+              b.owner_last_name
+            ].filter(Boolean).join(' ') || '';
             break;
           case 'created_at':
           case 'pickup_at':
@@ -266,7 +271,7 @@ const ContractsInTransit = ({ navigation }) => {
       }
       else if (dialogType === 'failed') {
         const { error } = await supabase
-          .from('contract')
+          .from('contracts')
           .update({
             cancelled_at: new Date().toISOString(),
             contract_status_id: 6,
@@ -290,7 +295,7 @@ const ContractsInTransit = ({ navigation }) => {
         }
         
         const { error } = await supabase
-          .from('contract')
+          .from('contracts')
           .update({
             cancelled_at: new Date().toISOString(),
             contract_status_id: 6,
@@ -358,6 +363,13 @@ const ContractsInTransit = ({ navigation }) => {
               </View>
               <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
                 Total Luggage Quantity: {contract.luggage_quantity || 0}
+              </Text>
+              <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
+                Owner: {[
+                  contract.owner_first_name,
+                  contract.owner_middle_initial,
+                  contract.owner_last_name
+                ].filter(Boolean).join(' ') || 'N/A'}
               </Text>
             </View>
           </View>

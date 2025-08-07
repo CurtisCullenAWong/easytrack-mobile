@@ -36,7 +36,6 @@ const EditProfileSubScreen = ({ navigation }) => {
   
   // Add error state
   const [errors, setErrors] = useState({
-    email: '',
     first_name: '',
     middle_initial: '',
     last_name: '',
@@ -46,17 +45,6 @@ const EditProfileSubScreen = ({ navigation }) => {
     emergency_contact_name: '',
     emergency_contact_number: '',
   })
-
-  // Validation functions
-  const validateEmail = (email) => {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-    if (!emailRegex.test(email)) {
-      setErrors(prev => ({ ...prev, email: 'Invalid email address' }))
-      return false
-    }
-    setErrors(prev => ({ ...prev, email: '' }))
-    return true
-  }
 
   const validateName = (name, field) => {
     if (!name) {
@@ -175,9 +163,7 @@ const EditProfileSubScreen = ({ navigation }) => {
       datePicker: false,
       imageSource: false,
       removeImage: false,
-      emailConfirm: false,
     },
-    initialEmail: '',
   })
 
   // Simplified handlers
@@ -189,10 +175,6 @@ const EditProfileSubScreen = ({ navigation }) => {
     let sanitizedValue = value
 
     switch (field) {
-      case 'email':
-        sanitizedValue = value.toLowerCase().trim()
-        validateEmail(sanitizedValue)
-        break
       case 'first_name':
       case 'last_name':
         sanitizedValue = value.replace(/[^a-zA-Z\s']/g, '')
@@ -332,28 +314,12 @@ const EditProfileSubScreen = ({ navigation }) => {
     }
   }
 
-  const handleEmailChange = async () => {
-    try {
-      updateState({ saving: true })
-      const { error } = await supabase.auth.updateUser({
-        email: state.form.email,
-      })
-      if (error) throw error
-      navigation.navigate('Profile')
-      showSnackbar('Email change request sent. Please check your email to confirm the change.', true)
-      updateDialog('emailConfirm', false)
-    } catch (error) {
-      showSnackbar('Error updating email: ' + error.message)
-    } finally {
-      updateState({ saving: false })
-    }
-  }
+
   
   const saveProfile = async () => {
     try {
       // Validate all fields
       const validations = [
-        validateEmail(state.form.email),
         validateName(state.form.first_name, 'first_name'),
         validateMiddleInitial(state.form.middle_initial),
         validateName(state.form.last_name, 'last_name'),
@@ -413,7 +379,6 @@ const EditProfileSubScreen = ({ navigation }) => {
       const { error } = await supabase
         .from('profiles')
         .update({
-          // email: state.form.email,
           first_name: capitalizeName(state.form.first_name),
           middle_initial: capitalizeName(state.form.middle_initial),
           last_name: capitalizeName(state.form.last_name),
@@ -467,7 +432,6 @@ const EditProfileSubScreen = ({ navigation }) => {
 
       updateState({
         form: initialData,
-        initialEmail: data.email || '',
         roleId: data.role_id,
         loading: false
       })
@@ -555,23 +519,14 @@ const EditProfileSubScreen = ({ navigation }) => {
           <TextInput
             label='Email'
             value={state.form.email}
-            onChangeText={(text) => handleChange('email', text)}
             mode='outlined'
             style={styles.input}
-            right={<TextInput.Icon icon='email' onPress={()=>{
-              updateDialog('emailConfirm', true)
-            }} color={colors.primary}/>}
             theme={{ colors: { primary: colors.primary } }}
-            disabled={state.saving}
-            autoCapitalize='words'
-            maxLength={35}
             editable={false}
-            error={!!errors.email}
-            helperText={errors.email}
           />
 
           <TextInput
-            label='First Name'
+            label='First Name*'
             value={state.form.first_name}
             onChangeText={(text) => handleChange('first_name', text)}
             mode='outlined'
@@ -601,7 +556,7 @@ const EditProfileSubScreen = ({ navigation }) => {
           />
 
           <TextInput
-            label='Last Name'
+            label='Last Name*'
             value={state.form.last_name}
             onChangeText={(text) => handleChange('last_name', text)}
             mode='outlined'
@@ -633,7 +588,7 @@ const EditProfileSubScreen = ({ navigation }) => {
           <Divider style={styles.divider} />
 
           <TextInput
-            label='Contact Number'
+            label='Contact Number*'
             value={state.form.contact_number}
             onChangeText={(text) => handleChange('contact_number', text)}
             mode='outlined'
@@ -648,7 +603,7 @@ const EditProfileSubScreen = ({ navigation }) => {
           />
           <TouchableOpacity onPress={() => updateDialog('datePicker', true)}>
             <TextInput
-              label='Birth Date'
+              label='Birth Date*'
               value={state.form.birth_date ? state.form.birth_date.toLocaleDateString() : ''}
               editable={false}
               mode='outlined'
@@ -664,7 +619,7 @@ const EditProfileSubScreen = ({ navigation }) => {
           <Divider style={styles.divider} />
 
           <TextInput
-            label='Emergency Contact Name'
+            label='Emergency Contact Name*'
             value={state.form.emergency_contact_name}
             onChangeText={(text) => handleChange('emergency_contact_name', text)}
             mode='outlined'
@@ -679,7 +634,7 @@ const EditProfileSubScreen = ({ navigation }) => {
           />
 
           <TextInput
-            label='Emergency Contact Number'
+            label='Emergency Contact Number*'
             value={state.form.emergency_contact_number}
             onChangeText={(text) => handleChange('emergency_contact_number', text)}
             mode='outlined'

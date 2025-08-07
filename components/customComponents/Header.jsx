@@ -69,14 +69,14 @@ const Header = ({ navigation, title }) => {
                         />
                     )}
                 </TouchableOpacity>
-                {/* {userRole && (
-                    <View style={[styles.roleBadge, { backgroundColor: colors.primary + '40' }]}>
-                        <Text style={[styles.roleText, { color: colors.primary }]}>
-                            {firstName} - {userRole}
-                        </Text>
-                    </View>
-                )} */}
             </Appbar.Header>
+            {userRole && (
+                <View style={[styles.roleBadge, { backgroundColor: colors.primary + '40' }]}>
+                    <Text style={[styles.roleText, { color: colors.primary }]}>
+                        {firstName} - {userRole}
+                    </Text>
+                </View>
+            )}
             {/* Header */}
         </View>
     )
@@ -103,7 +103,8 @@ const styles = StyleSheet.create({
     },
     roleBadge: {
         position: 'absolute',
-        bottom: -5,
+        bottom: -20,
+        zIndex: 999,
         right: 0,
         paddingHorizontal: 6,
         paddingVertical: 2,

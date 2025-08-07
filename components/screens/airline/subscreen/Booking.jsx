@@ -371,6 +371,12 @@ const MakeContracts = () => {
     try {
       setLoading(true)
 
+      // Validate delivery fee
+      if (!deliveryFee || deliveryFee <= 0) {
+        showSnackbar('Cannot proceed with booking. No delivery fee available for the selected location.')
+        return
+      }
+
       // Validate locations
       if (!pickupLocation.trim()) {
         setPickupError(true)
@@ -489,7 +495,7 @@ const MakeContracts = () => {
     } finally {
       setLoading(false)
     }
-  }, [contracts, dropOffLocation, pickupLocation, showSnackbar, totalLuggageQuantity, validateContract, navigation])
+  }, [contracts, dropOffLocation, pickupLocation, deliveryFee, showSnackbar, totalLuggageQuantity, validateContract, navigation])
 
   // Function to fetch delivery price based on city
   const fetchDeliveryPrice = async (address) => {
@@ -627,7 +633,6 @@ const MakeContracts = () => {
           <Button
             mode="outlined"
             onPress={addContract}
-            style={{ marginRight: 8 }}
             icon="plus"
           >
             Add Passenger

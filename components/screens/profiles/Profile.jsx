@@ -228,20 +228,19 @@ const Profile = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [refreshing, setRefreshing] = useState(false) // <-- Add this
+  const [refreshing, setRefreshing] = useState(false)
 
   const { handleLogout, LogoutDialog } = useLogout(navigation)
 
   const fetchProfile = useCallback(async () => {
     setLoading(true)
-    setError(null)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-      if (!user) {
-        setError('User not authenticated')
-        return navigation.navigate('Login')
+      if (authError) {
+        showSnackbar('User not authenticated')
+        handleLogout()
+        return
       }
 
       const { data, error } = await supabase
@@ -260,7 +259,6 @@ const Profile = ({ navigation }) => {
       setProfile(data)
     } catch (error) {
       console.error('Error in fetchProfile:', error)
-      setError(error.message)
     } finally {
       setLoading(false)
     }

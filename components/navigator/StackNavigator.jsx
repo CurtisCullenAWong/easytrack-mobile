@@ -17,6 +17,8 @@ import Profile from '../screens/profiles/Profile'
 import EditProfileSubScreen from '../screens/profiles/subscreen/EditProfileSubScreen'
 import Verification from '../screens/profiles/subscreen/ProfileVerification'
 import SetNewPasswordScreen from '../screens/shared/SetNewPasswordScreen'
+import ProfileCompletionCheck from '../screens/shared/ProfileCompletionCheck'
+import UpdateProfileScreen from '../screens/shared/UpdateProfileScreen'
 
 // Admin Screens
 import AdminHome from '../screens/admin/AdminHome'
@@ -45,9 +47,9 @@ import DeliveryBookingManagement from '../screens/delivery/DeliveryBookingManage
 import DeliveryConfirmation from '../screens/delivery/subscreen/DeliveryConfirmation'
 
 // Import Navigators
-import AdminNavigator from './AdminNavigator'
-import DeliveryNavigator from './DeliveryNavigator'
-import AirlineNavigator from './AirlineNavigator'
+import AdminNavigator from './navigators/AdminNavigator'
+import DeliveryNavigator from './navigators/DeliveryNavigator'
+import AirlineNavigator from './navigators/AirlineNavigator'
 
 const Stack = createNativeStackNavigator()
 const Drawer = createDrawerNavigator()
@@ -84,6 +86,8 @@ const AdminDrawer = () => (
       {/* <Drawer.Screen name="TransactionHistory" component={TransactionHistory} /> */}
       <Drawer.Screen name="Profile" component={Profile} />
       <Drawer.Screen name="EditProfile" component={EditProfileSubScreen} />
+      <Drawer.Screen name="UpdateProfile" component={UpdateProfileScreen} />
+      <Drawer.Screen name="ProfileCompletionCheck" component={ProfileCompletionCheck} />
       <Drawer.Screen name="Verification" component={Verification} />
       <Drawer.Screen name="MessageCenter" component={MessageCenter} />
       <Drawer.Screen name="TermsAndConditions" component={TermsAndConditions} />
@@ -109,6 +113,8 @@ const AirlineDrawer = () => (
       <Drawer.Screen name="TransactionHistory" component={TransactionHistory} />
       <Drawer.Screen name="Profile" component={Profile} />
       <Drawer.Screen name="EditProfile" component={EditProfileSubScreen} />
+      <Drawer.Screen name="UpdateProfile" component={UpdateProfileScreen} />
+      <Drawer.Screen name="ProfileCompletionCheck" component={ProfileCompletionCheck} />
       <Drawer.Screen name="Verification" component={Verification} />
       <Drawer.Screen name="AirlineTrackLuggage" component={AirlineTrackLuggage} />
       <Drawer.Screen name="UserPerformanceStatistics" component={UserPerformanceStatistics} />
@@ -135,6 +141,8 @@ const DeliveryDrawer = () => (
       <Drawer.Screen name="TransactionHistory" component={TransactionHistory} />
       <Drawer.Screen name="Profile" component={Profile} />
       <Drawer.Screen name="EditProfile" component={EditProfileSubScreen} />
+      <Drawer.Screen name="UpdateProfile" component={UpdateProfileScreen} />
+      <Drawer.Screen name="ProfileCompletionCheck" component={ProfileCompletionCheck} />
       <Drawer.Screen name="Verification" component={Verification} />
       <Drawer.Screen name="UserPerformanceStatistics" component={UserPerformanceStatistics} />
       <Drawer.Screen name="MessageCenter" component={MessageCenter} />
@@ -185,6 +193,18 @@ const StackNavigator = () => (
       <Stack.Screen
         name="SetNewPassword"
         component={SetNewPasswordScreen}
+        options={{ headerShown: false }}
+      />
+
+      <Stack.Screen
+        name="ProfileCompletionCheck"
+        component={ProfileCompletionCheck}
+        options={{ headerShown: false }}
+      />
+
+      <Stack.Screen
+        name="UpdateProfile"
+        component={UpdateProfileScreen}
         options={{ headerShown: false }}
       />
 

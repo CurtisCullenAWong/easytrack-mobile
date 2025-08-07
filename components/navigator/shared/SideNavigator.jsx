@@ -1,25 +1,38 @@
 import { useState, useContext, useEffect } from 'react'
 import { Image, ScrollView, StyleSheet, BackHandler, TouchableOpacity } from 'react-native'
-import { Text, List, Surface, Divider, useTheme, IconButton } from 'react-native-paper'
-import { ThemeContext } from '../themes/themeContext'
-import useLogout from '../hooks/useLogout'
-import AIRLINE_SECTIONS from './sections/airlineSections'
+import { Text, List, Surface, Divider, useTheme, IconButton, ActivityIndicator } from 'react-native-paper'
+import { ThemeContext } from '../../themes/themeContext'
 
-const SECTIONS = AIRLINE_SECTIONS
-
-
-const AirlineNavigator = ({ navigation }) => {
+const SideNavigator = ({ navigation, sections, LogoutDialog, handleLogout }) => {
   const { toggleTheme } = useContext(ThemeContext)
   const { colors, fonts } = useTheme()
-  const { handleLogout, LogoutDialog } = useLogout(navigation)
 
   const [expandedSections, setExpandedSections] = useState(
-    Object.fromEntries(SECTIONS.map(s => [s.key, true]))
+    Object.fromEntries(sections.map(s => [s.key, true]))
   )
+
+  // Development-only: Warn if a section's screen does not exist in navigation
+  useEffect(() => {
+    if (__DEV__ && navigation && navigation.getState) {
+      const registeredScreens = new Set(
+        navigation.getState()?.routeNames || []
+      )
+      sections.forEach(section => {
+        section.items.forEach(item => {
+          if (item.screen && !registeredScreens.has(item.screen)) {
+            // eslint-disable-next-line no-console
+            console.warn(
+              `[SideNavigator] Screen "${item.screen}" in section "${section.title}" is not registered in the Drawer.Navigator. Navigation will fail.`
+            )
+          }
+        })
+      })
+    }
+  }, [navigation, sections])
 
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      handleLogout()
+      if (handleLogout) handleLogout()
       return true
     })
     return () => sub.remove()
@@ -33,19 +46,19 @@ const AirlineNavigator = ({ navigation }) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Surface style={[styles.surface, { backgroundColor: colors.background }]}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}> 
+      <Surface style={[styles.surface, { backgroundColor: colors.background }]}> 
         <Image
-          source={require('../../assets/icon-w_o-name.png')}
+          source={require('../../../assets/icon-w_o-name.png')}
           style={styles.logo}
         />
-        <Text style={[styles.appName, { color: colors.primary, ...fonts.headlineLarge }]}>
+        <Text style={[styles.appName, { color: colors.primary, ...fonts.headlineLarge }]}> 
           EasyTrack
         </Text>
       </Surface>
       <Divider style={styles.divider} />
 
-      {SECTIONS.map(section => (
+      {sections.map(section => (
         <ExpandableSection
           key={section.key}
           title={section.title}
@@ -53,7 +66,7 @@ const AirlineNavigator = ({ navigation }) => {
           onToggle={() => toggleSection(section.key)}
           icon={section.icon}
           items={section.items.map(item =>
-            item.actionKey === 'logout'
+            item.actionKey === 'logout' && handleLogout
               ? { ...item, action: handleLogout }
               : item
           )}
@@ -80,6 +93,23 @@ const AirlineNavigator = ({ navigation }) => {
 
 const ExpandableSection = ({ title, expanded, onToggle, icon, items, navigation, fonts }) => {
   const { colors } = useTheme()
+  // Debounce navigation to prevent double-tap issues
+  const [navLock, setNavLock] = useState(false)
+  const [loadingIdx, setLoadingIdx] = useState(null)
+  const handleItemPress = (action, screen, idx) => {
+    if (navLock) return
+    setNavLock(true)
+    setLoadingIdx(idx)
+    if (action) {
+      action()
+    } else if (screen && navigation && navigation.navigate) {
+      navigation.navigate(screen)
+    }
+    setTimeout(() => {
+      setNavLock(false)
+      setLoadingIdx(null)
+    }, 500) // 500ms lockout
+  }
   return (
     <List.Accordion
       title={title}
@@ -94,7 +124,8 @@ const ExpandableSection = ({ title, expanded, onToggle, icon, items, navigation,
           title={label}
           titleStyle={[{ color: colors.onSurface }, fonts.labelMedium]}
           left={props => <List.Icon {...props} icon={icon} color={color || colors.primary} />}
-          onPress={() => (action ? action() : navigation.navigate(screen))}
+          right={props => loadingIdx === idx ? <ActivityIndicator size={18} color={colors.primary} /> : null}
+          onPress={() => handleItemPress(action, screen, idx)}
           style={styles.listItem}
         />
       ))}
@@ -112,4 +143,4 @@ const styles = StyleSheet.create({
   listItem: { paddingLeft: 30 },
 })
 
-export default AirlineNavigator
+export default SideNavigator

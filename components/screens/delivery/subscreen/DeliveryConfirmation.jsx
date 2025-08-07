@@ -167,7 +167,7 @@ const DeliveryConfirmation = ({ navigation, route }) => {
 
       // Update contract status
       const { error: updateError } = await supabase
-        .from('contract')
+        .from('contracts')
         .update({ 
           delivered_at: new Date().toISOString(),
           contract_status_id: 5, // Delivered

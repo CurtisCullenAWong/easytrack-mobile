@@ -58,7 +58,7 @@ export function useLocation() {
       }
 
       const { error: updateError } = await supabase
-        .from('contract')
+        .from('contracts')
         .update({
           current_location: locationText,
           current_location_geo: geoPoint,

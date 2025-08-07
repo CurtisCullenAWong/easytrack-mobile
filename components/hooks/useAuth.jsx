@@ -176,19 +176,9 @@ const useAuth = (navigation = null, onClose = null) => {
       .update({ last_sign_in_at: new Date().toISOString(), user_status_id: 1 })
       .eq('id', data.user.id)
 
-    const routeMap = {
-      1: 'AdminDrawer',
-      2: 'DeliveryDrawer',
-      3: 'AirlineDrawer',
-    }
-
-    const targetRoute = routeMap[profile.role_id]
-    if (!targetRoute) {
-      return showSnackbar('Unauthorized role or unknown user.')
-    }
-
     if (navigation) {
-      navigation.navigate(targetRoute)
+      // Navigate to profile completion check instead of directly to target route
+      navigation.navigate('ProfileCompletionCheck')
       onClose?.()
     } else {
       navigation.navigate('Login')
@@ -299,19 +289,9 @@ const useAuth = (navigation = null, onClose = null) => {
         .update({ last_sign_in_at: new Date().toISOString(), user_status_id: 1 })
         .eq('id', user.id)
 
-      const routeMap = {
-        1: 'AdminDrawer',
-        2: 'DeliveryDrawer',
-        3: 'AirlineDrawer',
-      }
-
-      const targetRoute = routeMap[profile.role_id]
-      if (!targetRoute) {
-        return showSnackbar('Unauthorized role or unknown user.')
-      }
-
       if (navigation) {
-        navigation.navigate(targetRoute)
+        // Navigate to profile completion check instead of directly to target route
+        navigation.navigate('ProfileCompletionCheck')
         onClose?.()
       } else {
         navigation.navigate('Login')
@@ -349,20 +329,9 @@ const useAuth = (navigation = null, onClose = null) => {
         return false
       }
 
-      const routeMap = {
-        1: 'AdminDrawer',
-        2: 'DeliveryDrawer',
-        3: 'AirlineDrawer',
-      }
-
-      const targetRoute = routeMap[profile.role_id]
-      if (!targetRoute) {
-        showSnackbar('Unauthorized role or unknown user.')
-        return false
-      }
-
       if (navigation) {
-        navigation.navigate(targetRoute)
+        // Navigate to profile completion check instead of directly to target route
+        navigation.navigate('ProfileCompletionCheck')
         onClose?.()
       }
 

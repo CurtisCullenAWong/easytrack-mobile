@@ -23,7 +23,7 @@ const PickupLuggage = ({ navigation }) => {
   const filterOptions = [
     { label: 'Tracking ID', value: 'id' },
     { label: 'Airline Name', value: 'airline_name' },
-    { label: 'Delivery Name', value: 'delivery_name' },
+    { label: 'Owner Name', value: 'owner_name' },
     { label: 'Created At', value: 'created_at' },
   ]
 
@@ -54,6 +54,32 @@ const PickupLuggage = ({ navigation }) => {
     fetchContracts()
   }, [])
 
+  useEffect(() => {
+    const setupSubscription = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const subscription = supabase
+        .channel('pickup_contracts_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'contracts',
+            filter: 'contract_status_id=eq.3'
+          },
+          async () => {
+            await fetchContracts()
+          }
+        )
+        .subscribe()
+
+      return () => subscription.unsubscribe()
+    }
+    setupSubscription()
+  }, [])
+
   const fetchContracts = async () => {
     try {
       setLoading(true)
@@ -61,17 +87,10 @@ const PickupLuggage = ({ navigation }) => {
       if (!user) throw new Error('User not authenticated')
 
       const { data, error } = await supabase
-        .from('contract')
+        .from('contracts')
         .select(`
           *,
           contract_status:contract_status_id (status_name),
-          luggage_info:contract_luggage_information (
-            luggage_owner,
-            case_number,
-            item_description,
-            weight,
-            contact_number
-          ),
           airline_profile:airline_id (
             pfp_id,
             first_name,
@@ -80,7 +99,7 @@ const PickupLuggage = ({ navigation }) => {
             suffix
           )
         `)
-        .eq('contract_status_id',3)
+        .eq('contract_status_id', 3)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -124,8 +143,12 @@ const PickupLuggage = ({ navigation }) => {
           case 'airline_name':
             fieldValue = contract.airline_profile?.first_name || '';
             break;
-          case 'delivery_name':
-            fieldValue = contract.luggage_info?.[0]?.luggage_owner || '';
+          case 'owner_name':
+            fieldValue = [
+              contract.owner_first_name,
+              contract.owner_middle_initial,
+              contract.owner_last_name
+            ].filter(Boolean).join(' ') || '';
             break;
           case 'created_at':
             fieldValue = contract[searchColumn] || '';
@@ -209,7 +232,7 @@ const PickupLuggage = ({ navigation }) => {
       if (!user) throw new Error('User not authenticated')
 
       const { error } = await supabase
-        .from('contract')
+        .from('contracts')
         .update({
           contract_status_id: 4, // In Transit
           pickup_at: new Date().toISOString(),
@@ -271,6 +294,13 @@ const PickupLuggage = ({ navigation }) => {
               </View>
               <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
                 Total Luggage Quantity: {contract.luggage_quantity || 0}
+              </Text>
+              <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
+                Owner: {[
+                  contract.owner_first_name,
+                  contract.owner_middle_initial,
+                  contract.owner_last_name
+                ].filter(Boolean).join(' ') || 'N/A'}
               </Text>
             </View>
           </View>
