@@ -8,7 +8,7 @@ import LoginScreen from '../screens/shared/LoginScreen'
 import ContractDetails from '../screens/shared/ContractDetails'
 import CheckLocation from '../screens/delivery/subscreen/CheckLocation'
 import UserPerformanceStatistics from '../screens/shared/UserPerformanceStatistics'
-import MessageCenter from '../screens/MessageCenter'
+import MessageCenter from '../screens/messaging/MessageCenter'
 import BookingHistory from '../screens/shared/BookingHistory'
 import TermsAndConditions from '../screens/shared/TermsAndConditions'
 

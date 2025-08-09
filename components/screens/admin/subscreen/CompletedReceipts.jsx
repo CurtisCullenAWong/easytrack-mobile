@@ -56,7 +56,7 @@ const CompletedReceipts = ({ navigation }) => {
   const fetchTransactions = async () => {
     setLoading(true)
     const { data, error } = await supabase
-      .from('contract')
+      .from('contracts')
       .select(`
         payment_id,
         payment:payment_id (
@@ -70,11 +70,12 @@ const CompletedReceipts = ({ navigation }) => {
         id,
         contract_status:contract_status_id (status_name),
         delivery_charge,
-        surcharge,
-        discount,
+        delivery_surcharge,
+        delivery_discount,
         remarks,
         passenger_form,
         drop_off_location,
+        delivery_address,
         delivered_at,
         cancelled_at,
         airline:airline_id (
@@ -89,15 +90,17 @@ const CompletedReceipts = ({ navigation }) => {
           last_name,
           suffix
         ),
-        luggage_info:contract_luggage_information (
-          luggage_owner,
-          quantity,
-          case_number,
-          item_description,
-          weight,
-          contact_number,
-          flight_number
-        )
+        owner_first_name,
+        owner_middle_initial,
+        owner_last_name,
+        owner_contact,
+        luggage_description,
+        luggage_weight,
+        luggage_quantity,
+        flight_number,
+        case_number,
+        passenger_id,
+        proof_of_delivery
       `)
       .not('payment_id', 'is', null)
       .order('created_at', { ascending: false })
@@ -134,8 +137,15 @@ const CompletedReceipts = ({ navigation }) => {
           })
         }
 
-        const baseAmount = (transaction.delivery_charge || 0) + (transaction.surcharge || 0)
-        const discountedAmount = baseAmount * (1 - ((transaction.discount || 0) / 100))
+        const baseAmount = (transaction.delivery_charge || 0) + (transaction.delivery_surcharge || 0)
+        const discountedAmount = baseAmount * (1 - ((transaction.delivery_discount || 0) / 100))
+
+        // Build owner name from individual fields
+        const ownerName = [
+          transaction.owner_first_name,
+          transaction.owner_middle_initial,
+          transaction.owner_last_name
+        ].filter(Boolean).join(' ') || 'N/A'
 
         // Create a base transaction object
         const baseTransaction = {
@@ -163,37 +173,42 @@ const CompletedReceipts = ({ navigation }) => {
           id: transaction.id,
           status: transaction.contract_status?.status_name || 'N/A',
           delivery_charge: transaction.delivery_charge || 0,
-          surcharge: transaction.surcharge || 0,
-          discount: transaction.discount || 0,
+          delivery_surcharge: transaction.delivery_surcharge || 0,
+          delivery_discount: transaction.delivery_discount || 0,
           remarks: transaction.remarks || 'N/A',
           passenger_form: transaction.passenger_form || null,
           invoice_image: transaction.payment?.invoice_image || null,
-          drop_off_location: transaction.drop_off_location || 'N/A',
+          drop_off_location: transaction.drop_off_location || transaction.delivery_address || 'N/A',
           completion_date: completionDate,
           airline: transaction.airline,
           delivery: transaction.delivery,
           amount_per_passenger: discountedAmount,
+          luggage_owner: ownerName,
+          luggage_description: transaction.luggage_description || 'N/A',
+          luggage_weight: transaction.luggage_weight || 'N/A',
+          luggage_quantity: transaction.luggage_quantity || 'N/A',
+          flight_number: transaction.flight_number || 'N/A',
+          case_number: transaction.case_number || 'N/A',
+          owner_contact: transaction.owner_contact || 'N/A',
+          passenger_id: transaction.passenger_id || 'N/A',
+          proof_of_delivery: transaction.proof_of_delivery || null,
           contracts: [] // Array to store all contracts with this payment_id
         }
 
         acc[paymentId] = baseTransaction
       }
 
-      // Add this contract's luggage info to the payment group
-      if (transaction.luggage_info && transaction.luggage_info.length > 0) {
-        transaction.luggage_info.forEach(luggage => {
-          acc[paymentId].contracts.push({
-            contract_id: transaction.id,
-            luggage_owner: luggage.luggage_owner || 'N/A',
-            flight_number: luggage.flight_number || 'N/A',
-            quantity: luggage.quantity || 0,
-            case_number: luggage.case_number || 'N/A',
-            item_description: luggage.item_description || 'N/A',
-            weight: luggage.weight || 0,
-            contact_number: luggage.contact_number || 'N/A'
-          })
-        })
-      }
+      // Add this contract's information to the payment group
+      acc[paymentId].contracts.push({
+        contract_id: transaction.id,
+        luggage_owner: acc[paymentId].luggage_owner,
+        flight_number: transaction.flight_number || 'N/A',
+        luggage_quantity: transaction.luggage_quantity || 0,
+        case_number: transaction.case_number || 'N/A',
+        luggage_description: transaction.luggage_description || 'N/A',
+        luggage_weight: transaction.luggage_weight || 0,
+        owner_contact: transaction.owner_contact || 'N/A'
+      })
       
       return acc
     }, {})
@@ -218,8 +233,8 @@ const CompletedReceipts = ({ navigation }) => {
       const summary = {
         totalTransactions: transaction.contracts.length,
         totalAmount: transaction.amount_per_passenger,
-        totalSurcharge: transaction.surcharge || 0,
-        totalDiscount: transaction.discount || 0,
+        totalSurcharge: transaction.delivery_surcharge || 0,
+        totalDiscount: transaction.delivery_discount || 0,
         statusCounts: { [transaction.status]: 1 }
       }
       await printPDF([transaction], summary, transaction.invoice_image)
@@ -234,8 +249,8 @@ const CompletedReceipts = ({ navigation }) => {
       const summary = {
         totalTransactions: transaction.contracts.length,
         totalAmount: transaction.amount_per_passenger,
-        totalSurcharge: transaction.surcharge || 0,
-        totalDiscount: transaction.discount || 0,
+        totalSurcharge: transaction.delivery_surcharge || 0,
+        totalDiscount: transaction.delivery_discount || 0,
         statusCounts: { [transaction.status]: 1 }
       }
       await sharePDF([transaction], summary, transaction.invoice_image)
@@ -442,9 +457,9 @@ const CompletedReceipts = ({ navigation }) => {
                       style={{ width, justifyContent: 'center', paddingVertical: 12 }}
                     >
                       <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>
-                        {['delivery_charge', 'surcharge', 'total_amount', 'amount_per_passenger', 'total_charge'].includes(key)
+                        {['delivery_charge', 'delivery_surcharge', 'total_amount', 'amount_per_passenger', 'total_charge'].includes(key)
                           ? formatCurrency(transaction[key])
-                          : key === 'discount'
+                          : key === 'delivery_discount'
                           ? formatPercentage(transaction[key])
                           : transaction[key]}
                       </Text>

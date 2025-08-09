@@ -279,7 +279,7 @@ const ContractDetails = ({ navigation, route }) => {
             }
         >
             <Appbar.Header>
-                <Appbar.BackAction onPress={() => navigation.navigate('BookingManagement')} />
+                <Appbar.BackAction onPress={() => navigation.goBack()} />
                 <Appbar.Content title="Contract Details" />
             </Appbar.Header>
             <Card style={[styles.card, { backgroundColor: colors.surface }]}>

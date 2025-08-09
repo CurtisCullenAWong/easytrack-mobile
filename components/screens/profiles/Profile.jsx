@@ -249,6 +249,7 @@ const Profile = ({ navigation }) => {
           *,
           profile_status:user_status_id (status_name),
           profile_roles:role_id (role_name),
+          profile_corporation:corporation_id (corporation_name),
           gov_id:gov_id_type (id_type_name),
           verify_status:verify_status_id (status_name)
         `)
@@ -314,6 +315,7 @@ const Profile = ({ navigation }) => {
   const accountInfo = {
     'Role': profile?.profile_roles?.role_name,
     'Status': profile?.profile_status?.status_name,
+    'Corporation': profile?.profile_corporation?.corporation_name,
     'Date Created': formatDateTime(profile?.created_at),
   }
 

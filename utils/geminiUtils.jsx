@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai"
 import { GEMINI_API_KEY } from '@env'
 // Initialize the Gemini API with your API key
-const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY })
+const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null
 
 export const analyzeDeliveryStats = async (stats) => {
   try {
@@ -25,7 +25,7 @@ export const analyzeDeliveryStats = async (stats) => {
     Keep the response concise, readable for end users, and actionable.`
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.0-flash-lite",
       contents: prompt,
     })
 

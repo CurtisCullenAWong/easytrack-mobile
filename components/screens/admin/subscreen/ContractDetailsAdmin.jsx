@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { View, ScrollView, StyleSheet, RefreshControl, Image, Dimensions } from 'react-native'
+import { View, ScrollView, StyleSheet, RefreshControl, Image, Dimensions, KeyboardAvoidingView, Platform } from 'react-native'
 import { Text, Card, Divider, useTheme, Appbar, Button, Portal, Dialog, TextInput, ProgressBar } from 'react-native-paper'
 import { useFocusEffect } from '@react-navigation/native'
 import Constants from 'expo-constants'
 import { supabase } from '../../../../lib/supabaseAdmin'
+import useSnackbar from '../../../hooks/useSnackbar'
 
 const { width } = Dimensions.get('window')
 const GOOGLE_MAPS_API_KEY = Constants.expoConfig.extra.googleMapsPlacesApiKey
@@ -130,7 +131,14 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
     const [showDiscountDialog, setShowDiscountDialog] = useState(false)
     const [surchargeAmount, setSurchargeAmount] = useState('')
     const [discountAmount, setDiscountAmount] = useState('')
+    const [loadingSurcharge, setLoadingSurcharge] = useState(false)
+    const [loadingDiscount, setLoadingDiscount] = useState(false)
     const subscriptionRef = useRef(null)
+    const { showSnackbar, SnackbarElement } = useSnackbar()
+
+    // Add state for error messages
+    const [surchargeAmountError, setSurchargeAmountError] = useState("");
+    const [discountAmountError, setDiscountAmountError] = useState("");
 
     const getStatusColor = (statusId) => {
         const statusColors = {
@@ -238,41 +246,83 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
         return `₱${parseFloat(amount || 0).toFixed(2)}`
     }
 
-    const formatPercentage = (amount) => {
-        return `${parseFloat(amount || 0).toFixed(2)}%`
-    }
-
     const handleAddSurcharge = async () => {
+        let value = surchargeAmount.trim();
+        if (value === "") {
+            setSurchargeAmountError("Surcharge amount is required.");
+            return;
+        }
+        value = value.replace(/[^0-9.]/g, "");
+        const parts = value.split(".");
+        if (parts.length > 2) value = parts[0] + "." + parts.slice(1).join("");
+        if (value.startsWith("00")) value = value.replace(/^0+/, "0");
+        else if (value.startsWith("0") && value[1] !== ".") value = value.replace(/^0+/, "");
+        if (value.includes(".")) {
+            const [intPart, decPart] = value.split(".");
+            value = intPart + "." + decPart.slice(0, 2);
+        }
+        const num = parseFloat(value);
+        if (isNaN(num) || num < 0) {
+            setSurchargeAmountError("Enter a valid, non-negative amount");
+            return;
+        }
+        setSurchargeAmountError("");
+        setLoadingSurcharge(true);
         try {
             const { error } = await supabase
                 .from('contracts')
-                .update({ delivery_surcharge: parseFloat(surchargeAmount) })
+                .update({ delivery_surcharge: num })
                 .eq('id', id)
-
             if (error) throw error
-
             setShowSurchargeDialog(false)
             setSurchargeAmount('')
             fetchContract()
+            showSnackbar('Surcharge updated successfully!', true)
         } catch (error) {
+            showSnackbar('Error adding surcharge.', false)
             console.error('Error adding surcharge:', error)
+        } finally {
+            setLoadingSurcharge(false)
         }
     }
 
     const handleAddDiscount = async () => {
+        let value = discountAmount.trim();
+        if (value === "") {
+            setDiscountAmountError("Discount amount is required.");
+            return;
+        }
+        value = value.replace(/[^0-9.]/g, "");
+        const parts = value.split(".");
+        if (parts.length > 2) value = parts[0] + "." + parts.slice(1).join("");
+        if (value.startsWith("00")) value = value.replace(/^0+/, "0");
+        else if (value.startsWith("0") && value[1] !== ".") value = value.replace(/^0+/, "");
+        if (value.includes(".")) {
+            const [intPart, decPart] = value.split(".");
+            value = intPart + "." + decPart.slice(0, 2);
+        }
+        const num = parseFloat(value);
+        if (isNaN(num) || num < 0) {
+            setDiscountAmountError("Enter a valid, non-negative amount");
+            return;
+        }
+        setDiscountAmountError("");
+        setLoadingDiscount(true);
         try {
             const { error } = await supabase
                 .from('contracts')
-                .update({ delivery_discount: parseFloat(discountAmount) })
+                .update({ delivery_discount: num })
                 .eq('id', id)
-
             if (error) throw error
-
             setShowDiscountDialog(false)
             setDiscountAmount('')
             fetchContract()
+            showSnackbar('Discount updated successfully!', true)
         } catch (error) {
+            showSnackbar('Error adding discount.', false)
             console.error('Error adding discount:', error)
+        } finally {
+            setLoadingDiscount(false)
         }
     }
 
@@ -323,6 +373,8 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
             refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
             }
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 50 }}
         >
             <Appbar.Header>
                 <Appbar.BackAction onPress={() => navigation.goBack()} />
@@ -434,12 +486,11 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
 
                     <InfoRow label="Delivery Charge:" value={formatCurrency(contractData.delivery_charge)} colors={colors} fonts={fonts}/>
                     <InfoRow label="Delivery Surcharge:" value={formatCurrency(contractData.delivery_surcharge)} colors={colors} fonts={fonts}/>
-                    <InfoRow label="Delivery Discount:" value={formatPercentage(contractData.delivery_discount)} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Delivery Discount:" value={formatCurrency(contractData.delivery_discount)} colors={colors} fonts={fonts}/>
                     <View style={styles.infoRow}>
                         <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Total Amount:</Text>
-                        <Text style={[fonts.bodyMedium, { color: colors.primary, fontWeight: 'bold' }]}>
-                            {formatCurrency(((contractData.delivery_charge || 0) + (contractData.delivery_surcharge || 0)) * 
-                                (1 - (contractData.delivery_discount || 0) / 100))}
+                        <Text style={[fonts.bodyMedium, { color: colors.primary, fontWeight: 'bold' }]}> 
+                            {formatCurrency(((contractData.delivery_charge || 0) + (contractData.delivery_surcharge || 0)) - (contractData.delivery_discount || 0))}
                         </Text>
                     </View>
                     
@@ -545,70 +596,69 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
                 >
                     <Dialog.Title>Adjust Surcharge</Dialog.Title>
                     <Dialog.Content>
+                    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
                         <TextInput
-                            label="Surcharge Amount"
-                            value={surchargeAmount}
-                            onChangeText={setSurchargeAmount}
-                            keyboardType="numeric"
-                            mode="outlined"
-                            style={{ marginBottom: 16 }}
-                            right={<TextInput.Affix text="₱" />}
+                        label="Surcharge Amount"
+                        value={surchargeAmount}
+                        onChangeText={setSurchargeAmount}
+                        keyboardType="decimal-pad"
+                        inputMode="decimal"
+                        maxLength={10}
+                        mode="outlined"
+                        style={{ marginBottom: 8 }}
+                        right={<TextInput.Affix text="₱" />}
+                        error={!!surchargeAmountError}
                         />
+                        {surchargeAmountError ? (
+                        <Text style={{ color: colors.error, marginBottom: 8 }}>{surchargeAmountError}</Text>
+                        ) : null}
+                    </KeyboardAvoidingView>
                     </Dialog.Content>
                     <Dialog.Actions>
-                        <Button onPress={() => setShowSurchargeDialog(false)}>Cancel</Button>
-                        <Button onPress={handleAddSurcharge}>Adjust</Button>
+                    <Button onPress={() => setShowSurchargeDialog(false)}>Cancel</Button>
+                    <Button onPress={handleAddSurcharge} disabled={loadingSurcharge} loading={loadingSurcharge}>
+                        Adjust
+                    </Button>
                     </Dialog.Actions>
                 </Dialog>
             </Portal>
 
-            <Portal>
-                <Dialog
-                    visible={showDiscountDialog}
-                    onDismiss={() => setShowDiscountDialog(false)}
-                    style={{ backgroundColor: colors.surface }}
-                >
-                    <Dialog.Title>Adjust Discount</Dialog.Title>
-                    <Dialog.Content>
-                        <TextInput
-                            label="Discount Percentage"
-                            value={discountAmount}
-                            onChangeText={(text) => {
-                                // Only allow numbers and decimal point
-                                const filtered = text.replace(/[^0-9.]/g, '')
-                                // Ensure only one decimal point
-                                const parts = filtered.split('.')
-                                if (parts.length > 2) {
-                                    setDiscountAmount(parts[0] + '.' + parts.slice(1).join(''))
-                                } else {
-                                    setDiscountAmount(filtered)
-                                }
-                            }}
-                            keyboardType="numeric"
-                            mode="outlined"
-                            style={{ marginBottom: 16 }}
-                            right={<TextInput.Affix text="%" />}
-                        />
-                        <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
-                            Enter a percentage between 0 and 100
-                        </Text>
-                    </Dialog.Content>
-                    <Dialog.Actions>
-                        <Button onPress={() => setShowDiscountDialog(false)}>Cancel</Button>
-                        <Button 
-                            onPress={() => {
-                                const percentage = parseFloat(discountAmount)
-                                if (percentage >= 0 && percentage <= 100) {
-                                    handleAddDiscount()
-                                }
-                            }}
-                            disabled={!discountAmount || parseFloat(discountAmount) < 0 || parseFloat(discountAmount) > 100}
-                        >
-                            Adjust
-                        </Button>
-                    </Dialog.Actions>
-                </Dialog>
-            </Portal>
+<Portal>
+  <Dialog
+    visible={showDiscountDialog}
+    onDismiss={() => setShowDiscountDialog(false)}
+    style={{ backgroundColor: colors.surface }}
+  >
+    <Dialog.Title>Adjust Discount</Dialog.Title>
+    <Dialog.Content>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <TextInput
+          label="Discount Amount"
+          value={discountAmount}
+          onChangeText={setDiscountAmount}
+          keyboardType="decimal-pad"
+          inputMode="decimal"
+          maxLength={10}
+          mode="outlined"
+          style={{ marginBottom: 8 }}
+          right={<TextInput.Affix text="₱" />}
+          error={!!discountAmountError}
+        />
+        {discountAmountError ? (
+          <Text style={{ color: colors.error, marginBottom: 8 }}>{discountAmountError}</Text>
+        ) : null}
+      </KeyboardAvoidingView>
+    </Dialog.Content>
+    <Dialog.Actions>
+      <Button onPress={() => setShowDiscountDialog(false)}>Cancel</Button>
+      <Button onPress={handleAddDiscount} disabled={loadingDiscount} loading={loadingDiscount}>
+        Adjust
+      </Button>
+    </Dialog.Actions>
+  </Dialog>
+</Portal>
+
+            {SnackbarElement}
         </ScrollView>
     )
 }

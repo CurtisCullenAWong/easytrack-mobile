@@ -33,7 +33,7 @@ const PendingReceipts = ({ navigation }) => {
   const fetchTransactions = async () => {
     setLoading(true)
     const { data, error } = await supabase
-      .from('contract')
+      .from('contracts')
       .select(`
         *,
         contract_status:contract_status_id (status_name),
@@ -48,15 +48,6 @@ const PendingReceipts = ({ navigation }) => {
           middle_initial,
           last_name,
           suffix
-        ),
-        luggage_info:contract_luggage_information (
-          luggage_owner,
-          quantity,
-          case_number,
-          item_description,
-          weight,
-          contact_number,
-          flight_number
         )
       `)
       .in('contract_status_id', [5, 6]) // 5 for delivered, 6 for failed
@@ -69,8 +60,8 @@ const PendingReceipts = ({ navigation }) => {
       return
     }
 
-    // Expand luggage_info into separate rows
-    const formatted = data.flatMap(transaction => {
+    // Format the data for display
+    const formatted = data.map(transaction => {
       let completionDate = 'N/A'
       if (transaction.delivered_at) {
         completionDate = new Date(transaction.delivered_at).toLocaleString('en-US', {
@@ -92,58 +83,41 @@ const PendingReceipts = ({ navigation }) => {
         })
       }
 
-      // If no luggage info, return one row with N/A
-      if (!transaction.luggage_info || transaction.luggage_info.length === 0) {
-        const baseAmount = (transaction.delivery_charge || 0) + (transaction.surcharge || 0)
-        const discountedAmount = baseAmount * (1 - ((transaction.discount || 0) / 100))
-        return [{
-          key: `${transaction.id}_0`,
-          id: transaction.id,
-          status: transaction.contract_status?.status_name || 'N/A',
-          drop_off_location: transaction.drop_off_location || 'N/A',
-          completion_date: completionDate,
-          delivery_charge: transaction.delivery_charge || 0,
-          surcharge: transaction.surcharge || 0,
-          discount: transaction.discount || 0,
-          luggage_owner: 'N/A',
-          amount_per_passenger: discountedAmount,
-          remarks: transaction.remarks || 'N/A',
-          flight_number: 'N/A',
-          passenger_form: transaction.passenger_form || null,
-          created_at: transaction.created_at
-            ? new Date(transaction.created_at).toLocaleString()
-            : 'N/A',
-        }]
-      }
+      // Build owner name from individual fields
+      const ownerName = [
+        transaction.owner_first_name,
+        transaction.owner_middle_initial,
+        transaction.owner_last_name
+      ].filter(Boolean).join(' ') || 'N/A'
 
-      // Return one row per luggage owner
-      return transaction.luggage_info.map((luggage, index) => {
-        const baseAmount = (transaction.delivery_charge || 0) + (transaction.surcharge || 0)
-        const discountedAmount = baseAmount * (1 - ((transaction.discount || 0) / 100))
-        // Count how many rows have the same tracking ID
-        const sameTrackingIdCount = transaction.luggage_info.filter(
-          l => l.tracking_id === luggage.tracking_id
-        ).length
-        const perPassengerAmount = discountedAmount / sameTrackingIdCount
-        return {
-          key: `${transaction.id}_${index}`,
-          id: transaction.id,
-          status: transaction.contract_status?.status_name || 'N/A',
-          drop_off_location: transaction.drop_off_location || 'N/A',
-          completion_date: completionDate,
-          delivery_charge: transaction.delivery_charge || 0,
-          surcharge: transaction.surcharge || 0,
-          discount: transaction.discount || 0,
-          luggage_owner: luggage.luggage_owner || 'N/A',
-          amount_per_passenger: perPassengerAmount,
-          remarks: transaction.remarks || ' ',
-          flight_number: luggage.flight_number || 'N/A',
-          passenger_form: transaction.passenger_form || null,
-          created_at: transaction.created_at
-            ? new Date(transaction.created_at).toLocaleString()
-            : 'N/A',
-        }
-      })
+      const baseAmount = (transaction.delivery_charge || 0) + (transaction.delivery_surcharge || 0)
+      const discountedAmount = baseAmount * (1 - ((transaction.delivery_discount || 0) / 100))
+
+      return {
+        key: transaction.id,
+        id: transaction.id,
+        status: transaction.contract_status?.status_name || 'N/A',
+        drop_off_location: transaction.drop_off_location || transaction.delivery_address || 'N/A',
+        completion_date: completionDate,
+        delivery_charge: transaction.delivery_charge || 0,
+        delivery_surcharge: transaction.delivery_surcharge || 0,
+        delivery_discount: transaction.delivery_discount || 0,
+        luggage_owner: ownerName,
+        amount_per_passenger: discountedAmount,
+        remarks: transaction.remarks || 'N/A',
+        flight_number: transaction.flight_number || 'N/A',
+        passenger_form: transaction.passenger_form || null,
+        created_at: transaction.created_at
+          ? new Date(transaction.created_at).toLocaleString()
+          : 'N/A',
+        luggage_description: transaction.luggage_description || 'N/A',
+        luggage_weight: transaction.luggage_weight || 'N/A',
+        luggage_quantity: transaction.luggage_quantity || 'N/A',
+        case_number: transaction.case_number || 'N/A',
+        owner_contact: transaction.owner_contact || 'N/A',
+        passenger_id: transaction.passenger_id || 'N/A',
+        proof_of_delivery: transaction.proof_of_delivery || null,
+      }
     })
 
     setTransactions(formatted)
@@ -234,8 +208,8 @@ const PendingReceipts = ({ navigation }) => {
       const summary = {
         totalTransactions: transactions.length,
         totalAmount: transactions.reduce((sum, t) => sum + (t.amount_per_passenger || 0), 0),
-        totalSurcharge: transactions.reduce((sum, t) => sum + (t.surcharge || 0), 0),
-        totalDiscount: transactions.reduce((sum, t) => sum + (t.discount || 0), 0),
+        totalSurcharge: transactions.reduce((sum, t) => sum + (t.delivery_surcharge || 0), 0),
+        totalDiscount: transactions.reduce((sum, t) => sum + (t.delivery_discount || 0), 0),
         statusCounts: transactions.reduce((acc, t) => {
           acc[t.status] = (acc[t.status] || 0) + 1
           return acc
@@ -380,9 +354,9 @@ const PendingReceipts = ({ navigation }) => {
                         style={{ width, justifyContent: 'center', paddingVertical: 12 }}
                       >
                         <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>
-                          {['delivery_charge', 'surcharge', 'total_amount', 'amount_per_passenger'].includes(key)
+                          {['delivery_charge', 'delivery_surcharge', 'amount_per_passenger'].includes(key)
                             ? formatCurrency(transaction[key])
-                            : key === 'discount'
+                            : key === 'delivery_discount'
                             ? formatPercentage(transaction[key])
                             : transaction[key]}
                         </Text>
@@ -416,7 +390,7 @@ const PendingReceipts = ({ navigation }) => {
               showFirstPageButton
               showLastPageButton
               showFastPaginationControls
-              numberOfItemsPerPageList={[5, 10, 20, 50]}
+              numberOfItemsPerPageList={[5, 50, 100, 200]}
               numberOfItemsPerPage={itemsPerPage}
               onItemsPerPageChange={setItemsPerPage}
               selectPageDropdownLabel={'Rows per page'}

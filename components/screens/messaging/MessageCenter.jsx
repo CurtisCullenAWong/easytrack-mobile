@@ -1,7 +1,7 @@
 import React from 'react'
 import { ScrollView, View, TouchableOpacity, StyleSheet } from 'react-native'
 import { Avatar, Card, Text, Divider, useTheme } from 'react-native-paper'
-import Header from '../customComponents/Header'
+import Header from '../../customComponents/Header'
 
 const messages = [
   {

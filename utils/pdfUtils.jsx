@@ -28,27 +28,30 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
   // Fetch contract data for each transaction
   const contractData = await Promise.all(transactions.map(async (transaction) => {
     const { data, error } = await supabase
-      .from('contract')
+      .from('contracts')
       .select(`
         id,
         contract_status:contract_status_id (status_name),
         delivery_charge,
-        surcharge,
-        discount,
+        delivery_surcharge,
+        delivery_discount,
         remarks,
         passenger_form,
         drop_off_location,
+        delivery_address,
         delivered_at,
         cancelled_at,
-        luggage_info:contract_luggage_information (
-          luggage_owner,
-          quantity,
-          case_number,
-          item_description,
-          weight,
-          contact_number,
-          flight_number
-        )
+        owner_first_name,
+        owner_middle_initial,
+        owner_last_name,
+        owner_contact,
+        luggage_description,
+        luggage_weight,
+        luggage_quantity,
+        flight_number,
+        case_number,
+        passenger_id,
+        proof_of_delivery
       `)
       .eq('payment_id', transaction.payment_id)
 
@@ -64,8 +67,8 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
   const totalAmount = contractData.reduce((sum, contracts) => {
     if (!contracts) return sum
     return sum + contracts.reduce((contractSum, contract) => {
-      const baseAmount = (contract.delivery_charge || 0) + (contract.surcharge || 0)
-      const discountedAmount = baseAmount * (1 - ((contract.discount || 0) / 100))
+      const baseAmount = (contract.delivery_charge || 0) + (contract.delivery_surcharge || 0)
+      const discountedAmount = baseAmount * (1 - ((contract.delivery_discount || 0) / 100))
       return contractSum + discountedAmount
     }, 0)
   }, 0)
@@ -89,44 +92,31 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
       `
     }
 
-    // Return one row per contract's luggage item
-    return contracts.flatMap((contract) => {
-      if (!contract.luggage_info || contract.luggage_info.length === 0) {
-        return `
-          <tr>
-            <td>${rowCounter++}</td>
-            <td>${contract.id}</td>
-            <td>N/A</td>
-            <td>N/A</td>
-            <td>${contract.drop_off_location || 'N/A'}</td>
-            <td>${formatDate(contract.delivered_at || contract.cancelled_at)}</td>
-            <td>${contract.contract_status?.status_name || 'N/A'}</td>
-            <td class="amount">₱${((contract.delivery_charge || 0) + (contract.surcharge || 0)).toFixed(2)}</td>
-            <td>${contract.remarks || ' '}</td>
-          </tr>
-        `
-      }
+    // Return one row per contract
+    return contracts.map((contract) => {
+      // Build owner name from individual fields
+      const ownerName = [
+        contract.owner_first_name,
+        contract.owner_middle_initial,
+        contract.owner_last_name
+      ].filter(Boolean).join(' ') || 'N/A'
 
-      return contract.luggage_info.map((luggage) => {
-        // Calculate the amount per row by dividing the total contract amount by the number of luggage items
-        const baseAmount = (contract.delivery_charge || 0) + (contract.surcharge || 0)
-        const discountedAmount = baseAmount * (1 - ((contract.discount || 0) / 100))
-        const amountPerRow = discountedAmount / contract.luggage_info.length
+      const baseAmount = (contract.delivery_charge || 0) + (contract.delivery_surcharge || 0)
+      const discountedAmount = baseAmount * (1 - ((contract.delivery_discount || 0) / 100))
 
-        return `
-          <tr>
-            <td>${rowCounter++}</td>
-            <td>${contract.id}</td>
-            <td>${luggage.luggage_owner || 'N/A'}</td>
-            <td>${luggage.flight_number || 'N/A'}</td>
-            <td>${contract.drop_off_location || 'N/A'}</td>
-            <td>${formatDate(contract.delivered_at || contract.cancelled_at)}</td>
-            <td>${contract.contract_status?.status_name || 'N/A'}</td>
-            <td class="amount">₱${amountPerRow.toFixed(2)}</td>
-            <td>${contract.remarks || ' '}</td>
-          </tr>
-        `
-      }).join('')
+      return `
+        <tr>
+          <td>${rowCounter++}</td>
+          <td>${contract.id}</td>
+          <td>${ownerName}</td>
+          <td>${contract.flight_number || 'N/A'}</td>
+          <td>${contract.drop_off_location || contract.delivery_address || 'N/A'}</td>
+          <td>${formatDate(contract.delivered_at || contract.cancelled_at)}</td>
+          <td>${contract.contract_status?.status_name || 'N/A'}</td>
+          <td class="amount">₱${discountedAmount.toFixed(2)}</td>
+          <td>${contract.remarks || ' '}</td>
+        </tr>
+      `
     }).join('')
   }).join('')
 

@@ -183,7 +183,7 @@ const TransactionSummary = () => {
 
       // Update all contracts with the full invoice number
       const { error: contractError } = await supabase
-        .from('contract')
+        .from('contracts')
         .update({ payment_id: getFullInvoiceNumber() })
         .in('id', transactions.map(t => t.id))
 

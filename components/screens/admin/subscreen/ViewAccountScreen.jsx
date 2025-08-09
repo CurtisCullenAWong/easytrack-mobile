@@ -349,7 +349,8 @@ const ViewProfileScreen = ({ route, navigation }) => {
           profile_status:user_status_id (status_name),
           profile_roles:role_id (role_name),
           verify_status:verify_status_id (status_name),
-          gov_id:gov_id_type (id_type_name)
+          gov_id:gov_id_type (id_type_name),
+          corporation:corporation_id (corporation_name)
         `)
         .eq('id', userId)
         .single()
@@ -362,6 +363,7 @@ const ViewProfileScreen = ({ route, navigation }) => {
         user_status: data.profile_status?.status_name,
         verify_status: data.verify_status?.status_name,
         birth_date: data.birth_date || null,
+        corporation_name: data.corporation?.corporation_name,
         created_at: data.created_at ? new Date(data.created_at) : null,
         last_sign_in_at: data.last_sign_in_at ? new Date(data.last_sign_in_at) : null,
         updated_at: data.updated_at ? new Date(data.updated_at) : null,
@@ -467,6 +469,7 @@ const ViewProfileScreen = ({ route, navigation }) => {
   const accountInfo = useMemo(() => ({
     'Role': user?.role,
     'Status': user?.user_status,
+    'Corporation': user?.corporation_name || 'N/A',
     'Date Created': formatDateTime(user?.created_at),
   }), [user?.role, user?.user_status, user?.created_at, formatDateTime])
 

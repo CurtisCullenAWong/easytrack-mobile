@@ -172,7 +172,7 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
       setLoading(true)
       
       let query = supabase
-        .from('contract')
+        .from('contracts')
         .select(`
           *,
           contract_status:contract_status_id (status_name)
@@ -253,8 +253,8 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
       if (isDelivery) {
         totalEarnings = deliveries.reduce((sum, delivery) => {
           if (delivery.delivery_id === userData.id) {
-            const baseAmount = (delivery.delivery_charge || 0) + (delivery.surcharge || 0)
-            const discountedAmount = baseAmount * (1 - ((delivery.discount || 0) / 100))
+            const baseAmount = (delivery.delivery_surcharge || 0) + (delivery.delivery_surcharge || 0)
+            const discountedAmount = baseAmount * (1 - ((delivery.delivery_discount || 0) / 100))
             return sum + discountedAmount
           }
           return sum
@@ -262,8 +262,8 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
       } else {
         totalExpenses = deliveries.reduce((sum, delivery) => {
           if (delivery.airline_id === userData.id) {
-            const baseAmount = (delivery.delivery_charge || 0) + (delivery.surcharge || 0)
-            const discountedAmount = baseAmount * (1 - ((delivery.discount || 0) / 100))
+            const baseAmount = (delivery.delivery_surcharge || 0) + (delivery.delivery_surcharge || 0)
+            const discountedAmount = baseAmount * (1 - ((delivery.delivery_discount || 0) / 100))
             return sum + discountedAmount
           }
           return sum
@@ -528,7 +528,7 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
               </Text>
               <Text variant="bodySmall" style={[styles.insightsDescription, { color: colors.onSurfaceVariant }]}>
                 Get AI-powered analysis of your delivery performance and actionable recommendations.
-                Powered by Gemini 1.5 Pro
+                Powered by Gemini
               </Text>
               
               {!aiInsights && !analyzing && (
