@@ -24,10 +24,11 @@ import UpdateProfileScreen from '../screens/shared/UpdateProfileScreen'
 import AdminHome from '../screens/admin/AdminHome'
 import UserManagement from '../screens/admin/UserManagement'
 import TransactionManagement from '../screens/admin/TransactionManagement'
+import TransactionSummary from '../screens/admin/subscreen/transaction_management_subscreen/TransactionSummary'
+import CreateInvoice from '../screens/admin/subscreen/transaction_management_subscreen/CreateInvoice'
 import ContractDetailsAdmin from '../screens/admin/subscreen/ContractDetailsAdmin'
 import AdminBookingManagement from '../screens/admin/AdminBookingManagement'
 import AdminTrackLuggage from '../screens/admin/AdminTrackLuggage'
-import TransactionSummary from '../screens/admin/subscreen/TransactionSummary'
 import AdminBookingHistory from '../screens/admin/AdminBookingHistory'
 import AddAccount from '../screens/admin/subscreen/AddAccount'
 import ViewAccountScreen from '../screens/admin/subscreen/ViewAccountScreen'
@@ -64,6 +65,7 @@ const AdminDrawer = () => (
       <Drawer.Screen name="UserManagement" component={UserManagement} />
       <Drawer.Screen name="TransactionManagement" component={TransactionManagement} />
       <Drawer.Screen name="TransactionSummary" component={TransactionSummary} />
+      <Drawer.Screen name="CreateInvoice" component={CreateInvoice} />
       <Drawer.Screen name="ContractDetailsAdmin" component={ContractDetailsAdmin} />
       <Drawer.Screen name="AdminBookingManagement" component={AdminBookingManagement} />
       <Drawer.Screen name="AdminBookingHistory" component={AdminBookingHistory} />

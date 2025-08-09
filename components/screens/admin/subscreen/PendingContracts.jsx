@@ -8,6 +8,7 @@ import {
   Text,
   useTheme,
   Menu,
+  Checkbox,
 } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabaseAdmin'
 import useSnackbar from '../../../hooks/useSnackbar'
@@ -15,7 +16,7 @@ import useSnackbar from '../../../hooks/useSnackbar'
 const COLUMN_WIDTH = 180
 const FULL_NAME_WIDTH = 200
 
-const PendingReceipts = ({ navigation }) => {
+const PendingContracts = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
@@ -29,6 +30,8 @@ const PendingReceipts = ({ navigation }) => {
   const [page, setPage] = useState(0)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [refreshing, setRefreshing] = useState(false)
+  const [selectedContracts, setSelectedContracts] = useState(new Set())
+  const [selectAll, setSelectAll] = useState(false)
 
   const fetchTransactions = async () => {
     setLoading(true)
@@ -51,7 +54,7 @@ const PendingReceipts = ({ navigation }) => {
         )
       `)
       .in('contract_status_id', [5, 6]) // 5 for delivered, 6 for failed
-      .is('payment_id', null)
+      .is('summary_id', null)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -60,7 +63,6 @@ const PendingReceipts = ({ navigation }) => {
       return
     }
 
-    // Format the data for display
     const formatted = data.map(transaction => {
       let completionDate = 'N/A'
       if (transaction.delivered_at) {
@@ -83,15 +85,13 @@ const PendingReceipts = ({ navigation }) => {
         })
       }
 
-      // Build owner name from individual fields
       const ownerName = [
         transaction.owner_first_name,
         transaction.owner_middle_initial,
         transaction.owner_last_name
       ].filter(Boolean).join(' ') || 'N/A'
 
-      const baseAmount = (transaction.delivery_charge || 0) + (transaction.delivery_surcharge || 0)
-      const discountedAmount = baseAmount * (1 - ((transaction.delivery_discount || 0) / 100))
+      const amount = (transaction.delivery_charge || 0) + (transaction.delivery_surcharge || 0) - (transaction.delivery_discount || 0)
 
       return {
         key: transaction.id,
@@ -103,7 +103,7 @@ const PendingReceipts = ({ navigation }) => {
         delivery_surcharge: transaction.delivery_surcharge || 0,
         delivery_discount: transaction.delivery_discount || 0,
         luggage_owner: ownerName,
-        amount_per_passenger: discountedAmount,
+        amount_per_passenger: amount,
         remarks: transaction.remarks || 'N/A',
         flight_number: transaction.flight_number || 'N/A',
         passenger_form: transaction.passenger_form || null,
@@ -127,6 +127,7 @@ const PendingReceipts = ({ navigation }) => {
   useFocusEffect(
     useCallback(() => {
       fetchTransactions()
+      resetSelection()
     }, [])
   )
 
@@ -195,35 +196,67 @@ const PendingReceipts = ({ navigation }) => {
     navigation.navigate('ContractDetailsAdmin', { id: transaction.id })
   }
 
-  const formatCurrency = (amount) => {
-    return `₱${parseFloat(amount).toFixed(2)}`
+  const formatCurrency = (amount) => `₱${parseFloat(amount).toFixed(2)}`
+  const formatPercentage = (amount) => `${parseFloat(amount).toFixed(2)}%`
+
+  const handleContractSelection = (contractId) => {
+    const newSelected = new Set(selectedContracts)
+    if (newSelected.has(contractId)) {
+      newSelected.delete(contractId)
+    } else {
+      newSelected.add(contractId)
+    }
+    setSelectedContracts(newSelected)
+    const allContractIds = new Set(paginatedTransactions.map(t => t.id))
+    setSelectAll(newSelected.size === allContractIds.size && allContractIds.size > 0)
   }
 
-  const formatPercentage = (amount) => {
-    return `${parseFloat(amount).toFixed(2)}%`
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedContracts(new Set())
+    } else {
+      const allContractIds = new Set(paginatedTransactions.map(t => t.id))
+      setSelectedContracts(allContractIds)
+    }
+    setSelectAll(!selectAll)
   }
 
   const handleGenerateSummary = async () => {
-    try {
-      const summary = {
-        totalTransactions: transactions.length,
-        totalAmount: transactions.reduce((sum, t) => sum + (t.amount_per_passenger || 0), 0),
-        totalSurcharge: transactions.reduce((sum, t) => sum + (t.delivery_surcharge || 0), 0),
-        totalDiscount: transactions.reduce((sum, t) => sum + (t.delivery_discount || 0), 0),
-        statusCounts: transactions.reduce((acc, t) => {
-          acc[t.status] = (acc[t.status] || 0) + 1
-          return acc
-        }, {})
-      }
-
-      navigation.navigate('TransactionSummary', {
-        summaryData: summary,
-        transactions: transactions
-      })
-    } catch (error) {
-      console.error('Error generating summary:', error)
-      showSnackbar(`Failed to generate summary: ${error.message}`)
+    if (selectedContracts.size === 0) {
+      showSnackbar('Please select at least one contract to generate summary')
+      return
     }
+
+    const selectedTransactions = transactions.filter(t => selectedContracts.has(t.id))
+
+    const totalAmount = selectedTransactions.reduce((sum, t) => {
+      const amount = (t.delivery_charge || 0) + (t.delivery_surcharge || 0) - (t.delivery_discount || 0)
+      return sum + amount
+    }, 0)
+
+    const totalDiscount = selectedTransactions.reduce((sum, t) => sum + (t.delivery_discount || 0), 0)
+    const summary = {
+      totalTransactions: selectedTransactions.length,
+      totalAmount: totalAmount,
+      totalSurcharge: selectedTransactions.reduce((sum, t) => sum + (t.delivery_surcharge || 0), 0),
+      totalDiscount: totalDiscount,
+      statusCounts: selectedTransactions.reduce((acc, t) => {
+        acc[t.status] = (acc[t.status] || 0) + 1
+        return acc
+      }, {}),
+      selectedContracts: Array.from(selectedContracts)
+    }
+
+    navigation.navigate('TransactionSummary', {
+      summaryData: summary,
+      transactions: selectedTransactions,
+      pendingContracts: Array.from(selectedContracts)
+    })
+  }
+
+  const resetSelection = () => {
+    setSelectedContracts(new Set())
+    setSelectAll(false)
   }
 
   return (
@@ -286,6 +319,23 @@ const PendingReceipts = ({ navigation }) => {
           </Menu>
         </View>
       </View>
+
+      <View style={styles.selectionContainer}>
+        <View style={styles.selectAllContainer}>
+          <Checkbox
+            status={selectAll ? 'checked' : 'unchecked'}
+            onPress={handleSelectAll}
+            color={colors.primary}
+          />
+          <Text style={[styles.selectAllText, { color: colors.onSurface }, fonts.bodyMedium]}>
+            Select All ({paginatedTransactions.length})
+          </Text>
+        </View>
+        <Text style={[styles.selectedCount, { color: colors.primary }, fonts.bodyMedium]}>
+          Selected: {selectedContracts.size}
+        </Text>
+      </View>
+
       <View style={styles.buttonContainer}>
         <Button
             mode="contained"
@@ -294,23 +344,24 @@ const PendingReceipts = ({ navigation }) => {
             style={[
               styles.button, 
               { 
-                backgroundColor: transactions.length === 0 ? colors.surfaceDisabled : colors.primary,
+                backgroundColor: selectedContracts.size === 0 ? colors.surfaceDisabled : colors.primary,
                 width: '100%',
-                opacity: transactions.length === 0 ? 0.6 : 1
+                opacity: selectedContracts.size === 0 ? 0.6 : 1
               }
             ]}
             contentStyle={styles.buttonContent}
             labelStyle={[
               styles.buttonLabel, 
               { 
-                color: transactions.length === 0 ? colors.onSurfaceDisabled : colors.onPrimary 
+                color: selectedContracts.size === 0 ? colors.onSurfaceDisabled : colors.onPrimary 
               }
             ]}
-            disabled={transactions.length === 0}
+            disabled={selectedContracts.size === 0}
         >
-            Generate Summary
+            Generate Summary ({selectedContracts.size})
         </Button>
       </View>
+
       {loading ? (
         <Text style={[styles.loadingText, { color: colors.onSurface }, fonts.bodyMedium]}>
           Loading transactions...
@@ -320,6 +371,12 @@ const PendingReceipts = ({ navigation }) => {
           <ScrollView horizontal>
             <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
               <DataTable.Header style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
+                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
+                  <Text style={[styles.headerText, { color: colors.onSurface }]}>Actions</Text>
+                </DataTable.Title>
+                <DataTable.Title style={{ width: 50, justifyContent: 'center', paddingVertical: 12 }}>
+                  <Text style={[styles.headerText, { color: colors.onSurface }]}>Select</Text>
+                </DataTable.Title>
                 {columns.map(({ key, label, width }) => (
                   <DataTable.Title
                     key={key}
@@ -332,9 +389,6 @@ const PendingReceipts = ({ navigation }) => {
                     </View>
                   </DataTable.Title>
                 ))}
-                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
-                  <Text style={[styles.headerText, { color: colors.onSurface }]}>Actions</Text>
-                </DataTable.Title>
               </DataTable.Header>
 
               {filteredAndSortedTransactions.length === 0 ? (
@@ -348,6 +402,25 @@ const PendingReceipts = ({ navigation }) => {
               ) : (
                 paginatedTransactions.map(transaction => (
                   <DataTable.Row key={transaction.key}>
+                    <DataTable.Cell numeric style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
+                      <Button
+                        mode="outlined"
+                        icon="eye"
+                        onPress={() => handleViewDetails(transaction)}
+                        style={[styles.actionButton, { borderColor: colors.primary }]}
+                        contentStyle={styles.buttonContent}
+                        labelStyle={[styles.buttonLabel, { color: colors.primary }]}
+                      >
+                        View Details
+                      </Button>
+                    </DataTable.Cell>
+                    <DataTable.Cell style={{ width: 50, justifyContent: 'center', paddingVertical: 12 }}>
+                      <Checkbox
+                        status={selectedContracts.has(transaction.id) ? 'checked' : 'unchecked'}
+                        onPress={() => handleContractSelection(transaction.id)}
+                        color={colors.primary}
+                      />
+                    </DataTable.Cell>
                     {columns.map(({ key, width }, idx) => (
                       <DataTable.Cell
                         key={idx}
@@ -362,18 +435,6 @@ const PendingReceipts = ({ navigation }) => {
                         </Text>
                       </DataTable.Cell>
                     ))}
-                    <DataTable.Cell numeric style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
-                      <Button
-                        mode="outlined"
-                        icon="eye"
-                        onPress={() => handleViewDetails(transaction)}
-                        style={[styles.actionButton, { borderColor: colors.primary }]}
-                        contentStyle={styles.buttonContent}
-                        labelStyle={[styles.buttonLabel, { color: colors.primary }]}
-                      >
-                        View Details
-                      </Button>
-                    </DataTable.Cell>
                   </DataTable.Row>
                 ))
               )}
@@ -399,14 +460,9 @@ const PendingReceipts = ({ navigation }) => {
                 colors: {
                   onSurface: colors.onSurface,
                   text: colors.onSurface,
-                  elevation: {
-                    level2: colors.surface,
-                  },
+                  elevation: { level2: colors.surface },
                 },
-                fonts: {
-                  bodyMedium: fonts.bodyMedium,
-                  labelMedium: fonts.labelMedium,
-                },
+                fonts: { bodyMedium: fonts.bodyMedium, labelMedium: fonts.labelMedium },
               }}
             />
           </View>
@@ -424,40 +480,32 @@ const styles = StyleSheet.create({
     marginTop: 16,
     gap: 10,
   },
-  searchbar: {
-    flex: 1,
-  },
+  searchbar: { flex: 1 },
   buttonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 16,
     gap: 10,
   },
-  filterLabel: {
-    marginRight: 8,
-  },
-  menuAnchor: {
-    flex: 1,
-    position: 'relative',
-    width:'auto'
-  },
-  menuContent: {
-    width: '100%',
-    left: 0,
-    right: 0,
-  },
-  button: {
+  selectionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
     marginVertical: 10,
-    height: 48,
-    borderRadius: 8,
   },
-  buttonContent: {
-    height: 48,
+  selectAllContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  buttonLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  selectAllText: { marginLeft: 8 },
+  selectedCount: { fontWeight: 'bold' },
+  filterLabel: { marginRight: 8 },
+  menuAnchor: { flex: 1, position: 'relative', width: 'auto' },
+  menuContent: { width: '100%', left: 0, right: 0 },
+  button: { marginVertical: 10, height: 48, borderRadius: 8 },
+  buttonContent: { height: 48 },
+  buttonLabel: { fontSize: 16, fontWeight: 'bold' },
   tableContainer: {
     flex: 1,
     marginHorizontal: 16,
@@ -466,47 +514,27 @@ const styles = StyleSheet.create({
     minHeight: '55%',
     overflow: 'hidden',
   },
-  table: {
-    flex: 1,
-  },
-  sortableHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sortIcon: {
-    marginLeft: 4,
-  },
-  actionButton: {
-    borderRadius: 8,
-    minWidth: 100,
-  },
+  table: { flex: 1 },
+  sortableHeader: { flexDirection: 'row', alignItems: 'center' },
+  sortIcon: { marginLeft: 4 },
+  actionButton: { borderRadius: 8, minWidth: 100 },
   noDataCell: {
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 16,
     flex: 1,
   },
-  loadingText: {
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  paginationContainer: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.12)',
-  },
+  loadingText: { textAlign: 'center', marginTop: 20 },
+  paginationContainer: { borderTopWidth: 1, borderTopColor: 'rgba(0, 0, 0, 0.12)' },
   pagination: {
     justifyContent: 'space-evenly',
     borderTopWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.12)',
   },
-  tableHeader: {
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.12)',
-  },
-  headerText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
+  tableHeader: { borderBottomWidth: 1, borderBottomColor: 'rgba(0, 0, 0, 0.12)' },
+  headerText: { fontSize: 14, fontWeight: 'bold' },
 })
 
-export default PendingReceipts 
+export default PendingContracts
+
+

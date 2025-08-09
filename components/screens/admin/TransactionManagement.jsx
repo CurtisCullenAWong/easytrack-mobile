@@ -1,13 +1,20 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { View, StyleSheet } from 'react-native'
 import { useTheme, SegmentedButtons } from 'react-native-paper'
 import Header from '../../customComponents/Header'
-import PendingReceipts from './subscreen/PendingReceipts'
-import CompletedReceipts from './subscreen/CompletedReceipts'
+import PendingContracts from './subscreen/PendingContracts'
+import SummarizedContracts from './subscreen/SummarizedContracts'
 
 const TransactionManagement = ({ navigation, route }) => {
   const { colors } = useTheme()
-  const [receiptSegment, setReceiptSegment] = useState('pending')
+  const [activeSegment, setActiveSegment] = useState('pending')
+
+  useEffect(() => {
+    const incomingSegment = route?.params?.segment
+    if (incomingSegment && (incomingSegment === 'pending' || incomingSegment === 'completed')) {
+      setActiveSegment(incomingSegment)
+    }
+  }, [route?.params?.segment])
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -15,21 +22,21 @@ const TransactionManagement = ({ navigation, route }) => {
 
       <View style={styles.segmentContainer}>
         <SegmentedButtons
-          value={receiptSegment}
-          onValueChange={setReceiptSegment}
+          value={activeSegment}
+          onValueChange={setActiveSegment}
           buttons={[
-            { value: 'pending', label: 'Pending Receipts' },
-            { value: 'completed', label: 'Completed Receipts' },
+            { value: 'pending', label: 'Pending Contracts' },
+            { value: 'completed', label: 'Summarized Contracts' },
           ]}
           style={{ marginHorizontal: 16 }}
         />
       </View>
 
       <View style={styles.content}>
-        {receiptSegment === 'pending' ? (
-          <PendingReceipts navigation={navigation} />
+        {activeSegment === 'pending' ? (
+          <PendingContracts navigation={navigation} />
         ) : (
-          <CompletedReceipts navigation={navigation} />
+          <SummarizedContracts navigation={navigation} />
         )}
       </View>
     </View>

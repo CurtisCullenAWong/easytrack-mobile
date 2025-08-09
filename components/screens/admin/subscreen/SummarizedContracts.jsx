@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
-import { ScrollView, StyleSheet, View, RefreshControl } from 'react-native'
+import { ScrollView, StyleSheet, View, RefreshControl, Image } from 'react-native'
 import {
   Searchbar,
   Button,
@@ -10,19 +10,23 @@ import {
   Menu,
   Portal,
   Dialog,
+  TextInput,
 } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabaseAdmin'
 import useSnackbar from '../../../hooks/useSnackbar'
 import { printPDF, sharePDF } from '../../../../utils/pdfUtils'
+import * as ImagePicker from 'expo-image-picker'
+import * as FileSystem from 'expo-file-system'
+import { decode } from 'base64-arraybuffer'
 
 const COLUMN_WIDTH = 180
 
-const CompletedReceipts = ({ navigation }) => {
+const SummarizedContracts = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchColumn, setSearchColumn] = useState('payment_id')
+  const [searchColumn, setSearchColumn] = useState('summary_id')
   const [filterMenuVisible, setFilterMenuVisible] = useState(false)
   const [actionsMenuVisible, setActionsMenuVisible] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState(null)
@@ -36,8 +40,15 @@ const CompletedReceipts = ({ navigation }) => {
   const [confirmDialogVisible, setConfirmDialogVisible] = useState(false)
   const [transactionToUpdate, setTransactionToUpdate] = useState(null)
 
+  const [invoiceDialogVisible, setInvoiceDialogVisible] = useState(false)
+  const [selectedSummaryId, setSelectedSummaryId] = useState(null)
+  const [invoiceNumber, setInvoiceNumber] = useState('')
+  const [invoiceImage, setInvoiceImage] = useState(null)
+  const [uploading, setUploading] = useState(false)
+  const [imageSourceDialogVisible, setImageSourceDialogVisible] = useState(false)
+
   const filterOptions = [
-    { label: 'Invoice No.', value: 'payment_id' },
+    { label: 'Summary ID', value: 'summary_id' },
     { label: 'Status', value: 'status' },
     { label: 'Drop-off Location', value: 'drop_off_location' },
     { label: 'Luggage Owner', value: 'luggage_owner' },
@@ -45,10 +56,9 @@ const CompletedReceipts = ({ navigation }) => {
   ]
 
   const columns = [
-    { key: 'payment_id', label: 'Invoice No.', width: COLUMN_WIDTH },
-    { key: 'payment_status', label: 'Payment Status', width: COLUMN_WIDTH },
+    { key: 'summary_id', label: 'Summary ID', width: COLUMN_WIDTH },
+    { key: 'summary_status', label: 'Summary Status', width: COLUMN_WIDTH },
     { key: 'created_at', label: 'Created At', width: COLUMN_WIDTH },
-    { key: 'updated_at', label: 'Updated At', width: COLUMN_WIDTH },
     { key: 'due_date', label: 'Due Date', width: COLUMN_WIDTH },
     { key: 'total_charge', label: 'Total Charge', width: COLUMN_WIDTH },
   ]
@@ -58,26 +68,14 @@ const CompletedReceipts = ({ navigation }) => {
     const { data, error } = await supabase
       .from('contracts')
       .select(`
-        payment_id,
-        payment:payment_id (
-          payment_status:payment_status_id (status_name, id),
+        *,
+        summary:summary_id (
+          summary_status:summary_status_id (status_name, id),
           due_date,
           total_charge,
-          created_at,
-          updated_at,
-          invoice_image
+          created_at
         ),
-        id,
         contract_status:contract_status_id (status_name),
-        delivery_charge,
-        delivery_surcharge,
-        delivery_discount,
-        remarks,
-        passenger_form,
-        drop_off_location,
-        delivery_address,
-        delivered_at,
-        cancelled_at,
         airline:airline_id (
           first_name,
           middle_initial,
@@ -89,20 +87,9 @@ const CompletedReceipts = ({ navigation }) => {
           middle_initial,
           last_name,
           suffix
-        ),
-        owner_first_name,
-        owner_middle_initial,
-        owner_last_name,
-        owner_contact,
-        luggage_description,
-        luggage_weight,
-        luggage_quantity,
-        flight_number,
-        case_number,
-        passenger_id,
-        proof_of_delivery
+        )
       `)
-      .not('payment_id', 'is', null)
+      .not('summary_id', 'is', null)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -111,65 +98,36 @@ const CompletedReceipts = ({ navigation }) => {
       return
     }
 
-    // Group by payment_id and format the data
     const groupedTransactions = data.reduce((acc, transaction) => {
-      const paymentId = transaction.payment_id
-      
-      if (!acc[paymentId]) {
+      const summaryId = transaction.summary_id
+      if (!acc[summaryId]) {
         let completionDate = 'N/A'
         if (transaction.delivered_at) {
           completionDate = new Date(transaction.delivered_at).toLocaleString('en-US', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
+            year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true
           })
         } else if (transaction.cancelled_at) {
           completionDate = new Date(transaction.cancelled_at).toLocaleString('en-US', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
+            year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true
           })
         }
 
-        const baseAmount = (transaction.delivery_charge || 0) + (transaction.delivery_surcharge || 0)
-        const discountedAmount = baseAmount * (1 - ((transaction.delivery_discount || 0) / 100))
-
-        // Build owner name from individual fields
         const ownerName = [
           transaction.owner_first_name,
           transaction.owner_middle_initial,
           transaction.owner_last_name
         ].filter(Boolean).join(' ') || 'N/A'
 
-        // Create a base transaction object
-        const baseTransaction = {
-          key: paymentId,
-          payment_id: paymentId,
-          payment_status: transaction.payment?.payment_status?.status_name || 'N/A',
-          payment_status_id: transaction.payment?.payment_status?.id || null,
-          created_at: transaction.payment?.created_at 
-            ? new Date(transaction.payment.created_at).toLocaleString()
-            : 'N/A',
-          updated_at: transaction.payment?.updated_at 
-            ? new Date(transaction.payment.updated_at).toLocaleString()
-            : 'N/A',
-          due_date: transaction.payment?.due_date 
-            ? new Date(transaction.payment.due_date).toLocaleString('en-US', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-              })
-            : 'N/A',
-          total_charge: transaction.payment?.total_charge || 0,
+        acc[summaryId] = {
+          key: summaryId,
+          summary_id: summaryId,
+          summary_status: transaction.summary?.summary_status?.status_name || 'N/A',
+          summary_status_id: transaction.summary?.summary_status?.id || null,
+          created_at: transaction.summary?.created_at ? new Date(transaction.summary.created_at).toLocaleString() : 'N/A',
+          due_date: transaction.summary?.due_date ? new Date(transaction.summary.due_date).toLocaleString('en-US', {
+            year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true
+          }) : 'N/A',
+          total_charge: transaction.summary?.total_charge || 0,
           id: transaction.id,
           status: transaction.contract_status?.status_name || 'N/A',
           delivery_charge: transaction.delivery_charge || 0,
@@ -177,12 +135,11 @@ const CompletedReceipts = ({ navigation }) => {
           delivery_discount: transaction.delivery_discount || 0,
           remarks: transaction.remarks || 'N/A',
           passenger_form: transaction.passenger_form || null,
-          invoice_image: transaction.payment?.invoice_image || null,
           drop_off_location: transaction.drop_off_location || transaction.delivery_address || 'N/A',
           completion_date: completionDate,
           airline: transaction.airline,
           delivery: transaction.delivery,
-          amount_per_passenger: discountedAmount,
+          amount_per_passenger: (transaction.delivery_charge || 0) + (transaction.delivery_surcharge || 0) - (transaction.delivery_discount || 0),
           luggage_owner: ownerName,
           luggage_description: transaction.luggage_description || 'N/A',
           luggage_weight: transaction.luggage_weight || 'N/A',
@@ -192,16 +149,13 @@ const CompletedReceipts = ({ navigation }) => {
           owner_contact: transaction.owner_contact || 'N/A',
           passenger_id: transaction.passenger_id || 'N/A',
           proof_of_delivery: transaction.proof_of_delivery || null,
-          contracts: [] // Array to store all contracts with this payment_id
+          contracts: []
         }
-
-        acc[paymentId] = baseTransaction
       }
 
-      // Add this contract's information to the payment group
-      acc[paymentId].contracts.push({
+      acc[summaryId].contracts.push({
         contract_id: transaction.id,
-        luggage_owner: acc[paymentId].luggage_owner,
+        luggage_owner: acc[summaryId].luggage_owner,
         flight_number: transaction.flight_number || 'N/A',
         luggage_quantity: transaction.luggage_quantity || 0,
         case_number: transaction.case_number || 'N/A',
@@ -209,7 +163,7 @@ const CompletedReceipts = ({ navigation }) => {
         luggage_weight: transaction.luggage_weight || 0,
         owner_contact: transaction.owner_contact || 'N/A'
       })
-      
+
       return acc
     }, {})
 
@@ -230,6 +184,10 @@ const CompletedReceipts = ({ navigation }) => {
 
   const handlePrint = async (transaction) => {
     try {
+      if (transaction.summary_status_id !== 2) {
+        showSnackbar('Invoice not available yet. Please create the invoice first.')
+        return
+      }
       const summary = {
         totalTransactions: transaction.contracts.length,
         totalAmount: transaction.amount_per_passenger,
@@ -237,7 +195,7 @@ const CompletedReceipts = ({ navigation }) => {
         totalDiscount: transaction.delivery_discount || 0,
         statusCounts: { [transaction.status]: 1 }
       }
-      await printPDF([transaction], summary, transaction.invoice_image)
+      await printPDF([transaction], transaction.invoice_image)
     } catch (error) {
       console.error('Error printing PDF:', error)
       showSnackbar(`Failed to print PDF: ${error.message}`)
@@ -246,6 +204,10 @@ const CompletedReceipts = ({ navigation }) => {
 
   const handleShare = async (transaction) => {
     try {
+      if (transaction.summary_status_id !== 2) {
+        showSnackbar('Invoice not available yet. Please create the invoice first.')
+        return
+      }
       const summary = {
         totalTransactions: transaction.contracts.length,
         totalAmount: transaction.amount_per_passenger,
@@ -253,7 +215,7 @@ const CompletedReceipts = ({ navigation }) => {
         totalDiscount: transaction.delivery_discount || 0,
         statusCounts: { [transaction.status]: 1 }
       }
-      await sharePDF([transaction], summary, transaction.invoice_image)
+      await sharePDF([transaction], transaction.invoice_image)
     } catch (error) {
       console.error('Error sharing PDF:', error)
       showSnackbar(`Failed to share PDF: ${error.message}`)
@@ -263,33 +225,130 @@ const CompletedReceipts = ({ navigation }) => {
   const handleMarkAsPaid = async (transaction) => {
     try {
       const { error } = await supabase
-        .from('payment')
-        .update({ payment_status_id: 2, updated_at: new Date().toISOString() }) // Assuming 2 is the ID for "Paid" status
-        .eq('id', transaction.payment_id)
+        .from('summary')
+        .update({ summary_status_id: 2 })
+        .eq('id', transaction.summary_id)
 
       if (error) throw error
 
-      showSnackbar('Payment status updated successfully', true)
-      fetchTransactions() // Refresh the list
+      showSnackbar('Summary status updated successfully', true)
+      fetchTransactions()
     } catch (error) {
-      console.error('Error updating payment status:', error)
-      showSnackbar(`Failed to update payment status: ${error.message}`)
+      console.error('Error updating summary status:', error)
+      showSnackbar(`Failed to update summary status: ${error.message}`)
+    }
+  }
+
+  const handleCreateInvoice = async (transaction) => {
+    navigation.navigate('CreateInvoice', { summary: { summary_id: transaction.summary_id } })
+  }
+
+  const handleInvoiceNumberChange = (text) => {
+    const numbersOnly = text.replace(/[^0-9]/g, '')
+    if (numbersOnly.length <= 4) setInvoiceNumber(numbersOnly)
+  }
+
+  const getFullInvoiceNumber = () => {
+    const currentYear = new Date().getFullYear()
+    return `${currentYear}${invoiceNumber}`
+  }
+
+  const handleImageSource = async (source) => {
+    setImageSourceDialogVisible(false)
+    try {
+      const options = { mediaTypes: 'images', allowsEditing: true, quality: 1, aspect: [3, 4] }
+      const result = source === 'camera' ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options)
+      if (!result.canceled) setInvoiceImage(result.assets[0].uri)
+    } catch (error) {
+      console.error('Error picking image:', error)
+      showSnackbar('Error picking image: ' + error.message)
+    }
+  }
+
+  const uploadInvoiceImage = async () => {
+    if (!invoiceImage?.startsWith('file://')) return null
+    try {
+      const bucket = 'invoices'
+      const fileName = `${invoiceNumber}.png`
+      const filePath = `/${fileName}`
+      const { error: deleteError } = await supabase.storage.from(bucket).remove([filePath])
+      if (deleteError && !deleteError.message.includes('not found')) {
+        console.error('Error deleting existing file:', deleteError)
+      }
+      const base64 = await FileSystem.readAsStringAsync(invoiceImage, { encoding: FileSystem.EncodingType.Base64 })
+      const contentType = 'image/png'
+      const { error } = await supabase.storage.from(bucket).upload(filePath, decode(base64), { contentType, upsert: true })
+      if (error) {
+        showSnackbar('Error uploading image: ' + error.message)
+        return null
+      }
+      const { data: { signedUrl }, error: signedUrlError } = await supabase.storage.from(bucket).createSignedUrl(filePath, 31536000)
+      if (signedUrlError) throw signedUrlError
+      return signedUrl
+    } catch (error) {
+      showSnackbar('Error uploading image: ' + error.message)
+      return null
+    }
+  }
+
+  const handleAssignPayment = async () => {
+    try {
+      if (!invoiceNumber.trim() || invoiceNumber.length !== 4) {
+        showSnackbar('Please enter a 4-digit invoice number')
+        return
+      }
+      if (!invoiceImage) {
+        showSnackbar('Please upload an invoice image')
+        return
+      }
+      setUploading(true)
+      const invoiceImageUrl = await uploadInvoiceImage()
+      const { data: contracts, error: contractsError } = await supabase
+        .from('contracts')
+        .select('id, delivery_charge, delivery_surcharge, delivery_discount')
+        .eq('summary_id', selectedSummaryId)
+        .is('summary_id', null)
+      if (contractsError) throw contractsError
+      const totalCharge = contracts.reduce((sum, contract) => {
+        const baseAmount = (contract.delivery_charge || 0) + (contract.delivery_surcharge || 0)
+        const discountedAmount = baseAmount * (1 - ((contract.delivery_discount || 0) / 100))
+        return sum + discountedAmount
+      }, 0)
+      const { error: paymentError } = await supabase
+        .from('payment')
+        .insert({ id: getFullInvoiceNumber(), total_charge: Math.round(totalCharge), invoice_image: invoiceImageUrl })
+        .select()
+        .single()
+      if (paymentError) throw paymentError
+      const { error: contractError } = await supabase
+        .from('contracts')
+        .update({ summary_id: getFullInvoiceNumber() })
+        .eq('summary_id', selectedSummaryId)
+        .is('summary_id', null)
+      if (contractError) throw contractError
+      showSnackbar('Payment created successfully', true)
+      setInvoiceNumber('')
+      setInvoiceImage(null)
+      setSelectedSummaryId(null)
+      setInvoiceDialogVisible(false)
+      fetchTransactions()
+    } catch (error) {
+      console.error('Error creating payment:', error)
+      showSnackbar('Failed to create payment: ' + error.message)
+    } finally {
+      setUploading(false)
     }
   }
 
   const handleSort = (column) => {
-    setSortDirection(prev =>
-      sortColumn === column && prev === 'ascending' ? 'descending' : 'ascending'
-    )
+    setSortDirection(prev => (sortColumn === column && prev === 'ascending' ? 'descending' : 'ascending'))
     setSortColumn(column)
   }
-
-  const getSortIcon = (column) =>
-    sortColumn === column ? (sortDirection === 'ascending' ? '▲' : '▼') : ''
+  const getSortIcon = (column) => (sortColumn === column ? (sortDirection === 'ascending' ? '▲' : '▼') : '')
 
   const filteredAndSortedTransactions = transactions
     .filter(transaction => {
-      if (!searchQuery) return true;
+      if (!searchQuery) return true
       const searchValue = String(transaction[searchColumn] || '').toLowerCase()
       const query = searchQuery.toLowerCase()
       return searchValue.includes(query)
@@ -297,7 +356,6 @@ const CompletedReceipts = ({ navigation }) => {
     .sort((a, b) => {
       const valA = a[sortColumn]
       const valB = b[sortColumn]
-
       if (['created_at', 'updated_at', 'completion_date', 'due_date'].includes(sortColumn)) {
         if (valA === 'N/A') return sortDirection === 'ascending' ? -1 : 1
         if (valB === 'N/A') return sortDirection === 'ascending' ? 1 : -1
@@ -305,7 +363,6 @@ const CompletedReceipts = ({ navigation }) => {
         if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
         return 0
       }
-
       if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
       if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
       return 0
@@ -315,20 +372,13 @@ const CompletedReceipts = ({ navigation }) => {
   const to = Math.min((page + 1) * itemsPerPage, filteredAndSortedTransactions.length)
   const paginatedTransactions = filteredAndSortedTransactions.slice(from, to)
 
-  const formatCurrency = (amount) => {
-    return `₱${parseFloat(amount).toFixed(2)}`
-  }
-
-  const formatPercentage = (amount) => {
-    return `${parseFloat(amount).toFixed(2)}%`
-  }
+  const formatCurrency = (amount) => `₱${parseFloat(amount).toFixed(2)}`
+  const formatPercentage = (amount) => `${parseFloat(amount).toFixed(2)}%`
 
   return (
     <ScrollView 
       style={{ flex: 1, backgroundColor: colors.background }}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       {SnackbarElement}
 
@@ -339,18 +389,15 @@ const CompletedReceipts = ({ navigation }) => {
           style={{ backgroundColor: colors.surface }}
         >
           <Dialog.Title style={{ color: colors.onSurface }}>
-            Confirm Payment Status Update
+            Confirm Summary Status Update
           </Dialog.Title>
           <Dialog.Content>
             <Text style={{ color: colors.onSurface }}>
-              Are you sure you want to mark this receipt as paid?
+              Are you sure you want to mark this summary as completed?
             </Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button
-              onPress={() => setConfirmDialogVisible(false)}
-              textColor={colors.primary}
-            >
+            <Button onPress={() => setConfirmDialogVisible(false)} textColor={colors.primary}>
               Cancel
             </Button>
             <Button
@@ -378,7 +425,7 @@ const CompletedReceipts = ({ navigation }) => {
 
       <View style={styles.buttonContainer}>
         <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Filter by:</Text>
-        <View style={[styles.menuAnchor, {width:'60%'}]}>
+        <View style={[styles.menuAnchor, { width: '60%' }]}>
           <Menu
             visible={filterMenuVisible}
             onDismiss={() => setFilterMenuVisible(false)}
@@ -405,11 +452,7 @@ const CompletedReceipts = ({ navigation }) => {
                 }}
                 title={option.label}
                 titleStyle={[
-                  {
-                    color: searchColumn === option.value
-                      ? colors.primary
-                      : colors.onSurface,
-                  },
+                  { color: searchColumn === option.value ? colors.primary : colors.onSurface },
                   fonts.bodyLarge,
                 ]}
                 leadingIcon={searchColumn === option.value ? 'check' : undefined}
@@ -432,6 +475,9 @@ const CompletedReceipts = ({ navigation }) => {
           <ScrollView horizontal>
             <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
               <DataTable.Header style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
+                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
+                  <Text style={[styles.headerText, { color: colors.onSurface }]}>Actions</Text>
+                </DataTable.Title>
                 {columns.map(({ key, label, width }) => (
                   <DataTable.Title
                     key={key}
@@ -444,27 +490,10 @@ const CompletedReceipts = ({ navigation }) => {
                     </View>
                   </DataTable.Title>
                 ))}
-                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
-                  <Text style={[styles.headerText, { color: colors.onSurface }]}>Actions</Text>
-                </DataTable.Title>
               </DataTable.Header>
 
               {paginatedTransactions.map(transaction => (
                 <DataTable.Row key={transaction.key}>
-                  {columns.map(({ key, width }, idx) => (
-                    <DataTable.Cell
-                      key={idx}
-                      style={{ width, justifyContent: 'center', paddingVertical: 12 }}
-                    >
-                      <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>
-                        {['delivery_charge', 'delivery_surcharge', 'total_amount', 'amount_per_passenger', 'total_charge'].includes(key)
-                          ? formatCurrency(transaction[key])
-                          : key === 'delivery_discount'
-                          ? formatPercentage(transaction[key])
-                          : transaction[key]}
-                      </Text>
-                    </DataTable.Cell>
-                  ))}
                   <DataTable.Cell numeric style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
                     <View style={styles.menuAnchor}>
                       <Menu
@@ -497,40 +526,28 @@ const CompletedReceipts = ({ navigation }) => {
                       >
                         <Menu.Item
                           onPress={() => {
-                            handlePrint(transaction)
+                            handleCreateInvoice(transaction)
                             setActionsMenuVisible(false)
                             setSelectedTransaction(null)
                           }}
-                          title="Print"
-                          leadingIcon="printer"
+                          title="Create Invoice"
+                          leadingIcon="file-document"
                           titleStyle={[{ color: colors.onSurface }, fonts.bodyLarge]}
                         />
-                        <Menu.Item
-                          onPress={() => {
-                            handleShare(transaction)
-                            setActionsMenuVisible(false)
-                            setSelectedTransaction(null)
-                          }}
-                          title="Share"
-                          leadingIcon="share"
-                          titleStyle={[{ color: colors.onSurface }, fonts.bodyLarge]}
-                        />
-                        {transaction.payment_status_id === 1 && (
-                          <Menu.Item
-                            onPress={() => {
-                              setTransactionToUpdate(transaction)
-                              setConfirmDialogVisible(true)
-                              setActionsMenuVisible(false)
-                              setSelectedTransaction(null)
-                            }}
-                            title="Mark as Paid"
-                            leadingIcon="check-circle"
-                            titleStyle={[{ color: colors.onSurface }, fonts.bodyLarge]}
-                          />
-                        )}
                       </Menu>
                     </View>
                   </DataTable.Cell>
+                  {columns.map(({ key, width }, idx) => (
+                    <DataTable.Cell key={idx} style={{ width, justifyContent: 'center', paddingVertical: 12 }}>
+                      <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>
+                        {['delivery_charge', 'delivery_surcharge', 'total_amount', 'amount_per_passenger', 'total_charge'].includes(key)
+                          ? formatCurrency(transaction[key])
+                          : key === 'delivery_discount'
+                          ? formatPercentage(transaction[key])
+                          : transaction[key]}
+                      </Text>
+                    </DataTable.Cell>
+                  ))}
                 </DataTable.Row>
               ))}
             </DataTable>
@@ -552,121 +569,113 @@ const CompletedReceipts = ({ navigation }) => {
               selectPageDropdownLabel={'Rows per page'}
               style={[styles.pagination, { backgroundColor: colors.surfaceVariant }]}
               theme={{
-                colors: {
-                  onSurface: colors.onSurface,
-                  text: colors.onSurface,
-                  elevation: {
-                    level2: colors.surface,
-                  },
-                },
-                fonts: {
-                  bodyMedium: fonts.bodyMedium,
-                  labelMedium: fonts.labelMedium,
-                },
+                colors: { onSurface: colors.onSurface, text: colors.onSurface, elevation: { level2: colors.surface } },
+                fonts: { bodyMedium: fonts.bodyMedium, labelMedium: fonts.labelMedium },
               }}
             />
           </View>
         </View>
       )}
+
+      <Portal>
+        <Dialog
+          visible={invoiceDialogVisible}
+          onDismiss={() => setInvoiceDialogVisible(false)}
+          style={{ backgroundColor: colors.surface }}
+        >
+          <Dialog.Title style={{ color: colors.onSurface }}>
+            Create Payment
+          </Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ color: colors.onSurfaceVariant, marginBottom: 16 }}>
+              Create payment for Summary ID: {selectedSummaryId}
+            </Text>
+
+            <TextInput
+              label="Payment Number"
+              value={invoiceNumber}
+              onChangeText={handleInvoiceNumberChange}
+              mode="outlined"
+              style={styles.invoiceInput}
+              placeholder="Enter 4 digits (e.g., 0001)"
+              keyboardType="numeric"
+              maxLength={4}
+            />
+            <Text style={[styles.invoicePreview, { color: colors.onSurfaceVariant }]}>
+              Full Payment Number: {invoiceNumber ? getFullInvoiceNumber() : 'YYYYxxxx'}
+            </Text>
+
+            <Button mode="outlined" onPress={() => setImageSourceDialogVisible(true)} style={styles.uploadButton} icon="camera">
+              {invoiceImage ? 'Change Payment Image' : 'Upload Payment Image'}
+            </Button>
+
+            {invoiceImage && (
+              <View style={styles.imagePreviewContainer}>
+                <Image source={{ uri: invoiceImage }} style={styles.imagePreview} resizeMode="contain" />
+              </View>
+            )}
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setInvoiceDialogVisible(false)} textColor={colors.primary}>
+              Cancel
+            </Button>
+            <Button onPress={handleAssignPayment} textColor={colors.primary} disabled={!invoiceNumber.trim() || !invoiceImage || uploading} loading={uploading}>
+              Create Payment
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
+      <Portal>
+        <Dialog
+          visible={imageSourceDialogVisible}
+          onDismiss={() => setImageSourceDialogVisible(false)}
+          style={{ backgroundColor: colors.surface }}
+        >
+          <Dialog.Title style={{ color: colors.onSurface }}>Choose Image Source</Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ color: colors.onSurfaceVariant }}>Select where you want to get the image from</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => handleImageSource('camera')} textColor={colors.primary}>Camera</Button>
+            <Button onPress={() => handleImageSource('gallery')} textColor={colors.primary}>Gallery</Button>
+            <Button onPress={() => setImageSourceDialogVisible(false)} textColor={colors.error}>Cancel</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  searchActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginTop: 16,
-    gap: 10,
-  },
-  searchbar: {
-    flex: 1,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    gap: 10,
-  },
-  filterLabel: {
-    marginRight: 8,
-  },
-  menuAnchor: {
-    flex: 1,
-    position: 'relative',
-    width: 'auto',
-  },
-  menuContent: {
-    width: '100%',
-    left: 0,
-    right: 0,
-  },
-  button: {
-    marginVertical: 10,
-    height: 48,
-    borderRadius: 8,
-  },
-  buttonContent: {
-    height: 48,
-  },
-  buttonLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  tableContainer: {
-    flex: 1,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 8,
-    minHeight: '55%',
-    overflow: 'hidden',
-  },
-  table: {
-    flex: 1,
-  },
-  sortableHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sortIcon: {
-    marginLeft: 4,
-  },
-  actionButton: {
-    borderRadius: 8,
-    minWidth: 100,
-  },
-  noDataCell: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 16,
-    flex: 1,
-  },
-  loadingText: {
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  paginationContainer: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.12)',
-  },
-  pagination: {
-    justifyContent: 'space-evenly',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.12)',
-  },
-  tableHeader: {
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.12)',
-  },
-  headerText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  noDataText: {
-    textAlign: 'center',
-    marginTop: 20,
-  },
+  searchActionsRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginTop: 16, gap: 10 },
+  searchbar: { flex: 1 },
+  buttonContainer: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, gap: 10 },
+  filterLabel: { marginRight: 8 },
+  menuAnchor: { flex: 1, position: 'relative', width: 'auto' },
+  menuContent: { width: '100%', left: 0, right: 0 },
+  button: { marginVertical: 10, height: 48, borderRadius: 8 },
+  buttonContent: { height: 48 },
+  buttonLabel: { fontSize: 16, fontWeight: 'bold' },
+  tableContainer: { flex: 1, marginHorizontal: 16, marginBottom: 16, borderRadius: 8, minHeight: '55%', overflow: 'hidden' },
+  table: { flex: 1 },
+  sortableHeader: { flexDirection: 'row', alignItems: 'center' },
+  sortIcon: { marginLeft: 4 },
+  actionButton: { borderRadius: 8, minWidth: 50 },
+  noDataCell: { justifyContent: 'center', alignItems: 'center', paddingVertical: 16, flex: 1 },
+  loadingText: { textAlign: 'center', marginTop: 20 },
+  paginationContainer: { borderTopWidth: 1, borderTopColor: 'rgba(0, 0, 0, 0.12)' },
+  pagination: { justifyContent: 'space-evenly', borderTopWidth: 1, borderTopColor: 'rgba(0, 0, 0, 0.12)' },
+  tableHeader: { borderBottomWidth: 1, borderBottomColor: 'rgba(0, 0, 0, 0.12)' },
+  headerText: { fontSize: 14, fontWeight: 'bold' },
+  noDataText: { textAlign: 'center', marginTop: 20 },
+  invoiceInput: { marginBottom: 16 },
+  uploadButton: { marginBottom: 16 },
+  imagePreviewContainer: { marginVertical: 8, position: 'relative', alignSelf: 'center', width: '100%', aspectRatio: 3/4, backgroundColor: '#f0f0f0', borderRadius: 8, overflow: 'hidden' },
+  imagePreview: { width: '100%', height: '100%', borderRadius: 8 },
+  invoicePreview: { fontSize: 14, marginTop: -12, marginBottom: 16, marginLeft: 4 },
 })
 
-export default CompletedReceipts
+export default SummarizedContracts
+
+

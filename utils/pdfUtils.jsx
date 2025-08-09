@@ -2,7 +2,12 @@ import * as Print from 'expo-print'
 import * as Sharing from 'expo-sharing'
 import { supabase } from '../lib/supabaseAdmin'
 
-const generateTransactionReportHTML = async (transactions, summary, date, time, invoiceImageUrl = null) => {
+const generateTransactionReportHTML = async (
+  transactions,
+  invoiceImageUrl = null,
+  signatureImageUrl = null,
+  options = {}
+) => {
   // Get the first and last day of the current month
   const now = new Date()
   const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -53,7 +58,7 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
         passenger_id,
         proof_of_delivery
       `)
-      .eq('payment_id', transaction.payment_id)
+      .eq('summary_id', transaction.summary_id)
 
     if (error) {
       console.error('Error fetching contract data:', error)
@@ -80,7 +85,7 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
       return `
         <tr>
           <td>${rowCounter++}</td>
-          <td>${transactions[transactionIndex].payment_id}</td>
+          <td>${transactions[transactionIndex].summary_id}</td>
           <td>N/A</td>
           <td>N/A</td>
           <td>N/A</td>
@@ -143,6 +148,17 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
     </div>
   ` : ''
 
+  // Generate a dedicated signature first page if requested
+  const signatureFirstPageHTML = signatureImageUrl && options?.signatureOnFirstPage ? `
+    <div class="invoice-container">
+      <h3>Signature</h3>
+      <div class="signature-box" style="width: 60%; height: 160px;">
+        <img src="${signatureImageUrl}" class="signature-image" />
+      </div>
+      <div class="page-break"></div>
+    </div>
+  ` : ''
+
   return `
     <!DOCTYPE html>
     <html>
@@ -183,15 +199,27 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
             font-weight: bold;
             text-align: center;
           }
+          .summary-container {
+            display: block;
+          }
+          .summary-content {
+            /* Fill remaining page height without forcing overflow to a new page */
+            min-height: calc(100vh - 140px); /* ~footer + spacing allowance */
+          }
           .footer {
-            margin-top: 10px;
+            margin-top: 12px;
             font-size: 9px;
             width: 100%;
+            /* keep footer with its content and avoid creating a trailing blank page */
+            page-break-inside: avoid;
+            page-break-before: avoid;
+            break-inside: avoid;
+            break-before: avoid;
+            break-after: avoid;
           }
           .footer-line1 {
             display: flex;
             justify-content: space-between;
-            margin-top: 50px;
             margin-bottom: 5px;
           }
           .footer-line2 {
@@ -203,6 +231,7 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
           .footer-line3 {
             text-align: right;
           }
+          .nowrap { white-space: nowrap; }
           .amount {
             text-align: right;
           }
@@ -257,47 +286,69 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
             height: calc(100vh - 40px);
             object-fit: contain;
           }
+          .signature-wrapper {
+            display: flex;
+            flex-direction: column;
+          }
+          .signature-box {
+            width: 220px;
+            height: 70px;
+            border-bottom: 1px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .signature-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+          }
         </style>
       </head>
       <body>
+        ${signatureFirstPageHTML}
         ${invoiceImageHTML}
-        <div class="header">
-          GHE TRANSMITTAL - AIRPORT CLIENTS PROPERTY IRREGULARITY SUMMARY REPORT<br>
-          ${dateRange}
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>No.</th>
-              <th>Tracking ID</th>
-              <th>Luggage Owner</th>
-              <th>Flight No.</th>
-              <th>Address</th>
-              <th>Date Received</th>
-              <th>Status</th>
-              <th>Amount</th>
-              <th>Remarks</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${formattedTransactions}
-            <tr class="total-row">
-              <td colspan="8">TOTAL</td>
-              <td class="amount">₱${totalAmount.toFixed(2)}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="footer">
-          <div class="footer-line1">
-            <div>Received by: _________________, Date: _________________</div>
-            <div>GENERATED ON: ${generatedDateTime}</div>
+        <div class="summary-container">
+          <div class="summary-content">
+            <div class="header">
+              GHE TRANSMITTAL - AIRPORT CLIENTS PROPERTY IRREGULARITY SUMMARY REPORT<br>
+              ${dateRange}
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>No.</th>
+                  <th>Tracking ID</th>
+                  <th>Luggage Owner</th>
+                  <th>Flight No.</th>
+                  <th>Address</th>
+                  <th>Date Received</th>
+                  <th>Status</th>
+                  <th>Amount</th>
+                  <th>Remarks</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${formattedTransactions}
+                <tr class="total-row">
+                  <td colspan="8">TOTAL</td>
+                  <td class="amount">₱${totalAmount.toFixed(2)}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <div class="footer-line2">
-            <div>AIRLINE'S REPRESENTATIVE</div>
-            <div>****************************************************SUBMITTED ALL ORIGINAL SIGNED PIR****************************************************</div>
-          </div>
-          <div class="footer-line3">
-            Total PIR submitted: ${rowCounter - 1}
+          <div class="footer">
+            <div class="footer-line1">
+              <div>(Received by: _________________&nbsp;&nbsp;&nbsp;&nbsp;Date: _________________)</div>
+              <div class="nowrap">GENERATED ON: ${generatedDateTime}</div>
+            </div>
+            <div class="footer-line2">
+              <div>AIRLINE'S REPRESENTATIVE</div>
+              <div class="nowrap">*********SUBMITTED ALL ORIGINAL SIGNED PIR**********</div>
+            </div>
+            <div class="footer-line3">
+              Total PIR Submitted: ${rowCounter - 1}
+            </div>
           </div>
         </div>
         ${formPages}
@@ -306,18 +357,23 @@ const generateTransactionReportHTML = async (transactions, summary, date, time, 
   `
 }
 
-export const printPDF = async (transactions, summary, invoiceImageUrl = null, printerUrl = null) => {
+export const printPDF = async (
+  transactions,
+  invoiceImageUrl = null,
+  signatureImageUrl = null,
+  options = {},
+  printerUrl = null
+) => {
   try {
-    if (!transactions || !summary) {
-      throw new Error('Transactions and summary data are required')
+    if (!transactions || (Array.isArray(transactions) && transactions.length === 0)) {
+      throw new Error('Transactions are required')
     }
 
     const html = await generateTransactionReportHTML(
       transactions,
-      summary,
-      new Date().toLocaleDateString(),
-      new Date().toLocaleTimeString(),
-      invoiceImageUrl
+      invoiceImageUrl,
+      signatureImageUrl,
+      options
     )
 
     await Print.printAsync({
@@ -332,18 +388,22 @@ export const printPDF = async (transactions, summary, invoiceImageUrl = null, pr
   }
 }
 
-export const sharePDF = async (transactions, summary, invoiceImageUrl = null) => {
+export const sharePDF = async (
+  transactions,
+  invoiceImageUrl = null,
+  signatureImageUrl = null,
+  options = {}
+) => {
   try {
-    if (!transactions || !summary) {
-      throw new Error('Transactions and summary data are required')
+    if (!transactions || (Array.isArray(transactions) && transactions.length === 0)) {
+      throw new Error('Transactions are required')
     }
 
     const html = await generateTransactionReportHTML(
       transactions,
-      summary,
-      new Date().toLocaleDateString(),
-      new Date().toLocaleTimeString(),
-      invoiceImageUrl
+      invoiceImageUrl,
+      signatureImageUrl,
+      options
     )
 
     const { uri } = await Print.printToFileAsync({
