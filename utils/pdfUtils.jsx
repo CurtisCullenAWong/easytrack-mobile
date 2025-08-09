@@ -72,9 +72,8 @@ const generateTransactionReportHTML = async (
   const totalAmount = contractData.reduce((sum, contracts) => {
     if (!contracts) return sum
     return sum + contracts.reduce((contractSum, contract) => {
-      const baseAmount = (contract.delivery_charge || 0) + (contract.delivery_surcharge || 0)
-      const discountedAmount = baseAmount * (1 - ((contract.delivery_discount || 0) / 100))
-      return contractSum + discountedAmount
+      const amount = (contract.delivery_charge || 0) + (contract.delivery_surcharge || 0) - (contract.delivery_discount || 0)
+      return contractSum + amount
     }, 0)
   }, 0)
 
@@ -106,8 +105,7 @@ const generateTransactionReportHTML = async (
         contract.owner_last_name
       ].filter(Boolean).join(' ') || 'N/A'
 
-      const baseAmount = (contract.delivery_charge || 0) + (contract.delivery_surcharge || 0)
-      const discountedAmount = baseAmount * (1 - ((contract.delivery_discount || 0) / 100))
+      const amount = (contract.delivery_charge || 0) + (contract.delivery_surcharge || 0) - (contract.delivery_discount || 0)
 
       return `
         <tr>
@@ -118,8 +116,8 @@ const generateTransactionReportHTML = async (
           <td>${contract.drop_off_location || contract.delivery_address || 'N/A'}</td>
           <td>${formatDate(contract.delivered_at || contract.cancelled_at)}</td>
           <td>${contract.contract_status?.status_name || 'N/A'}</td>
-          <td class="amount">₱${discountedAmount.toFixed(2)}</td>
-          <td>${contract.remarks || ' '}</td>
+          <td class="amount">₱${amount.toFixed(2)}</td>
+          <td>${contract.remarks || 'N/A'}</td>
         </tr>
       `
     }).join('')
@@ -127,19 +125,22 @@ const generateTransactionReportHTML = async (
 
   // Filter out transactions without passenger forms
   const transactionsWithForms = contractData.flatMap(contracts => 
-    contracts?.filter(contract => contract.passenger_form) || []
+    contracts?.filter(contract => contract.passenger_form || contract.proof_of_delivery) || []
   )
   
   // Generate HTML for passenger forms
-  const formPages = transactionsWithForms.map((contract, index) => `
-    <div class="page-break"></div>
-    <div class="form-container">
-      <img src="${contract.passenger_form}" class="form-image" />
-      <div class="form-info">
-        Contract ID: ${contract.id} | Page ${index + 1} of ${transactionsWithForms.length}
+  const formPages = transactionsWithForms.map((contract, index) => {
+    const imageUrl = contract.passenger_form || contract.proof_of_delivery;
+    return `
+      <div class="page-break"></div>
+      <div class="form-container">
+        <img src="${imageUrl}" class="form-image" />
+        <div class="form-info">
+          Contract ID: ${contract.id}, Page ${index + 1} of ${transactionsWithForms.length}
+        </div>
       </div>
-    </div>
-  `).join('')
+    `;
+  }).join('')
 
   // Generate invoice image HTML if available
   const invoiceImageHTML = invoiceImageUrl ? `

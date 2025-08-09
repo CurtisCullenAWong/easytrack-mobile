@@ -250,21 +250,19 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
       let totalEarnings = 0
       let totalExpenses = 0
 
-      if (isDelivery) {
+        if (isDelivery) {
         totalEarnings = deliveries.reduce((sum, delivery) => {
           if (delivery.delivery_id === userData.id) {
-            const baseAmount = (delivery.delivery_surcharge || 0) + (delivery.delivery_surcharge || 0)
-            const discountedAmount = baseAmount * (1 - ((delivery.delivery_discount || 0) / 100))
-            return sum + discountedAmount
+            const amount = (delivery.delivery_charge || 0) + (delivery.delivery_surcharge || 0) - (delivery.delivery_discount || 0)
+            return sum + amount
           }
           return sum
         }, 0)
       } else {
         totalExpenses = deliveries.reduce((sum, delivery) => {
           if (delivery.airline_id === userData.id) {
-            const baseAmount = (delivery.delivery_surcharge || 0) + (delivery.delivery_surcharge || 0)
-            const discountedAmount = baseAmount * (1 - ((delivery.delivery_discount || 0) / 100))
-            return sum + discountedAmount
+            const amount = (delivery.delivery_charge || 0) + (delivery.delivery_surcharge || 0) - (delivery.delivery_discount || 0)
+            return sum + amount
           }
           return sum
         }, 0)

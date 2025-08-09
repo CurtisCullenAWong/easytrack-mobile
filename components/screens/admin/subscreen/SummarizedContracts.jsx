@@ -60,7 +60,6 @@ const SummarizedContracts = ({ navigation }) => {
     { key: 'summary_status', label: 'Summary Status', width: COLUMN_WIDTH },
     { key: 'created_at', label: 'Created At', width: COLUMN_WIDTH },
     { key: 'due_date', label: 'Due Date', width: COLUMN_WIDTH },
-    { key: 'total_charge', label: 'Total Charge', width: COLUMN_WIDTH },
   ]
 
   const fetchTransactions = async () => {
@@ -72,7 +71,6 @@ const SummarizedContracts = ({ navigation }) => {
         summary:summary_id (
           summary_status:summary_status_id (status_name, id),
           due_date,
-          total_charge,
           created_at
         ),
         contract_status:contract_status_id (status_name),
@@ -127,7 +125,6 @@ const SummarizedContracts = ({ navigation }) => {
           due_date: transaction.summary?.due_date ? new Date(transaction.summary.due_date).toLocaleString('en-US', {
             year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true
           }) : 'N/A',
-          total_charge: transaction.summary?.total_charge || 0,
           id: transaction.id,
           status: transaction.contract_status?.status_name || 'N/A',
           delivery_charge: transaction.delivery_charge || 0,
@@ -309,14 +306,9 @@ const SummarizedContracts = ({ navigation }) => {
         .eq('summary_id', selectedSummaryId)
         .is('summary_id', null)
       if (contractsError) throw contractsError
-      const totalCharge = contracts.reduce((sum, contract) => {
-        const baseAmount = (contract.delivery_charge || 0) + (contract.delivery_surcharge || 0)
-        const discountedAmount = baseAmount * (1 - ((contract.delivery_discount || 0) / 100))
-        return sum + discountedAmount
-      }, 0)
       const { error: paymentError } = await supabase
         .from('payment')
-        .insert({ id: getFullInvoiceNumber(), total_charge: Math.round(totalCharge), invoice_image: invoiceImageUrl })
+        .insert({ id: getFullInvoiceNumber(), invoice_image: invoiceImageUrl })
         .select()
         .single()
       if (paymentError) throw paymentError
@@ -540,7 +532,7 @@ const SummarizedContracts = ({ navigation }) => {
                   {columns.map(({ key, width }, idx) => (
                     <DataTable.Cell key={idx} style={{ width, justifyContent: 'center', paddingVertical: 12 }}>
                       <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>
-                        {['delivery_charge', 'delivery_surcharge', 'total_amount', 'amount_per_passenger', 'total_charge'].includes(key)
+                        {['delivery_charge', 'delivery_surcharge', 'total_amount', 'amount_per_passenger'].includes(key)
                           ? formatCurrency(transaction[key])
                           : key === 'delivery_discount'
                           ? formatPercentage(transaction[key])
