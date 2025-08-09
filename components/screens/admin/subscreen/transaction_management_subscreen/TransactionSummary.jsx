@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { View, ScrollView, StyleSheet, Alert } from 'react-native'
+import { View, ScrollView, StyleSheet } from 'react-native'
 import { useTheme, Text, Button, Appbar, Card, Portal, Dialog, Divider } from 'react-native-paper'
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../../../../../lib/supabaseAdmin'
@@ -41,7 +41,6 @@ const TransactionSummary = () => {
         .from('summary')
         .insert({
           id: summaryId,
-          total_charge: Math.round(summaryData.totalAmount),
           summary_status_id: 1
         })
         .select()

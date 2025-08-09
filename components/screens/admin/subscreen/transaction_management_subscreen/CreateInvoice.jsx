@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { View, StyleSheet, Image } from 'react-native'
+import { ScrollView, View, StyleSheet, Image } from 'react-native'
 import { useTheme, Appbar, Card, Text, Button, Divider, Checkbox, Portal, Modal } from 'react-native-paper'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { supabase } from '../../../../../lib/supabaseAdmin'
@@ -15,8 +15,14 @@ const CreateInvoice = () => {
 
   const { summary } = route.params || {}
 
-  const [signatureDataUrl, setSignatureDataUrl] = useState('')
+  const [preparedSignatureDataUrl, setPreparedSignatureDataUrl] = useState('')
+  const [checkedSignatureDataUrl, setCheckedSignatureDataUrl] = useState('')
+  const [preparedSignatureRotation, setPreparedSignatureRotation] = useState(0) // degrees: 0,90,180,270
+  const [checkedSignatureRotation, setCheckedSignatureRotation] = useState(0)
+  const [preparedSignatureSize, setPreparedSignatureSize] = useState(null) // { width, height }
+  const [checkedSignatureSize, setCheckedSignatureSize] = useState(null)
   const [signatureVisible, setSignatureVisible] = useState(false)
+  const [activeSigner, setActiveSigner] = useState(null) // 'prepared' | 'checked'
   const [certify, setCertify] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [summaryStatusId, setSummaryStatusId] = useState(null)
@@ -42,8 +48,8 @@ const CreateInvoice = () => {
     const nextStatusId = summaryStatusId === 1 ? 2 : 1
 
     if (nextStatusId === 2) {
-      if (!signatureDataUrl) {
-        showSnackbar('Please provide your signature')
+      if (!preparedSignatureDataUrl || !checkedSignatureDataUrl) {
+        showSnackbar('Please provide both signatures')
         return
       }
       if (!certify) {
@@ -75,11 +81,26 @@ const CreateInvoice = () => {
     }
   }
 
-  const canGenerateOutputs = useMemo(() => Boolean(signatureDataUrl) && certify, [signatureDataUrl, certify])
+  const canGenerateOutputs = useMemo(
+    () => Boolean(preparedSignatureDataUrl) && Boolean(checkedSignatureDataUrl) && certify,
+    [preparedSignatureDataUrl, checkedSignatureDataUrl, certify]
+  )
 
   const buildTransactionsPayload = () => [{ summary_id: summary?.summary_id }]
 
   // Ephemeral signature only; do not persist to storage
+
+  const buildInvoiceData = () => {
+    const now = new Date()
+    const due = new Date(now)
+    due.setDate(due.getDate() + 30)
+    return {
+      invoice_id: generatedInvoiceId,
+      summary_id: summary?.summary_id,
+      date: now.toISOString(),
+      due_date: due.toISOString(),
+    }
+  }
 
   const handlePrint = async () => {
     try {
@@ -87,7 +108,19 @@ const CreateInvoice = () => {
         showSnackbar('Provide signature and certification first')
         return
       }
-      await printPDF(buildTransactionsPayload(), null, signatureDataUrl, { signatureOnFirstPage: true })
+      await printPDF(
+        buildTransactionsPayload(),
+        null,
+        {
+          prepared: preparedSignatureDataUrl,
+          checked: checkedSignatureDataUrl,
+          preparedRotation: preparedSignatureRotation,
+          checkedRotation: checkedSignatureRotation,
+        },
+        { signatureOnFirstPage: true },
+        null,
+        buildInvoiceData()
+      )
     } catch (error) {
       console.error('Error printing PDF:', error)
       showSnackbar(`Failed to print PDF: ${error.message}`)
@@ -100,7 +133,18 @@ const CreateInvoice = () => {
         showSnackbar('Provide signature and certification first')
         return
       }
-      await sharePDF(buildTransactionsPayload(), null, signatureDataUrl, { signatureOnFirstPage: true })
+      await sharePDF(
+        buildTransactionsPayload(),
+        null,
+        {
+          prepared: preparedSignatureDataUrl,
+          checked: checkedSignatureDataUrl,
+          preparedRotation: preparedSignatureRotation,
+          checkedRotation: checkedSignatureRotation,
+        },
+        { signatureOnFirstPage: true },
+        buildInvoiceData()
+      )
     } catch (error) {
       console.error('Error sharing PDF:', error)
       showSnackbar(`Failed to share PDF: ${error.message}`)
@@ -126,7 +170,7 @@ const CreateInvoice = () => {
   }, [summary?.summary_id])
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       <Appbar.Header style={[styles.header, { backgroundColor: colors.surface }]}>
         <Appbar.BackAction onPress={() => navigation.navigate('TransactionManagement', {segment:'completed'})} />
         <Appbar.Content title="Create Invoice" titleStyle={[styles.headerTitle, { color: colors.onSurface }]} />
@@ -146,16 +190,105 @@ const CreateInvoice = () => {
 
             <Divider style={[styles.divider, { backgroundColor: colors.outline }]} />
 
-            <Text style={[styles.label, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>Signature</Text>
-            {signatureDataUrl ? (
+            <Text style={[styles.label, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>Signatures</Text>
+
+            {/* Prepared by */}
+            <Text style={[styles.label, { color: colors.onSurfaceVariant }, fonts.bodySmall]}>Prepared by</Text>
+            {preparedSignatureDataUrl ? (
               <View style={styles.signaturePreviewContainer}>
-                <Image source={{ uri: signatureDataUrl }} style={styles.signaturePreview} resizeMode="contain" />
+                <Image
+                  source={{ uri: preparedSignatureDataUrl }}
+                  style={[
+                    styles.signaturePreview,
+                    preparedSignatureSize
+                      ? {
+                          width: '100%',
+                          height: undefined,
+                          aspectRatio:
+                            [90, 270].includes(((preparedSignatureRotation % 360) + 360) % 360)
+                              ? preparedSignatureSize.height / preparedSignatureSize.width
+                              : preparedSignatureSize.width / preparedSignatureSize.height,
+                        }
+                      : { minHeight: 120 },
+                    { transform: [{ rotate: `${preparedSignatureRotation}deg` }] },
+                  ]}
+                  resizeMode="contain"
+                  onLoad={(e) => {
+                    const src = e?.nativeEvent?.source
+                    if (src?.width && src?.height) {
+                      setPreparedSignatureSize({ width: src.width, height: src.height })
+                    }
+                  }}
+                />
                 <View style={{ height: 8 }} />
-                <Button mode="text" onPress={() => setSignatureDataUrl('')}>Clear signature</Button>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <Button mode="text" onPress={() => { setPreparedSignatureDataUrl(''); setPreparedSignatureSize(null) }}>Clear</Button>
+                  <Button
+                    mode="text"
+                    onPress={() => setPreparedSignatureRotation((r) => (r + 90) % 360)}
+                  >
+                    Rotate 90°
+                  </Button>
+                </View>
               </View>
             ) : (
-              <Button mode="outlined" icon="pencil" onPress={() => setSignatureVisible(true)} style={{ marginTop: 4 }}>
-                Write signature
+              <Button
+                mode="outlined"
+                icon="pencil"
+                onPress={() => { setActiveSigner('prepared'); setSignatureVisible(true) }}
+                style={{ marginTop: 4 }}
+              >
+                Write signature (Prepared by)
+              </Button>
+            )}
+
+            {/* Checked by */}
+            <Text style={[styles.label, { color: colors.onSurfaceVariant, marginTop: 12 }, fonts.bodySmall]}>Checked by</Text>
+            {checkedSignatureDataUrl ? (
+              <View style={styles.signaturePreviewContainer}>
+                <Image
+                  source={{ uri: checkedSignatureDataUrl }}
+                  style={[
+                    styles.signaturePreview,
+                    checkedSignatureSize
+                      ? {
+                          width: '100%',
+                          height: undefined,
+                          aspectRatio:
+                            [90, 270].includes(((checkedSignatureRotation % 360) + 360) % 360)
+                              ? checkedSignatureSize.height / checkedSignatureSize.width
+                              : checkedSignatureSize.width / checkedSignatureSize.height,
+                        }
+                      : { minHeight: 120 },
+                    { transform: [{ rotate: `${checkedSignatureRotation}deg` }] },
+                  ]}
+                  resizeMode="contain"
+                  onLoad={(e) => {
+                    const src = e?.nativeEvent?.source
+                    if (src?.width && src?.height) {
+                      setCheckedSignatureSize({ width: src.width, height: src.height })
+                    }
+                  }}
+                />
+                <View style={{ height: 8 }} />
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <Button mode="text" onPress={() => { setCheckedSignatureDataUrl(''); setCheckedSignatureSize(null) }}>Clear</Button>
+                  <Button
+                    mode="text"
+                    onPress={() => setCheckedSignatureRotation((r) => (r + 90) % 360)}
+                  >
+                    Rotate 90°
+                  </Button>
+                </View>
+              </View>
+            ) : (
+              <Button
+                mode="outlined"
+                icon="pencil"
+                onPress={() => { setActiveSigner('checked'); setSignatureVisible(true) }}
+                style={{ marginTop: 4 }}
+              >
+                Write signature (Checked by)
               </Button>
             )}
 
@@ -207,33 +340,54 @@ const CreateInvoice = () => {
         </Card>
       </View>
       <Portal>
-        <Modal
-          visible={signatureVisible}
-          onDismiss={() => setSignatureVisible(false)}
-          contentContainerStyle={[styles.modalContainer, { backgroundColor: colors.surface }]}
-        >
-          <Text style={[{ marginBottom: 8, color: colors.onSurface }, fonts.titleMedium]}>Write your signature</Text>
-          <View style={styles.signaturePad}>
-            <Signature
-              ref={signatureRef}
-              onOK={(sig) => {
-                setSignatureDataUrl(sig)
-                setSignatureVisible(false)
-              }}
-              onEmpty={() => {}}
-              descriptionText=""
-              webStyle=".m-signature-pad{box-shadow:none;border:1px solid #ccc}.m-signature-pad--footer{display:none}"
-              backgroundColor="#ffffff"
-            />
-          </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-            <Button mode="outlined" onPress={() => signatureRef.current?.clearSignature()}>Clear</Button>
-            <Button mode="contained" onPress={() => signatureRef.current?.readSignature()}>Save</Button>
-          </View>
-          <Button mode="text" onPress={() => setSignatureVisible(false)} style={{ marginTop: 8 }}>Close</Button>
-        </Modal>
+          <Modal
+            visible={signatureVisible}
+            onDismiss={() => setSignatureVisible(false)}
+            contentContainerStyle={[styles.fullscreenModal, { backgroundColor: colors.surface }]}
+          >
+            <View style={styles.signatureModalContent}>
+              <Text style={[{ marginBottom: 8, color: colors.onSurface, paddingHorizontal: 16 }, fonts.titleMedium]}>
+                {activeSigner === 'checked' ? 'Write signature (Checked by)' : 'Write signature (Prepared by)'}
+              </Text>
+              <View style={styles.fullscreenSignaturePad}>
+                <Signature
+                  ref={signatureRef}
+                  style={{ flex: 1 }}
+                  onOK={(sig) => {
+                    if (activeSigner === 'checked') {
+                      setCheckedSignatureDataUrl(sig)
+                      Image.getSize(
+                        sig,
+                        (width, height) => setCheckedSignatureSize({ width, height }),
+                        () => setCheckedSignatureSize(null)
+                      )
+                    } else {
+                      setPreparedSignatureDataUrl(sig)
+                      Image.getSize(
+                        sig,
+                        (width, height) => setPreparedSignatureSize({ width, height }),
+                        () => setPreparedSignatureSize(null)
+                      )
+                    }
+                    setSignatureVisible(false)
+                  }}
+                  onEmpty={() => {}}
+                  descriptionText=""
+                  webStyle="html,body{height:100%;margin:0;padding:0;background:transparent}.m-signature-pad{box-shadow:none;border:0;height:100%;max-height:100%;background:transparent}.m-signature-pad--footer{display:none}.m-signature-pad--body{border:0;height:100%;background:transparent}.m-signature-pad--body canvas{width:100%!important;height:100%!important;background:transparent}"
+                  backgroundColor="rgba(0,0,0,0)"
+                  imageType="image/png"
+                  trimWhitespace
+                />
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingHorizontal: 16 }}>
+                <Button mode="outlined" onPress={() => signatureRef.current?.clearSignature()}>Clear</Button>
+                <Button mode="contained" onPress={() => signatureRef.current?.readSignature()}>Save</Button>
+              </View>
+              <Button mode="text" onPress={() => setSignatureVisible(false)} style={{ marginTop: 8, paddingHorizontal: 16, paddingBottom: 16 }}>Close</Button>
+            </View>
+          </Modal>
       </Portal>
-    </View>
+    </ScrollView>
   )
 }
 
@@ -243,14 +397,12 @@ const styles = StyleSheet.create({
   divider: { marginVertical: 12 },
   label: { marginBottom: 4 },
   value: { marginBottom: 8 },
-  input: { marginTop: 4 },
   checkboxRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
   signaturePreviewContainer: { marginTop: 8, alignItems: 'center' },
-  signaturePreview: { width: '100%', height: 120, backgroundColor: '#fafafa', borderWidth: 1, borderColor: '#ddd' },
-  modalContainer: { margin: 16, padding: 16, borderRadius: 12 },
-  signaturePad: { height: 220 },
+  signaturePreview: { width: '100%', height: 120, backgroundColor: 'transparent', borderWidth: 1, borderColor: '#ddd' },
+  fullscreenModal: { flex: 1, margin: 0, borderRadius: 0, paddingTop: 16 },
+  signatureModalContent: { flex: 1 },
+  fullscreenSignaturePad: { flex: 1, minHeight: '75%' },
 })
 
 export default CreateInvoice
-
-

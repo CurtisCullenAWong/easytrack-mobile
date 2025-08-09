@@ -2,11 +2,58 @@ import * as Print from 'expo-print'
 import * as Sharing from 'expo-sharing'
 import { supabase } from '../lib/supabaseAdmin'
 
+const cfg = {
+  company: {
+    name: 'GREEN HANGAR EMISSION TESTING CENTER',
+    details: [
+      'PROPRIETOR: JONALIZ L. CABALUNA',
+      'ATAYDE ST. BRGY. 191 PASAY CITY',
+      'VAT REG. TIN: 234892-00000',
+    ],
+  },
+  client: {
+    billToLabel: 'BILL TO',
+    name: 'PHILIPPINES AIR ASIA INC.',
+    details: [
+      '2nd LEVEL MEZZANINE AREA NAIA T3, PASAY CITY',
+      'TIN# 005-838-00016',
+    ],
+  },
+  invoice: {
+    headerLabel: 'SALES INVOICE NO.',
+    unit: 'PCS',
+    descriptionPrefix: 'PIRs Luggage Delivery',
+    fillerRowsCount: 5,
+    table2Title: 'TABLE 2',
+    table3Title: 'TABLE 3',
+    noteAllOriginalDocs: ' Note: All Original Documents are included in this statement',
+    notePayableText: 'Note: Please make check payable to JONALIZ L. CABALUNA',
+    receivedByLine: 'RECEIVED BY: ________       DATE: ______',
+    bankInfo: 'RCBC ACCT NUMBER: 7591033191',
+    table3Rows: [
+      { label: 'VATABLE', value: '₱100.00' },
+      { label: 'VAT EXEMPT', value: '₱0.00' },
+      { label: 'ZERO RATED', value: '₱0.00' },
+      { label: 'TOTAL SALES', value: '₱0.00', bold: true },
+      { label: 'TOTAL VAT', value: '₱0.00', bold: true },
+      { label: 'AMOUNT DUE', value: '₱0.00', bold: true },
+    ],
+    signatureLabels: {
+      prepared: 'Prepared by',
+      checked: 'CHECKED BY',
+      preparedSubtitle: 'Revenue Supervisor',
+      checkedSubtitle: 'ACCOUNTING',
+    },
+    paymentMethodDefault: 'DOMESTIC FUND TRANSFER',
+  },
+}
+
 const generateTransactionReportHTML = async (
   transactions,
   invoiceImageUrl = null,
   signatureImageUrl = null,
-  options = {}
+  options = {},
+  invoiceData = null
 ) => {
   // Get the first and last day of the current month
   const now = new Date()
@@ -29,6 +76,7 @@ const generateTransactionReportHTML = async (
   
   const dateRange = `${formatDate(firstDay)} TO ${formatDate(lastDay)}`
   const generatedDateTime = formatDate(new Date())
+
 
   // Fetch contract data for each transaction
   const contractData = await Promise.all(transactions.map(async (transaction) => {
@@ -77,6 +125,12 @@ const generateTransactionReportHTML = async (
     }, 0)
   }, 0)
 
+  // Format PHP currency with commas and 2 decimal places
+  const formatPHP = (value) => {
+    const num = Number(value || 0)
+    return num.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  }
+
   // Format transactions for the table
   let rowCounter = 1; // Add counter for sequential numbering
   const formattedTransactions = contractData.flatMap((contracts, transactionIndex) => {
@@ -90,7 +144,7 @@ const generateTransactionReportHTML = async (
           <td>N/A</td>
           <td>N/A</td>
           <td>N/A</td>
-          <td class="amount">₱0.00</td>
+          <td class="amount">₱${formatPHP(0)}</td>
           <td>N/A</td>
         </tr>
       `
@@ -116,7 +170,7 @@ const generateTransactionReportHTML = async (
           <td>${contract.drop_off_location || contract.delivery_address || 'N/A'}</td>
           <td>${formatDate(contract.delivered_at || contract.cancelled_at)}</td>
           <td>${contract.contract_status?.status_name || 'N/A'}</td>
-          <td class="amount">₱${amount.toFixed(2)}</td>
+          <td class="amount">₱${formatPHP(amount)}</td>
           <td>${contract.remarks || 'N/A'}</td>
         </tr>
       `
@@ -149,16 +203,352 @@ const generateTransactionReportHTML = async (
     </div>
   ` : ''
 
-  // Generate a dedicated signature first page if requested
-  const signatureFirstPageHTML = signatureImageUrl && options?.signatureOnFirstPage ? `
-    <div class="invoice-container">
-      <h3>Signature</h3>
-      <div class="signature-box" style="width: 60%; height: 160px;">
-        <img src="${signatureImageUrl}" class="signature-image" />
+  // Generate invoice HTML if invoiceData is provided
+  let invoiceHTML = ''
+  if (invoiceData) {
+    const {
+      invoice_id,
+      summary_id,
+      date,
+      due_date,
+      terms = '30 DAYS',
+      payment_method: paymentMethodRaw
+    } = invoiceData
+    const paymentMethod = paymentMethodRaw || cfg.invoice.paymentMethodDefault
+
+    // Format date for invoice
+    const formatInvoiceDate = (date) => {
+      if (!date) return 'N/A'
+      const dateObj = new Date(date)
+      const day = dateObj.getDate().toString().padStart(2, '0')
+      const month = (dateObj.getMonth() + 1).toString().padStart(2, '0')
+      const year = dateObj.getFullYear()
+      return `${day}/${month}/${year}`
+    }
+
+    // Build signature section for the invoice page
+    let invoiceSignatureHTML = ''
+    // Build signature section variant for the post-Table2 left block
+    let postSignatureHTML = ''
+    if (options?.signatureOnFirstPage) {
+      if (typeof signatureImageUrl === 'string') {
+        invoiceSignatureHTML = `
+          <div class="signature-duo">
+            <div class="signature-box">
+              <img src="${signatureImageUrl}" class="signature-image" />
+              <div class="signature-label">${cfg.invoice.signatureLabels.prepared}</div>
+            </div>
+            <div class="signature-box">
+              <div class="signature-label">${cfg.invoice.signatureLabels.checked}</div>
+            </div>
+          </div>
+        `
+      } else if (typeof signatureImageUrl === 'object' && signatureImageUrl) {
+        const preparedUrl = signatureImageUrl.prepared || ''
+        const checkedUrl = signatureImageUrl.checked || ''
+        const preparedRotation = Number(signatureImageUrl.preparedRotation || 0)
+        const checkedRotation = Number(signatureImageUrl.checkedRotation || 0)
+
+        const preparedBlock = preparedUrl
+          ? `
+            <div class="signature-box">
+              <img src="${preparedUrl}" class="signature-image" style="transform: rotate(${preparedRotation}deg);" />
+              <div class="signature-label">${cfg.invoice.signatureLabels.prepared}</div>
+            </div>
+          `
+          : `
+            <div class="signature-box">
+              <div class="signature-label">${cfg.invoice.signatureLabels.prepared}</div>
+            </div>
+          `
+
+        const checkedBlock = checkedUrl
+          ? `
+            <div class="signature-box">
+              <img src="${checkedUrl}" class="signature-image" style="transform: rotate(${checkedRotation}deg);" />
+              <div class="signature-label">${cfg.invoice.signatureLabels.checked}</div>
+            </div>
+          `
+          : `
+            <div class="signature-box">
+              <div class="signature-label">${cfg.invoice.signatureLabels.checked}</div>
+            </div>
+          `
+
+        invoiceSignatureHTML = `
+          <div class="signature-duo">
+            ${preparedBlock}
+            ${checkedBlock}
+          </div>
+        `
+        // Post-table signature variant aligned side-by-side with inline labels and subtitles
+        const preparedBlockPost = `
+          <div class="signature-column">
+            <div class="signature-row">
+              <div class="signature-label-inline">${cfg.invoice.signatureLabels.prepared}:</div>
+              ${preparedUrl ? `<img src="${preparedUrl}" class="signature-image" style="transform: rotate(${preparedRotation}deg);" />` : `<div class="signature-placeholder"></div>`}
+            </div>
+            <div class="signature-subtitle-inline">${cfg.invoice.signatureLabels.preparedSubtitle}</div>
+          </div>
+        `
+        const checkedBlockPost = `
+          <div class="signature-column">
+            <div class="signature-row">
+              <div class="signature-label-inline">${cfg.invoice.signatureLabels.checked}:</div>
+              ${checkedUrl ? `<img src="${checkedUrl}" class="signature-image" style="transform: rotate(${checkedRotation}deg);" />` : `<div class="signature-placeholder"></div>`}
+            </div>
+            <div class="signature-subtitle-inline">${cfg.invoice.signatureLabels.checkedSubtitle}</div>
+          </div>
+        `
+        postSignatureHTML = `
+          <div class="signature-duo-post">
+            ${preparedBlockPost}
+            ${checkedBlockPost}
+          </div>
+        `
+      } else {
+        invoiceSignatureHTML = `
+          <div class="signature-duo">
+            <div class="signature-box">
+              <div class="signature-label">${cfg.invoice.signatureLabels.prepared}</div>
+            </div>
+            <div class="signature-box">
+              <div class="signature-label">${cfg.invoice.signatureLabels.checked}</div>
+            </div>
+          </div>
+        `
+        postSignatureHTML = `
+          <div class="signature-duo-post">
+            <div class="signature-column">
+              <div class="signature-row">
+                <div class="signature-label-inline">${cfg.invoice.signatureLabels.prepared}:</div>
+                <div class="signature-placeholder"></div>
+              </div>
+              <div class="signature-subtitle-inline">${cfg.invoice.signatureLabels.preparedSubtitle}</div>
+            </div>
+            <div class="signature-column">
+              <div class="signature-row">
+                <div class="signature-label-inline">${cfg.invoice.signatureLabels.checked}:</div>
+                <div class="signature-placeholder"></div>
+              </div>
+              <div class="signature-subtitle-inline">${cfg.invoice.signatureLabels.checkedSubtitle}</div>
+            </div>
+          </div>
+        `
+      }
+    } else {
+      invoiceSignatureHTML = `
+        <div class="signature-duo">
+          <div class="signature-box">
+            <div class="signature-label">${cfg.invoice.signatureLabels.prepared}</div>
+          </div>
+          <div class="signature-box">
+            <div class="signature-label">${cfg.invoice.signatureLabels.checked}</div>
+          </div>
+        </div>
+      `
+      postSignatureHTML = `
+        <div class="signature-duo-post">
+          <div class="signature-column">
+            <div class="signature-row">
+              <div class="signature-label-inline">${cfg.invoice.signatureLabels.prepared}:</div>
+              <div class="signature-placeholder"></div>
+            </div>
+            <div class="signature-subtitle-inline">${cfg.invoice.signatureLabels.preparedSubtitle}</div>
+          </div>
+          <div class="signature-column">
+            <div class="signature-row">
+              <div class="signature-label-inline">${cfg.invoice.signatureLabels.checked}:</div>
+              <div class="signature-placeholder"></div>
+            </div>
+            <div class="signature-subtitle-inline">${cfg.invoice.signatureLabels.checkedSubtitle}</div>
+          </div>
+        </div>
+      `
+    }
+
+    invoiceHTML = `
+      <div class="invoice-page">
+        <div class="invoice-header">
+          <div class="invoice-header-left">
+            <div class="company-name">${cfg.company.name}</div>
+            ${cfg.company.details.map(d => `<div class="company-details">${d}</div>`).join('')}
+          </div>
+          <div class="invoice-header-right">
+            <div class="bill-to">${cfg.client.billToLabel}</div>
+            <div class="client-info">${cfg.client.name}</div>
+            ${cfg.client.details.map(d => `<div class=\"client-info\">${d}</div>`).join('')}
+          </div>
+        </div>
+
+        <div class="invoice-meta">
+          <div class="meta-item">
+            <span class="meta-label">DATE:</span>
+            <span class="meta-value">${formatInvoiceDate(date)}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">SOA #:</span>
+            <span class="meta-value">${summary_id || 'N/A'}</span>
+          </div>
+        </div>
+
+        <div class="invoice-header2">
+          ${cfg.invoice.headerLabel} ${invoice_id || 'N/A'}
+        </div>
+
+        <table class="invoice-content-table">
+          <thead>
+            <tr>
+              <th>TERMS</th>
+              <th>PAYMENT METHOD</th>
+              <th>DUE DATE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>${terms}</td>
+              <td>${paymentMethod}</td>
+              <td>${formatInvoiceDate(due_date)}</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="invoice-table-title">${cfg.invoice.table2Title}</div>
+        <table class="invoice-content-table">
+          <thead>
+            <tr>
+              <th>QTY</th>
+              <th>UNIT</th>
+              <th>DESCRIPTION</th>
+              <th>TOTAL AMOUNT DUE</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(() => {
+              const qty = Math.max(0, (rowCounter || 1) - 1)
+              const formatInvDate = (d) => {
+                const dd = String(d.getDate()).padStart(2, '0')
+                const mm = String(d.getMonth() + 1).padStart(2, '0')
+                const yyyy = d.getFullYear()
+                return `${dd}/${mm}/${yyyy}`
+              }
+              const desc = `${cfg.invoice.descriptionPrefix} - (${formatInvDate(new Date())} to ${formatInvoiceDate(due_date)})`
+              const mainRow = `
+                <tr>
+                  <td style="text-align:center;">${qty}</td>
+                  <td style="text-align:center;">${cfg.invoice.unit}</td>
+                  <td>${desc}</td>
+                  <td>PHP</td>
+                </tr>
+              `
+              const fillerRowsCount = cfg.invoice.fillerRowsCount
+              const filler = Array.from({ length: fillerRowsCount })
+                .map(() => `
+                  <tr>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                  </tr>
+                `)
+                .join('')
+              return mainRow + filler
+            })()}
+            <tr>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td style="font-weight:bold">${cfg.invoice.noteAllOriginalDocs}</td>
+              <td>&nbsp;</td>
+            </tr>
+            <tr>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+            </tr>
+            <tr>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+            </tr>
+            <tr>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td class="amount">Total Amount Due: PHP${formatPHP(totalAmount || 0)}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="invoice-footer">
+          <div class="post-columns">
+            <div class="post-left">
+              <div class="note-payable">${cfg.invoice.notePayableText}</div>
+              ${postSignatureHTML}
+              <br></br>
+              <div class="received-row">
+                <div class="received-cell">
+                  <div class="received-label">RECEIVED BY:</div>
+                  <span class="received-fill"></span>
+                </div>
+                <div class="received-cell">
+                  <div class="received-label">DATE:</div>
+                  <span class="received-fill" style="max-width: 220px;"></span>
+                </div>
+              </div>
+            </div>
+            <div class="post-right">
+              <div class="bank-info">${cfg.invoice.bankInfo}</div>
+              <div class="invoice-table-title" style="margin: 6px 0;">${cfg.invoice.table3Title}</div>
+              <table class="table3">
+                <tbody>
+                  ${(() => {
+                    const grossTotal = Number(totalAmount || 0)
+                    const vatable = grossTotal / 1.12
+                    const totalVat = grossTotal - vatable
+                    const amountDue = grossTotal
+                    return `
+                      <tr>
+                        <td>VATABLE</td>
+                        <td class="amount">₱${formatPHP(vatable)}</td>
+                      </tr>
+                      <tr>
+                        <td>VAT EXEMPT</td>
+                        <td class="amount">₱${formatPHP(0)}</td>
+                      </tr>
+                      <tr>
+                        <td>ZERO RATED</td>
+                        <td class="amount">₱${formatPHP(0)}</td>
+                      </tr>
+                      <tr>
+                        <td style="font-weight:bold;">TOTAL SALES</td>
+                        <td class="amount">₱${formatPHP(vatable)}</td>
+                      </tr>
+                      <tr>
+                        <td style="font-weight:bold;">TOTAL VAT</td>
+                        <td class="amount">₱${formatPHP(totalVat)}</td>
+                      </tr>
+                      <tr class="amount-due-row">
+                        <td style="font-weight:bold;">AMOUNT DUE</td>
+                        <td class="amount">₱${formatPHP(amountDue)}</td>
+                      </tr>
+                    `
+                  })()}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="page-break"></div>
-    </div>
-  ` : ''
+    `
+  }
+
+  // Signature first page disabled to ensure invoice is the first page
 
   return `
     <!DOCTYPE html>
@@ -172,7 +562,7 @@ const generateTransactionReportHTML = async (
           }
           body { 
             font-family: Arial, sans-serif;
-            margin: 10px;
+            margin: 0;
             padding: 0;
             font-size: 10px;
           }
@@ -202,10 +592,12 @@ const generateTransactionReportHTML = async (
           }
           .summary-container {
             display: block;
+            padding: 20px;
+            box-sizing: border-box;
           }
           .summary-content {
             /* Fill remaining page height without forcing overflow to a new page */
-            min-height: calc(100vh - 140px); /* ~footer + spacing allowance */
+            min-height: calc(100vh - 180px); /* ~footer + spacing allowance + padding */
           }
           .footer {
             margin-top: 12px;
@@ -242,6 +634,7 @@ const generateTransactionReportHTML = async (
           }
           .page-break {
             page-break-before: always;
+            break-before: page;
           }
           .form-container {
             width: 100%;
@@ -278,19 +671,13 @@ const generateTransactionReportHTML = async (
             align-items: center;
             justify-content: center;
           }
-          .invoice-container h3 {
-            margin-bottom: 10px;
-            font-size: 12px;
-          }
+          
           .invoice-image {
             width: 100%;
             height: calc(100vh - 40px);
             object-fit: contain;
           }
-          .signature-wrapper {
-            display: flex;
-            flex-direction: column;
-          }
+          
           .signature-box {
             width: 220px;
             height: 70px;
@@ -299,16 +686,218 @@ const generateTransactionReportHTML = async (
             align-items: center;
             justify-content: center;
           }
+          .signature-duo {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            align-items: flex-start;
+            width: 100%;
+          }
+          .signature-label {
+            font-size: 10px;
+            margin-top: 6px;
+            text-align: center;
+          }
           .signature-image {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
           }
+          /* Invoice page styles */
+          .invoice-page {
+            padding: 20px;
+            font-size: 12px;
+            line-height: 1.3;
+            min-height: calc(100vh - 40px); /* subtract padding to avoid overflow to blank page */
+            box-sizing: border-box;
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
+          }
+          .invoice-header-left {
+            flex: 1;
+          }
+          .invoice-header-right {
+            flex: 1;
+            text-align: right;
+          }
+          .company-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+          }
+          .company-details {
+            font-size: 11px;
+            margin-bottom: 3px;
+          }
+          .bill-to {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+          }
+          .client-info {
+            font-size: 11px;
+            margin-bottom: 3px;
+          }
+          .invoice-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 11px;
+          }
+          .meta-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+          }
+          .meta-label {
+            font-weight: bold;
+            margin-right: 10px;
+            min-width: 80px;
+          }
+          .meta-value {
+            border-bottom: 1px solid #000;
+            padding: 2px 5px;
+            min-width: 150px;
+          }
+          .invoice-header2 {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-decoration: underline;
+          }
+          .invoice-content-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+          }
+          .invoice-content-table th,
+          .invoice-content-table td {
+            border: 1px solid #000;
+            padding: 10px;
+            text-align: left;
+          }
+          .invoice-content-table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+            text-align: center;
+          }
+          .invoice-signatures {
+            margin-top: 25px;
+            text-align: center;
+          }
+          .invoice-table-title {
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 8px 0 6px;
+          }
+          .invoice-signatures .signature-duo {
+            display: flex;
+            gap: 100px;
+            justify-content: center;
+            align-items: flex-start;
+          }
+          .invoice-signatures .signature-box {
+            width: 200px;
+            height: 80px;
+            border-bottom: 1px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+          }
+          .invoice-signatures .signature-label {
+            font-size: 11px;
+            text-align: center;
+          }
+          /* Post-Table2 custom layout */
+          .post-table2-cell {
+            padding: 6px 8px;
+          }
+          .post-columns {
+            display: grid;
+            grid-template-columns: 2fr 1fr; /* align roughly with DESCRIPTION vs AMOUNT */
+            gap: 16px;
+            align-items: start;
+          }
+          .post-left {}
+          .post-right {}
+          .note-payable {
+            font-size: 11px;
+            margin-bottom: 8px;
+            font-weight: bold;
+          }
+          .received-line { display:none; }
+          .received-row { display: flex; gap: 24px; margin-top: 8px; justify-content: space-between; }
+          .received-cell { display: flex; align-items: center; gap: 8px; flex: 1; }
+          .received-label { font-size: 10px; font-weight: bold; }
+          .received-fill { flex: 1; display: inline-block; border-bottom: 1px solid #000; height: 1px; min-width: 140px; }
+          .bank-info {
+            font-size: 11px;
+            margin-bottom: 6px;
+            font-weight: bold;
+            text-align: right;
+          }
+          .table3 {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+          }
+          .table3 td {
+            border: 1px solid #000;
+            padding: 6px 8px;
+          }
+          /* Remove top/bottom borders for specific rows in the totals table */
+          .table3 tr.no-tb-border td { border-top: none; border-bottom: none; }
+          .table3 tr:nth-last-child(-n+3) td { border-top: none; border-bottom: none; }
+          .table3 tr.amount-due-row td { border-bottom: 1px solid #000 !important; }
+          /* Post signature blocks */
+          .signature-duo-post {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+            justify-content: flex-end;
+            margin: 8px 0 4px;
+          }
+          .signature-column { flex: 0 1 auto; display: flex; flex-direction: column; gap: 6px; align-items: center; margin-left: 20px; }
+          .signature-row { display: flex; align-items: center; gap: 8px; }
+          .signature-label-inline { min-width: 110px; font-size: 11px; font-weight: bold; }
+          .signature-placeholder { width: 180px; height: 48px; border-bottom: 1px solid #000; }
+          .signature-duo-post img.signature-image { width: 180px; max-height: 48px; border-bottom: 1px solid #000; object-fit: contain; }
+          .signature-subtitle-inline { font-size: 10px; color: #000; text-align: center; margin-top: 4px; }
+          .signature-box-post {
+            width: 220px;
+            height: 70px;
+            border-bottom: 1px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            flex-direction: column;
+          }
+          .signature-label-post {
+            font-size: 10px;
+            margin-top: 6px;
+            text-align: center;
+          }
+          .signature-subtitle-post {
+            font-size: 9px;
+            text-align: center;
+          }
+          
         </style>
       </head>
       <body>
-        ${signatureFirstPageHTML}
-        ${invoiceImageHTML}
+        ${invoiceHTML}
+        ${invoiceHTML ? '<div class="page-break"></div>' : ''}
         <div class="summary-container">
           <div class="summary-content">
             <div class="header">
@@ -333,7 +922,7 @@ const generateTransactionReportHTML = async (
                 ${formattedTransactions}
                 <tr class="total-row">
                   <td colspan="8">TOTAL</td>
-                  <td class="amount">₱${totalAmount.toFixed(2)}</td>
+                  <td class="amount">₱${formatPHP(totalAmount)}</td>
                 </tr>
               </tbody>
             </table>
@@ -363,7 +952,8 @@ export const printPDF = async (
   invoiceImageUrl = null,
   signatureImageUrl = null,
   options = {},
-  printerUrl = null
+  printerUrl = null,
+  invoiceData = null
 ) => {
   try {
     if (!transactions || (Array.isArray(transactions) && transactions.length === 0)) {
@@ -374,7 +964,8 @@ export const printPDF = async (
       transactions,
       invoiceImageUrl,
       signatureImageUrl,
-      options
+      options,
+      invoiceData
     )
 
     await Print.printAsync({
@@ -393,7 +984,8 @@ export const sharePDF = async (
   transactions,
   invoiceImageUrl = null,
   signatureImageUrl = null,
-  options = {}
+  options = {},
+  invoiceData = null
 ) => {
   try {
     if (!transactions || (Array.isArray(transactions) && transactions.length === 0)) {
@@ -404,7 +996,8 @@ export const sharePDF = async (
       transactions,
       invoiceImageUrl,
       signatureImageUrl,
-      options
+      options,
+      invoiceData
     )
 
     const { uri } = await Print.printToFileAsync({
