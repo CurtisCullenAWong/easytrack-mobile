@@ -27,7 +27,7 @@ const messages = [
   },
 ]
 
-const MessageCenterScreen = ({ navigation }) => {
+const Messages = ({ navigation }) => {
   const { colors, fonts } = useTheme()
 
   return (
@@ -35,7 +35,7 @@ const MessageCenterScreen = ({ navigation }) => {
       style={[styles.scrollView, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.contentContainer}
     >
-      <Header title="Message Center" navigation={navigation} />
+      <Header title="Messages" navigation={navigation} />
       {messages.map((item, index) => (
         <View key={item.id}>
           <TouchableOpacity 
@@ -89,4 +89,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default MessageCenterScreen
+export default Messages

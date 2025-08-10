@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { ScrollView, StyleSheet, View, RefreshControl } from 'react-native'
 import { useTheme, Card, Text, ProgressBar, Divider, Button, ActivityIndicator, Menu } from 'react-native-paper'
 import Header from '../../customComponents/Header'
-import { supabase } from '../../../lib/supabaseAdmin'
+import { supabase } from '../../../lib/supabase'
 import { analyzeDeliveryStats } from '../../../utils/geminiUtils'
 import useSnackbar from '../../hooks/useSnackbar'
 
@@ -178,7 +178,6 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
           contract_status:contract_status_id (status_name)
         `)
         .in('contract_status_id', [5, 6]) // 5 for delivered, 6 for failed
-        .or(`delivery_id.eq.${userData.id},airline_id.eq.${userData.id}`)
 
       // Apply date filter if selected
       const dateRange = getDateRange()
@@ -250,7 +249,7 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
       let totalEarnings = 0
       let totalExpenses = 0
 
-        if (isDelivery) {
+      if (isDelivery) {
         totalEarnings = deliveries.reduce((sum, delivery) => {
           if (delivery.delivery_id === userData.id) {
             const amount = (delivery.delivery_charge || 0) + (delivery.delivery_surcharge || 0) - (delivery.delivery_discount || 0)

@@ -41,7 +41,7 @@ const AdminNavigator = ({ navigation }) => {
       key: 'help',
       icon: 'help',
       items: [
-        { icon: 'message-outline', label: 'Message Center', screen: 'MessageCenter' },
+        { icon: 'message-outline', label: 'Messages', screen: 'Messages' },
         { icon: 'file-document-outline', label: 'Terms and Conditions', screen: 'TermsAndConditions' },
       ],
     },
