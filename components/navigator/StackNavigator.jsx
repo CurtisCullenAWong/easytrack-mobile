@@ -32,7 +32,6 @@ import AdminTrackLuggage from '../screens/admin/AdminTrackLuggage'
 import AdminBookingHistory from '../screens/admin/AdminBookingHistory'
 import AddAccount from '../screens/admin/subscreen/AddAccount'
 import ViewAccountScreen from '../screens/admin/subscreen/ViewAccountScreen'
-import DeliveryRates from '../screens/admin/DeliveryRates'
 import PerformanceStatistics from '../screens/admin/PerformanceStatistics'
 import SelectLocation from '../screens/airline/subscreen/SelectLocation'
 
@@ -69,7 +68,6 @@ const AdminDrawer = () => (
       <Drawer.Screen name="ContractDetailsAdmin" component={ContractDetailsAdmin} />
       <Drawer.Screen name="AdminBookingManagement" component={AdminBookingManagement} />
       <Drawer.Screen name="AdminBookingHistory" component={AdminBookingHistory} />
-      <Drawer.Screen name="DeliveryRates" component={DeliveryRates} />
       <Drawer.Screen name="AdminTrackLuggage" component={AdminTrackLuggage} />
 
       <Drawer.Screen

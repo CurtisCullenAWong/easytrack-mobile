@@ -23,7 +23,6 @@ const AdminHome = ({ navigation }) => {
     { label: 'User Management', icon: 'account-group', screen: 'UserManagement' },
     { label: 'Booking Management', icon: 'map-marker-path', screen: 'AdminBookingManagement' },
     { label: 'Transaction Management', icon: 'bank-transfer', screen: 'TransactionManagement' },
-    { label: 'Track Luggage', icon: 'map', screen: 'AdminTrackLuggage' },
   ]
 
   return (

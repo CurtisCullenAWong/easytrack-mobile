@@ -4,6 +4,7 @@ import { useTheme, SegmentedButtons } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 import PendingContracts from './subscreen/PendingContracts'
 import SummarizedContracts from './subscreen/SummarizedContracts'
+import DeliveryRates from './subscreen/transaction_management_subscreen/DeliveryRates'
 
 const TransactionManagement = ({ navigation, route }) => {
   const { colors } = useTheme()
@@ -11,7 +12,7 @@ const TransactionManagement = ({ navigation, route }) => {
 
   useEffect(() => {
     const incomingSegment = route?.params?.segment
-    if (incomingSegment && (incomingSegment === 'pending' || incomingSegment === 'completed')) {
+    if (incomingSegment && (incomingSegment === 'pending' || incomingSegment === 'completed' || incomingSegment === 'rates')) {
       setActiveSegment(incomingSegment)
     }
   }, [route?.params?.segment])
@@ -25,8 +26,9 @@ const TransactionManagement = ({ navigation, route }) => {
           value={activeSegment}
           onValueChange={setActiveSegment}
           buttons={[
-            { value: 'pending', label: 'Pending Contracts' },
-            { value: 'completed', label: 'Summarized Contracts' },
+            { value: 'pending', label: 'Pending', icon: 'clock-outline' },
+            { value: 'completed', label: 'Summarized', icon: 'check-circle-outline' },
+            { value: 'rates', label: 'Rates', icon: 'currency-php' },
           ]}
           style={{ marginHorizontal: 16 }}
         />
@@ -35,8 +37,10 @@ const TransactionManagement = ({ navigation, route }) => {
       <View style={styles.content}>
         {activeSegment === 'pending' ? (
           <PendingContracts navigation={navigation} />
-        ) : (
+        ) : activeSegment === 'completed' ? (
           <SummarizedContracts navigation={navigation} />
+        ) : (
+          <DeliveryRates navigation={navigation} />
         )}
       </View>
     </View>

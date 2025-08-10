@@ -34,7 +34,6 @@ const AdminNavigator = ({ navigation }) => {
       items: [
         { icon: 'history', label: 'Booking History (Completed)', screen: 'AdminBookingHistory' },
         { icon: 'chart-line', label: 'Performance Statistics', screen: 'PerformanceStatistics' },
-        { icon: 'currency-php', label: 'Delivery Rates', screen: 'DeliveryRates' },
       ],
     },
     {

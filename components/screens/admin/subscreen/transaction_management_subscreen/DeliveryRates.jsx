@@ -12,8 +12,8 @@ import {
   Portal,
   TextInput,
 } from 'react-native-paper'
-import Header from '../../customComponents/Header'
-import { supabase } from '../../../lib/supabaseAdmin'
+import Header from '../../../../customComponents/Header'
+import { supabase } from '../../../../../lib/supabaseAdmin'
 
 const COLUMN_WIDTH = 180
 const CITY_COLUMN_WIDTH = 200
@@ -256,8 +256,6 @@ const DeliveryRates = ({ navigation }) => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      <Header navigation={navigation} title="Delivery Rates" />
-
       <View style={styles.searchActionsRow}>
         <Searchbar
           placeholder={`Search by ${filterOptions.find(opt => opt.value === searchColumn)?.label}`}

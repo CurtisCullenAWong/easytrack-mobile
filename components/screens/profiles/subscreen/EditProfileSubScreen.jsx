@@ -22,7 +22,7 @@ import {
   Divider,
   IconButton,
 } from 'react-native-paper'
-import { DatePickerModal, el, en, registerTranslation } from 'react-native-paper-dates'
+import { DatePickerModal, en, registerTranslation } from 'react-native-paper-dates'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 import * as ImagePicker from 'expo-image-picker'
