@@ -58,6 +58,8 @@ const AdminBookingManagement = ({ navigation }) => {
   const [actionMenuVisible, setActionMenuVisible] = useState(null)
   const [showDateMenu, setShowDateMenu] = useState(false)
   const [dateFilter, setDateFilter] = useState('all')
+  const [cancelDialogVisible, setCancelDialogVisible] = useState(false)
+  const [contractToCancel, setContractToCancel] = useState(null)
 
   const getDateFilterOptions = () => {
     const today = new Date()
@@ -202,90 +204,45 @@ const AdminBookingManagement = ({ navigation }) => {
 
   // Set up realtime subscription
   useEffect(() => {
-    const subscription = supabase
+    const channel = supabase
       .channel('contracts_changes')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'contracts',
-          filter: 'contract_status_id=in.(1,3,4)'
-        },
-        async (payload) => {          
-          // Handle different types of changes
-          if (payload.eventType === 'INSERT') {
-            // Fetch the new contract with full details
-            const { data: newContract, error } = await supabase
-              .from('contracts')
-              .select(`
-                *,
-                contract_status:contract_status_id (status_name),
-                airline:airline_id (
-                  first_name,
-                  middle_initial,
-                  last_name,
-                  suffix
-                ),
-                delivery:delivery_id (
-                  first_name,
-                  middle_initial,
-                  last_name,
-                  suffix
-                )
-              `)
-              .eq('id', payload.new.id)
-              .single()
-
-            if (!error && newContract) {
-              const formattedContract = formatContract(newContract)
-              setContracts(prev => [formattedContract, ...prev])
+        { event: '*', schema: 'public', table: 'contracts' },
+        async (payload) => {
+          const newStatus = payload.new?.contract_status_id
+          const oldStatus = payload.old?.contract_status_id
+  
+          // Only react to contract_status_id in [1, 3, 4]
+          if ([1, 3, 4].includes(newStatus) || [1, 3, 4].includes(oldStatus)) {
+            console.log('Realtime change detected:', payload)
+  
+            if (payload.eventType === 'INSERT') {
+              console.log('New contract inserted:', payload.new)
+              // Handle insert logic here
+            } 
+            else if (payload.eventType === 'UPDATE') {
+              console.log('Contract updated:', payload.new)
+              // Handle update logic here
+            } 
+            else if (payload.eventType === 'DELETE') {
+              console.log('Contract deleted:', payload.old)
+              // Handle delete logic here
             }
-          } else if (payload.eventType === 'UPDATE') {
-            // Update existing contract in state
-            const { data: updatedContract, error } = await supabase
-              .from('contracts')
-              .select(`
-                *,
-                contract_status:contract_status_id (status_name),
-                airline:airline_id (
-                  first_name,
-                  middle_initial,
-                  last_name,
-                  suffix
-                ),
-                delivery:delivery_id (
-                  first_name,
-                  middle_initial,
-                  last_name,
-                  suffix
-                )
-              `)
-              .eq('id', payload.new.id)
-              .single()
-
-            if (!error && updatedContract) {
-              const formattedContract = formatContract(updatedContract)
-              setContracts(prev => 
-                prev.map(contract => 
-                  contract.id === formattedContract.id ? formattedContract : contract
-                )
-              )
-            }
-          } else if (payload.eventType === 'DELETE') {
-            // Remove deleted contract from state
-            setContracts(prev => 
-              prev.filter(contract => contract.id !== payload.old.id)
-            )
+  
+            // Optionally refresh data
+            await fetchContracts()
           }
         }
       )
       .subscribe()
-
+  
+    // Clean up on unmount
     return () => {
-      subscription.unsubscribe()
+      supabase.removeChannel(channel)
     }
   }, [])
+  
 
   useFocusEffect(
     useCallback(() => {
@@ -379,6 +336,44 @@ const AdminBookingManagement = ({ navigation }) => {
       console.error('Error assigning delivery personnel:', error)
       showSnackbar('Failed to assign delivery personnel')
     }
+  }
+
+  const handleCancelContract = (contract) => {
+    if (contract.contract_status_id !== 1) {
+      showSnackbar('Only contracts with status "Pending" can be cancelled')
+      return
+    }
+    setContractToCancel(contract)
+    setCancelDialogVisible(true)
+  }
+
+  const confirmCancelContract = async () => {
+    if (!contractToCancel) return
+    try {
+      const { error } = await supabase
+        .from('contracts')
+        .update({
+          contract_status_id: 2,
+          cancelled_at: new Date().toISOString(),
+        })
+        .eq('id', contractToCancel.id)
+
+      if (error) throw error
+
+      showSnackbar('Contract cancelled successfully', true)
+      fetchContracts()
+    } catch (error) {
+      console.error('Error cancelling contract:', error)
+      showSnackbar('Error cancelling contract: ' + error.message)
+    } finally {
+      setCancelDialogVisible(false)
+      setContractToCancel(null)
+    }
+  }
+
+  const dismissCancelDialog = () => {
+    setCancelDialogVisible(false)
+    setContractToCancel(null)
   }
 
   return (
@@ -541,6 +536,20 @@ const AdminBookingManagement = ({ navigation }) => {
                         }
                         contentStyle={{ backgroundColor: colors.surface }}
                       >
+                          <Menu.Item
+                            onPress={() => {
+                              setActionMenuVisible(null)
+                              navigation.navigate('ContractDetailsAdmin', { id: contract.id })
+                            }}
+                            title="Contract Details"
+                            leadingIcon="file-document"
+                            titleStyle={[
+                              {
+                                color: colors.onSurface,
+                              },
+                              fonts.bodyLarge,
+                            ]}
+                          />
                         {contract.contract_status_id === 1 && (
                           <Menu.Item
                             onPress={() => {
@@ -553,6 +562,22 @@ const AdminBookingManagement = ({ navigation }) => {
                             titleStyle={[
                               {
                                 color: colors.onSurface,
+                              },
+                              fonts.bodyLarge,
+                            ]}
+                          />
+                        )}
+                        {contract.contract_status_id === 1 && (
+                          <Menu.Item
+                            onPress={() => {
+                              setActionMenuVisible(null)
+                              handleCancelContract(contract)
+                            }}
+                            title="Cancel Contract"
+                            leadingIcon="cancel"
+                            titleStyle={[
+                              {
+                                color: colors.error,
                               },
                               fonts.bodyLarge,
                             ]}
@@ -574,21 +599,6 @@ const AdminBookingManagement = ({ navigation }) => {
                             ]}
                           />
                         )}
-
-                        <Menu.Item
-                          onPress={() => {
-                            setActionMenuVisible(null)
-                            navigation.navigate('ContractDetailsAdmin', { id: contract.id })
-                          }}
-                          title="Contract Details"
-                          leadingIcon="file-document"
-                          titleStyle={[
-                            {
-                              color: colors.onSurface,
-                            },
-                            fonts.bodyLarge,
-                          ]}
-                        />
                       </Menu>
                     </DataTable.Cell>
                     {columns.map(({ key, width }, idx) => (
@@ -684,6 +694,28 @@ const AdminBookingManagement = ({ navigation }) => {
                 </Button>
                 <Button onPress={handleAssignDelivery}>
                   Assign
+                </Button>
+              </Dialog.Actions>
+            </Dialog>
+            <Dialog
+              visible={cancelDialogVisible}
+              onDismiss={dismissCancelDialog}
+              style={[styles.dialog, { backgroundColor: colors.surface }]}
+            >
+              <Dialog.Title style={[styles.dialogTitle, { color: colors.onSurface }]}>Confirm Cancellation</Dialog.Title>
+              <Dialog.Content style={styles.dialogContent}>
+                <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>Are you sure you want to cancel this contract?</Text>
+                {contractToCancel && (
+                  <View style={{ marginTop: 8 }}>
+                    <Text style={[{ color: colors.onSurface }, fonts.labelMedium]}>Contract ID: {contractToCancel.id}</Text>
+                    <Text style={[{ color: colors.error }, fonts.bodySmall]}>This action cannot be undone.</Text>
+                  </View>
+                )}
+              </Dialog.Content>
+              <Dialog.Actions style={styles.dialogActions}>
+                <Button onPress={dismissCancelDialog} textColor={colors.error}>Cancel</Button>
+                <Button onPress={confirmCancelContract} mode="contained" buttonColor={colors.error} textColor={colors.onError}>
+                  Confirm Cancellation
                 </Button>
               </Dialog.Actions>
             </Dialog>

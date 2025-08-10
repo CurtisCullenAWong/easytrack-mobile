@@ -8,7 +8,6 @@ import LoginScreen from '../screens/shared/LoginScreen'
 import ContractDetails from '../screens/shared/ContractDetails'
 import CheckLocation from '../screens/delivery/subscreen/CheckLocation'
 import UserPerformanceStatistics from '../screens/shared/UserPerformanceStatistics'
-import Messages from '../screens/messaging/Messages'
 import BookingHistory from '../screens/shared/BookingHistory'
 import TermsAndConditions from '../screens/shared/TermsAndConditions'
 
@@ -50,6 +49,7 @@ import DeliveryConfirmation from '../screens/delivery/subscreen/DeliveryConfirma
 import AdminNavigator from './navigators/AdminNavigator'
 import DeliveryNavigator from './navigators/DeliveryNavigator'
 import AirlineNavigator from './navigators/AirlineNavigator'
+import MessagingNavigator from './navigators/MessagingNavigator'
 
 const Stack = createNativeStackNavigator()
 const Drawer = createDrawerNavigator()
@@ -89,7 +89,7 @@ const AdminDrawer = () => (
       <Drawer.Screen name="UpdateProfile" component={UpdateProfileScreen} />
       <Drawer.Screen name="ProfileCompletionCheck" component={ProfileCompletionCheck} />
       <Drawer.Screen name="Verification" component={Verification} />
-      <Drawer.Screen name="Messages" component={Messages} />
+      <Drawer.Screen name="Messages" component={MessagingNavigator} />
       <Drawer.Screen name="TermsAndConditions" component={TermsAndConditions} />
   </Drawer.Navigator>
 )
@@ -118,7 +118,7 @@ const AirlineDrawer = () => (
       <Drawer.Screen name="Verification" component={Verification} />
       <Drawer.Screen name="AirlineTrackLuggage" component={AirlineTrackLuggage} />
       <Drawer.Screen name="UserPerformanceStatistics" component={UserPerformanceStatistics} />
-      <Drawer.Screen name="Messages" component={Messages} />
+      <Drawer.Screen name="Messages" component={MessagingNavigator} />
       <Drawer.Screen name="TermsAndConditions" component={TermsAndConditions} />
   </Drawer.Navigator>
 )
@@ -145,7 +145,7 @@ const DeliveryDrawer = () => (
       <Drawer.Screen name="ProfileCompletionCheck" component={ProfileCompletionCheck} />
       <Drawer.Screen name="Verification" component={Verification} />
       <Drawer.Screen name="UserPerformanceStatistics" component={UserPerformanceStatistics} />
-      <Drawer.Screen name="Messages" component={Messages} />
+      <Drawer.Screen name="Messages" component={MessagingNavigator} />
       <Drawer.Screen name="TermsAndConditions" component={TermsAndConditions} />
   </Drawer.Navigator>
 )

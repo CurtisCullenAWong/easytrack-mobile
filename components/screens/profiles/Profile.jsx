@@ -32,10 +32,10 @@ const ProfileCard = React.memo(({ profile, colors, fonts }) => {
           />
         )}
         <View style={styles.cardTextContainer}>
-          <Text style={[{ color: colors.onSurface, ...fonts.titleLarge }]}>
+          <Text selectable style={[{ color: colors.onSurface, ...fonts.titleLarge }]}>
             {fullName || 'No Name Available'}
           </Text>
-          <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+          <Text selectable style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
             {profile?.email}
           </Text>
         </View>
@@ -54,7 +54,7 @@ const InfoCard = React.memo(({ title, data, colors, fonts }) => (
     <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
     <Card.Content>
       {Object.entries(data).map(([key, value]) => (
-        <Text key={key} style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+        <Text key={key} selectable style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
           {key}: {value || 'N/A'}
         </Text>
       ))}
@@ -215,7 +215,7 @@ const VerificationCard = React.memo(({ profile, colors, fonts, navigation }) => 
       {SnackbarElement}
       <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
       <Card.Content>
-        <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+        <Text selectable style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
           Status: {profile?.verify_status?.status_name || 'N/A'}
         </Text>
         {renderVerificationContent(colors, fonts)}
