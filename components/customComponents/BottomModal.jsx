@@ -30,7 +30,9 @@ const BottomModal = ({ visible, onDismiss, children }) => {
         toValue: height,
         duration: 200,
         useNativeDriver: true,
-      }).start(onDismiss)
+      }).start(() => {
+        requestAnimationFrame(() => onDismiss?.())
+      })
     }
   }, [visible])
 

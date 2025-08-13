@@ -1,12 +1,11 @@
 import { supabase } from '../../lib/supabase'
-import { supabase as supabaseAdmin }  from '../../lib/supabaseAdmin'
 import useSnackbar from './useSnackbar'
 import * as Linking from 'expo-linking'
 import * as WebBrowser from 'expo-web-browser'
 import { makeRedirectUri } from 'expo-auth-session'
 import * as QueryParams from 'expo-auth-session/build/QueryParams'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import * as Updates from 'expo-updates'
+
 // Constants
 const MAX_LOGIN_ATTEMPTS = 5
 const BASE_COOLDOWN_MINUTES = 1
@@ -29,6 +28,26 @@ const useAuth = (navigation = null, onClose = null) => {
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
   // ===== Session and Login State Management =====
+  const checkEmailExists = async (email) => {
+    const sanitizedEmail = sanitizeEmail(email)
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, user_status_id')
+        .eq('email', sanitizedEmail)
+        .maybeSingle()
+
+      if (error) {
+        // Fail closed to avoid leaking existence; surface a general error
+        showSnackbar('Email existence check failed:', error)
+        return { exists: false, userStatusId: null }
+      }
+      return { exists: Boolean(data?.id), userStatusId: data?.user_status_id ?? null }
+    } catch (e) {
+      showSnackbar('Email existence check exception:', e)
+      return { exists: false, userStatusId: null }
+    }
+  }
 
   const createSessionFromUrl = async (url) => {
     try {
@@ -61,6 +80,16 @@ const useAuth = (navigation = null, onClose = null) => {
     const sanitizedEmail = sanitizeEmail(email)
     if (!validateEmail(sanitizedEmail)) {
       return showSnackbar('Please enter a valid email address.')
+    }
+
+    // Early check: ensure email exists to avoid long timeouts
+    const { exists: emailExists, userStatusId } = await checkEmailExists(sanitizedEmail)
+    if (!emailExists) {
+      return showSnackbar('User does not exist. Please check your email or reach out to the administrators for an account.')
+    }
+    // Optional: block inactive/suspended users early
+    if (userStatusId === 3 || userStatusId === 5) {
+      return showSnackbar('Your account is not active. Please contact support.')
     }
 
     // Check for cooldown
@@ -124,30 +153,23 @@ const useAuth = (navigation = null, onClose = null) => {
       }
 
       if (loginError?.message?.toLowerCase().includes('invalid login credentials')) {
-        // Check if user exists by attempting to get user
-        const { data: userData } = await supabaseAdmin.auth.admin.getUserById(sanitizedEmail)
+        // We already verified email exists above; this is an incorrect password case
+        showSnackbar(`Incorrect password. ${attemptsMessage}`)
         
-        if (!userData) {
-          showSnackbar('User does not exist. Please check your email or sign up.')
-          return
-        } else {
-          showSnackbar(`Incorrect password. ${attemptsMessage}`)
+        // If this was the last attempt, trigger cooldown
+        if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
+          const currentCooldownData = await AsyncStorage.getItem(cooldownKey)
+          const lockoutCount = currentCooldownData ? JSON.parse(currentCooldownData).lockoutCount + 1 : 1
+          const cooldownMinutes = Math.min(BASE_COOLDOWN_MINUTES * Math.pow(2, lockoutCount - 1), MAX_COOLDOWN_MINUTES)
           
-          // If this was the last attempt, trigger cooldown
-          if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
-            const currentCooldownData = await AsyncStorage.getItem(cooldownKey)
-            const lockoutCount = currentCooldownData ? JSON.parse(currentCooldownData).lockoutCount + 1 : 1
-            const cooldownMinutes = Math.min(BASE_COOLDOWN_MINUTES * Math.pow(2, lockoutCount - 1), MAX_COOLDOWN_MINUTES)
-            
-            await AsyncStorage.setItem(cooldownKey, JSON.stringify({
-              timestamp: Date.now(),
-              lockoutCount
-            }))
-            
-            showSnackbar(`Too many failed attempts. Please try again in ${cooldownMinutes} minutes.`)
-          }
-          return
+          await AsyncStorage.setItem(cooldownKey, JSON.stringify({
+            timestamp: Date.now(),
+            lockoutCount
+          }))
+          
+          showSnackbar(`Too many failed attempts. Please try again in ${cooldownMinutes} minutes.`)
         }
+        return
       }
       
       return showSnackbar(`${loginError.message}. ${attemptsMessage}`)
@@ -195,6 +217,15 @@ const useAuth = (navigation = null, onClose = null) => {
       return showSnackbar('Please enter a valid email address.')
     }
 
+    // Early check: ensure email exists to avoid sending OTP to non-existent account
+    const { exists: emailExists, userStatusId } = await checkEmailExists(sanitizedEmail)
+    if (!emailExists) {
+      return showSnackbar('No account found for this email. Please reach out to the administrators for an account.')
+    }
+    if (userStatusId === 3 || userStatusId === 5) {
+      return showSnackbar('Your account is not active. Please contact support.')
+    }
+
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email: sanitizedEmail,
@@ -233,6 +264,12 @@ const useAuth = (navigation = null, onClose = null) => {
     const sanitizedEmail = sanitizeEmail(email)
     if (!validateEmail(sanitizedEmail)) {
       return showSnackbar('Please enter a valid email address.')
+    }
+
+    // Early check: ensure email exists before sending reset
+    const { exists: emailExists } = await checkEmailExists(sanitizedEmail)
+    if (!emailExists) {
+      return showSnackbar('No account found for this email. Please check the address or reach out to the administrators for an account.')
     }
 
     try {

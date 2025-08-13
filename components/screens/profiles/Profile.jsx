@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react'
-import { ScrollView, View, StyleSheet, Image, SafeAreaView, RefreshControl } from 'react-native'
+import { ScrollView, View, StyleSheet, Image, RefreshControl } from 'react-native'
 import { Avatar, Card, Text, Divider, Button, useTheme, ActivityIndicator, Portal, Dialog, Appbar } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabase'
@@ -293,7 +293,12 @@ const Profile = ({ navigation }) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView
+      style={[styles.scrollView, { backgroundColor: colors.background }]}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+      }
+      >
         <Header 
           navigation={navigation} 
           title="Profile"
@@ -301,7 +306,7 @@ const Profile = ({ navigation }) => {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size='large' color={colors.primary} />
         </View>
-      </SafeAreaView>
+      </ScrollView>
     )
   }
 
@@ -421,7 +426,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   loadingContainer: {
-    flex: 1,
+    height:'100%',
+    width:'100%',
     justifyContent: 'center',
     alignItems: 'center',
   },

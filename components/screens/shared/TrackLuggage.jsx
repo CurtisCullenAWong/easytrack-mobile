@@ -12,6 +12,7 @@ import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps'
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabase'
 import useSnackbar from '../../hooks/useSnackbar'
+import { useFocusEffect } from '@react-navigation/native'
 
 const { width, height } = Dimensions.get('window')
 
@@ -388,7 +389,7 @@ const ContractInfo = ({ contractData, colors, fonts }) => {
 }
 
 // Main Component
-const AirlineTrackLuggage = ({ navigation, route }) => {
+const TrackLuggage = ({ navigation, route }) => {
     const [trackingNumber, setTrackingNumber] = useState('')
     const [debouncedTrackingNumber, setDebouncedTrackingNumber] = useState('')
     const [contractData, setContractData] = useState(null)
@@ -422,28 +423,6 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
         }
     }, [trackingNumber])
 
-    useEffect(() => {
-        if (!debouncedTrackingNumber) return
-        // Initial fetch
-        fetchData()
-        // Set up real-time subscription
-        const subscription = supabase
-            .channel(`contract-${debouncedTrackingNumber}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'contracts',
-                    filter: `id=eq.${debouncedTrackingNumber}`
-                },
-                fetchData
-            )
-            .subscribe()
-
-        return () => subscription.unsubscribe()
-    }, [debouncedTrackingNumber])
-
     const fetchData = async () => {
         try {
             const { data, error } = await supabase
@@ -473,6 +452,35 @@ const AirlineTrackLuggage = ({ navigation, route }) => {
             setRefreshing(false)
         }
     }
+
+    // Subscribe only while screen is focused; unsubscribe on blur
+    useFocusEffect(
+        useCallback(() => {
+            if (!debouncedTrackingNumber) return
+
+            // Initial fetch
+            fetchData()
+
+            // Real-time updates for this contract
+            const subscription = supabase
+                .channel(`contract-${debouncedTrackingNumber}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'contracts',
+                        filter: `id=eq.${debouncedTrackingNumber}`,
+                    },
+                    fetchData
+                )
+                .subscribe()
+
+            return () => {
+                subscription.unsubscribe()
+            }
+        }, [debouncedTrackingNumber])
+    )
 
     const onRefresh = useCallback(() => {
         setRefreshing(true)
@@ -627,4 +635,4 @@ const styles = StyleSheet.create({
     },
 })
 
-export default AirlineTrackLuggage
+export default TrackLuggage

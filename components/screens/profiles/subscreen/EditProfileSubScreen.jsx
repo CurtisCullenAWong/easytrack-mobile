@@ -1,8 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import {
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   View,
   ActivityIndicator,
@@ -465,7 +464,7 @@ const EditProfileSubScreen = ({ navigation }) => {
 
   if (state.loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.navigate('Profile')} />
           <Appbar.Content title='Edit Profile' titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} />
@@ -473,12 +472,12 @@ const EditProfileSubScreen = ({ navigation }) => {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size='large' color={colors.primary} />
         </View>
-      </SafeAreaView>
+      </ScrollView>
     )
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.navigate('Profile')} />
         <Appbar.Content title='Edit Profile' />
@@ -734,7 +733,7 @@ const EditProfileSubScreen = ({ navigation }) => {
         </Dialog>
       </Portal>
       {SnackbarElement}
-    </SafeAreaView>
+    </ScrollView>
   )
 }
 
@@ -764,7 +763,8 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   loadingContainer: {
-    flex: 1,
+    width:'100%',
+    height:'100%',
     justifyContent: 'center',
     alignItems: 'center',
   },

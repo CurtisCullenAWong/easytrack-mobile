@@ -118,7 +118,6 @@ const styles = StyleSheet.create({
         width: width * 0.85,
         marginRight: 16,
         borderRadius: 10,
-        overflow: 'hidden',
     },
     cardCover: {
         height: 230,

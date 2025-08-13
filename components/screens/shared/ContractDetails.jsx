@@ -489,13 +489,6 @@ const styles = StyleSheet.create({
         height: 300,
         borderRadius: 8,
     },
-    mapContainer: {
-        height: 500,
-        marginHorizontal: 10,
-        marginVertical: 10,
-        borderRadius: 8,
-        overflow: 'hidden',
-    },
     map: {
         width: '100%',
         height: '100%',

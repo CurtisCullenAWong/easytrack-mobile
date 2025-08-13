@@ -27,7 +27,6 @@ import TransactionSummary from '../screens/admin/subscreen/transaction_managemen
 import CreateInvoice from '../screens/admin/subscreen/transaction_management_subscreen/CreateInvoice'
 import ContractDetailsAdmin from '../screens/admin/subscreen/ContractDetailsAdmin'
 import AdminBookingManagement from '../screens/admin/AdminBookingManagement'
-import AdminTrackLuggage from '../screens/admin/AdminTrackLuggage'
 import AdminBookingHistory from '../screens/admin/AdminBookingHistory'
 import AddAccount from '../screens/admin/subscreen/AddAccount'
 import ViewAccountScreen from '../screens/admin/subscreen/ViewAccountScreen'
@@ -37,8 +36,7 @@ import SelectLocation from '../screens/airline/subscreen/SelectLocation'
 // Airline Screens
 import AirlineHome from '../screens/airline/AirlineHome'
 import AirlineBookingManagement from '../screens/airline/AirlineBookingManagement'
-import AirlineTrackLuggage from '../screens/airline/AirlineTrackLuggage'
-import TransactionHistory from '../screens/airline/TransactionHistory'
+import TrackLuggage from '../screens/shared/TrackLuggage'
 
 // Delivery Screens
 import DeliveryHome from '../screens/delivery/DeliveryHome'
@@ -68,7 +66,7 @@ const AdminDrawer = () => (
       <Drawer.Screen name="ContractDetailsAdmin" component={ContractDetailsAdmin} />
       <Drawer.Screen name="AdminBookingManagement" component={AdminBookingManagement} />
       <Drawer.Screen name="AdminBookingHistory" component={AdminBookingHistory} />
-      <Drawer.Screen name="AdminTrackLuggage" component={AdminTrackLuggage} />
+      <Drawer.Screen name="TrackLuggage" component={TrackLuggage} />
 
       <Drawer.Screen
         name="AddAccount"
@@ -83,7 +81,6 @@ const AdminDrawer = () => (
       {/* SHARED SCREENS */}
       <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />
       <Drawer.Screen name="BookingHistory" component={BookingHistory} />
-      {/* <Drawer.Screen name="TransactionHistory" component={TransactionHistory} /> */}
       <Drawer.Screen name="Profile" component={Profile} />
       <Drawer.Screen name="EditProfile" component={EditProfileSubScreen} />
       <Drawer.Screen name="UpdateProfile" component={UpdateProfileScreen} />
@@ -110,13 +107,12 @@ const AirlineDrawer = () => (
       {/* SHARED SCREENS */}
       <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />
       <Drawer.Screen name="BookingHistory" component={BookingHistory} />
-      <Drawer.Screen name="TransactionHistory" component={TransactionHistory} />
       <Drawer.Screen name="Profile" component={Profile} />
       <Drawer.Screen name="EditProfile" component={EditProfileSubScreen} />
       <Drawer.Screen name="UpdateProfile" component={UpdateProfileScreen} />
       <Drawer.Screen name="ProfileCompletionCheck" component={ProfileCompletionCheck} />
       <Drawer.Screen name="Verification" component={Verification} />
-      <Drawer.Screen name="AirlineTrackLuggage" component={AirlineTrackLuggage} />
+      <Drawer.Screen name="TrackLuggage" component={TrackLuggage} />
       <Drawer.Screen name="UserPerformanceStatistics" component={UserPerformanceStatistics} />
       <Drawer.Screen name="Messages" component={MessagingNavigator} />
       <Drawer.Screen name="TermsAndConditions" component={TermsAndConditions} />
@@ -138,7 +134,6 @@ const DeliveryDrawer = () => (
       {/* SHARED SCREENS */}
       <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />
       <Drawer.Screen name="BookingHistory" component={BookingHistory} />
-      <Drawer.Screen name="TransactionHistory" component={TransactionHistory} />
       <Drawer.Screen name="Profile" component={Profile} />
       <Drawer.Screen name="EditProfile" component={EditProfileSubScreen} />
       <Drawer.Screen name="UpdateProfile" component={UpdateProfileScreen} />
@@ -154,7 +149,7 @@ const DeliveryDrawer = () => (
 
 const StackNavigator = () => (
   <NavigationContainer>
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={{ gestureEnabled: false }}>
       
       {/* Login Screen */}
       <Stack.Screen

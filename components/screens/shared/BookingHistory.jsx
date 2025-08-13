@@ -5,7 +5,7 @@ import { supabase } from '../../../lib/supabase'
 import Header from '../../customComponents/Header'
 
 const COLUMN_WIDTH = 180
-const ID_COLUMN_WIDTH = 120
+const ID_COLUMN_WIDTH = 200
 const LOCATION_COLUMN_WIDTH = 200
 const TIMELINE_COLUMN_WIDTH = 300
 const STATUS_COLUMN_WIDTH = 150

@@ -23,7 +23,7 @@ const AdminNavigator = ({ navigation }) => {
         { icon: 'account-group-outline', label: 'User Management', screen: 'UserManagement' },
         { icon: 'map-marker-path', label: 'Booking Management', screen: 'AdminBookingManagement' },
         { icon: 'bank-transfer', label: 'Transaction Management', screen: 'TransactionManagement' },
-        { icon: 'map', label: 'Track Luggage', screen: 'AdminTrackLuggage' },
+        { icon: 'map', label: 'Track Luggage', screen: 'TrackLuggage' },
   
       ],
     },

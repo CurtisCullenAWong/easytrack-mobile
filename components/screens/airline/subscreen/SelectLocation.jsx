@@ -95,7 +95,7 @@ const MemoizedGooglePlacesAutocomplete = React.memo(({ onPlaceSelect, colors, fo
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.1,
           shadowRadius: 4,
-          maxHeight: 200, // Limit the height to prevent overflow
+          maxHeight: 200,
         },
         row: {
           backgroundColor: colors.surface,
@@ -110,9 +110,6 @@ const MemoizedGooglePlacesAutocomplete = React.memo(({ onPlaceSelect, colors, fo
           height: 1,
           backgroundColor: colors.outline,
           opacity: 0.3,
-        },
-        poweredContainer: {
-          display: 'none', // Hide powered by Google
         },
       }}
       fetchDetails={true}

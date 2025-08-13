@@ -21,8 +21,8 @@ const AirlineNavigator = ({ navigation }) => {
       icon: 'package',
       items: [
         { icon: 'clipboard-edit-outline', label: 'Booking Management', screen: 'BookingManagement' },
-        { icon: 'map-marker-path', label: 'Luggage Tracking (In Transit)', screen: 'AirlineTrackLuggage' },
-      ],
+        { icon: 'map-marker-path', label: 'Luggage Tracking (In Transit)', screen: 'TrackLuggage' },
+      ],  
     },
     {
       title: 'Results and Statistics',

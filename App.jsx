@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Provider as PaperProvider } from 'react-native-paper'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import * as Font from 'expo-font'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import StackNavigator from './components/navigator/StackNavigator'
@@ -93,10 +94,12 @@ const App = () => {
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
-      <PaperProvider theme={theme}>
-        <StackNavigator />
-        <UpdateModal visible={isUpdating} status={updateStatus} theme={theme} />
-      </PaperProvider>
+      <SafeAreaProvider>
+        <PaperProvider theme={theme}>
+          <StackNavigator />
+          <UpdateModal visible={isUpdating} status={updateStatus} theme={theme} />
+        </PaperProvider>
+      </SafeAreaProvider>
     </ThemeContext.Provider>
   )
 }

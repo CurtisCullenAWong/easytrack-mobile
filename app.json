@@ -15,24 +15,6 @@
     "icon": "./assets/adaptive-icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#F1F8E9"
-    },
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "package": "com.thewalkingdev_numoa.EasyTrack",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#F1F8E9"
-      }
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
     "extra": {
       "eas": {
         "projectId": "4f7faf57-3a1d-4031-ba72-c5d5b5b084de"
@@ -40,11 +22,25 @@
     },
     "plugins": [
       [
-        "expo-updates",
+        "expo-splash-screen",
         {
-          "username": "curtiscullenwong"
+          "backgroundColor": "#F1F8E9",
+          "image": "./assets/adaptive-icon.png",
+          "dark": {
+            "image": "./assets/adaptive-icon.png",
+            "backgroundColor": "#F1F8E9"
+          }
         }
       ]
-    ]
+    ],
+    "splash": {
+      "image": "./assets/adaptive-icon.png",
+      "backgroundColor": "#F1F8E9",
+      "resizeMode": "contain",
+      "dark": {
+        "image": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F1F8E9"
+      }
+    }
   }
 }
