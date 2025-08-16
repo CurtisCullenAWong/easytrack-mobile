@@ -3,7 +3,7 @@ import { Image, ScrollView, StyleSheet, BackHandler, TouchableOpacity } from 're
 import { Text, List, Surface, Divider, useTheme, IconButton, ActivityIndicator } from 'react-native-paper'
 import { ThemeContext } from '../../themes/themeContext'
 
-const SideNavigator = ({ navigation, sections, LogoutDialog, handleLogout }) => {
+const SideNavigator = ({ navigation, sections, LogoutDialog, handleLogout, isVerified = true }) => {
   const { toggleTheme } = useContext(ThemeContext)
   const { colors, fonts } = useTheme()
 
@@ -56,24 +56,49 @@ const SideNavigator = ({ navigation, sections, LogoutDialog, handleLogout }) => 
           EasyTrack
         </Text>
       </Surface>
+      {!isVerified && (
+        <Surface style={[styles.warningSurface, { backgroundColor: colors.errorContainer }]} elevation={1}>
+          <Text style={[styles.warningText, { color: colors.onErrorContainer, ...fonts.bodyMedium }]}>
+            NOTICE: Your account is not verified yet. Some features are limited. Please complete your profile verification to access all features. ⚠️ 
+          </Text>
+        </Surface>
+      )}
+
       <Divider style={styles.divider} />
 
-      {sections.map(section => (
-        <ExpandableSection
-          key={section.key}
-          title={section.title}
-          expanded={expandedSections[section.key]}
-          onToggle={() => toggleSection(section.key)}
-          icon={section.icon}
-          items={section.items.map(item =>
-            item.actionKey === 'logout' && handleLogout
-              ? { ...item, action: handleLogout }
-              : item
-          )}
-          navigation={navigation}
-          fonts={fonts}
-        />
-      ))}
+      {sections.map(section => {
+        // Filter items based on verification status
+        const filteredItems = section.items.filter(item => {
+          // Always allow Profile, Logout, and Terms and Conditions
+          if (item.screen === 'Profile' || item.actionKey === 'logout' || item.screen === 'TermsAndConditions') {
+            return true
+          }
+          // For all other items, require verification
+          return isVerified
+        })
+
+        // Only show sections that have visible items
+        if (filteredItems.length === 0) {
+          return null
+        }
+
+        return (
+          <ExpandableSection
+            key={section.key}
+            title={section.title}
+            expanded={expandedSections[section.key]}
+            onToggle={() => toggleSection(section.key)}
+            icon={section.icon}
+            items={filteredItems.map(item =>
+              item.actionKey === 'logout' && handleLogout
+                ? { ...item, action: handleLogout }
+                : item
+            )}
+            navigation={navigation}
+            fonts={fonts}
+          />
+        )
+      })}
       <Divider style={styles.divider} />
       <TouchableOpacity style={styles.themeToggleContainer} onPress={handleThemeButton}>
         <IconButton
@@ -139,6 +164,16 @@ const styles = StyleSheet.create({
   logo: { width: 200, height: 150, resizeMode: 'contain' },
   appName: { marginTop: 10 },
   divider: { height: 0.8, },
+  warningSurface: { 
+    margin: 16, 
+    padding: 16, 
+    borderRadius: 8,
+    marginBottom: 8
+  },
+  warningText: { 
+    textAlign: 'center',
+    lineHeight: 20
+  },
   themeToggleContainer: { alignItems: 'center', marginVertical: 20, width: '100%', flexDirection:'row', paddingLeft: 32 },
   listItem: { paddingLeft: 30 },
 })

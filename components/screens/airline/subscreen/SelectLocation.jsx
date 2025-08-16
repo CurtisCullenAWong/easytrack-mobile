@@ -27,119 +27,124 @@ const PHILIPPINES_BOUNDS = {
 }
 
 // Memoized Google Places Autocomplete component with debouncing
-const MemoizedGooglePlacesAutocomplete = React.memo(({ onPlaceSelect, colors, fonts }) => {
-  // const [isLoading, setIsLoading] = useState(false);
-  // const [searchText, setSearchText] = useState('');
-  const debounceTimeoutRef = useRef(null);
+// const MemoizedGooglePlacesAutocomplete = React.memo(({ onPlaceSelect, colors, fonts }) => {
+//   // const [isLoading, setIsLoading] = useState(false);
+//   // const [searchText, setSearchText] = useState('');
+//   const debounceTimeoutRef = useRef(null);
 
-  // const handleTextChange = useCallback((text) => {
-  //   setSearchText(text);
+//   // const handleTextChange = useCallback((text) => {
+//   //   setSearchText(text);
     
-  //   // Clear any existing timeout
-  //   if (debounceTimeoutRef.current) {
-  //     clearTimeout(debounceTimeoutRef.current);
-  //   }
+//   //   // Clear any existing timeout
+//   //   if (debounceTimeoutRef.current) {
+//   //     clearTimeout(debounceTimeoutRef.current);
+//   //   }
 
-  //   // Set loading state immediately if text is long enough
-  //   if (text.length >= 3) {
-  //     setIsLoading(true);
-  //   } else {
-  //     setIsLoading(false);
-  //   }
+//   //   // Set loading state immediately if text is long enough
+//   //   if (text.length >= 3) {
+//   //     setIsLoading(true);
+//   //   } else {
+//   //     setIsLoading(false);
+//   //   }
 
-  //   // Set a new timeout for 2 seconds
-  //   debounceTimeoutRef.current = setTimeout(() => {
-  //     setIsLoading(false);
-  //   }, 2000);
-  // }, []);
+//   //   // Set a new timeout for 2 seconds
+//   //   debounceTimeoutRef.current = setTimeout(() => {
+//   //     setIsLoading(false);
+//   //   }, 2000);
+//   // }, []);
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-    };
-  }, []);
+//   // Cleanup timeout on unmount
+//   useEffect(() => {
+//     return () => {
+//       if (debounceTimeoutRef.current) {
+//         clearTimeout(debounceTimeoutRef.current);
+//       }
+//     };
+//   }, []);
 
-  return (
-    <GooglePlacesAutocomplete
-      placeholder="Search for a location..."
-      onPress={onPlaceSelect}
-      query={{
-        key: GOOGLE_MAPS_PLACES_API_KEY,
-        language: 'en',
-        components: 'country:ph',
-        types: ['establishment', 'geocode'], // Limit to establishments and addresses
-      }}
-      debounce={2000} // 2 second debounce
-      minLength={3} // Minimum 3 characters before searching
-      enableHighAccuracyLocation={true}
-      timeout={15000} // 15 second timeout
-      styles={{
-        container: styles.searchContainer,
-        textInput: {
-          ...styles.searchInput,
-          backgroundColor: colors.surfaceVariant,
-          color: colors.onSurfaceVariant,
-          borderColor: colors.outline,
-          ...fonts.bodyMedium,
-        },
-        listView: {
-          backgroundColor: colors.surface,
-          borderColor: colors.outline,
-          borderRadius: 8,
-          marginTop: 4,
-          elevation: 4,
-          shadowColor: colors.outline,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-          maxHeight: 200,
-        },
-        row: {
-          backgroundColor: colors.surface,
-          paddingVertical: 12,
-          paddingHorizontal: 16,
-        },
-        description: {
-          color: colors.onSurfaceVariant,
-          ...fonts.bodyMedium,
-        },
-        separator: {
-          height: 1,
-          backgroundColor: colors.outline,
-          opacity: 0.3,
-        },
-      }}
-      fetchDetails={true}
-      enablePoweredByContainer={false}
-      listEmptyComponent={
-        <View style={styles.emptyListContainer}>
-          <Text style={[fonts.bodyMedium, { color: colors.onSurfaceVariant, textAlign: 'center' }]}>
-            'Start typing to search for locations'
-          </Text>
-        </View>
-      }
-      renderRow={(data) => (
-        <View style={styles.searchRow}>
-          <Text style={[fonts.bodyMedium, { color: colors.onSurface, flex: 1 }]}>
-            {data.structured_formatting?.main_text || data.description}
-          </Text>
-          {data.structured_formatting?.secondary_text && (
-            <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
-              {data.structured_formatting.secondary_text}
-            </Text>
-          )}
-        </View>
-      )}
-    />
-  );
-});
+//   return (
+//     <GooglePlacesAutocomplete
+//       placeholder="Search for a location..."
+//       onPress={onPlaceSelect}
+//       query={{
+//         key: GOOGLE_MAPS_PLACES_API_KEY,
+//         language: 'en',
+//         components: 'country:ph',
+//         types: ['establishment', 'geocode'], // Limit to establishments and addresses
+//       }}
+//       debounce={2000} // 2 second debounce
+//       minLength={3} // Minimum 3 characters before searching
+//       enableHighAccuracyLocation={true}
+//       timeout={15000} // 15 second timeout
+//       styles={{
+//         container: styles.searchContainer,
+//         textInput: {
+//           ...styles.searchInput,
+//           backgroundColor: colors.surfaceVariant,
+//           color: colors.onSurfaceVariant,
+//           borderColor: colors.outline,
+//           ...fonts.bodyMedium,
+//         },
+//         listView: {
+//           backgroundColor: colors.surface,
+//           borderColor: colors.outline,
+//           borderRadius: 8,
+//           marginTop: 4,
+//           elevation: 4,
+//           shadowColor: colors.outline,
+//           shadowOffset: { width: 0, height: 2 },
+//           shadowOpacity: 0.1,
+//           shadowRadius: 4,
+//           maxHeight: 200,
+//         },
+//         row: {
+//           backgroundColor: colors.surface,
+//           paddingVertical: 12,
+//           paddingHorizontal: 16,
+//         },
+//         description: {
+//           color: colors.onSurfaceVariant,
+//           ...fonts.bodyMedium,
+//         },
+//         separator: {
+//           height: 1,
+//           backgroundColor: colors.outline,
+//           opacity: 0.3,
+//         },
+//       }}
+//       fetchDetails={true}
+//       enablePoweredByContainer={false}
+//       listEmptyComponent={
+//         <View style={styles.emptyListContainer}>
+//           <Text style={[fonts.bodyMedium, { color: colors.onSurfaceVariant, textAlign: 'center' }]}>
+//             'Start typing to search for locations'
+//           </Text>
+//         </View>
+//       }
+//       renderRow={(data) => (
+//         <View style={styles.searchRow}>
+//           <Text style={[fonts.bodyMedium, { color: colors.onSurface, flex: 1 }]}>
+//             {data.structured_formatting?.main_text || data.description}
+//           </Text>
+//           {data.structured_formatting?.secondary_text && (
+//             <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
+//               {data.structured_formatting.secondary_text}
+//             </Text>
+//           )}
+//         </View>
+//       )}
+//     />
+//   );
+// });
 
 const LocationSelection = ({ navigation }) => {
   const { colors, fonts } = useTheme()
-  const [selectedLocation, setSelectedLocation] = useState(null)
+  const [selectedLocation, setSelectedLocation] = useState({
+    location: 'Terminal 3, NAIA, Pasay, Metro Manila, Philippines',
+    lat: INITIAL_CENTER.latitude,
+    lng: INITIAL_CENTER.longitude
+  });
+  
   const [isMapExpanded, setIsMapExpanded] = useState(true)
   const mapRef = useRef(null)
   const geocodeTimeoutRef = useRef(null)
@@ -304,11 +309,11 @@ const LocationSelection = ({ navigation }) => {
       </View>
       <Divider style={[styles.divider, { backgroundColor: colors.outline }]} />
       <View style={styles.searchWrapper}>
-        <MemoizedGooglePlacesAutocomplete
+        {/* <MemoizedGooglePlacesAutocomplete
           onPlaceSelect={handlePlaceSelect}
           colors={colors}
           fonts={fonts}
-        />
+        /> */}
       </View>
     </Surface>
   ), [colors, fonts, handlePlaceSelect])
@@ -348,39 +353,34 @@ const LocationSelection = ({ navigation }) => {
             Center to Terminal 3
           </Button>
           <View style={styles.mapWrapper}>
-            <MapView
-              ref={mapRef}
-              style={styles.map}
-              provider={PROVIDER_GOOGLE}
-              initialRegion={{
-                ...INITIAL_CENTER,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
+          <MapView
+            ref={mapRef}
+            style={styles.map}
+            initialRegion={{
+              ...INITIAL_CENTER,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            }}
+            onRegionChangeComplete={handleRegionChange} // ✅
+            maxZoomLevel={18}
+            minZoomLevel={5}
+            showsCompass
+            showsUserLocation={false}
+          >
+            <Marker
+              coordinate={{
+                latitude: selectedLocation.lat,
+                longitude: selectedLocation.lng
               }}
-              onRegionChange={handleRegionChange}
-              maxZoomLevel={18}
-              minZoomLevel={5}
-              restrictToBounds={true}
-              bounds={PHILIPPINES_BOUNDS}
-              showsCompass={true}
-              showsZoomControls={true}
-              showsMyLocationButton={false}
-              showsUserLocation={false}
-            >
-              {selectedLocation && (
-                <Marker
-                  coordinate={{
-                    latitude: selectedLocation.lat,
-                    longitude: selectedLocation.lng,
-                  }}
-                  draggable
-                  onDragEnd={handleMarkerDragEnd}
-                  title='Selected Location'
-                  description='Drag to adjust or tap to view details'
-                  pinColor={colors.primary}
-                />
-              )}
-            </MapView>
+              draggable
+              onDragEnd={handleMarkerDragEnd}
+              title="Selected Location"
+              description="Drag to adjust or tap to view details"
+              pinColor={colors.primary}
+            />
+          </MapView>
+
+
           </View>
           <Text style={[fonts.bodySmall, { 
             color: colors.onSurfaceVariant, 

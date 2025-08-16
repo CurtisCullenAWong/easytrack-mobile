@@ -6,7 +6,21 @@
     "runtimeVersion": {
       "policy": "appVersion"
     },
+    "android": {
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAFA84eJZWuXyM9zsTqfsq0ZsxQuRcIe0c"
+        }
+      }
+    },
+    "ios": {
+      "config": {
+        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_IOS_API_KEY"
+      }
+    },
     "updates": {
+      "enabled": true,
+      "fallbackToCacheTimeout": 0,
       "url": "https://u.expo.dev/4f7faf57-3a1d-4031-ba72-c5d5b5b084de"
     },
     "scheme": "easytrack",

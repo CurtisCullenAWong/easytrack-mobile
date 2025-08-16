@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { View, FlatList, StyleSheet } from 'react-native'
-import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu } from 'react-native-paper'
+import { useFocusEffect } from '@react-navigation/native'
+import { View, StyleSheet, FlatList, RefreshControl } from 'react-native'
+import { Text, Button, Card, Divider, IconButton, useTheme, Searchbar, Menu, Surface } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import { useLocation } from '../../../hooks/useLocation'
 import BottomModal from '../../../customComponents/BottomModal'
@@ -11,6 +12,7 @@ import useSnackbar from '../../../hooks/useSnackbar'
 const FILTER_OPTIONS = [
   { label: 'Contract ID', value: 'id' },
   { label: 'Owner Name', value: 'owner_name' },
+  { label: 'Case Number', value: 'case_number' },
   { label: 'Pickup Location', value: 'pickup_location' },
   { label: 'Current Location', value: 'current_location' },
   { label: 'Drop-off Location', value: 'drop_off_location' },
@@ -19,8 +21,10 @@ const FILTER_OPTIONS = [
 const SORT_OPTIONS = [
   { label: 'Contract ID', value: 'id' },
   { label: 'Owner Name', value: 'owner_name' },
+  { label: 'Case Number', value: 'case_number' },
   { label: 'Created Date', value: 'created_at' },
   { label: 'Pickup Date', value: 'pickup_at' },
+  { label: 'Luggage Quantity', value: 'luggage_quantity' },
 ]
 
 // Utility functions
@@ -49,12 +53,13 @@ const getSortLabel = (sortColumn, sortOptions, getSortIcon) => {
 const ContractsInTransit = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { startTracking, stopTracking } = useLocation()
-  const { showSnackbar } = useSnackbar()
+  const { showSnackbar, SnackbarElement } = useSnackbar()
   
   // State management
   const [currentTime, setCurrentTime] = useState('')
   const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchColumn, setSearchColumn] = useState('id')
   const [filterMenuVisible, setFilterMenuVisible] = useState(false)
@@ -85,40 +90,48 @@ const ContractsInTransit = ({ navigation }) => {
     return () => clearInterval(interval)
   }, [])
 
-  // Initial data fetch effect
-  useEffect(() => {
-    fetchContracts()
-    checkContractsAndManageTracking()
-  }, [])
+  // Fetch on focus to avoid stale data on revisit
+  useFocusEffect(
+    useCallback(() => {
+      fetchContracts()
+      checkContractsAndManageTracking()
+    }, [])
+  )
 
-  // Real-time subscription effect
-  useEffect(() => {
-    const setupSubscription = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+  // Real-time subscription only while screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      let activeChannel
+      const setupSubscription = async () => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
 
-      const subscription = supabase
-        .channel('contracts_changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'contracts',
-            filter: `delivery_id=eq.${user.id}`
-          },
-          async () => {
-            await fetchContracts()
-            await checkContractsAndManageTracking()
-          }
-        )
-        .subscribe()
+        activeChannel = supabase
+          .channel('contracts_changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'contracts',
+              filter: `delivery_id=eq.${user.id}`
+            },
+            async () => {
+              await fetchContracts()
+              await checkContractsAndManageTracking()
+            }
+          )
+          .subscribe()
+      }
+      setupSubscription()
 
-      return () => subscription.unsubscribe()
-    }
-
-    setupSubscription()
-  }, [])
+      return () => {
+        if (activeChannel) {
+          supabase.removeChannel(activeChannel)
+        }
+      }
+    }, [])
+  )
 
   // Data fetching functions
   const checkContractsAndManageTracking = async () => {
@@ -173,6 +186,18 @@ const ContractsInTransit = ({ navigation }) => {
     }
   }
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    try {
+      await fetchContracts()
+      await checkContractsAndManageTracking()
+    } catch (error) {
+      showSnackbar('Error refreshing contracts: ' + error.message)
+    } finally {
+      setRefreshing(false)
+    }
+  }, [])
+
   // Sorting and filtering functions
   const handleSort = useCallback((column) => {
     if (sortColumn === column) {
@@ -202,6 +227,7 @@ const ContractsInTransit = ({ navigation }) => {
           case 'pickup_location':
           case 'current_location':
           case 'drop_off_location':
+          case 'case_number':
             fieldValue = contract[searchColumn] || '';
             break;
           default:
@@ -226,6 +252,10 @@ const ContractsInTransit = ({ navigation }) => {
               b.owner_last_name
             ].filter(Boolean).join(' ') || '';
             break;
+          case 'luggage_quantity':
+            valA = Number(a[sortColumn]) || 0;
+            valB = Number(b[sortColumn]) || 0;
+            break;
           case 'created_at':
           case 'pickup_at':
             valA = a[sortColumn] ? new Date(a[sortColumn]) : null;
@@ -241,6 +271,12 @@ const ContractsInTransit = ({ navigation }) => {
           default:
             valA = a[sortColumn] || '';
             valB = b[sortColumn] || '';
+        }
+
+        if (typeof valA === 'number' && typeof valB === 'number') {
+          return sortDirection === 'ascending'
+            ? valA - valB
+            : valB - valA;
         }
 
         if (typeof valA === 'string' && typeof valB === 'string') {
@@ -325,39 +361,35 @@ const ContractsInTransit = ({ navigation }) => {
     const formattedDates = useMemo(() => getFormattedDates(contract), [contract, getFormattedDates])
     
     return (
-      <Card style={[styles.contractCard, { backgroundColor: colors.surface }]}>
+      <Card style={[styles.contractCard, { backgroundColor: colors.surfaceVariant }]}>
         <Card.Content>
           <View style={styles.contractCardHeader}>
             <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>CONTRACT ID</Text>
             <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]} selectable>{contract.id || 'N/A'}</Text>
           </View>
+          <View style={styles.contractCardHeader}>
+            <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>CONTRACTOR NAME</Text>
+            <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
+              {[
+                contract.airline_profile?.first_name,
+                contract.airline_profile?.middle_initial,
+                contract.airline_profile?.last_name,
+                contract.airline_profile?.suffix
+              ].filter(Boolean).join(' ') || 'N/A'}
+            </Text>
+          </View>
           <Divider />
           <View style={styles.passengerInfoContainer}>
-            {contract.airline_profile?.pfp_id ? (
-              <Avatar.Image 
-                size={40} 
-                source={{ uri: contract.airline_profile?.pfp_id }}
-                style={[styles.avatarImage,{ backgroundColor: colors.primary }]}
-              />
-            ) : (
-              <Avatar.Text 
-                size={40} 
-                label={contract.airline_profile?.first_name ? contract.airline_profile?.first_name[0].toUpperCase() : 'U'}
-                style={[styles.avatarImage,{ backgroundColor: colors.primary }]}
-                labelStyle={{ color: colors.onPrimary }}
-              />
-            )}
             <View>
               <View style={{ flexDirection: 'row', gap: 5 }}>
                 <Text style={[fonts.labelMedium, { fontWeight: 'bold', color: colors.primary }]}>
-                  Contractor Name:
+                  Passenger Name:
                 </Text>
                 <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
                   {[
-                    contract.airline_profile?.first_name,
-                    contract.airline_profile?.middle_initial,
-                    contract.airline_profile?.last_name,
-                    contract.airline_profile?.suffix
+                    contract.owner_first_name,
+                    contract.owner_middle_initial,
+                    contract.owner_last_name
                   ].filter(Boolean).join(' ') || 'N/A'}
                 </Text>
               </View>
@@ -365,11 +397,7 @@ const ContractsInTransit = ({ navigation }) => {
                 Total Luggage Quantity: {contract.luggage_quantity || 0}
               </Text>
               <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
-                Owner: {[
-                  contract.owner_first_name,
-                  contract.owner_middle_initial,
-                  contract.owner_last_name
-                ].filter(Boolean).join(' ') || 'N/A'}
+                Case Number: {contract.case_number || 'N/A'}
               </Text>
             </View>
           </View>
@@ -398,7 +426,7 @@ const ContractsInTransit = ({ navigation }) => {
           </View>
           <Divider />
           <View style={styles.detailsContainer}>
-            <Text style={[fonts.labelLarge, styles.statusLabel]}>Timeline:</Text>
+            <Text style={[fonts.labelLarge, styles.statusLabel]}>Date Information:</Text>
             <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
               Created: {formattedDates.created}
             </Text>
@@ -419,6 +447,15 @@ const ContractsInTransit = ({ navigation }) => {
             )}
           </View>
           <Divider />
+          <Button 
+            mode="contained" 
+            onPress={() => navigation.navigate('TrackLuggage', { 
+              contractId: contract.id,
+            })} 
+            style={[styles.actionButton, { backgroundColor: colors.primary }]}
+          >
+            Track Delivery
+          </Button>
           <Button 
             mode="contained" 
             onPress={() => navigation.navigate('ContractDetails', { id: contract.id})} 
@@ -481,111 +518,183 @@ const ContractsInTransit = ({ navigation }) => {
     )
   }
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.warningContainer, { backgroundColor: colors.surfaceVariant }]}>
-        <IconButton icon="information" size={24} iconColor={colors.primary} />
-        <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant, flex: 1 }]}>
-          Important: Keep this app running in the foreground to ensure real-time location tracking for your active deliveries. Closing the app will stop location updates.
+  const renderHeader = () => (
+    <>
+      {/* Warning Section */}
+      <Surface style={[styles.warningSurface, { backgroundColor: colors.surfaceVariant }]} elevation={1}>
+        <View style={styles.warningContainer}>
+          <IconButton icon="information" size={24} iconColor={colors.primary} />
+          <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant, flex: 1 }]}>
+            Important: Keep this app running in the foreground to ensure real-time location tracking for your active deliveries. Closing the app will stop location updates.
+          </Text>
+        </View>
+      </Surface>
+
+      {/* Time Display Section */}
+      <Surface style={[styles.timeSurface, { backgroundColor: colors.surface }]} elevation={1}>
+        <Text style={[styles.timeText, { color: colors.onSurface }, fonts.titleMedium]}>
+          {currentTime}
         </Text>
-      </View>
-      <View style={styles.searchActionsRow}>
+      </Surface>
+
+      {/* Search Section */}
+      <Surface style={[styles.searchSurface, { backgroundColor: colors.surface }]} elevation={1}>
+        <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
+          Search & Filter
+        </Text>
         <Searchbar
           placeholder={`Search by ${FILTER_OPTIONS.find(opt => opt.value === searchColumn)?.label}`}
           onChangeText={setSearchQuery}
           value={searchQuery}
-          style={[styles.searchbar, { backgroundColor: colors.surface }]}
+          style={[styles.searchbar, { backgroundColor: colors.surfaceVariant }]}
+          iconColor={colors.onSurfaceVariant}
+          inputStyle={[styles.searchInput, { color: colors.onSurfaceVariant }]}
         />
-      </View>
-      <View style={styles.buttonGroup}>
-        <Menu
-          visible={filterMenuVisible}
-          onDismiss={() => setFilterMenuVisible(false)}
-          anchor={
-            <Button
-              mode="contained"
-              icon="filter-variant"
-              onPress={() => setFilterMenuVisible(true)}
-              style={[styles.actionButton, { backgroundColor: colors.primary }]}
-              contentStyle={styles.buttonContent}
-              labelStyle={fonts.labelMedium}
+      </Surface>
+
+      {/* Filters Section */}
+      <Surface style={[styles.filtersSurface, { backgroundColor: colors.surface }]} elevation={1}>
+        <View style={styles.filtersRow}>
+          <View style={styles.filterGroup}>
+            <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+              Search Column
+            </Text>
+            <Menu
+              visible={filterMenuVisible}
+              onDismiss={() => setFilterMenuVisible(false)}
+              anchor={
+                <Button
+                  mode="outlined"
+                  icon="filter-variant"
+                  onPress={() => setFilterMenuVisible(true)}
+                  style={[styles.filterButton, { borderColor: colors.outline }]}
+                  contentStyle={styles.buttonContent}
+                  labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                >
+                  {FILTER_OPTIONS.find(opt => opt.value === searchColumn)?.label || 'Select Column'}
+                </Button>
+              }
+              contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
             >
-              {FILTER_OPTIONS.find(opt => opt.value === searchColumn)?.label}
-            </Button>
-          }
-          contentStyle={{ backgroundColor: colors.surface }}
-        >
-          {FILTER_OPTIONS.map(option => (
-            <Menu.Item
-              key={option.value}
-              onPress={() => {
-                setSearchColumn(option.value)
-                setFilterMenuVisible(false)
-              }}
-              title={option.label}
-              titleStyle={[
-                {
-                  color: searchColumn === option.value
-                    ? colors.primary
-                    : colors.onSurface,
-                },
-                fonts.bodyLarge,
-              ]}
-              leadingIcon={searchColumn === option.value ? 'check' : undefined}
-            />
-          ))}
-        </Menu>
-        <Menu
-          visible={sortMenuVisible}
-          onDismiss={() => setSortMenuVisible(false)}
-          anchor={
-            <Button
-              mode="contained"
-              icon="sort"
-              onPress={() => setSortMenuVisible(true)}
-              style={[styles.actionButton, { backgroundColor: colors.primary }]}
-              contentStyle={styles.buttonContent}
-              labelStyle={fonts.labelMedium}
+              {FILTER_OPTIONS.map(option => (
+                <Menu.Item
+                  key={option.value}
+                  onPress={() => {
+                    setSearchColumn(option.value)
+                    setFilterMenuVisible(false)
+                  }}
+                  title={option.label}
+                  titleStyle={[
+                    {
+                      color: searchColumn === option.value
+                        ? colors.primary
+                        : colors.onSurface,
+                    },
+                    fonts.bodyLarge,
+                  ]}
+                  leadingIcon={searchColumn === option.value ? 'check' : undefined}
+                />
+              ))}
+            </Menu>
+          </View>
+
+          <View style={styles.filterGroup}>
+            <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+              Sort By
+            </Text>
+            <Menu
+              visible={sortMenuVisible}
+              onDismiss={() => setSortMenuVisible(false)}
+              anchor={
+                <Button
+                  mode="outlined"
+                  icon="sort"
+                  onPress={() => setSortMenuVisible(true)}
+                  style={[styles.filterButton, { borderColor: colors.outline }]}
+                  contentStyle={styles.buttonContent}
+                  labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                >
+                  {getSortLabel(sortColumn, SORT_OPTIONS, getSortIcon)}
+                </Button>
+              }
+              contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
             >
-              {getSortLabel(sortColumn, SORT_OPTIONS, getSortIcon)}
-            </Button>
-          }
-          contentStyle={{ backgroundColor: colors.surface }}
-        >
-          {SORT_OPTIONS.map(option => (
-            <Menu.Item
-              key={option.value}
-              onPress={() => {
-                handleSort(option.value)
-                setSortMenuVisible(false)
-              }}
-              title={option.label}
-              titleStyle={[
-                {
-                  color: sortColumn === option.value
-                    ? colors.primary
-                    : colors.onSurface,
-                },
-                fonts.bodyLarge,
-              ]}
-              leadingIcon={sortColumn === option.value ? 'check' : undefined}
-            />
-          ))}
-        </Menu>    
-      </View>
-      {loading ? null : filteredAndSortedContracts.length === 0 && (
-        <Text style={[fonts.bodyMedium,{ textAlign: 'center', color: colors.onSurfaceVariant, marginTop: 30, marginBottom: 10 }]}>
-          No contracts available.
+              {SORT_OPTIONS.map(option => (
+                <Menu.Item
+                  key={option.value}
+                  onPress={() => {
+                    handleSort(option.value)
+                    setSortMenuVisible(false)
+                  }}
+                  title={option.label}
+                  titleStyle={[
+                    {
+                      color: sortColumn === option.value
+                        ? colors.primary
+                        : colors.onSurface,
+                    },
+                    fonts.bodyLarge,
+                  ]}
+                  leadingIcon={sortColumn === option.value ? 'check' : undefined}
+                />
+              ))}
+            </Menu>
+          </View>
+        </View>
+      </Surface>
+
+      {/* Results Header */}
+      <Surface style={[styles.resultsSurface, { backgroundColor: colors.surface }]} elevation={1}>
+        <View style={styles.resultsHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
+            In Transit Results
+          </Text>
+          {!loading && (
+            <Text style={[styles.resultsCount, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>
+              {filteredAndSortedContracts.length} contract{filteredAndSortedContracts.length !== 1 ? 's' : ''} found
+            </Text>
+          )}
+        </View>
+      </Surface>
+    </>
+  )
+
+  const renderEmptyComponent = () => (
+    <View style={styles.emptyContainer}>
+      {loading ? (
+        <Text style={[styles.emptyText, { color: colors.onSurface }, fonts.bodyLarge]}>
+          Loading contracts...
+        </Text>
+      ) : (
+        <Text style={[styles.emptyText, { color: colors.onSurfaceVariant }, fonts.bodyLarge]}>
+          No contracts found matching your criteria
         </Text>
       )}
+    </View>
+  )
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {SnackbarElement}
+      
       <FlatList
         data={filteredAndSortedContracts}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => <ContractCard contract={item} />}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={renderEmptyComponent}
         contentContainerStyle={styles.flatListContent}
-        refreshing={loading}
-        onRefresh={fetchContracts}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+        showsVerticalScrollIndicator={false}
       />
+      
       <BottomModal visible={modalVisible} onDismiss={() => {
         setModalVisible(false)
         setShowCancelConfirmation(false)
@@ -612,50 +721,107 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  timeCard: {
-    borderRadius: 10,
-    marginVertical: 10,
-    marginHorizontal: 16,
+  flatListContent: {
+    paddingBottom: 20,
   },
-  timeCardContent: {
-    alignItems: 'center',
-    paddingVertical: 10,
+  warningSurface: {
+    margin: 16,
+    marginBottom: 8,
+    borderRadius: 12,
   },
-  searchActionsRow: {
+  warningContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 10,
+  },
+  timeSurface: {
     marginHorizontal: 16,
-    gap: 10,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  timeText: {
+    fontWeight: '600',
+  },
+  searchSurface: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+  },
+  sectionTitle: {
+    marginBottom: 12,
+    fontWeight: '600',
   },
   searchbar: {
+    borderRadius: 8,
+  },
+  searchInput: {
+    fontSize: 16,
+  },
+  filtersSurface: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+  },
+  filtersRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  filterGroup: {
     flex: 1,
   },
-  buttonGroup: {
-    alignContent: 'space-evenly',
-    alignSelf:'center',
-    flexDirection: 'row',
+  filterLabel: {
+    marginBottom: 8,
+    fontWeight: '500',
   },
-  actionButton: {
+  filterButton: {
     borderRadius: 8,
-    minWidth: 120,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    gap: 10,
+  },
+  menuContent: {
+    width: '100%',
+    left: 0,
+    right: 0,
   },
   buttonContent: {
     height: 40,
   },
+  buttonLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  resultsSurface: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  resultsHeader: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.12)',
+  },
+  resultsCount: {
+    marginTop: 4,
+  },
+  emptyContainer: {
+    padding: 32,
+    alignItems: 'center',
+  },
+  emptyText: {
+    textAlign: 'center',
+  },
   contractCard: {
-    marginTop: 10,
-    marginBottom: 10,
-    marginHorizontal: 10,
+    marginHorizontal: 16,
+    marginBottom: 16,
     borderRadius: 12,
     elevation: 2,
   },
   contractCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
   },
   passengerInfoContainer: {
     flexDirection: 'row',
@@ -689,8 +855,8 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   locationText: {
+    marginRight:'20%',
     flex: 1,
-    marginRight:'30%',
     numberOfLines: 2,
     ellipsizeMode: 'tail',
   },
@@ -698,14 +864,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 10,
   },
-  flatListContent: {
-    paddingBottom: 20,
-  },
-  warningContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    marginBottom:10
+  actionButton: {
+    borderRadius: 8,
+    marginVertical: 4,
   },
 })
 

@@ -143,7 +143,7 @@ const ProfileCompletionCheck = ({ navigation, route }) => {
 
   if (state.loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
         <Appbar.Header>
           <Appbar.Content title='Profile Check' titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} />
         </Appbar.Header>
@@ -153,7 +153,7 @@ const ProfileCompletionCheck = ({ navigation, route }) => {
             Checking profile completion...
           </Text>
         </View>
-      </SafeAreaView>
+      </ScrollView>
     )
   }
 
@@ -266,6 +266,7 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
+    marginTop: '50%',
     justifyContent: 'center',
     alignItems: 'center',
   },

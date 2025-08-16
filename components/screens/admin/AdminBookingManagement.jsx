@@ -11,6 +11,7 @@ import {
   Dialog,
   Portal,
   List,
+  Surface,
 } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabaseAdmin'
@@ -202,46 +203,36 @@ const AdminBookingManagement = ({ navigation }) => {
     setLoading(false)
   }
 
-  // Set up realtime subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel('contracts_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'contracts' },
-        async (payload) => {
-          const newStatus = payload.new?.contract_status_id
-          const oldStatus = payload.old?.contract_status_id
-  
-          // Only react to contract_status_id in [1, 3, 4]
-          if ([1, 3, 4].includes(newStatus) || [1, 3, 4].includes(oldStatus)) {
-            console.log('Realtime change detected:', payload)
-  
-            if (payload.eventType === 'INSERT') {
-              console.log('New contract inserted:', payload.new)
-              // Handle insert logic here
-            } 
-            else if (payload.eventType === 'UPDATE') {
-              console.log('Contract updated:', payload.new)
-              // Handle update logic here
-            } 
-            else if (payload.eventType === 'DELETE') {
-              console.log('Contract deleted:', payload.old)
-              // Handle delete logic here
+  // Set up realtime subscription only while screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      const channel = supabase
+        .channel('contracts_changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'contracts' },
+          async (payload) => {
+            const newStatus = payload.new?.contract_status_id
+            const oldStatus = payload.old?.contract_status_id
+
+            if ([1, 3, 4].includes(newStatus) || [1, 3, 4].includes(oldStatus)) {
+              if (payload.eventType === 'INSERT') {
+              } 
+              else if (payload.eventType === 'UPDATE') {
+              } 
+              else if (payload.eventType === 'DELETE') {
+              }
+              await fetchContracts()
             }
-  
-            // Optionally refresh data
-            await fetchContracts()
           }
-        }
-      )
-      .subscribe()
-  
-    // Clean up on unmount
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [])
+        )
+        .subscribe()
+
+      return () => {
+        supabase.removeChannel(channel)
+      }
+    }, [])
+  )
   
 
   useFocusEffect(
@@ -289,7 +280,7 @@ const AdminBookingManagement = ({ navigation }) => {
 
   const filterOptions = [
     { label: 'Status', value: 'status' },
-    { label: 'Contractor Name', value: 'airline_name' },
+    { label: 'Airline Personnel', value: 'airline_name' },
     { label: 'Flight Number', value: 'flight_number' },
     { label: 'Contract ID', value: 'id' },
   ]
@@ -300,7 +291,7 @@ const AdminBookingManagement = ({ navigation }) => {
     { key: 'luggage_quantity', label: 'Luggage Qty', width: 120 },
     { key: 'luggage_weight', label: 'Weight', width: 100 },
     { key: 'flight_number', label: 'Flight #', width: 120 },
-    { key: 'airline_name', label: 'Contractor Name', width: FULL_NAME_WIDTH },
+    { key: 'airline_name', label: 'Airline Personnel', width: FULL_NAME_WIDTH },
     { key: 'delivery_name', label: 'Delivery Personnel', width: FULL_NAME_WIDTH },
     { key: 'created_at', label: 'Created At', width: COLUMN_WIDTH },
   ]
@@ -378,428 +369,509 @@ const AdminBookingManagement = ({ navigation }) => {
 
   return (
     <ScrollView 
-      style={{ flex: 1, backgroundColor: colors.background }}
+      style={[styles.scrollView, { backgroundColor: colors.background }]}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
       }
     >
       <Header navigation={navigation} title="Booking Management" />
       {SnackbarElement}
 
-      <View style={styles.searchActionsRow}>
-        <Searchbar
-          placeholder={`Search by ${filterOptions.find(opt => opt.value === searchColumn)?.label}`}
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-          style={[styles.searchbar, { backgroundColor: colors.surface }]}
-        />
-      </View>
+      <View style={styles.container}>
+        {/* Search Section */}
+        <Surface style={[styles.searchSurface, { backgroundColor: colors.surface }]} elevation={1}>
+          <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
+            Search & Filter
+          </Text>
+          <Searchbar
+            placeholder={`Search by ${filterOptions.find(opt => opt.value === searchColumn)?.label}`}
+            onChangeText={setSearchQuery}
+            value={searchQuery}
+            style={[styles.searchbar, { backgroundColor: colors.surfaceVariant }]}
+            iconColor={colors.onSurfaceVariant}
+            inputStyle={[styles.searchInput, { color: colors.onSurfaceVariant }]}
+          />
+        </Surface>
 
-                  <View style={styles.buttonContainer}>
-              <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Filter by:</Text>
-              <View style={styles.menuAnchor}>
-                <Menu
-                  visible={filterMenuVisible}
-                  onDismiss={() => setFilterMenuVisible(false)}
-                  anchor={
-                    <Button
-                      mode="contained"
-                      icon="filter-variant"
-                      onPress={() => setFilterMenuVisible(true)}
-                      style={[styles.button, { borderColor: colors.primary, flex: 1 }]}
-                      contentStyle={styles.buttonContent}
-                      labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
-                    >
-                      {filterOptions.find(opt => opt.value === searchColumn)?.label}
-                    </Button>
-                  }
-                  contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
-                >
-                  {filterOptions.map(option => (
-                    <Menu.Item
-                      key={option.value}
-                      onPress={() => {
-                        setSearchColumn(option.value)
-                        setFilterMenuVisible(false)
-                      }}
-                      title={option.label}
-                      titleStyle={[
-                        {
-                          color: searchColumn === option.value
-                            ? colors.primary
-                            : colors.onSurface,
-                        },
-                        fonts.bodyLarge,
-                      ]}
-                      leadingIcon={searchColumn === option.value ? 'check' : undefined}
-                    />
-                  ))}
-                </Menu>
-              </View>
-            </View>
-
-            <View style={styles.buttonContainer}>
-              <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Date Range:</Text>
-              <View style={styles.menuAnchor}>
-                <Menu
-                  visible={showDateMenu}
-                  onDismiss={() => setShowDateMenu(false)}
-                  anchor={
-                    <Button
-                      mode="outlined"
-                      icon="calendar"
-                      onPress={() => setShowDateMenu(true)}
-                      style={[styles.button, { borderColor: colors.primary, flex: 1 }]}
-                      contentStyle={styles.buttonContent}
-                      labelStyle={[styles.buttonLabel, { color: colors.primary }]}
-                    >
-                      {getDateFilterLabel(dateFilter)}
-                    </Button>
-                  }
-                  contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
-                >
-                  {getDateFilterOptions().map((option) => (
-                    <Menu.Item
-                      key={option.value}
-                      onPress={() => {
-                        setDateFilter(option.value)
-                        setShowDateMenu(false)
-                      }}
-                      title={option.label}
-                      titleStyle={[
-                        {
-                          color: dateFilter === option.value
-                            ? colors.primary
-                            : colors.onSurface,
-                        },
-                        fonts.bodyLarge,
-                      ]}
-                      leadingIcon={dateFilter === option.value ? 'check' : undefined}
-                    />
-                  ))}
-                </Menu>
-              </View>
-            </View>
-
-      {loading ? (
-        <Text style={[styles.loadingText, { color: colors.onSurface }, fonts.bodyMedium]}>
-          Loading contracts...
-        </Text>
-      ) : (
-        <View style={styles.tableContainer}>
-          <ScrollView horizontal>
-            <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
-              <DataTable.Header style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
-                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
-                  <Text style={[styles.headerText, { color: colors.onSurface }]}>Actions</Text>
-                </DataTable.Title>
-                {columns.map(({ key, label, width }) => (
-                  <DataTable.Title
-                    key={key}
-                    style={{ width, justifyContent: 'center', paddingVertical: 12 }}
-                    onPress={() => handleSort(key)}
+        {/* Filters Section */}
+        <Surface style={[styles.filtersSurface, { backgroundColor: colors.surface }]} elevation={1}>
+          <View style={styles.filtersRow}>
+            <View style={styles.filterGroup}>
+              <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+                Search Column
+              </Text>
+              <Menu
+                visible={filterMenuVisible}
+                onDismiss={() => setFilterMenuVisible(false)}
+                anchor={
+                  <Button
+                    mode="outlined"
+                    icon="filter-variant"
+                    onPress={() => setFilterMenuVisible(true)}
+                    style={[styles.filterButton, { borderColor: colors.outline }]}
+                    contentStyle={styles.buttonContent}
+                    labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
                   >
-                    <View style={styles.sortableHeader}>
-                      <Text style={[styles.headerText, { color: colors.onSurface }]}>{label}</Text>
-                      <Text style={[styles.sortIcon, { color: colors.onSurface }]}>{getSortIcon(key)}</Text>
-                    </View>
-                  </DataTable.Title>
+                    {filterOptions.find(opt => opt.value === searchColumn)?.label || 'Select Column'}
+                  </Button>
+                }
+                contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+              >
+                {filterOptions.map(option => (
+                  <Menu.Item
+                    key={option.value}
+                    onPress={() => {
+                      setSearchColumn(option.value)
+                      setFilterMenuVisible(false)
+                    }}
+                    title={option.label}
+                    titleStyle={[
+                      {
+                        color: searchColumn === option.value
+                          ? colors.primary
+                          : colors.onSurface,
+                      },
+                      fonts.bodyLarge,
+                    ]}
+                    leadingIcon={searchColumn === option.value ? 'check' : undefined}
+                  />
                 ))}
-              </DataTable.Header>
+              </Menu>
+            </View>
 
-              {filteredAndSortedContracts.length === 0 ? (
-                <DataTable.Row>
-                  <DataTable.Cell style={styles.noDataCell}>
-                    <Text style={[{ color: colors.onSurface, textAlign: 'center' }, fonts.bodyMedium]}>
-                      No contracts available
-                    </Text>
-                  </DataTable.Cell>
-                </DataTable.Row>
-              ) : (
-                paginatedContracts.map(contract => (
-                  <DataTable.Row key={contract.id}>
-                                        <DataTable.Cell numeric style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
-                      <Menu
-                        visible={actionMenuVisible === contract.id}
-                        onDismiss={() => setActionMenuVisible(null)}
-                        anchor={
-                          <Button
-                            mode="outlined"
-                            icon="dots-vertical"
-                            onPress={() => setActionMenuVisible(contract.id)}
-                            style={[styles.actionButton, { borderColor: colors.primary }]}
-                            contentStyle={styles.buttonContent}
-                            labelStyle={[styles.buttonLabel, { color: colors.primary }]}
-                          >
-                            Actions
-                          </Button>
-                        }
-                        contentStyle={{ backgroundColor: colors.surface }}
-                      >
-                          <Menu.Item
-                            onPress={() => {
-                              setActionMenuVisible(null)
-                              navigation.navigate('ContractDetailsAdmin', { id: contract.id })
-                            }}
-                            title="Contract Details"
-                            leadingIcon="file-document"
-                            titleStyle={[
-                              {
-                                color: colors.onSurface,
-                              },
-                              fonts.bodyLarge,
-                            ]}
-                          />
-                        {contract.contract_status_id === 1 && (
-                          <Menu.Item
-                            onPress={() => {
-                              setActionMenuVisible(null)
-                              setSelectedContract(contract)
-                              setShowAssignDialog(true)
-                            }}
-                            title="Assign Luggage"
-                            leadingIcon="account-plus"
-                            titleStyle={[
-                              {
-                                color: colors.onSurface,
-                              },
-                              fonts.bodyLarge,
-                            ]}
-                          />
-                        )}
-                        {contract.contract_status_id === 1 && (
-                          <Menu.Item
-                            onPress={() => {
-                              setActionMenuVisible(null)
-                              handleCancelContract(contract)
-                            }}
-                            title="Cancel Contract"
-                            leadingIcon="cancel"
-                            titleStyle={[
-                              {
-                                color: colors.error,
-                              },
-                              fonts.bodyLarge,
-                            ]}
-                          />
-                        )}
-                        {(contract.contract_status_id === 3 || contract.contract_status_id === 4) && (
-                          <Menu.Item
-                            onPress={() => {
-                              setActionMenuVisible(null)
-                              navigation.navigate('AdminTrackLuggage', { contractId: contract.id })
-                            }}
-                            title="Track Luggage"
-                            leadingIcon="map-marker"
-                            titleStyle={[
-                              {
-                                color: colors.onSurface,
-                              },
-                              fonts.bodyLarge,
-                            ]}
-                          />
-                        )}
-                      </Menu>
-                    </DataTable.Cell>
-                    {columns.map(({ key, width }, idx) => (
-                      <DataTable.Cell
-                        key={idx}
-                        style={{ width, justifyContent: 'center', paddingVertical: 12 }}
-                      >
-                        <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>
-                          {contract[key]}
-                        </Text>
-                      </DataTable.Cell>
-                    ))}                    
-                  </DataTable.Row>
-                ))
-              )}
-            </DataTable>
-          </ScrollView>
+            <View style={styles.filterGroup}>
+              <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+                Date Filter
+              </Text>
+              <Menu
+                visible={showDateMenu}
+                onDismiss={() => setShowDateMenu(false)}
+                anchor={
+                  <Button
+                    mode="outlined"
+                    icon="calendar"
+                    onPress={() => setShowDateMenu(true)}
+                    style={[styles.filterButton, { borderColor: colors.outline }]}
+                    contentStyle={styles.buttonContent}
+                    labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                  >
+                    {getDateFilterLabel(dateFilter)}
+                  </Button>
+                }
+                contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+              >
+                {getDateFilterOptions().map((option) => (
+                  <Menu.Item
+                    key={option.value}
+                    onPress={() => {
+                      setDateFilter(option.value)
+                      setShowDateMenu(false)
+                    }}
+                    title={option.label}
+                    titleStyle={[
+                      {
+                        color: dateFilter === option.value
+                          ? colors.primary
+                          : colors.onSurface,
+                      },
+                      fonts.bodyLarge,
+                    ]}
+                    leadingIcon={dateFilter === option.value ? 'check' : undefined}
+                  />
+                ))}
+              </Menu>
+            </View>
+          </View>
+        </Surface>
 
-          <View style={[styles.paginationContainer, { backgroundColor: colors.surface }]}>
-            <DataTable.Pagination
-              page={page}
-              numberOfPages={Math.ceil(filteredAndSortedContracts.length / itemsPerPage)}
-              onPageChange={page => setPage(page)}
-              label={`${from + 1}-${to} of ${filteredAndSortedContracts.length}`}
-              labelStyle={[{ color: colors.onSurface }, fonts.bodyMedium]}
-              showFirstPageButton
-              showLastPageButton
-              showFastPaginationControls
-              numberOfItemsPerPageList={[5, 10, 20, 50]}
-              numberOfItemsPerPage={itemsPerPage}
-              onItemsPerPageChange={setItemsPerPage}
-              selectPageDropdownLabel={'Rows per page'}
-              style={[styles.pagination, { backgroundColor: colors.surfaceVariant }]}
-              theme={{
-                colors: {
-                  onSurface: colors.onSurface,
-                  text: colors.onSurface,
-                  elevation: {
-                    level2: colors.surface,
-                  },
-                },
-                fonts: {
-                  bodyMedium: fonts.bodyMedium,
-                  labelMedium: fonts.labelMedium,
-                },
-              }}
-            />
+        {/* Results Section */}
+        <Surface style={[styles.resultsSurface, { backgroundColor: colors.surface }]} elevation={1}>
+          <View style={styles.resultsHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
+              Booking Management
+            </Text>
+            {!loading && (
+              <Text style={[styles.resultsCount, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>
+                {filteredAndSortedContracts.length} contract{filteredAndSortedContracts.length !== 1 ? 's' : ''} found
+              </Text>
+            )}
           </View>
 
-          <Portal>
-            <Dialog
-              visible={showAssignDialog}
-              onDismiss={() => {
-                setShowAssignDialog(false)
-                setSelectedDeliveryPerson(null)
-              }}
-              style={[styles.dialog, { backgroundColor: colors.surface }]}
-            >
-              <Dialog.Title style={[styles.dialogTitle, { color: colors.onSurface }]}>
-                Assign Delivery Personnel
-              </Dialog.Title>
-              <Dialog.Content style={styles.dialogContent}>
-                <ScrollView style={styles.deliveryList}>
-                  {deliveryPersonnel.map(person => (
-                    <List.Item
-                      key={person.id}
-                      title={`${person.first_name} ${person.middle_initial || ''} ${person.last_name} ${person.suffix || ''}`}
-                      description={`Phone: ${person.contact_number}`}
-                      left={props => (
-                        <List.Icon
-                          {...props}
-                          icon={selectedDeliveryPerson?.id === person.id ? 'check-circle' : 'account'}
-                          color={selectedDeliveryPerson?.id === person.id ? colors.primary : colors.onSurface}
-                        />
-                      )}
-                      onPress={() => setSelectedDeliveryPerson(person)}
-                      style={[
-                        styles.deliveryItem,
-                        selectedDeliveryPerson?.id === person.id && {
-                          backgroundColor: colors.primaryContainer,
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={[styles.loadingText, { color: colors.onSurface }, fonts.bodyLarge]}>
+                Loading contracts...
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.tableContainer}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
+                  <DataTable.Header style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
+                    <DataTable.Title style={[styles.actionColumn, { justifyContent: 'center' }]}>
+                      <Text style={[styles.headerText, { color: colors.onSurface }, fonts.labelLarge]}>Actions</Text>
+                    </DataTable.Title>
+                    {columns.map(({ key, label, width }) => (
+                      <DataTable.Title
+                        key={key}
+                        style={[styles.tableColumn, { width: width || COLUMN_WIDTH, justifyContent: 'center' }]}
+                        onPress={() => handleSort(key)}
+                      >
+                        <View style={styles.sortableHeader}>
+                          <Text style={[styles.headerText, { color: colors.onSurface }, fonts.labelLarge]}>{label}</Text>
+                          <Text style={[styles.sortIcon, { color: colors.onSurface }]}>{getSortIcon(key)}</Text>
+                        </View>
+                      </DataTable.Title>
+                    ))}
+                  </DataTable.Header>
+
+                  {filteredAndSortedContracts.length === 0 ? (
+                    <DataTable.Row>
+                      <DataTable.Cell style={styles.noDataCell}>
+                        <Text style={[styles.noDataText, { color: colors.onSurfaceVariant }, fonts.bodyLarge]}>
+                          No contracts found matching your criteria
+                        </Text>
+                      </DataTable.Cell>
+                    </DataTable.Row>
+                  ) : (
+                    paginatedContracts.map((contract, index) => (
+                      <DataTable.Row 
+                        key={contract.id}
+                        style={[
+                          styles.tableRow,
+                          index % 2 === 0 && { backgroundColor: colors.surfaceVariant + '20' }
+                        ]}
+                      >
+                        <DataTable.Cell style={[styles.actionColumn, { justifyContent: 'center' }]}>
+                          <Menu
+                            visible={actionMenuVisible === contract.id}
+                            onDismiss={() => setActionMenuVisible(null)}
+                            anchor={
+                              <Button
+                                mode="outlined"
+                                icon="dots-vertical"
+                                onPress={() => setActionMenuVisible(contract.id)}
+                                style={[styles.actionButton, { borderColor: colors.primary }]}
+                                contentStyle={styles.buttonContent}
+                                labelStyle={[styles.buttonLabel, { color: colors.primary }]}
+                              >
+                                Actions
+                              </Button>
+                            }
+                            contentStyle={{ backgroundColor: colors.surface }}
+                          >
+                            <Menu.Item
+                              onPress={() => {
+                                setActionMenuVisible(null)
+                                navigation.navigate('ContractDetailsAdmin', { id: contract.id })
+                              }}
+                              title="Contract Details"
+                              leadingIcon="file-document"
+                              titleStyle={[
+                                {
+                                  color: colors.onSurface,
+                                },
+                                fonts.bodyLarge,
+                              ]}
+                            />
+                            {contract.contract_status_id === 1 && (
+                              <Menu.Item
+                                onPress={() => {
+                                  setActionMenuVisible(null)
+                                  setSelectedContract(contract)
+                                  setShowAssignDialog(true)
+                                }}
+                                title="Assign Luggage"
+                                leadingIcon="account-plus"
+                                titleStyle={[
+                                  {
+                                    color: colors.onSurface,
+                                  },
+                                  fonts.bodyLarge,
+                                ]}
+                              />
+                            )}
+                            {contract.contract_status_id === 1 && (
+                              <Menu.Item
+                                onPress={() => {
+                                  setActionMenuVisible(null)
+                                  handleCancelContract(contract)
+                                }}
+                                title="Cancel Contract"
+                                leadingIcon="cancel"
+                                titleStyle={[
+                                  {
+                                    color: colors.error,
+                                  },
+                                  fonts.bodyLarge,
+                                ]}
+                              />
+                            )}
+                            {(contract.contract_status_id === 3 || contract.contract_status_id === 4) && (
+                              <Menu.Item
+                                onPress={() => {
+                                  setActionMenuVisible(null)
+                                  navigation.navigate('AdminTrackLuggage', { contractId: contract.id })
+                                }}
+                                title="Track Luggage"
+                                leadingIcon="map-marker"
+                                titleStyle={[
+                                  {
+                                    color: colors.onSurface,
+                                  },
+                                  fonts.bodyLarge,
+                                ]}
+                              />
+                            )}
+                          </Menu>
+                        </DataTable.Cell>
+                        {columns.map(({ key, width }, idx) => (
+                          <DataTable.Cell
+                            key={idx}
+                            style={[styles.tableColumn, { width: width || COLUMN_WIDTH, justifyContent: 'center' }]}
+                          >
+                            <Text style={[styles.cellText, { color: colors.onSurface }, fonts.bodyMedium]}>
+                              {contract[key]}
+                            </Text>
+                          </DataTable.Cell>
+                        ))}                    
+                      </DataTable.Row>
+                    ))
+                  )}
+                </DataTable>
+              </ScrollView>
+
+              {/* Pagination */}
+              {filteredAndSortedContracts.length > 0 && (
+                <View style={[styles.paginationContainer, { backgroundColor: colors.surfaceVariant }]}>
+                  <DataTable.Pagination
+                    page={page}
+                    numberOfPages={Math.ceil(filteredAndSortedContracts.length / itemsPerPage)}
+                    onPageChange={page => setPage(page)}
+                    label={`${from + 1}-${to} of ${filteredAndSortedContracts.length}`}
+                    labelStyle={[styles.paginationLabel, { color: colors.onSurface }, fonts.bodyMedium]}
+                    showFirstPageButton
+                    showLastPageButton
+                    showFastPaginationControls
+                    numberOfItemsPerPageList={[5, 10, 20, 50]}
+                    numberOfItemsPerPage={itemsPerPage}
+                    onItemsPerPageChange={setItemsPerPage}
+                    selectPageDropdownLabel={'Rows per page'}
+                    style={styles.pagination}
+                    theme={{
+                      colors: {
+                        onSurface: colors.onSurface,
+                        text: colors.onSurface,
+                        elevation: {
+                          level2: colors.surface,
                         },
-                      ]}
+                      },
+                      fonts: {
+                        bodyMedium: fonts.bodyMedium,
+                        labelMedium: fonts.labelMedium,
+                      },
+                    }}
+                  />
+                </View>
+              )}
+            </View>
+          )}
+        </Surface>
+      </View>
+
+      <Portal>
+        <Dialog
+          visible={showAssignDialog}
+          onDismiss={() => {
+            setShowAssignDialog(false)
+            setSelectedDeliveryPerson(null)
+          }}
+          style={[styles.dialog, { backgroundColor: colors.surface }]}
+        >
+          <Dialog.Title style={[styles.dialogTitle, { color: colors.onSurface }]}>
+            Assign Delivery Personnel
+          </Dialog.Title>
+          <Dialog.Content style={styles.dialogContent}>
+            <ScrollView style={styles.deliveryList}>
+              {deliveryPersonnel.map(person => (
+                <List.Item
+                  key={person.id}
+                  title={`${person.first_name} ${person.middle_initial || ''} ${person.last_name} ${person.suffix || ''}`}
+                  description={`Phone: ${person.contact_number}`}
+                  left={props => (
+                    <List.Icon
+                      {...props}
+                      icon={selectedDeliveryPerson?.id === person.id ? 'check-circle' : 'account'}
+                      color={selectedDeliveryPerson?.id === person.id ? colors.primary : colors.onSurface}
                     />
-                  ))}
-                </ScrollView>
-              </Dialog.Content>
-              <Dialog.Actions style={styles.dialogActions}>
-                <Button onPress={() => {
-                  setShowAssignDialog(false)
-                  setSelectedDeliveryPerson(null)
-                }}>
-                  Cancel
-                </Button>
-                <Button onPress={handleAssignDelivery}>
-                  Assign
-                </Button>
-              </Dialog.Actions>
-            </Dialog>
-            <Dialog
-              visible={cancelDialogVisible}
-              onDismiss={dismissCancelDialog}
-              style={[styles.dialog, { backgroundColor: colors.surface }]}
-            >
-              <Dialog.Title style={[styles.dialogTitle, { color: colors.onSurface }]}>Confirm Cancellation</Dialog.Title>
-              <Dialog.Content style={styles.dialogContent}>
-                <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>Are you sure you want to cancel this contract?</Text>
-                {contractToCancel && (
-                  <View style={{ marginTop: 8 }}>
-                    <Text style={[{ color: colors.onSurface }, fonts.labelMedium]}>Contract ID: {contractToCancel.id}</Text>
-                    <Text style={[{ color: colors.error }, fonts.bodySmall]}>This action cannot be undone.</Text>
-                  </View>
-                )}
-              </Dialog.Content>
-              <Dialog.Actions style={styles.dialogActions}>
-                <Button onPress={dismissCancelDialog} textColor={colors.error}>Cancel</Button>
-                <Button onPress={confirmCancelContract} mode="contained" buttonColor={colors.error} textColor={colors.onError}>
-                  Confirm Cancellation
-                </Button>
-              </Dialog.Actions>
-            </Dialog>
-          </Portal>
-        </View>
-      )}
+                  )}
+                  onPress={() => setSelectedDeliveryPerson(person)}
+                  style={[
+                    styles.deliveryItem,
+                    selectedDeliveryPerson?.id === person.id && {
+                      backgroundColor: colors.primaryContainer,
+                    },
+                  ]}
+                />
+              ))}
+            </ScrollView>
+          </Dialog.Content>
+          <Dialog.Actions style={styles.dialogActions}>
+            <Button onPress={() => {
+              setShowAssignDialog(false)
+              setSelectedDeliveryPerson(null)
+            }}>
+              Cancel
+            </Button>
+            <Button onPress={handleAssignDelivery}>
+              Assign
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+        <Dialog
+          visible={cancelDialogVisible}
+          onDismiss={dismissCancelDialog}
+          style={[styles.dialog, { backgroundColor: colors.surface }]}
+        >
+          <Dialog.Title style={[styles.dialogTitle, { color: colors.onSurface }]}>Confirm Cancellation</Dialog.Title>
+          <Dialog.Content style={styles.dialogContent}>
+            <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>Are you sure you want to cancel this contract?</Text>
+            {contractToCancel && (
+              <View style={{ marginTop: 8 }}>
+                <Text style={[{ color: colors.onSurface }, fonts.labelMedium]}>Contract ID: {contractToCancel.id}</Text>
+                <Text style={[{ color: colors.error }, fonts.bodySmall]}>This action cannot be undone.</Text>
+              </View>
+            )}
+          </Dialog.Content>
+          <Dialog.Actions style={styles.dialogActions}>
+            <Button onPress={dismissCancelDialog} textColor={colors.error}>Cancel</Button>
+            <Button onPress={confirmCancelContract} mode="contained" buttonColor={colors.error} textColor={colors.onError}>
+              Confirm Cancellation
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  searchActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginTop: 16,
-    gap: 10,
+  scrollView: {
+    flex: 1,
+  },
+  container: {
+    padding: 16,
+    gap: 16,
+  },
+  searchSurface: {
+    padding: 16,
+    borderRadius: 12,
+  },
+  sectionTitle: {
+    marginBottom: 12,
+    fontWeight: '600',
   },
   searchbar: {
-    flex: 1,
+    borderRadius: 8,
   },
-  buttonContainer: {
+  searchInput: {
+    fontSize: 16,
+  },
+  filtersSurface: {
+    padding: 16,
+    borderRadius: 12,
+  },
+  filtersRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    gap: 10,
+    gap: 16,
+  },
+  filterGroup: {
+    flex: 1,
   },
   filterLabel: {
-    marginRight: 8,
+    marginBottom: 8,
+    fontWeight: '500',
   },
-  menuAnchor: {
-    flex: 1,
-    position: 'relative',
+  filterButton: {
+    borderRadius: 8,
   },
   menuContent: {
     width: '100%',
     left: 0,
     right: 0,
   },
-  button: {
-    marginVertical: 10,
-    height: 40,
-    borderRadius: 8,
-  },
   buttonContent: {
     height: 40,
   },
   buttonLabel: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
+  },
+  resultsSurface: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  resultsHeader: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.12)',
+  },
+  resultsCount: {
+    marginTop: 4,
+  },
+  loadingContainer: {
+    padding: 32,
+    alignItems: 'center',
+  },
+  loadingText: {
+    textAlign: 'center',
   },
   tableContainer: {
     flex: 1,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 8,
-    minHeight: '70%',
-    overflow: 'hidden',
   },
   table: {
     flex: 1,
   },
+  tableHeader: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.12)',
+  },
+  tableRow: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+  },
+  actionColumn: {
+    width: 140,
+    paddingVertical: 12,
+  },
+  tableColumn: {
+    paddingVertical: 12,
+  },
   sortableHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 4,
   },
   sortIcon: {
     fontSize: 12,
   },
+  headerText: {
+    fontWeight: '600',
+  },
+  cellText: {
+    textAlign: 'center',
+  },
   actionButton: {
     borderRadius: 8,
-    minWidth: 100,
   },
   noDataCell: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 32,
     flex: 1,
   },
-  loadingText: {
+  noDataText: {
     textAlign: 'center',
-    marginTop: 20,
   },
   paginationContainer: {
     borderTopWidth: 1,
@@ -807,8 +879,9 @@ const styles = StyleSheet.create({
   },
   pagination: {
     justifyContent: 'space-evenly',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.12)',
+  },
+  paginationLabel: {
+    fontWeight: '500',
   },
   dialog: {
     borderRadius: 8,
@@ -840,14 +913,6 @@ const styles = StyleSheet.create({
   deliveryItem: {
     borderRadius: 8,
     marginVertical: 4,
-  },
-  tableHeader: {
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.12)',
-  },
-  headerText: {
-    fontSize: 14,
-    fontWeight: 'bold',
   },
 })
 

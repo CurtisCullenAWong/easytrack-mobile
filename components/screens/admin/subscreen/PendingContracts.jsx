@@ -9,6 +9,7 @@ import {
   useTheme,
   Menu,
   Checkbox,
+  Surface,
 } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabaseAdmin'
 import useSnackbar from '../../../hooks/useSnackbar'
@@ -261,91 +262,102 @@ const PendingContracts = ({ navigation }) => {
 
   return (
     <ScrollView 
-      style={{ flex: 1, backgroundColor: colors.background }}
+      style={[styles.scrollView, { backgroundColor: colors.background }]}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
       }
     >
       {SnackbarElement}
 
-      <View style={styles.searchActionsRow}>
-        <Searchbar
-          placeholder={`Search by ${filterOptions.find(opt => opt.value === searchColumn)?.label}`}
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-          style={[styles.searchbar, { backgroundColor: colors.surface }]}
-        />
-      </View>
-
-      <View style={styles.buttonContainer}>
-        <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Filter by:</Text>
-        <View style={styles.menuAnchor}>
-          <Menu
-            visible={filterMenuVisible}
-            onDismiss={() => setFilterMenuVisible(false)}
-            anchor={
-              <Button
-                mode="contained"
-                icon="filter-variant"
-                onPress={() => setFilterMenuVisible(true)}
-                style={[styles.button, { borderColor: colors.primary, flex: 1 }]}
-                contentStyle={styles.buttonContent}
-                labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
-              >
-                {filterOptions.find(opt => opt.value === searchColumn)?.label}
-              </Button>
-            }
-            contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
-          >
-            {filterOptions.map(option => (
-              <Menu.Item
-                key={option.value}
-                onPress={() => {
-                  setSearchColumn(option.value)
-                  setFilterMenuVisible(false)
-                }}
-                title={option.label}
-                titleStyle={[
-                  {
-                    color: searchColumn === option.value
-                      ? colors.primary
-                      : colors.onSurface,
-                  },
-                  fonts.bodyLarge,
-                ]}
-                leadingIcon={searchColumn === option.value ? 'check' : undefined}
-              />
-            ))}
-          </Menu>
-        </View>
-      </View>
-
-      <View style={styles.selectionContainer}>
-        <View style={styles.selectAllContainer}>
-          <Checkbox
-            status={selectAll ? 'checked' : 'unchecked'}
-            onPress={handleSelectAll}
-            color={colors.primary}
-          />
-          <Text style={[styles.selectAllText, { color: colors.onSurface }, fonts.bodyMedium]}>
-            Select All ({paginatedTransactions.length})
+      <View style={styles.container}>
+        {/* Search Section */}
+        <Surface style={[styles.searchSurface, { backgroundColor: colors.surface }]} elevation={1}>
+          <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
+            Search & Filter
           </Text>
-        </View>
-        <Text style={[styles.selectedCount, { color: colors.primary }, fonts.bodyMedium]}>
-          Selected: {selectedContracts.size}
-        </Text>
-      </View>
+          <Searchbar
+            placeholder={`Search by ${filterOptions.find(opt => opt.value === searchColumn)?.label}`}
+            onChangeText={setSearchQuery}
+            value={searchQuery}
+            style={[styles.searchbar, { backgroundColor: colors.surfaceVariant }]}
+            iconColor={colors.onSurfaceVariant}
+            inputStyle={[styles.searchInput, { color: colors.onSurfaceVariant }]}
+          />
+        </Surface>
 
-      <View style={styles.buttonContainer}>
-        <Button
+        {/* Filters Section */}
+        <Surface style={[styles.filtersSurface, { backgroundColor: colors.surface }]} elevation={1}>
+          <View style={styles.filtersRow}>
+            <View style={styles.filterGroup}>
+              <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+                Search Column
+              </Text>
+              <Menu
+                visible={filterMenuVisible}
+                onDismiss={() => setFilterMenuVisible(false)}
+                anchor={
+                  <Button
+                    mode="outlined"
+                    icon="filter-variant"
+                    onPress={() => setFilterMenuVisible(true)}
+                    style={[styles.filterButton, { borderColor: colors.outline }]}
+                    contentStyle={styles.buttonContent}
+                    labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                  >
+                    {filterOptions.find(opt => opt.value === searchColumn)?.label || 'Select Column'}
+                  </Button>
+                }
+                contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+              >
+                {filterOptions.map(option => (
+                  <Menu.Item
+                    key={option.value}
+                    onPress={() => {
+                      setSearchColumn(option.value)
+                      setFilterMenuVisible(false)
+                    }}
+                    title={option.label}
+                    titleStyle={[
+                      {
+                        color: searchColumn === option.value
+                          ? colors.primary
+                          : colors.onSurface,
+                      },
+                      fonts.bodyLarge,
+                    ]}
+                    leadingIcon={searchColumn === option.value ? 'check' : undefined}
+                  />
+                ))}
+              </Menu>
+            </View>
+          </View>
+        </Surface>
+
+        {/* Selection Section */}
+        <Surface style={[styles.selectionSurface, { backgroundColor: colors.surface }]} elevation={1}>
+          <View style={styles.selectionContainer}>
+            <View style={styles.selectAllContainer}>
+              <Checkbox
+                status={selectAll ? 'checked' : 'unchecked'}
+                onPress={handleSelectAll}
+                color={colors.primary}
+              />
+              <Text style={[styles.selectAllText, { color: colors.onSurface }, fonts.bodyMedium]}>
+                Select All ({paginatedTransactions.length})
+              </Text>
+            </View>
+            <Text style={[styles.selectedCount, { color: colors.primary }, fonts.bodyMedium]}>
+              Selected: {selectedContracts.size}
+            </Text>
+          </View>
+          <Button
             mode="contained"
             icon="file-document-outline"
             onPress={handleGenerateSummary}
             style={[
-              styles.button, 
+              styles.generateButton, 
               { 
                 backgroundColor: selectedContracts.size === 0 ? colors.surfaceDisabled : colors.primary,
-                width: '100%',
                 opacity: selectedContracts.size === 0 ? 0.6 : 1
               }
             ]}
@@ -357,182 +369,307 @@ const PendingContracts = ({ navigation }) => {
               }
             ]}
             disabled={selectedContracts.size === 0}
-        >
+          >
             Generate Summary ({selectedContracts.size})
-        </Button>
-      </View>
+          </Button>
+        </Surface>
 
-      {loading ? (
-        <Text style={[styles.loadingText, { color: colors.onSurface }, fonts.bodyMedium]}>
-          Loading transactions...
-        </Text>
-      ) : (
-        <View style={styles.tableContainer}>
-          <ScrollView horizontal>
-            <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
-              <DataTable.Header style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
-                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
-                  <Text style={[styles.headerText, { color: colors.onSurface }]}>Actions</Text>
-                </DataTable.Title>
-                <DataTable.Title style={{ width: 50, justifyContent: 'center', paddingVertical: 12 }}>
-                  <Text style={[styles.headerText, { color: colors.onSurface }]}>Select</Text>
-                </DataTable.Title>
-                {columns.map(({ key, label, width }) => (
-                  <DataTable.Title
-                    key={key}
-                    style={{ width, justifyContent: 'center', paddingVertical: 12 }}
-                    onPress={() => handleSort(key)}
-                  >
-                    <View style={styles.sortableHeader}>
-                      <Text style={[styles.headerText, { color: colors.onSurface }]}>{label}</Text>
-                      <Text style={[styles.sortIcon, { color: colors.onSurface }]}>{getSortIcon(key)}</Text>
-                    </View>
-                  </DataTable.Title>
-                ))}
-              </DataTable.Header>
+        {/* Results Section */}
+        <Surface style={[styles.resultsSurface, { backgroundColor: colors.surface }]} elevation={1}>
+          <View style={styles.resultsHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
+              Pending Transactions
+            </Text>
+            {!loading && (
+              <Text style={[styles.resultsCount, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>
+                {filteredAndSortedTransactions.length} transaction{filteredAndSortedTransactions.length !== 1 ? 's' : ''} found
+              </Text>
+            )}
+          </View>
 
-              {filteredAndSortedTransactions.length === 0 ? (
-                <DataTable.Row>
-                  <DataTable.Cell style={styles.noDataCell}>
-                    <Text style={[{ color: colors.onSurface, textAlign: 'center' }, fonts.bodyMedium]}>
-                      No transactions available
-                    </Text>
-                  </DataTable.Cell>
-                </DataTable.Row>
-              ) : (
-                paginatedTransactions.map(transaction => (
-                  <DataTable.Row key={transaction.key}>
-                    <DataTable.Cell numeric style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
-                      <Button
-                        mode="outlined"
-                        icon="eye"
-                        onPress={() => handleViewDetails(transaction)}
-                        style={[styles.actionButton, { borderColor: colors.primary }]}
-                        contentStyle={styles.buttonContent}
-                        labelStyle={[styles.buttonLabel, { color: colors.primary }]}
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={[styles.loadingText, { color: colors.onSurface }, fonts.bodyLarge]}>
+                Loading transactions...
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.tableContainer}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
+                  <DataTable.Header style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
+                    <DataTable.Title style={[styles.actionColumn, { justifyContent: 'center' }]}>
+                      <Text style={[styles.headerText, { color: colors.onSurface }, fonts.labelLarge]}>Actions</Text>
+                    </DataTable.Title>
+                    <DataTable.Title style={[styles.selectColumn, { justifyContent: 'center' }]}>
+                      <Text style={[styles.headerText, { color: colors.onSurface }, fonts.labelLarge]}>Select</Text>
+                    </DataTable.Title>
+                    {columns.map(({ key, label, width }) => (
+                      <DataTable.Title
+                        key={key}
+                        style={[styles.tableColumn, { width: width || COLUMN_WIDTH, justifyContent: 'center' }]}
+                        onPress={() => handleSort(key)}
                       >
-                        View Details
-                      </Button>
-                    </DataTable.Cell>
-                    <DataTable.Cell style={{ width: 50, justifyContent: 'center', paddingVertical: 12 }}>
-                      <Checkbox
-                        status={selectedContracts.has(transaction.id) ? 'checked' : 'unchecked'}
-                        onPress={() => handleContractSelection(transaction.id)}
-                        color={colors.primary}
-                      />
-                    </DataTable.Cell>
-                    {columns.map(({ key, width }, idx) => (
-                      <DataTable.Cell
-                        key={idx}
-                        style={{ width, justifyContent: 'center', paddingVertical: 12 }}
-                      >
-                        <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>
-                          {['delivery_charge', 'delivery_surcharge', 'amount_per_passenger'].includes(key)
-                            ? formatCurrency(transaction[key])
-                            : key === 'delivery_discount'
-                            ? formatPercentage(transaction[key])
-                            : transaction[key]}
+                        <View style={styles.sortableHeader}>
+                          <Text style={[styles.headerText, { color: colors.onSurface }, fonts.labelLarge]}>{label}</Text>
+                          <Text style={[styles.sortIcon, { color: colors.onSurface }]}>{getSortIcon(key)}</Text>
+                        </View>
+                      </DataTable.Title>
+                    ))}
+                  </DataTable.Header>
+
+                  {filteredAndSortedTransactions.length === 0 ? (
+                    <DataTable.Row>
+                      <DataTable.Cell style={styles.noDataCell}>
+                        <Text style={[styles.noDataText, { color: colors.onSurfaceVariant }, fonts.bodyLarge]}>
+                          No transactions found matching your criteria
                         </Text>
                       </DataTable.Cell>
-                    ))}
-                  </DataTable.Row>
-                ))
-              )}
-            </DataTable>
-          </ScrollView>
+                    </DataTable.Row>
+                  ) : (
+                    paginatedTransactions.map((transaction, index) => (
+                      <DataTable.Row 
+                        key={transaction.key}
+                        style={[
+                          styles.tableRow,
+                          index % 2 === 0 && { backgroundColor: colors.surfaceVariant + '20' }
+                        ]}
+                      >
+                        <DataTable.Cell style={[styles.actionColumn, { justifyContent: 'center' }]}>
+                          <Button
+                            mode="outlined"
+                            icon="eye"
+                            onPress={() => handleViewDetails(transaction)}
+                            style={[styles.actionButton, { borderColor: colors.primary }]}
+                            contentStyle={styles.buttonContent}
+                            labelStyle={[styles.buttonLabel, { color: colors.primary }]}
+                          >
+                            View Details
+                          </Button>
+                        </DataTable.Cell>
+                        <DataTable.Cell style={[styles.selectColumn, { justifyContent: 'center' }]}>
+                          <Checkbox
+                            status={selectedContracts.has(transaction.id) ? 'checked' : 'unchecked'}
+                            onPress={() => handleContractSelection(transaction.id)}
+                            color={colors.primary}
+                          />
+                        </DataTable.Cell>
+                        {columns.map(({ key, width }, idx) => (
+                          <DataTable.Cell
+                            key={idx}
+                            style={[styles.tableColumn, { width: width || COLUMN_WIDTH, justifyContent: 'center' }]}
+                          >
+                            <Text style={[styles.cellText, { color: colors.onSurface }, fonts.bodyMedium]}>
+                              {['delivery_charge', 'delivery_surcharge', 'amount_per_passenger'].includes(key)
+                                ? formatCurrency(transaction[key])
+                                : key === 'delivery_discount'
+                                ? formatPercentage(transaction[key])
+                                : transaction[key]}
+                            </Text>
+                          </DataTable.Cell>
+                        ))}
+                      </DataTable.Row>
+                    ))
+                  )}
+                </DataTable>
+              </ScrollView>
 
-          <View style={[styles.paginationContainer, { backgroundColor: colors.surface }]}>
-            <DataTable.Pagination
-              page={page}
-              numberOfPages={Math.ceil(filteredAndSortedTransactions.length / itemsPerPage)}
-              onPageChange={page => setPage(page)}
-              label={`${from + 1}-${to} of ${filteredAndSortedTransactions.length}`}
-              labelStyle={[{ color: colors.onSurface }, fonts.bodyMedium]}
-              showFirstPageButton
-              showLastPageButton
-              showFastPaginationControls
-              numberOfItemsPerPageList={[5, 50, 100, 200]}
-              numberOfItemsPerPage={itemsPerPage}
-              onItemsPerPageChange={setItemsPerPage}
-              selectPageDropdownLabel={'Rows per page'}
-              style={[styles.pagination, { backgroundColor: colors.surfaceVariant }]}
-              theme={{
-                colors: {
-                  onSurface: colors.onSurface,
-                  text: colors.onSurface,
-                  elevation: { level2: colors.surface },
-                },
-                fonts: { bodyMedium: fonts.bodyMedium, labelMedium: fonts.labelMedium },
-              }}
-            />
-          </View>
-        </View>
-      )}
+              {/* Pagination */}
+              {filteredAndSortedTransactions.length > 0 && (
+                <View style={[styles.paginationContainer, { backgroundColor: colors.surfaceVariant }]}>
+                  <DataTable.Pagination
+                    page={page}
+                    numberOfPages={Math.ceil(filteredAndSortedTransactions.length / itemsPerPage)}
+                    onPageChange={page => setPage(page)}
+                    label={`${from + 1}-${to} of ${filteredAndSortedTransactions.length}`}
+                    labelStyle={[styles.paginationLabel, { color: colors.onSurface }, fonts.bodyMedium]}
+                    showFirstPageButton
+                    showLastPageButton
+                    showFastPaginationControls
+                    numberOfItemsPerPageList={[5, 50, 100, 200]}
+                    numberOfItemsPerPage={itemsPerPage}
+                    onItemsPerPageChange={setItemsPerPage}
+                    selectPageDropdownLabel={'Rows per page'}
+                    style={styles.pagination}
+                    theme={{
+                      colors: {
+                        onSurface: colors.onSurface,
+                        text: colors.onSurface,
+                        elevation: {
+                          level2: colors.surface,
+                        },
+                      },
+                      fonts: {
+                        bodyMedium: fonts.bodyMedium,
+                        labelMedium: fonts.labelMedium,
+                      },
+                    }}
+                  />
+                </View>
+              )}
+            </View>
+          )}
+        </Surface>
+      </View>
     </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  searchActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginTop: 16,
-    gap: 10,
+  scrollView: {
+    flex: 1,
   },
-  searchbar: { flex: 1 },
-  buttonContainer: {
+  container: {
+    padding: 16,
+    gap: 16,
+  },
+  searchSurface: {
+    padding: 16,
+    borderRadius: 12,
+  },
+  sectionTitle: {
+    marginBottom: 12,
+    fontWeight: '600',
+  },
+  searchbar: {
+    borderRadius: 8,
+  },
+  searchInput: {
+    fontSize: 16,
+  },
+  filtersSurface: {
+    padding: 16,
+    borderRadius: 12,
+  },
+  filtersRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    gap: 10,
+    gap: 16,
+  },
+  filterGroup: {
+    flex: 1,
+  },
+  filterLabel: {
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  filterButton: {
+    borderRadius: 8,
+  },
+  menuContent: {
+    width: '100%',
+    left: 0,
+    right: 0,
+  },
+  buttonContent: {
+    height: 40,
+  },
+  buttonLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  selectionSurface: {
+    padding: 16,
+    borderRadius: 12,
   },
   selectionContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginHorizontal: 16,
-    marginVertical: 10,
+    marginBottom: 16,
   },
   selectAllContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  selectAllText: { marginLeft: 8 },
-  selectedCount: { fontWeight: 'bold' },
-  filterLabel: { marginRight: 8 },
-  menuAnchor: { flex: 1, position: 'relative', width: 'auto' },
-  menuContent: { width: '100%', left: 0, right: 0 },
-  button: { marginVertical: 10, height: 48, borderRadius: 8 },
-  buttonContent: { height: 48 },
-  buttonLabel: { fontSize: 16, fontWeight: 'bold' },
-  tableContainer: {
-    flex: 1,
-    marginHorizontal: 16,
-    marginBottom: 16,
+  selectAllText: {
+    marginLeft: 8,
+  },
+  selectedCount: {
+    fontWeight: 'bold',
+  },
+  generateButton: {
     borderRadius: 8,
-    minHeight: '55%',
+  },
+  resultsSurface: {
+    borderRadius: 12,
     overflow: 'hidden',
   },
-  table: { flex: 1 },
-  sortableHeader: { flexDirection: 'row', alignItems: 'center' },
-  sortIcon: { marginLeft: 4 },
-  actionButton: { borderRadius: 8, minWidth: 100 },
+  resultsHeader: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.12)',
+  },
+  resultsCount: {
+    marginTop: 4,
+  },
+  loadingContainer: {
+    padding: 32,
+    alignItems: 'center',
+  },
+  loadingText: {
+    textAlign: 'center',
+  },
+  tableContainer: {
+    flex: 1,
+  },
+  table: {
+    flex: 1,
+  },
+  tableHeader: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.12)',
+  },
+  tableRow: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+  },
+  actionColumn: {
+    width: 140,
+    paddingVertical: 12,
+  },
+  selectColumn: {
+    width: 80,
+    paddingVertical: 12,
+  },
+  tableColumn: {
+    paddingVertical: 12,
+  },
+  sortableHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  sortIcon: {
+    fontSize: 12,
+  },
+  headerText: {
+    fontWeight: '600',
+  },
+  cellText: {
+    textAlign: 'center',
+  },
+  actionButton: {
+    borderRadius: 8,
+  },
   noDataCell: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 32,
     flex: 1,
   },
-  loadingText: { textAlign: 'center', marginTop: 20 },
-  paginationContainer: { borderTopWidth: 1, borderTopColor: 'rgba(0, 0, 0, 0.12)' },
-  pagination: {
-    justifyContent: 'space-evenly',
+  noDataText: {
+    textAlign: 'center',
+  },
+  paginationContainer: {
     borderTopWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.12)',
   },
-  tableHeader: { borderBottomWidth: 1, borderBottomColor: 'rgba(0, 0, 0, 0.12)' },
-  headerText: { fontSize: 14, fontWeight: 'bold' },
+  pagination: {
+    justifyContent: 'space-evenly',
+  },
+  paginationLabel: {
+    fontWeight: '500',
+  },
 })
 
 export default PendingContracts

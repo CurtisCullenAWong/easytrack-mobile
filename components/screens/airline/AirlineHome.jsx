@@ -25,7 +25,7 @@ const AirlineHome = ({ navigation }) => {
   const buttons = [
     { label: 'Book Delivery', icon: 'send', screen: 'BookingManagement' },
     { label: 'Booking History', icon: 'history', screen: 'BookingHistory' },
-    { label: 'Luggage Tracking', icon: 'map-marker-path', screen: 'AirlineTrackLuggage' },
+    { label: 'Luggage Tracking', icon: 'map-marker-path', screen: 'TrackLuggage' },
   ]
 
   return (

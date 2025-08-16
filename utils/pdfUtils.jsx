@@ -28,7 +28,7 @@ const cfg = {
     notePayableText: 'Note: Please make check payable to JONALIZ L. CABALUNA',
     bankInfo: 'RCBC ACCT NUMBER: 7591033191',
     signatureLabels: {
-      prepared: 'Prepared by',
+      prepared: 'PREPARED BY',
       checked: 'CHECKED BY',
       preparedSubtitle: 'Revenue Supervisor',
       checkedSubtitle: 'ACCOUNTING',
@@ -224,10 +224,14 @@ const generateTransactionReportHTML = async (
         invoiceSignatureHTML = `
           <div class="signature-duo">
             <div class="signature-box">
-              <img src="${signatureImageUrl}" class="signature-image" />
+              <div class="signature-image-container">
+                <img src="${signatureImageUrl}" class="signature-image" />
+              </div>
+              <div class="signature-underline"></div>
               <div class="signature-label">${cfg.invoice.signatureLabels.prepared}</div>
             </div>
             <div class="signature-box">
+              <div class="signature-underline"></div>
               <div class="signature-label">${cfg.invoice.signatureLabels.checked}</div>
             </div>
           </div>
@@ -241,12 +245,16 @@ const generateTransactionReportHTML = async (
         const preparedBlock = preparedUrl
           ? `
             <div class="signature-box">
-              <img src="${preparedUrl}" class="signature-image" style="transform: rotate(${preparedRotation}deg);" />
+              <div class="signature-image-container">
+                <img src="${preparedUrl}" class="signature-image" style="transform: rotate(${preparedRotation}deg);" />
+              </div>
+              <div class="signature-underline"></div>
               <div class="signature-label">${cfg.invoice.signatureLabels.prepared}</div>
             </div>
           `
           : `
             <div class="signature-box">
+              <div class="signature-underline"></div>
               <div class="signature-label">${cfg.invoice.signatureLabels.prepared}</div>
             </div>
           `
@@ -254,12 +262,16 @@ const generateTransactionReportHTML = async (
         const checkedBlock = checkedUrl
           ? `
             <div class="signature-box">
-              <img src="${checkedUrl}" class="signature-image" style="transform: rotate(${checkedRotation}deg);" />
+              <div class="signature-image-container">
+                <img src="${checkedUrl}" class="signature-image" style="transform: rotate(${checkedRotation}deg);" />
+              </div>
+              <div class="signature-underline"></div>
               <div class="signature-label">${cfg.invoice.signatureLabels.checked}</div>
             </div>
           `
           : `
             <div class="signature-box">
+              <div class="signature-underline"></div>
               <div class="signature-label">${cfg.invoice.signatureLabels.checked}</div>
             </div>
           `
@@ -272,25 +284,19 @@ const generateTransactionReportHTML = async (
         `
         // Post-table signature variant aligned side-by-side with inline labels and subtitles
         const preparedBlockPost = `
-          <div class="signature-column">
-            <div class="signature-row">
-              <div class="signature-label-inline">${cfg.invoice.signatureLabels.prepared}:</div>
-              ${preparedUrl ? `<img src="${preparedUrl}" class="signature-image" style="transform: rotate(${preparedRotation}deg);" />` : `<div class="signature-placeholder"></div>`}
-            </div>
-            <div class="signature-subtitle-inline">${cfg.invoice.signatureLabels.preparedSubtitle}</div>
+          <div class="signature-cell">
+            <div class="signature-label">${cfg.invoice.signatureLabels.prepared}:</div>
+            ${preparedUrl ? `<div class="signature-image-container-inline"><img src="${preparedUrl}" class="signature-image" style="transform: rotate(${preparedRotation}deg);" /></div>` : `<div class="signature-placeholder"></div>`}
           </div>
         `
         const checkedBlockPost = `
-          <div class="signature-column">
-            <div class="signature-row">
-              <div class="signature-label-inline">${cfg.invoice.signatureLabels.checked}:</div>
-              ${checkedUrl ? `<img src="${checkedUrl}" class="signature-image" style="transform: rotate(${checkedRotation}deg);" />` : `<div class="signature-placeholder"></div>`}
-            </div>
-            <div class="signature-subtitle-inline">${cfg.invoice.signatureLabels.checkedSubtitle}</div>
+          <div class="signature-cell">
+            <div class="signature-label">${cfg.invoice.signatureLabels.checked}:</div>
+            ${checkedUrl ? `<div class="signature-image-container-inline"><img src="${checkedUrl}" class="signature-image" style="transform: rotate(${checkedRotation}deg);" /></div>` : `<div class="signature-placeholder"></div>`}
           </div>
         `
         postSignatureHTML = `
-          <div class="signature-duo-post">
+          <div class="signature-row">
             ${preparedBlockPost}
             ${checkedBlockPost}
           </div>
@@ -299,28 +305,24 @@ const generateTransactionReportHTML = async (
         invoiceSignatureHTML = `
           <div class="signature-duo">
             <div class="signature-box">
+              <div class="signature-underline"></div>
               <div class="signature-label">${cfg.invoice.signatureLabels.prepared}</div>
             </div>
             <div class="signature-box">
+              <div class="signature-underline"></div>
               <div class="signature-label">${cfg.invoice.signatureLabels.checked}</div>
             </div>
           </div>
         `
         postSignatureHTML = `
-          <div class="signature-duo-post">
-            <div class="signature-column">
-              <div class="signature-row">
-                <div class="signature-label-inline">${cfg.invoice.signatureLabels.prepared}:</div>
-                <div class="signature-placeholder"></div>
-              </div>
-              <div class="signature-subtitle-inline">${cfg.invoice.signatureLabels.preparedSubtitle}</div>
+          <div class="signature-row">
+            <div class="signature-cell">
+              <div class="signature-label">${cfg.invoice.signatureLabels.prepared}:</div>
+              <div class="signature-placeholder"></div>
             </div>
-            <div class="signature-column">
-              <div class="signature-row">
-                <div class="signature-label-inline">${cfg.invoice.signatureLabels.checked}:</div>
-                <div class="signature-placeholder"></div>
-              </div>
-              <div class="signature-subtitle-inline">${cfg.invoice.signatureLabels.checkedSubtitle}</div>
+            <div class="signature-cell">
+              <div class="signature-label">${cfg.invoice.signatureLabels.checked}:</div>
+              <div class="signature-placeholder"></div>
             </div>
           </div>
         `
@@ -329,28 +331,24 @@ const generateTransactionReportHTML = async (
       invoiceSignatureHTML = `
         <div class="signature-duo">
           <div class="signature-box">
+            <div class="signature-underline"></div>
             <div class="signature-label">${cfg.invoice.signatureLabels.prepared}</div>
           </div>
           <div class="signature-box">
+            <div class="signature-underline"></div>
             <div class="signature-label">${cfg.invoice.signatureLabels.checked}</div>
           </div>
         </div>
       `
       postSignatureHTML = `
-        <div class="signature-duo-post">
-          <div class="signature-column">
-            <div class="signature-row">
-              <div class="signature-label-inline">${cfg.invoice.signatureLabels.prepared}:</div>
-              <div class="signature-placeholder"></div>
-            </div>
-            <div class="signature-subtitle-inline">${cfg.invoice.signatureLabels.preparedSubtitle}</div>
+        <div class="signature-row">
+          <div class="signature-cell">
+            <div class="signature-label">${cfg.invoice.signatureLabels.prepared}:</div>
+            <div class="signature-placeholder"></div>
           </div>
-          <div class="signature-column">
-            <div class="signature-row">
-              <div class="signature-label-inline">${cfg.invoice.signatureLabels.checked}:</div>
-              <div class="signature-placeholder"></div>
-            </div>
-            <div class="signature-subtitle-inline">${cfg.invoice.signatureLabels.checkedSubtitle}</div>
+          <div class="signature-cell">
+            <div class="signature-label">${cfg.invoice.signatureLabels.checked}:</div>
+            <div class="signature-placeholder"></div>
           </div>
         </div>
       `
@@ -406,8 +404,6 @@ const generateTransactionReportHTML = async (
             </tr>
           </tbody>
         </table>
-
-        <div class="invoice-table-title">${cfg.invoice.table2Title}</div>
         <table class="invoice-content-table">
           <thead>
             <tr>
@@ -493,7 +489,6 @@ const generateTransactionReportHTML = async (
             </div>
             <div class="post-right">
               <div class="bank-info">${cfg.invoice.bankInfo}</div>
-              <div class="invoice-table-title" style="margin: 6px 0;">${cfg.invoice.table3Title}</div>
               <table class="table3">
                 <tbody>
                   ${(() => {
@@ -670,10 +665,24 @@ const generateTransactionReportHTML = async (
           .signature-box {
             width: 220px;
             height: 70px;
-            border-bottom: 1px solid #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+          }
+          .signature-image-container {
+            width: 100%;
+            height: 50px;
             display: flex;
             align-items: center;
             justify-content: center;
+            margin-bottom: 5px;
+          }
+          .signature-underline {
+            width: 100%;
+            height: 1px;
+            background-color: #000;
+            margin-bottom: 5px;
           }
           .signature-duo {
             display: flex;
@@ -797,11 +806,25 @@ const generateTransactionReportHTML = async (
           .invoice-signatures .signature-box {
             width: 200px;
             height: 80px;
-            border-bottom: 1px solid #000;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             margin-bottom: 10px;
+          }
+          .invoice-signatures .signature-image-container {
+            width: 100%;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 5px;
+          }
+          .invoice-signatures .signature-underline {
+            width: 100%;
+            height: 1px;
+            background-color: #000;
+            margin-bottom: 5px;
           }
           .invoice-signatures .signature-label {
             font-size: 11px;
@@ -849,23 +872,22 @@ const generateTransactionReportHTML = async (
           .table3 tr:nth-last-child(-n+3) td { border-top: none; border-bottom: none; }
           .table3 tr.amount-due-row td { border-bottom: 1px solid #000 !important; }
           /* Post signature blocks */
-          .signature-duo-post {
-            display: flex;
-            gap: 40px;
-            align-items: flex-start;
-            justify-content: flex-end;
-            margin: 8px 0 4px;
-          }
-          .signature-column { flex: 0 1 auto; display: flex; flex-direction: column; gap: 6px; align-items: center; margin-left: 20px; }
-          .signature-row { display: flex; align-items: center; gap: 8px; }
-          .signature-label-inline { min-width: 110px; font-size: 11px; font-weight: bold; }
+          .signature-row { display: flex; gap: 24px; margin-top: 8px; justify-content: space-between; }
+          .signature-cell { display: flex; align-items: center; gap: 8px; flex: 1; }
+          .signature-label { font-size: 10px; font-weight: bold; }
           .signature-placeholder { width: 180px; height: 48px; border-bottom: 1px solid #000; }
-          .signature-duo-post img.signature-image { width: 180px; max-height: 48px; border-bottom: 1px solid #000; object-fit: contain; }
-          .signature-subtitle-inline { font-size: 10px; color: #000; text-align: center; margin-top: 4px; }
+          .signature-image-container-inline {
+            width: 180px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid #000;
+          }
+          .signature-image-container-inline img.signature-image { width: 180px; max-height: 48px; object-fit: contain; }
           .signature-box-post {
             width: 220px;
             height: 70px;
-            border-bottom: 1px solid #000;
             display: flex;
             align-items: center;
             justify-content: center;

@@ -42,15 +42,17 @@ const ViewMessage = ({ navigation, route }) => {
     fetchStatusMap()
   }, [])
 
-  useEffect(() => {
-    if (currentUser && otherUser) {
-      fetchMessages()
-      const unsubscribe = subscribeToMessages()
-      return () => {
-        if (typeof unsubscribe === 'function') unsubscribe()
+  useFocusEffect(
+    useCallback(() => {
+      if (currentUser && otherUser) {
+        fetchMessages()
+        const unsubscribe = subscribeToMessages()
+        return () => {
+          if (typeof unsubscribe === 'function') unsubscribe()
+        }
       }
-    }
-  }, [currentUser, otherUser])
+    }, [currentUser, otherUser])
+  )
 
   // When this screen is focused, mark unread incoming messages as Read (status_id = 3)
   useFocusEffect(

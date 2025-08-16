@@ -274,7 +274,7 @@ const ContractInfo = ({ contractData, colors, fonts }) => {
     return (
         <Card style={[styles.contractCard, { backgroundColor: colors.surface }]}>
             {contractData.contract_status_id === 4 && (
-                <>
+                <View>
                     <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10, marginHorizontal:'2%' }]}>
                         Location Tracking
                     </Text>
@@ -310,7 +310,7 @@ const ContractInfo = ({ contractData, colors, fonts }) => {
                         deliveryProfile={contractData.delivery_profile}
                         colors={colors}
                     />
-                </>
+                </View>
             )}
             <Card.Content>
                 <Text style={[fonts.titleMedium, { color: colors.primary, marginVertical: 10 }]}>

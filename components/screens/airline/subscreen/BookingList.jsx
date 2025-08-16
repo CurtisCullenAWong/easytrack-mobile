@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react'
-import { View, FlatList, StyleSheet } from 'react-native'
-import { Text, Button, Card, Avatar, Divider, IconButton, useTheme, Searchbar, Menu, Dialog, Portal } from 'react-native-paper'
+import React, { useState, useEffect, useCallback } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
+import { View, FlatList, StyleSheet, RefreshControl } from 'react-native'
+import { Text, Button, Card, Divider, IconButton, useTheme, Searchbar, Menu, Dialog, Portal, Surface } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 
@@ -10,6 +11,7 @@ const ContractsMade = ({ navigation }) => {
   const [currentTime, setCurrentTime] = useState('')
   const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchColumn, setSearchColumn] = useState('id')
   const [filterMenuVisible, setFilterMenuVisible] = useState(false)
@@ -58,47 +60,41 @@ const ContractsMade = ({ navigation }) => {
     return () => clearInterval(interval)
   }, [])
 
-  useEffect(() => {
-    fetchContracts()
-    
-    // Set up realtime subscription
-    const setupRealtime = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+  // Fetch and subscribe only while screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      fetchContracts()
 
-      const channel = supabase
-        .channel('contracts_changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'contracts',
-            filter: `airline_id=eq.${user.id}`
-          },
-          (payload) => {
-            // Refresh the contracts list when changes occur
-            fetchContracts()
-          }
-        )
-        .subscribe()
+      let activeChannel
+      const setupRealtime = async () => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
 
-      // Store channel reference for cleanup
-      return channel
-    }
-
-    let channel
-    setupRealtime().then(ch => {
-      channel = ch
-    })
-
-    // Cleanup subscription on unmount
-    return () => {
-      if (channel) {
-        supabase.removeChannel(channel)
+        activeChannel = supabase
+          .channel('contracts_changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'contracts',
+              filter: `airline_id=eq.${user.id}`
+            },
+            () => {
+              fetchContracts()
+            }
+          )
+          .subscribe()
       }
-    }
-  }, [])
+      setupRealtime()
+
+      return () => {
+        if (activeChannel) {
+          supabase.removeChannel(activeChannel)
+        }
+      }
+    }, [])
+  )
 
   const fetchContracts = async () => {
     try {
@@ -131,6 +127,17 @@ const ContractsMade = ({ navigation }) => {
       setLoading(false)
     }
   }
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    try {
+      await fetchContracts()
+    } catch (error) {
+      showSnackbar('Error refreshing contracts: ' + error.message)
+    } finally {
+      setRefreshing(false)
+    }
+  }, [])
 
   const handleSort = (column) => {
     if (sortColumn === column) {
@@ -246,7 +253,7 @@ const ContractsMade = ({ navigation }) => {
 
   const ContractCard = ({ contract }) => {    
     return (
-      <Card style={[styles.contractCard, { backgroundColor: colors.surface }]}>
+      <Card style={[styles.contractCard, { backgroundColor: colors.surfaceVariant }]}>
         <Card.Content>
           <View style={styles.contractCardHeader}>
             <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>CONTRACT ID</Text>
@@ -265,21 +272,6 @@ const ContractsMade = ({ navigation }) => {
           </View>
           <Divider />
           <View style={styles.passengerInfoContainer}>
-          {/*             
-          {contract.airline_profile?.pfp_id ? (
-              <Avatar.Image 
-                  size={40} 
-                  source={{ uri: contract.airline_profile?.pfp_id }}
-                  style={[styles.avatarImage,{ backgroundColor: colors.primary }]}
-              />
-          ) : (
-              <Avatar.Text 
-                  size={40} 
-                  label={contract.airline_profile?.first_name ? contract.airline_profile?.first_name[0].toUpperCase() : 'U'}
-                  style={[styles.avatarImage,{ backgroundColor: colors.primary }]}
-                  labelStyle={{ color: colors.onPrimary }}
-              />
-          )} */}
             <View>
               <View style={{ flexDirection: 'row', gap: 5 }}>
                 <Text style={[fonts.labelMedium, { fontWeight: 'bold', color: colors.primary }]}>
@@ -295,6 +287,9 @@ const ContractsMade = ({ navigation }) => {
               </View>
               <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
                 Total Luggage Quantity: {contract.luggage_quantity || 0}
+              </Text>
+              <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
+                Case Number: {contract.case_number || 'N/A'}
               </Text>
             </View>
           </View>
@@ -348,7 +343,7 @@ const ContractsMade = ({ navigation }) => {
           <Divider />
           <Button 
             mode="contained" 
-            onPress={() => navigation.navigate('AirlineTrackLuggage', { 
+            onPress={() => navigation.navigate('TrackLuggage', { 
               contractId: contract.id,
             })} 
             style={[styles.actionButton, { backgroundColor: colors.primary }]}
@@ -376,113 +371,171 @@ const ContractsMade = ({ navigation }) => {
     )
   }
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {SnackbarElement}
-      <View style={{ backgroundColor: colors.background }}>
-        <Card style={[styles.timeCard, { backgroundColor: colors.surface, elevation: colors.elevation.level3 }]}>
-          <Card.Content style={styles.timeCardContent}>
-            <Text style={fonts.titleSmall}>{currentTime}</Text>
-          </Card.Content>
-        </Card>
-      </View>
-      <View style={styles.searchActionsRow}>
+  const renderHeader = () => (
+    <>
+      {/* Time Display Section */}
+      <Surface style={[styles.timeSurface, { backgroundColor: colors.surface }]} elevation={1}>
+        <Text style={[styles.timeText, { color: colors.onSurface }, fonts.titleMedium]}>
+          {currentTime}
+        </Text>
+      </Surface>
+
+      {/* Search Section */}
+      <Surface style={[styles.searchSurface, { backgroundColor: colors.surface }]} elevation={1}>
+        <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
+          Search & Filter
+        </Text>
         <Searchbar
           placeholder={`Search by ${filterOptions.find(opt => opt.value === searchColumn)?.label}`}
           onChangeText={setSearchQuery}
           value={searchQuery}
-          style={[styles.searchbar, { backgroundColor: colors.surface }]}
+          style={[styles.searchbar, { backgroundColor: colors.surfaceVariant }]}
+          iconColor={colors.onSurfaceVariant}
+          inputStyle={[styles.searchInput, { color: colors.onSurfaceVariant }]}
         />
-      </View>
-        <View style={styles.buttonGroup}>
-          <Menu
-            visible={filterMenuVisible}
-            onDismiss={() => setFilterMenuVisible(false)}
-            anchor={
-              <Button
-                mode="contained"
-                icon="filter-variant"
-                onPress={() => setFilterMenuVisible(true)}
-                style={[styles.actionButton, { backgroundColor: colors.primary }]}
-                contentStyle={styles.buttonContent}
-                labelStyle={fonts.labelMedium}
-              >
-                {filterOptions.find(opt => opt.value === searchColumn)?.label}
-              </Button>
-            }
-            contentStyle={{ backgroundColor: colors.surface }}
-          >
-            {filterOptions.map(option => (
-              <Menu.Item
-                key={option.value}
-                onPress={() => {
-                  setSearchColumn(option.value)
-                  setFilterMenuVisible(false)
-                }}
-                title={option.label}
-                titleStyle={[
-                  {
-                    color: searchColumn === option.value
-                      ? colors.primary
-                      : colors.onSurface,
-                  },
-                  fonts.bodyLarge,
-                ]}
-                leadingIcon={searchColumn === option.value ? 'check' : undefined}
-              />
-            ))}
-          </Menu>
-          <Menu
-            visible={sortMenuVisible}
-            onDismiss={() => setSortMenuVisible(false)}
-            anchor={
-              <Button
-                mode="contained"
-                icon="sort"
-                onPress={() => setSortMenuVisible(true)}
-                style={[styles.actionButton, { backgroundColor: colors.primary }]}
-                contentStyle={styles.buttonContent}
-                labelStyle={fonts.labelMedium}
-              >
-                {getSortLabel()}
-              </Button>
-            }
-            contentStyle={{ backgroundColor: colors.surface }}
-          >
-            {sortOptions.map(option => (
-              <Menu.Item
-                key={option.value}
-                onPress={() => {
-                  handleSort(option.value)
-                  setSortMenuVisible(false)
-                }}
-                title={option.label}
-                titleStyle={[
-                  {
-                    color: sortColumn === option.value
-                      ? colors.primary
-                      : colors.onSurface,
-                  },
-                  fonts.bodyLarge,
-                ]}
-                leadingIcon={sortColumn === option.value ? 'check' : undefined}
-              />
-            ))}
-          </Menu>    
+      </Surface>
+
+      {/* Filters Section */}
+      <Surface style={[styles.filtersSurface, { backgroundColor: colors.surface }]} elevation={1}>
+        <View style={styles.filtersRow}>
+          <View style={styles.filterGroup}>
+            <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+              Search Column
+            </Text>
+            <Menu
+              visible={filterMenuVisible}
+              onDismiss={() => setFilterMenuVisible(false)}
+              anchor={
+                <Button
+                  mode="outlined"
+                  icon="filter-variant"
+                  onPress={() => setFilterMenuVisible(true)}
+                  style={[styles.filterButton, { borderColor: colors.outline }]}
+                  contentStyle={styles.buttonContent}
+                  labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                >
+                  {filterOptions.find(opt => opt.value === searchColumn)?.label || 'Select Column'}
+                </Button>
+              }
+              contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+            >
+              {filterOptions.map(option => (
+                <Menu.Item
+                  key={option.value}
+                  onPress={() => {
+                    setSearchColumn(option.value)
+                    setFilterMenuVisible(false)
+                  }}
+                  title={option.label}
+                  titleStyle={[
+                    {
+                      color: searchColumn === option.value
+                        ? colors.primary
+                        : colors.onSurface,
+                    },
+                    fonts.bodyLarge,
+                  ]}
+                  leadingIcon={searchColumn === option.value ? 'check' : undefined}
+                />
+              ))}
+            </Menu>
+          </View>
+
+          <View style={styles.filterGroup}>
+            <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+              Sort By
+            </Text>
+            <Menu
+              visible={sortMenuVisible}
+              onDismiss={() => setSortMenuVisible(false)}
+              anchor={
+                <Button
+                  mode="outlined"
+                  icon="sort"
+                  onPress={() => setSortMenuVisible(true)}
+                  style={[styles.filterButton, { borderColor: colors.outline }]}
+                  contentStyle={styles.buttonContent}
+                  labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                >
+                  {getSortLabel()}
+                </Button>
+              }
+              contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+            >
+              {sortOptions.map(option => (
+                <Menu.Item
+                  key={option.value}
+                  onPress={() => {
+                    handleSort(option.value)
+                    setSortMenuVisible(false)
+                  }}
+                  title={option.label}
+                  titleStyle={[
+                    {
+                      color: sortColumn === option.value
+                        ? colors.primary
+                        : colors.onSurface,
+                    },
+                    fonts.bodyLarge,
+                  ]}
+                  leadingIcon={sortColumn === option.value ? 'check' : undefined}
+                />
+              ))}
+            </Menu>
+          </View>
         </View>
-      {/* Indication for contracts availability */}
-      {loading ? null : filteredAndSortedContracts.length === 0 && (
-        <Text style={[fonts.bodyMedium,{ textAlign: 'center', color: colors.onSurfaceVariant, marginTop: 30, marginBottom: 10 }]}>
-          No contracts available.
+      </Surface>
+
+      {/* Results Header */}
+      <Surface style={[styles.resultsSurface, { backgroundColor: colors.surface }]} elevation={1}>
+        <View style={styles.resultsHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
+            Booking Results
+          </Text>
+          {!loading && (
+            <Text style={[styles.resultsCount, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>
+              {filteredAndSortedContracts.length} booking{filteredAndSortedContracts.length !== 1 ? 's' : ''} found
+            </Text>
+          )}
+        </View>
+      </Surface>
+    </>
+  )
+
+  const renderEmptyComponent = () => (
+    <View style={styles.emptyContainer}>
+      {loading ? (
+        <Text style={[styles.emptyText, { color: colors.onSurface }, fonts.bodyLarge]}>
+          Loading bookings...
+        </Text>
+      ) : (
+        <Text style={[styles.emptyText, { color: colors.onSurfaceVariant }, fonts.bodyLarge]}>
+          No bookings found matching your criteria
         </Text>
       )}
+    </View>
+  )
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {SnackbarElement}
+      
       <FlatList
         data={filteredAndSortedContracts}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => <ContractCard contract={item} />}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={renderEmptyComponent}
         contentContainerStyle={styles.flatListContent}
-        refreshing={loading}
-        onRefresh={fetchContracts}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+        showsVerticalScrollIndicator={false}
       />
       
       <Portal>
@@ -541,43 +594,90 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  timeCard: {
-    borderRadius: 10,
-    marginVertical: 10,
-    marginHorizontal: 16,
+  flatListContent: {
+    paddingBottom: 20,
   },
-  timeCardContent: {
+  timeSurface: {
+    margin: 16,
+    padding: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    paddingVertical: 10,
   },
-  searchActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  timeText: {
+    fontWeight: '600',
+  },
+  searchSurface: {
     marginHorizontal: 16,
-    gap: 10,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+  },
+  sectionTitle: {
+    marginBottom: 12,
+    fontWeight: '600',
   },
   searchbar: {
+    borderRadius: 8,
+  },
+  searchInput: {
+    fontSize: 16,
+  },
+  filtersSurface: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+  },
+  filtersRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  filterGroup: {
     flex: 1,
   },
-  buttonGroup: {
-    alignSelf:'center',
-    flexDirection: 'row',
-    gap: 8,
+  filterLabel: {
+    marginBottom: 8,
+    fontWeight: '500',
   },
-  actionButton: {
+  filterButton: {
     borderRadius: 8,
-    minWidth: 120,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    gap: 10,
+  },
+  menuContent: {
+    width: '100%',
+    left: 0,
+    right: 0,
   },
   buttonContent: {
     height: 40,
   },
+  buttonLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  resultsSurface: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  resultsHeader: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.12)',
+  },
+  resultsCount: {
+    marginTop: 4,
+  },
+  emptyContainer: {
+    padding: 32,
+    alignItems: 'center',
+  },
+  emptyText: {
+    textAlign: 'center',
+  },
   contractCard: {
-    marginTop: 10,
-    marginBottom: 10,
-    marginHorizontal: 10,
+    marginHorizontal: 16,
+    marginBottom: 16,
     borderRadius: 12,
     elevation: 2,
   },
@@ -626,8 +726,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 10,
   },
-  flatListContent: {
-    paddingBottom: 20,
+  actionButton: {
+    borderRadius: 8,
+    marginVertical: 4,
   },
   dialogContractInfo: {
     marginTop: 8,

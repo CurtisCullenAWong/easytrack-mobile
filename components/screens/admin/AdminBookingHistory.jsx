@@ -1,15 +1,15 @@
 import { useState, useCallback, useEffect } from 'react'
 import { View, ScrollView, StyleSheet, RefreshControl, Image, Dimensions } from 'react-native'
-import { Text, Button, useTheme, Chip, Searchbar, Menu, DataTable, Portal, Modal } from 'react-native-paper'
+import { Text, Button, useTheme, Chip, Searchbar, Menu, DataTable, Portal, Modal, Surface } from 'react-native-paper'
 import { useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../../../lib/supabaseAdmin'
 import Header from '../../customComponents/Header'
 
 const COLUMN_WIDTH = 180
-const ID_COLUMN_WIDTH = 120
+const ID_COLUMN_WIDTH = 200
 const LOCATION_COLUMN_WIDTH = 200
 const TIMELINE_COLUMN_WIDTH = 300
-const STATUS_COLUMN_WIDTH = 300
+const STATUS_COLUMN_WIDTH = 200
 const PAYMENT_COLUMN_WIDTH = 150
 
 const BookingHistoryAdmin = ({ navigation }) => {
@@ -298,244 +298,281 @@ const BookingHistoryAdmin = ({ navigation }) => {
 
     return (
         <ScrollView 
-            style={{ flex: 1, backgroundColor: colors.background }}
+            style={[styles.scrollView, { backgroundColor: colors.background }]}
             refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
             }
         >
             <Header navigation={navigation} title="Booking History" />
+            
+            <View style={styles.container}>
+                {/* Search Section */}
+                <Surface style={[styles.searchSurface, { backgroundColor: colors.surface }]} elevation={1}>
+                    <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
+                        Search & Filter
+                    </Text>
+                    <Searchbar
+                        placeholder={`Search by ${filterOptions.find(opt => opt.value === searchColumn)?.label}`}
+                        onChangeText={setSearchQuery}
+                        value={searchQuery}
+                        style={[styles.searchbar, { backgroundColor: colors.surfaceVariant }]}
+                        iconColor={colors.onSurfaceVariant}
+                        inputStyle={[styles.searchInput, { color: colors.onSurfaceVariant }]}
+                    />
+                </Surface>
 
-            <View style={styles.searchActionsRow}>
-                <Searchbar
-                    placeholder={`Search by ${filterOptions.find(opt => opt.value === searchColumn)?.label}`}
-                    onChangeText={setSearchQuery}
-                    value={searchQuery}
-                    style={[styles.searchbar, { backgroundColor: colors.surface }]}
-                />
-            </View>
-
-            <View style={styles.buttonContainer}>
-                <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Filter by:</Text>
-                <View style={styles.menuAnchor}>
-                    <Menu
-                        visible={filterMenuVisible}
-                        onDismiss={() => setFilterMenuVisible(false)}
-                        anchor={
-                            <Button
-                                mode="contained"
-                                icon="filter-variant"
-                                onPress={() => setFilterMenuVisible(true)}
-                                style={[styles.button, { borderColor: colors.primary, flex: 1 }]}
-                                contentStyle={styles.buttonContent}
-                                labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
-                            >
-                                {filterOptions.find(opt => opt.value === searchColumn)?.label}
-                            </Button>
-                        }
-                        contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
-                    >
-                        {filterOptions.map(option => (
-                            <Menu.Item
-                                key={option.value}
-                                onPress={() => {
-                                    setSearchColumn(option.value)
-                                    setFilterMenuVisible(false)
-                                }}
-                                title={option.label}
-                                titleStyle={[
-                                    {
-                                        color: searchColumn === option.value
-                                            ? colors.primary
-                                            : colors.onSurface,
-                                    },
-                                    fonts.bodyLarge,
-                                ]}
-                                leadingIcon={searchColumn === option.value ? 'check' : undefined}
-                            />
-                        ))}
-                    </Menu>
-                </View>
-            </View>
-
-            <View style={styles.buttonContainer}>
-                <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Date Range:</Text>
-                <View style={styles.menuAnchor}>
-                    <Menu
-                        visible={showDateMenu}
-                        onDismiss={() => setShowDateMenu(false)}
-                        anchor={
-                            <Button
-                                mode="outlined"
-                                icon="calendar"
-                                onPress={() => setShowDateMenu(true)}
-                                style={[styles.button, { borderColor: colors.primary, flex: 1 }]}
-                                contentStyle={styles.buttonContent}
-                                labelStyle={[styles.buttonLabel, { color: colors.primary }]}
-                            >
-                                {getDateFilterLabel(dateFilter)}
-                            </Button>
-                        }
-                        contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
-                    >
-                        {getDateFilterOptions().map((option) => (
-                            <Menu.Item
-                                key={option.value}
-                                onPress={() => {
-                                    setDateFilter(option.value)
-                                    setShowDateMenu(false)
-                                }}
-                                title={option.label}
-                                titleStyle={[
-                                    {
-                                        color: dateFilter === option.value
-                                            ? colors.primary
-                                            : colors.onSurface,
-                                    },
-                                    fonts.bodyLarge,
-                                ]}
-                                leadingIcon={dateFilter === option.value ? 'check' : undefined}
-                            />
-                        ))}
-                    </Menu>
-                </View>
-            </View>
-
-            {loading ? (
-                <Text style={[styles.loadingText, { color: colors.onSurface }, fonts.bodyMedium]}>
-                    Loading bookings...
-                </Text>
-            ) : (
-                <View style={styles.tableContainer}>
-                    <ScrollView horizontal>
-                        <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
-
-                            <DataTable.Header style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
-                                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
-                                    <Text style={[styles.headerText, { color: colors.onSurface }]}>Actions</Text>
-                                </DataTable.Title>
-                                {columns.map(({ key, label, width }) => (
-                                    <DataTable.Title
-                                        key={key}
-                                        style={{ width: width || COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}
-                                        onPress={() => handleSort(key)}
+                {/* Filters Section */}
+                <Surface style={[styles.filtersSurface, { backgroundColor: colors.surface }]} elevation={1}>
+                    <View style={styles.filtersRow}>
+                        <View style={styles.filterGroup}>
+                            <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+                                Search Column
+                            </Text>
+                            <Menu
+                                visible={filterMenuVisible}
+                                onDismiss={() => setFilterMenuVisible(false)}
+                                anchor={
+                                    <Button
+                                        mode="outlined"
+                                        icon="filter-variant"
+                                        onPress={() => setFilterMenuVisible(true)}
+                                        style={[styles.filterButton, { borderColor: colors.outline }]}
+                                        contentStyle={styles.buttonContent}
+                                        labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
                                     >
-                                        <View style={styles.sortableHeader}>
-                                            <Text style={[styles.headerText, { color: colors.onSurface }]}>{label}</Text>
-                                            <Text style={[styles.sortIcon, { color: colors.onSurface }]}>{getSortIcon(key)}</Text>
-                                        </View>
-                                    </DataTable.Title>
+                                        {filterOptions.find(opt => opt.value === searchColumn)?.label || 'Select Column'}
+                                    </Button>
+                                }
+                                contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+                            >
+                                {filterOptions.map(option => (
+                                    <Menu.Item
+                                        key={option.value}
+                                        onPress={() => {
+                                            setSearchColumn(option.value)
+                                            setFilterMenuVisible(false)
+                                        }}
+                                        title={option.label}
+                                        titleStyle={[
+                                            {
+                                                color: searchColumn === option.value
+                                                    ? colors.primary
+                                                    : colors.onSurface,
+                                            },
+                                            fonts.bodyLarge,
+                                        ]}
+                                        leadingIcon={searchColumn === option.value ? 'check' : undefined}
+                                    />
                                 ))}
-                            </DataTable.Header>
+                            </Menu>
+                        </View>
 
-                            {filteredAndSortedContracts.length === 0 ? (
-                                <DataTable.Row>
-                                    <DataTable.Cell style={styles.noDataCell}>
-                                        <Text style={[{ color: colors.onSurface, textAlign: 'center' }, fonts.bodyMedium]}>
-                                            No bookings found
-                                        </Text>
-                                    </DataTable.Cell>
-                                </DataTable.Row>
-                            ) : (
-                                paginatedContracts.map((contract) => (
-                                    <DataTable.Row key={contract.id}>
-                                        <DataTable.Cell style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
-                                            <Button
-                                                mode="outlined"
-                                                onPress={() => navigation.navigate('ContractDetailsAdmin', { id: contract.id })}
-                                                style={[styles.actionButton, { borderColor: colors.primary }]}
-                                                contentStyle={styles.buttonContent}
-                                                labelStyle={[styles.buttonLabel, { color: colors.primary }]}
-                                            >
-                                                View Details
-                                            </Button>
-                                        </DataTable.Cell>
-                                        {columns.map(({ key, width }) => (
-                                            <DataTable.Cell
-                                                key={key}
-                                                style={{ width: width || COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}
-                                            >
-                                                {key === 'delivery_charge' ? (
-                                                    <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]} selectable>
-                                                        {contract.delivery_charge ? `₱${contract.delivery_charge.toLocaleString()}` : 'N/A'}
-                                                    </Text>
-                                                ) : key === 'status' ? (
-                                                    <Chip
-                                                        style={[styles.statusChip, { backgroundColor: getStatusColor(contract.contract_status_id) }]}
-                                                        textStyle={{ color: colors.surface }}
-                                                    >
-                                                        {contract.contract_status?.status_name}
-                                                    </Chip>
-                                                ) : key === 'timeline' ? (
-                                                    <View style={styles.timelineContainer}>
-                                                        <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>
-                                                            Created: {formatDate(contract.created_at)}
-                                                        </Text>
-                                                        {contract.accepted_at && (
-                                                            <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>
-                                                                Accepted: {formatDate(contract.accepted_at)}
-                                                            </Text>
-                                                        )}
-                                                        {contract.pickup_at && (
-                                                            <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>
-                                                                Picked up: {formatDate(contract.pickup_at)}
-                                                            </Text>
-                                                        )}
-                                                        {contract.delivered_at && (
-                                                            <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>
-                                                                Delivered: {formatDate(contract.delivered_at)}
-                                                            </Text>
-                                                        )}
-                                                        {contract.cancelled_at && (
-                                                            <Text style={[{ color: colors.error }, fonts.bodyMedium]}>
-                                                                Cancelled: {formatDate(contract.cancelled_at)}
-                                                            </Text>
-                                                        )}
-                                                    </View>
-                                                ) : (
-                                                    <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]} selectable>
-                                                        {contract[key] || 'N/A'}
-                                                    </Text>
-                                                )}
-                                            </DataTable.Cell>
-                                        ))}
-                                    </DataTable.Row>
-                                ))
-                            )}
-                        </DataTable>
-                    </ScrollView>
-
-                    <View style={[styles.paginationContainer, { backgroundColor: colors.surface }]}>
-                        <DataTable.Pagination
-                            page={page}
-                            numberOfPages={Math.ceil(filteredAndSortedContracts.length / itemsPerPage)}
-                            onPageChange={page => setPage(page)}
-                            label={`${from + 1}-${to} of ${filteredAndSortedContracts.length}`}
-                            labelStyle={[{ color: colors.onSurface }, fonts.bodyMedium]}
-                            showFirstPageButton
-                            showLastPageButton
-                            showFastPaginationControls
-                            numberOfItemsPerPageList={[5, 10, 20, 50]}
-                            numberOfItemsPerPage={itemsPerPage}
-                            onItemsPerPageChange={setItemsPerPage}
-                            selectPageDropdownLabel={'Rows per page'}
-                            style={[styles.pagination, { backgroundColor: colors.surfaceVariant }]}
-                            theme={{
-                                colors: {
-                                    onSurface: colors.onSurface,
-                                    text: colors.onSurface,
-                                    elevation: {
-                                        level2: colors.surface,
-                                    },
-                                },
-                                fonts: {
-                                    bodyMedium: fonts.bodyMedium,
-                                    labelMedium: fonts.labelMedium,
-                                },
-                            }}
-                        />
+                        <View style={styles.filterGroup}>
+                            <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+                                Date Filter
+                            </Text>
+                            <Menu
+                                visible={showDateMenu}
+                                onDismiss={() => setShowDateMenu(false)}
+                                anchor={
+                                    <Button
+                                        mode="outlined"
+                                        icon="calendar"
+                                        onPress={() => setShowDateMenu(true)}
+                                        style={[styles.filterButton, { borderColor: colors.outline }]}
+                                        contentStyle={styles.buttonContent}
+                                        labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                                    >
+                                        {getDateFilterLabel(dateFilter)}
+                                    </Button>
+                                }
+                                contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+                            >
+                                {getDateFilterOptions().map((option) => (
+                                    <Menu.Item
+                                        key={option.value}
+                                        onPress={() => {
+                                            setDateFilter(option.value)
+                                            setShowDateMenu(false)
+                                        }}
+                                        title={option.label}
+                                        titleStyle={[
+                                            {
+                                                color: dateFilter === option.value
+                                                    ? colors.primary
+                                                    : colors.onSurface,
+                                            },
+                                            fonts.bodyLarge,
+                                        ]}
+                                        leadingIcon={dateFilter === option.value ? 'check' : undefined}
+                                    />
+                                ))}
+                            </Menu>
+                        </View>
                     </View>
-                </View>
-            )}
+                </Surface>
+
+                {/* Results Section */}
+                <Surface style={[styles.resultsSurface, { backgroundColor: colors.surface }]} elevation={1}>
+                    <View style={styles.resultsHeader}>
+                        <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
+                            Booking Results
+                        </Text>
+                        {!loading && (
+                            <Text style={[styles.resultsCount, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>
+                                {filteredAndSortedContracts.length} booking{filteredAndSortedContracts.length !== 1 ? 's' : ''} found
+                            </Text>
+                        )}
+                    </View>
+
+                    {loading ? (
+                        <View style={styles.loadingContainer}>
+                            <Text style={[styles.loadingText, { color: colors.onSurface }, fonts.bodyLarge]}>
+                                Loading bookings...
+                            </Text>
+                        </View>
+                    ) : (
+                        <View style={styles.tableContainer}>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
+                                    <DataTable.Header style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
+                                        <DataTable.Title style={[styles.actionColumn, { justifyContent: 'center' }]}>
+                                            <Text style={[styles.headerText, { color: colors.onSurface }, fonts.labelLarge]}>Actions</Text>
+                                        </DataTable.Title>
+                                        {columns.map(({ key, label, width }) => (
+                                            <DataTable.Title
+                                                key={key}
+                                                style={[styles.tableColumn, { width: width || COLUMN_WIDTH, justifyContent: 'center' }]}
+                                                onPress={() => handleSort(key)}
+                                            >
+                                                <View style={styles.sortableHeader}>
+                                                    <Text style={[styles.headerText, { color: colors.onSurface }, fonts.labelLarge]}>{label}</Text>
+                                                    <Text style={[styles.sortIcon, { color: colors.onSurface }]}>{getSortIcon(key)}</Text>
+                                                </View>
+                                            </DataTable.Title>
+                                        ))}
+                                    </DataTable.Header>
+                                    
+                                    {filteredAndSortedContracts.length === 0 ? (
+                                        <DataTable.Row>
+                                            <DataTable.Cell style={styles.noDataCell}>
+                                                <Text style={[styles.noDataText, { color: colors.onSurfaceVariant }, fonts.bodyLarge]}>
+                                                    No bookings found matching your criteria
+                                                </Text>
+                                            </DataTable.Cell>
+                                        </DataTable.Row>
+                                    ) : (
+                                        paginatedContracts.map((contract, index) => (
+                                            <DataTable.Row 
+                                                key={contract.id}
+                                                style={[
+                                                    styles.tableRow,
+                                                    index % 2 === 0 && { backgroundColor: colors.surfaceVariant + '20' }
+                                                ]}
+                                            >
+                                                <DataTable.Cell style={[styles.actionColumn, { justifyContent: 'center' }]}>
+                                                    <Button
+                                                        mode="outlined"
+                                                        onPress={() => navigation.navigate('ContractDetailsAdmin', { id: contract.id })}
+                                                        style={[styles.actionButton, { borderColor: colors.primary }]}
+                                                        contentStyle={styles.buttonContent}
+                                                        labelStyle={[styles.buttonLabel, { color: colors.primary }]}
+                                                    >
+                                                        View Details
+                                                    </Button>
+                                                </DataTable.Cell>
+                                                {columns.map(({ key, width }) => (
+                                                    <DataTable.Cell
+                                                        key={key}
+                                                        style={[styles.tableColumn, { width: width || COLUMN_WIDTH, justifyContent: 'center' }]}
+                                                    >
+                                                        {key === 'delivery_charge' ? (
+                                                            <Text style={[styles.cellText, { color: colors.onSurface }, fonts.bodyMedium]} selectable>
+                                                                {contract.delivery_charge ? `₱${contract.delivery_charge.toLocaleString()}` : 'N/A'}
+                                                            </Text>
+                                                        ) : key === 'status' ? (
+                                                            <Chip
+                                                                style={[styles.statusChip, { backgroundColor: getStatusColor(contract.contract_status_id) }]}
+                                                                textStyle={{ color: colors.surface }}
+                                                            >
+                                                                {contract.contract_status?.status_name}
+                                                            </Chip>
+                                                        ) : key === 'timeline' ? (
+                                                            <View style={styles.timelineContainer}>
+                                                                <Text style={[styles.timelineText, { color: colors.onSurface }, fonts.bodySmall]}>
+                                                                    Created: {formatDate(contract.created_at)}
+                                                                </Text>
+                                                                {contract.accepted_at && (
+                                                                    <Text style={[styles.timelineText, { color: colors.onSurface }, fonts.bodySmall]}>
+                                                                        Accepted: {formatDate(contract.accepted_at)}
+                                                                    </Text>
+                                                                )}
+                                                                {contract.pickup_at && (
+                                                                    <Text style={[styles.timelineText, { color: colors.onSurface }, fonts.bodySmall]}>
+                                                                        Picked up: {formatDate(contract.pickup_at)}
+                                                                    </Text>
+                                                                )}
+                                                                {contract.delivered_at && (
+                                                                    <Text style={[styles.timelineText, { color: colors.primary }, fonts.bodySmall]}>
+                                                                        Delivered: {formatDate(contract.delivered_at)}
+                                                                    </Text>
+                                                                )}
+                                                                {contract.cancelled_at && (
+                                                                    <Text style={[styles.timelineText, { color: colors.error }, fonts.bodySmall]}>
+                                                                        Cancelled: {formatDate(contract.cancelled_at)}
+                                                                    </Text>
+                                                                )}
+                                                            </View>
+                                                        ) : (
+                                                            <Text style={[styles.cellText, { color: colors.onSurface }, fonts.bodyMedium]} selectable>
+                                                                {contract[key] || 'N/A'}
+                                                            </Text>
+                                                        )}
+                                                    </DataTable.Cell>
+                                                ))}
+                                            </DataTable.Row>
+                                        ))
+                                    )}
+                                </DataTable>
+                            </ScrollView>
+
+                            {/* Pagination */}
+                            {filteredAndSortedContracts.length > 0 && (
+                                <View style={[styles.paginationContainer, { backgroundColor: colors.surfaceVariant }]}>
+                                    <DataTable.Pagination
+                                        page={page}
+                                        numberOfPages={Math.ceil(filteredAndSortedContracts.length / itemsPerPage)}
+                                        onPageChange={page => setPage(page)}
+                                        label={`${from + 1}-${to} of ${filteredAndSortedContracts.length}`}
+                                        labelStyle={[styles.paginationLabel, { color: colors.onSurface }, fonts.bodyMedium]}
+                                        showFirstPageButton
+                                        showLastPageButton
+                                        showFastPaginationControls
+                                        numberOfItemsPerPageList={[5, 10, 20, 50]}
+                                        numberOfItemsPerPage={itemsPerPage}
+                                        onItemsPerPageChange={setItemsPerPage}
+                                        selectPageDropdownLabel={'Rows per page'}
+                                        style={styles.pagination}
+                                        theme={{
+                                            colors: {
+                                                onSurface: colors.onSurface,
+                                                text: colors.onSurface,
+                                                elevation: {
+                                                    level2: colors.surface,
+                                                },
+                                            },
+                                            fonts: {
+                                                bodyMedium: fonts.bodyMedium,
+                                                labelMedium: fonts.labelMedium,
+                                            },
+                                        }}
+                                    />
+                                </View>
+                            )}
+                        </View>
+                    )}
+                </Surface>
+            </View>
 
             <Portal>
                 <Modal
@@ -557,56 +594,110 @@ const BookingHistoryAdmin = ({ navigation }) => {
 }
 
 const styles = StyleSheet.create({
-    searchActionsRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginHorizontal: 16,
-        marginTop: 16,
-        gap: 10,
-    },
-    searchbar: {
+    scrollView: {
         flex: 1,
     },
-    buttonContainer: {
+    container: {
+        padding: 16,
+        gap: 16,
+    },
+    searchSurface: {
+        padding: 16,
+        borderRadius: 12,
+    },
+    sectionTitle: {
+        marginBottom: 12,
+        fontWeight: '600',
+    },
+    searchbar: {
+        borderRadius: 8,
+    },
+    searchInput: {
+        fontSize: 16,
+    },
+    filtersSurface: {
+        padding: 16,
+        borderRadius: 12,
+    },
+    filtersRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        marginHorizontal: 16,
-        gap: 10,
+        gap: 16,
+    },
+    filterGroup: {
+        flex: 1,
     },
     filterLabel: {
-        marginRight: 8,
+        marginBottom: 8,
+        fontWeight: '500',
     },
-    button: {
-        marginVertical: 10,
-        height: 40,
+    filterButton: {
         borderRadius: 8,
+    },
+    menuContent: {
+        width: '100%',
+        left: 0,
+        right: 0,
     },
     buttonContent: {
         height: 40,
     },
     buttonLabel: {
         fontSize: 14,
-        fontWeight: '500',
+        fontWeight: '600',
+    },
+    resultsSurface: {
+        borderRadius: 12,
+        overflow: 'hidden',
+    },
+    resultsHeader: {
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0, 0, 0, 0.12)',
+    },
+    resultsCount: {
+        marginTop: 4,
+    },
+    loadingContainer: {
+        padding: 32,
+        alignItems: 'center',
+    },
+    loadingText: {
+        textAlign: 'center',
     },
     tableContainer: {
         flex: 1,
-        marginHorizontal: 16,
-        marginBottom: 16,
-        borderRadius: 8,
-        minHeight: '70%',
-        overflow: 'hidden',
     },
     table: {
         flex: 1,
     },
+    tableHeader: {
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0, 0, 0, 0.12)',
+    },
+    tableRow: {
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+    },
+    actionColumn: {
+        width: 140,
+        paddingVertical: 12,
+    },
+    tableColumn: {
+        paddingVertical: 12,
+    },
     sortableHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
         gap: 4,
     },
     sortIcon: {
         fontSize: 12,
+    },
+    headerText: {
+        fontWeight: '600',
+    },
+    cellText: {
+        textAlign: 'center',
     },
     statusChip: {
         height: 32,
@@ -614,17 +705,22 @@ const styles = StyleSheet.create({
     },
     actionButton: {
         borderRadius: 8,
-        minWidth: 100,
     },
     noDataCell: {
         justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: 16,
+        paddingVertical: 32,
         flex: 1,
     },
-    loadingText: {
+    noDataText: {
         textAlign: 'center',
-        marginTop: 20,
+    },
+    timelineContainer: {
+        alignItems: 'flex-start',
+        gap: 2,
+    },
+    timelineText: {
+        lineHeight: 16,
     },
     paginationContainer: {
         borderTopWidth: 1,
@@ -632,8 +728,9 @@ const styles = StyleSheet.create({
     },
     pagination: {
         justifyContent: 'space-evenly',
-        borderTopWidth: 1,
-        borderTopColor: 'rgba(0, 0, 0, 0.12)',
+    },
+    paginationLabel: {
+        fontWeight: '500',
     },
     modalContainer: {
         backgroundColor: 'white',
@@ -645,27 +742,6 @@ const styles = StyleSheet.create({
     modalImage: {
         width: Dimensions.get('window').width - 80,
         height: Dimensions.get('window').height - 200,
-    },
-    timelineContainer: {
-        alignItems: 'flex-start',
-        gap: 4,
-    },
-    menuAnchor: {
-        flex: 1,
-        position: 'relative',
-    },
-    menuContent: {
-        width: '100%',
-        left: 0,
-        right: 0,
-    },
-    tableHeader: {
-        borderBottomWidth: 1,
-        borderBottomColor: 'rgba(0, 0, 0, 0.12)',
-    },
-    headerText: {
-        fontSize: 14,
-        fontWeight: '600',
     },
 })
 

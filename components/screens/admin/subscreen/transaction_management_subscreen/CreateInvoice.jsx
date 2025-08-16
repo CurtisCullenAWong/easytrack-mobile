@@ -28,13 +28,18 @@ const CreateInvoice = () => {
   const [summaryStatusId, setSummaryStatusId] = useState(null)
 
 
+
   const generatedInvoiceId = useMemo(() => {
     const now = new Date()
     const yyyy = String(now.getFullYear())
     const mm = String(now.getMonth() + 1).padStart(2, '0')
     const dd = String(now.getDate()).padStart(2, '0')
-    const rand = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
-    return `INV-${yyyy}${mm}${dd}-${rand}`
+    const hh = String(now.getHours()).padStart(2, '0')
+    const min = String(now.getMinutes()).padStart(2, '0')
+    const ss = String(now.getSeconds()).padStart(2, '0')
+    const ms = String(now.getMilliseconds()).padStart(3, '0')
+    const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+    return `INV-${yyyy}${mm}${dd}-${hh}${min}${ss}${ms}-${rand}`
   }, [])
 
   const signatureRef = useRef(null)

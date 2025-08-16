@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
 import { ScrollView, View, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native'
 import { Avatar, Card, Text, Divider, useTheme, ActivityIndicator, FAB, TextInput } from 'react-native-paper'
 import { supabase } from '../../../lib/supabase'
@@ -18,30 +19,29 @@ const Messages = ({ navigation }) => {
     fetchStatusMap()
   }, [])
 
-  useEffect(() => {
-    if (currentUser) {
-      // Set status_id to 2 for all messages sent to me that are still in status 1
-      const markSentAsDeliveredForMe = async () => {
-        try {
-          await supabase
-            .from('messages')
-            .update({ status_id: 2 })
-            .eq('receiver_id', currentUser.id)
-            .eq('status_id', 1)
-        } catch (_) {
-          // no-op
+  useFocusEffect(
+    useCallback(() => {
+      if (currentUser) {
+        const markSentAsDeliveredForMe = async () => {
+          try {
+            await supabase
+              .from('messages')
+              .update({ status_id: 2 })
+              .eq('receiver_id', currentUser.id)
+              .eq('status_id', 1)
+          } catch (_) {}
+        }
+
+        markSentAsDeliveredForMe().finally(() => {
+          fetchConversations()
+        })
+        const unsubscribe = subscribeToMessages()
+        return () => {
+          if (typeof unsubscribe === 'function') unsubscribe()
         }
       }
-
-      markSentAsDeliveredForMe().finally(() => {
-        fetchConversations()
-      })
-      const unsubscribe = subscribeToMessages()
-      return () => {
-        if (typeof unsubscribe === 'function') unsubscribe()
-      }
-    }
-  }, [currentUser])
+    }, [currentUser])
+  )
 
   const getCurrentUser = async () => {
     try {

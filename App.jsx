@@ -10,7 +10,10 @@ import { ThemeContext } from './components/themes/themeContext'
 import { ActivityIndicator, View, Text } from 'react-native'
 import useAuth from './components/hooks/useAuth'
 import useAppUpdate from './components/hooks/useAppUpdate'
-
+import { LogBox } from 'react-native';
+LogBox.ignoreLogs([
+  'When setting overflow to hidden on Surface the shadow will not be displayed correctly'
+]);
 const THEME_KEY = 'appTheme'
 
 const App = () => {

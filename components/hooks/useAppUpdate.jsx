@@ -2,6 +2,12 @@ import { useState } from 'react'
 import * as Updates from 'expo-updates'
 import { Portal, Modal, ActivityIndicator, Text, useTheme } from 'react-native-paper'
 import useSnackbar from './useSnackbar'
+import { 
+  isUpdateAvailable, 
+  installUpdateSilently, 
+  showUpdatePrompt, 
+  handleUpdateError 
+} from '../../utils/updateUtils'
 
 const UpdateModal = ({ visible, status }) => {
   const theme = useTheme()
@@ -32,64 +38,91 @@ const useAppUpdate = () => {
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
   const handleAppUpdate = async (showPrompt = true) => {
-    if (__DEV__) return
+    // Skip updates in development
+    if (__DEV__) {
+      console.log('Skipping update check in development mode')
+      return
+    }
+
+    // Check if updates are enabled
+    if (!Updates.isEnabled) {
+      console.log('Updates are not enabled')
+      return
+    }
 
     try {
       setUpdateStatus('Checking for updates...')
-      const update = await Updates.checkForUpdateAsync()
+      const hasUpdate = await isUpdateAvailable()
       
-      if (update.isAvailable) {
+      if (hasUpdate) {
         setUpdateStatus('Update found. Downloading...')
-        await Updates.fetchUpdateAsync()
         
         if (showPrompt) {
-          Alert.alert(
-            "Update Available",
-            "A new version is ready to install. Would you like to install it now?",
-            [
-              {
-                text: "Install Now",
-                onPress: async () => {
-                  try {
-                    setIsUpdating(true)
-                    setUpdateStatus('Installing update...')
-                    await Updates.reloadAsync()
-                  } catch (error) {
-                    console.error('Update error:', error)
-                    setUpdateStatus('')
-                    setIsUpdating(false)
-                    if (!__DEV__) {
-                      showSnackbar("Failed to install update. Please try again later.", false)
-                    }
-                  }
+          showUpdatePrompt(
+            async () => {
+              try {
+                setIsUpdating(true)
+                setUpdateStatus('Installing update...')
+                const result = await installUpdateSilently()
+                
+                if (!result.success) {
+                  throw new Error(result.reason)
                 }
-              },
-              {
-                text: "Later",
-                style: "cancel",
-                onPress: () => setUpdateStatus('')
+              } catch (error) {
+                console.error('Update installation error:', error)
+                setUpdateStatus('')
+                setIsUpdating(false)
+                handleUpdateError(error, showSnackbar)
               }
-            ]
+            },
+            () => {
+              setUpdateStatus('')
+              showSnackbar("Update will be installed on next app restart", true)
+            }
           )
         } else {
           setIsUpdating(true)
           setUpdateStatus('Installing update...')
-          await Updates.reloadAsync()
+          const result = await installUpdateSilently()
+          
+          if (!result.success) {
+            throw new Error(result.reason)
+          }
         }
       } else {
         setUpdateStatus('')
+        console.log('No updates available')
       }
     } catch (error) {
-      console.error('Update error:', error)
+      console.error('Update check error:', error)
       setUpdateStatus('')
       setIsUpdating(false)
-      if (!__DEV__) {
-        showSnackbar("Failed to check for updates. Please try again later.", false)
-      }
+      handleUpdateError(error, showSnackbar)
     }
   }
 
-  return { isUpdating, updateStatus, handleAppUpdate, UpdateModal, SnackbarElement }
+  const checkForUpdates = async () => {
+    return await isUpdateAvailable()
+  }
+
+  const getUpdateInfo = () => {
+    return {
+      isEnabled: Updates.isEnabled,
+      updateId: Updates.updateId,
+      channel: Updates.channel,
+      runtimeVersion: Updates.runtimeVersion
+    }
+  }
+
+  return { 
+    isUpdating, 
+    updateStatus, 
+    handleAppUpdate, 
+    checkForUpdates,
+    getUpdateInfo,
+    UpdateModal, 
+    SnackbarElement 
+  }
 }
 
 export default useAppUpdate

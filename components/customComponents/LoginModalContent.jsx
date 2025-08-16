@@ -86,7 +86,7 @@ const LoginModalContent = ({ isResetPasswordModal, isOtpLoginModal, onClose, nav
           Send OTP
         </Button>
       ) : (
-        <>
+        <View>
           <TextInput
             label="Password"
             value={credentials.password}
@@ -103,7 +103,7 @@ const LoginModalContent = ({ isResetPasswordModal, isOtpLoginModal, onClose, nav
               />
             }
           />
-          <View style={styles.rememberMeContainer}>
+          <View style={[styles.rememberMeContainer, {backgroundColor:colors.surfaceVariant, borderColor:colors.onSurface, borderWidth:1, borderRadius:5 }]}>
             <Checkbox
               status={rememberMe ? 'checked' : 'unchecked'}
               onPress={() => setRememberMe(!rememberMe)}
@@ -111,7 +111,7 @@ const LoginModalContent = ({ isResetPasswordModal, isOtpLoginModal, onClose, nav
               disabled={loading}
             />
             <Text onPress={() => setRememberMe(!rememberMe)} style={[styles.rememberMeText,fonts.labelMedium]}>
-              Remember Me
+              Remember Me?
             </Text>
           </View>
           <Button
@@ -124,7 +124,7 @@ const LoginModalContent = ({ isResetPasswordModal, isOtpLoginModal, onClose, nav
           >
             Login
           </Button>
-        </>
+        </View>
       )}
     </ScrollView>
   )
@@ -154,6 +154,8 @@ const styles = StyleSheet.create({
   rememberMeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    minWidth:'50%',
+    justifyContent:'center',
     marginBottom: 8,
     marginLeft: 4,
   },

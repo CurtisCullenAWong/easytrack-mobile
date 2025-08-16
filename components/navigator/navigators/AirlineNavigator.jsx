@@ -1,9 +1,11 @@
 import React from 'react'
 import useLogout from '../../hooks/useLogout'
+import useVerificationStatus from '../../hooks/useVerificationStatus'
 import SideNavigator from '../shared/SideNavigator'
 
 const AirlineNavigator = ({ navigation }) => {
   const { handleLogout, LogoutDialog } = useLogout(navigation)
+  const { isVerified } = useVerificationStatus()
   const AIRLINE_SECTIONS = [
     {
       title: 'My Account',
@@ -21,7 +23,7 @@ const AirlineNavigator = ({ navigation }) => {
       icon: 'package',
       items: [
         { icon: 'clipboard-edit-outline', label: 'Booking Management', screen: 'BookingManagement' },
-        { icon: 'map-marker-path', label: 'Luggage Tracking (In Transit)', screen: 'TrackLuggage' },
+        { icon: 'map', label: 'Track Luggage', screen: 'TrackLuggage' },
       ],  
     },
     {
@@ -49,6 +51,7 @@ const AirlineNavigator = ({ navigation }) => {
       sections={AIRLINE_SECTIONS}
       LogoutDialog={LogoutDialog}
       handleLogout={handleLogout}
+      isVerified={isVerified}
     />
   )
 }

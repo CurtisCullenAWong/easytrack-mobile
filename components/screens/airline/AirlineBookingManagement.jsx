@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { SegmentedButtons, useTheme } from 'react-native-paper';
-import Header from '../../customComponents/Header';
-import Booking from './subscreen/Booking';
-import BookingList from './subscreen/BookingList';
+import React, { useState } from 'react'
+import { View, StyleSheet } from 'react-native'
+import { SegmentedButtons, useTheme } from 'react-native-paper'
+import Header from '../../customComponents/Header'
+import Booking from './subscreen/Booking'
+import BookingList from './subscreen/BookingList'
 const AirlineBookingManagement = ({ navigation }) => {
-  const { colors } = useTheme();
-  const [mode, setMode] = useState('create');
+  const { colors } = useTheme()
+  const [mode, setMode] = useState('create')
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -32,20 +32,20 @@ const AirlineBookingManagement = ({ navigation }) => {
         )}
       </View>
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 2,
   },
   segmentContainer: {
-    marginTop: '10%',
+    marginTop: '4%',
     marginBottom: 5,
   },
   content: {
     flex: 9,
   },
-});
+})
 
-export default AirlineBookingManagement;
+export default AirlineBookingManagement

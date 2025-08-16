@@ -317,6 +317,9 @@ const DeliveryRates = ({ navigation }) => {
           <ScrollView horizontal>
             <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
               <DataTable.Header style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
+                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
+                  <Text style={[styles.headerText, { color: colors.onSurface }]}>Actions</Text>
+                </DataTable.Title>
                 {columns.map(({ key, label, width }) => (
                   <DataTable.Title
                     key={key}
@@ -329,10 +332,7 @@ const DeliveryRates = ({ navigation }) => {
                     </View>
                   </DataTable.Title>
                 ))}
-                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
-                  <Text style={[styles.headerText, { color: colors.onSurface }]}>Actions</Text>
-                </DataTable.Title>
-              </DataTable.Header>
+                </DataTable.Header>
 
               {filteredAndSortedRates.length === 0 ? (
                 <DataTable.Row>
@@ -345,19 +345,6 @@ const DeliveryRates = ({ navigation }) => {
               ) : (
                 paginatedRates.map(rate => (
                   <DataTable.Row key={rate.id}>
-                    {[
-                      { value: rate.price, width: PRICE_COLUMN_WIDTH },
-                      { value: rate.city, width: CITY_COLUMN_WIDTH },
-                      { value: rate.region, width: REGION_COLUMN_WIDTH },
-                      { value: rate.updated_at, width: COLUMN_WIDTH },
-                    ].map(({ value, width }, idx) => (
-                      <DataTable.Cell
-                        key={idx}
-                        style={{ width, justifyContent: 'center', paddingVertical: 12 }}
-                      >
-                        <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>{value}</Text>
-                      </DataTable.Cell>
-                    ))}
                     <DataTable.Cell numeric style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
                       <Menu
                         visible={actionMenuVisible === rate.id}
@@ -392,6 +379,20 @@ const DeliveryRates = ({ navigation }) => {
                         />
                       </Menu>
                     </DataTable.Cell>
+                    {[
+                      { value: rate.price, width: PRICE_COLUMN_WIDTH },
+                      { value: rate.city, width: CITY_COLUMN_WIDTH },
+                      { value: rate.region, width: REGION_COLUMN_WIDTH },
+                      { value: rate.updated_at, width: COLUMN_WIDTH },
+                    ].map(({ value, width }, idx) => (
+                      <DataTable.Cell
+                        key={idx}
+                        style={{ width, justifyContent: 'center', paddingVertical: 12 }}
+                      >
+                        <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>{value}</Text>
+                      </DataTable.Cell>
+                    ))}
+                    
                   </DataTable.Row>
                 ))
               )}

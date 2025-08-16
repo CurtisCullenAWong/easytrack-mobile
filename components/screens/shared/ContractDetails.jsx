@@ -230,34 +230,34 @@ const ContractDetails = ({ navigation, route }) => {
         })
     }
 
-    // Set up real-time subscription
-    useEffect(() => {
-        if (!id) return
+    // Set up real-time subscription only while screen is focused
+    useFocusEffect(
+        useCallback(() => {
+            if (!id) return
 
-        // Subscribe to contract changes
-        subscriptionRef.current = supabase
-            .channel(`contract-${id}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'contracts',
-                    filter: `id=eq.${id}`
-                },
-                async (payload) => {
-                    await fetchContract()
+            subscriptionRef.current = supabase
+                .channel(`contract-${id}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'contracts',
+                        filter: `id=eq.${id}`
+                    },
+                    async () => {
+                        await fetchContract()
+                    }
+                )
+                .subscribe()
+
+            return () => {
+                if (subscriptionRef.current) {
+                    subscriptionRef.current.unsubscribe()
                 }
-            )
-            .subscribe()
-
-        // Cleanup subscriptions on unmount
-        return () => {
-            if (subscriptionRef.current) {
-                subscriptionRef.current.unsubscribe()
             }
-        }
-    }, [id])
+        }, [id])
+    )
 
     if (!contractData) {
         return (

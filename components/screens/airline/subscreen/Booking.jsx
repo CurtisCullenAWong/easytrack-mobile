@@ -692,7 +692,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-evenly',
     marginTop: 24,
     marginBottom: 32,
   },

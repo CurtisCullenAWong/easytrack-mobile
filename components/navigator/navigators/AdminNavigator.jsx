@@ -1,9 +1,11 @@
 import React from 'react'
 import useLogout from '../../hooks/useLogout'
+import useVerificationStatus from '../../hooks/useVerificationStatus'
 import SideNavigator from '../shared/SideNavigator'
 
 const AdminNavigator = ({ navigation }) => {
   const { handleLogout, LogoutDialog } = useLogout(navigation)
+  const { isVerified } = useVerificationStatus()
   const ADMIN_SECTIONS = [
     {
       title: 'My Account',
@@ -52,6 +54,7 @@ const AdminNavigator = ({ navigation }) => {
       sections={ADMIN_SECTIONS}
       LogoutDialog={LogoutDialog}
       handleLogout={handleLogout}
+      isVerified={isVerified}
     />
   )
 }
