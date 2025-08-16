@@ -47,7 +47,7 @@ import DeliveryConfirmation from '../screens/delivery/subscreen/DeliveryConfirma
 import AdminNavigator from './navigators/AdminNavigator'
 import DeliveryNavigator from './navigators/DeliveryNavigator'
 import AirlineNavigator from './navigators/AirlineNavigator'
-import MessagingNavigator from './navigators/MessagingNavigator'
+import MessagingNavigator from './shared/MessagingNavigator'
 
 const Stack = createNativeStackNavigator()
 const Drawer = createDrawerNavigator()

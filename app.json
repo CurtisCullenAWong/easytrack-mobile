@@ -6,18 +6,6 @@
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "android": {
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyAFA84eJZWuXyM9zsTqfsq0ZsxQuRcIe0c"
-        }
-      }
-    },
-    "ios": {
-      "config": {
-        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_IOS_API_KEY"
-      }
-    },
     "updates": {
       "enabled": true,
       "fallbackToCacheTimeout": 0,
@@ -26,34 +14,21 @@
     "scheme": "easytrack",
     "owner": "thewalkingdev_numoa",
     "orientation": "portrait",
-    "icon": "./assets/adaptive-icon.png",
+    "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "light",
+    "splash":{
+      "image":"./assets/images/splash.png",
+      "resizeMode":"contain",
+      "backgroundColor":"#F3F8F2",
+      "dark": {
+        "image": "./assets/images/splash.png",
+        "backgroundColor": "#121712"
+      }
+    },
     "newArchEnabled": true,
     "extra": {
       "eas": {
         "projectId": "4f7faf57-3a1d-4031-ba72-c5d5b5b084de"
-      }
-    },
-    "plugins": [
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#F1F8E9",
-          "image": "./assets/adaptive-icon.png",
-          "dark": {
-            "image": "./assets/adaptive-icon.png",
-            "backgroundColor": "#F1F8E9"
-          }
-        }
-      ]
-    ],
-    "splash": {
-      "image": "./assets/adaptive-icon.png",
-      "backgroundColor": "#F1F8E9",
-      "resizeMode": "contain",
-      "dark": {
-        "image": "./assets/adaptive-icon.png",
-        "backgroundColor": "#F1F8E9"
       }
     }
   }
