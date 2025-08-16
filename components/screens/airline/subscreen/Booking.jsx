@@ -248,17 +248,6 @@ const MakeContracts = () => {
     }, [route.params])
   )
 
-  // Request location permissions
-  useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync()
-      if (status !== 'granted') {
-        console.log('Permission to access location was denied')
-        return
-      }
-    })()
-  }, [])
-
   // Memoized values
   const pickupBays = useMemo(() => 
     Array.from({ length: 12 }, (_, i) => `Terminal 3, Bay ${i + 1}`),

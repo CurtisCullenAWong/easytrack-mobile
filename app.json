@@ -6,6 +6,18 @@
     "runtimeVersion": {
       "policy": "appVersion"
     },
+    "android": {
+      "package": "com.thewalkingdev_numoa.EasyTrack",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyB2fvlh9AZvzqY82xWrZ13aRPh2F3iNMhQ"
+        }
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
     "updates": {
       "enabled": true,
       "fallbackToCacheTimeout": 0,
@@ -16,10 +28,10 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "light",
-    "splash":{
-      "image":"./assets/images/splash.png",
-      "resizeMode":"contain",
-      "backgroundColor":"#F3F8F2",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F3F8F2",
       "dark": {
         "image": "./assets/images/splash.png",
         "backgroundColor": "#121712"
