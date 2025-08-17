@@ -449,15 +449,6 @@ const ContractsInTransit = ({ navigation }) => {
           <Divider />
           <Button 
             mode="contained" 
-            onPress={() => navigation.navigate('TrackLuggage', { 
-              contractId: contract.id,
-            })} 
-            style={[styles.actionButton, { backgroundColor: colors.primary }]}
-          >
-            Track Delivery
-          </Button>
-          <Button 
-            mode="contained" 
             onPress={() => navigation.navigate('ContractDetails', { id: contract.id})} 
             style={[styles.actionButton, { backgroundColor: colors.primary }]}
           >

@@ -611,7 +611,7 @@ const AdminBookingManagement = ({ navigation }) => {
                               <Menu.Item
                                 onPress={() => {
                                   setActionMenuVisible(null)
-                                  navigation.navigate('AdminTrackLuggage', { contractId: contract.id })
+                                  navigation.navigate('TrackLuggage', { contractId: contract.id })
                                 }}
                                 title="Track Luggage"
                                 leadingIcon="map-marker"

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { View, StyleSheet, TouchableOpacity } from 'react-native'
 import { Text, useTheme, Appbar, IconButton } from 'react-native-paper'
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import * as Location from 'expo-location'
 
 const CheckLocation = ({ route, navigation }) => {
@@ -105,7 +105,7 @@ const CheckLocation = ({ route, navigation }) => {
       <View style={styles.mapContainer}>
         <MapView
           ref={mapRef}
-          provider={PROVIDER_GOOGLE}
+          provider={PROVIDER_DEFAULT}
           style={styles.map}
           initialRegion={mapRegion}
           showsUserLocation={true}

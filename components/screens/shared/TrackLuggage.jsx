@@ -8,188 +8,152 @@ import {
     RefreshControl,
 } from 'react-native'
 import { Text, TextInput, Surface, useTheme, Card, Divider, IconButton, Avatar, ProgressBar } from 'react-native-paper'
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps'
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabase'
 import useSnackbar from '../../hooks/useSnackbar'
 import { useFocusEffect } from '@react-navigation/native'
+import MapViewDirections from "react-native-maps-directions"
+import { GOOGLE_MAPS_API_KEY } from '@env'
 
 const { width, height } = Dimensions.get('window')
 
-const PHILIPPINES_BOUNDS = {
-    northEast: {
-        latitude: 21.3217809,
-        longitude: 126.6015244
-    },
-    southWest: {
-        latitude: 4.6415,
-        longitude: 116.9535
+// Geometry parser
+const parseGeometry = (geoString) => {
+    if (!geoString) return null
+    try {
+        if (typeof geoString === 'string') {
+            const coords = geoString.replace('POINT(', '').replace(')', '').split(' ')
+            return {
+                longitude: parseFloat(coords[0]),
+                latitude: parseFloat(coords[1]),
+            }
+        } else if (typeof geoString === 'object' && geoString.coordinates) {
+            return {
+                longitude: parseFloat(geoString.coordinates[0]),
+                latitude: parseFloat(geoString.coordinates[1]),
+            }
+        }
+    } catch (error) {
+        console.error('Error parsing geometry:', error)
     }
-}
-
-const calculateDistance = (coord1, coord2) => {
-    if (!coord1 || !coord2) return null
-    
-    const R = 6371
-    const dLat = (coord2.latitude - coord1.latitude) * Math.PI / 180
-    const dLon = (coord2.longitude - coord1.longitude) * Math.PI / 180
-    
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(coord1.latitude * Math.PI / 180) * Math.cos(coord2.latitude * Math.PI / 180) * 
-              Math.sin(dLon/2) * Math.sin(dLon/2)
-    
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
-    const distance = R * c
-    
-    return distance
-}
-
-const estimateETA = (distance) => {
-    if (!distance) return null
-    const averageSpeed = 30 // km/h
-    const timeInHours = distance / averageSpeed
-    const hours = Math.floor(timeInHours)
-    const minutes = Math.round((timeInHours - hours) * 60)
-    
-    if (hours === 0) {
-        return `${minutes} min`
-    } else if (minutes === 0) {
-        return `${hours} hr`
-    } else {
-        return `${hours} hr ${minutes} min`
-    }
+    return null
 }
 
 // Map Component
-const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors }) => {
-    const mapRef = useRef(null)
+const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors, contractStatusId }) => {
+  const mapRef = useRef(null)
 
-    const centerOnLocation = (coords) => {
-        if (coords && mapRef.current) {
-            mapRef.current.animateToRegion({
-                ...coords,
-                latitudeDelta: 0.005,
-                longitudeDelta: 0.005,
-            }, 1000, 'easeInOut')
-        }
+  const centerOnLocation = (coords) => {
+    if (coords && mapRef.current) {
+      mapRef.current.animateToRegion({
+        ...coords,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      }, 1000, 'easeInOut')
     }
+  }
 
-    const parseGeometry = (geoString) => {
-        if (!geoString) return null
-        try {
-            if (typeof geoString === 'string') {
-                const coords = geoString.replace('POINT(', '').replace(')', '').split(' ')
-                return {
-                    longitude: parseFloat(coords[0]),
-                    latitude: parseFloat(coords[1]),
-                }
-            } else if (typeof geoString === 'object' && geoString.coordinates) {
-                return {
-                    longitude: parseFloat(geoString.coordinates[0]),
-                    latitude: parseFloat(geoString.coordinates[1]),
-                }
-            }
-        } catch (error) {
-            console.error('Error parsing geometry:', error)
-        }
-        return null
-    }
+  const currentLocationCoords = parseGeometry(currentLocation)
+  const dropOffCoords = parseGeometry(dropOffLocation)
 
-    const currentLocationCoords = parseGeometry(currentLocation)
-    const dropOffCoords = parseGeometry(dropOffLocation)
+  const initialRegion = currentLocationCoords || dropOffCoords
 
-    // Use current location as default, fallback to drop-off location, then default region
-    const initialRegion = currentLocationCoords || dropOffCoords
+  return (
+    <View style={styles.mapContainer}>
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        provider={PROVIDER_GOOGLE}
+        initialRegion={initialRegion ? {
+          ...initialRegion,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        } : undefined}
+        showsCompass
+        showsScale
+        showsTraffic
+        loadingEnabled
+        maxZoomLevel={18}
+        minZoomLevel={5}
+      >
+        {currentLocationCoords && (
+          <Marker
+            title={[
+              deliveryProfile?.first_name,
+              deliveryProfile?.middle_initial + '.',
+              deliveryProfile?.last_name,
+              deliveryProfile?.suffix,
+              ' - Delivery Personnel'
+            ].filter(Boolean).join(' ') || 'Delivery Personnel'}
+            coordinate={currentLocationCoords}
+            pinColor={colors.primary}
+          >
+            {deliveryProfile?.pfp_id ? (
+              <Avatar.Image
+                size={32}
+                source={{ uri: deliveryProfile.pfp_id }}
+                style={{ borderColor: colors.primary }}
+              />
+            ) : (
+              <Avatar.Text
+                size={32}
+                label={deliveryProfile?.first_name?.[0]?.toUpperCase() || 'N/A'}
+                style={{ backgroundColor: colors.primary }}
+                labelStyle={{ color: colors.onPrimary }}
+              />
+            )}
+          </Marker>
+        )}
 
-    return (
-        <View style={styles.mapContainer}>
-            <MapView
-                ref={mapRef}
-                style={styles.map}
-                provider={PROVIDER_GOOGLE}
-                initialRegion={{
-                    ...initialRegion,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                }}
-                showsCompass={true}
-                showsScale={true}
-                showsTraffic={true}
-                loadingEnabled={true}
-                maxZoomLevel={18}
-                minZoomLevel={5}
-                restrictToBounds={true}
-                bounds={PHILIPPINES_BOUNDS}
-            >
-                {currentLocationCoords && (
-                    <Marker
-                        title={[
-                            deliveryProfile?.first_name,
-                            deliveryProfile?.middle_initial+'.',
-                            deliveryProfile?.last_name,
-                            deliveryProfile?.suffix,
-                            ' - Delivery Personnel'
-                        ].filter(Boolean).join(' ') || 'Delivery Personnel'}
-                        coordinate={currentLocationCoords}
-                        pinColor={colors.primary}
-                    >
-                        {deliveryProfile?.pfp_id ? (
-                            <Avatar.Image
-                                size={32}
-                                source={{ uri: deliveryProfile.pfp_id }}
-                                style={{ borderColor: colors.primary }}
-                            />
-                        ) : (
-                            <Avatar.Text
-                                size={32}
-                                label={deliveryProfile?.first_name?.[0]?.toUpperCase() || 'N/A'}
-                                style={{ backgroundColor: colors.primary }}
-                                labelStyle={{ color: colors.onPrimary }}
-                            />
-                        )}
-                    </Marker>
-                )}
-                {dropOffCoords && (
-                    <Marker
-                        title='Destination'
-                        coordinate={dropOffCoords}
-                        pinColor={colors.error}
-                    />
-                )}
-                {currentLocationCoords && dropOffCoords && (
-                    <Polyline
-                        coordinates={[currentLocationCoords, dropOffCoords]}
-                        strokeColor={colors.primary}
-                        strokeWidth={3}
-                        lineDashPattern={[1]}
-                    />
-                )}
-            </MapView>
-            <View style={styles.mapButtons}>
-                {currentLocationCoords && (
-                    <IconButton
-                        mode="contained"
-                        onPress={() => centerOnLocation(currentLocationCoords)}
-                        style={[styles.mapButton, { backgroundColor: colors.primary }]}
-                        icon="crosshairs-gps"
-                        iconColor={colors.onPrimary}
-                        size={24}
-                    />
-                )}
-                {dropOffCoords && (
-                    <IconButton
-                        mode="contained"
-                        onPress={() => centerOnLocation(dropOffCoords)}
-                        style={[styles.mapButton, { backgroundColor: colors.error }]}
-                        icon="map-marker"
-                        iconColor={colors.onError}
-                        size={24}
-                    />
-                )}
-            </View>
-        </View>
-    )
+        {dropOffCoords && (
+          <Marker
+            title='Destination'
+            coordinate={dropOffCoords}
+            pinColor={colors.error}
+          />
+        )}
+
+        {/* ✅ Only request directions if status = 4 */}
+        {contractStatusId === 4 && currentLocationCoords && dropOffCoords && (
+        <MapViewDirections
+            origin={currentLocationCoords}
+            destination={dropOffCoords}
+            apikey={GOOGLE_MAPS_API_KEY}
+            strokeWidth={4}
+            strokeColor={colors.primary}
+            optimizeWaypoints
+            onError={(err) => console.error("Directions error:", err)}
+        />
+        )}
+      </MapView>
+
+      <View style={styles.mapButtons}>
+        {currentLocationCoords && (
+          <IconButton
+            mode="contained"
+            onPress={() => centerOnLocation(currentLocationCoords)}
+            style={[styles.mapButton, { backgroundColor: colors.primary }]}
+            icon="crosshairs-gps"
+            iconColor={colors.onPrimary}
+            size={24}
+          />
+        )}
+        {dropOffCoords && (
+          <IconButton
+            mode="contained"
+            onPress={() => centerOnLocation(dropOffCoords)}
+            style={[styles.mapButton, { backgroundColor: colors.error }]}
+            icon="map-marker"
+            iconColor={colors.onError}
+            size={24}
+          />
+        )}
+      </View>
+    </View>
+  )
 }
+
 
 // Info Row Component
 const InfoRow = ({ label, value, colors, fonts, style }) => (
@@ -199,59 +163,69 @@ const InfoRow = ({ label, value, colors, fonts, style }) => (
     </View>
 )
 
-// ProgressMeter component
+// ProgressMeter component (using Directions API)
 const ProgressMeter = ({ colors, contractData }) => {
-    const parseGeometry = (geoString) => {
-        if (!geoString) return null
-        try {
-            if (typeof geoString === 'string') {
-                const coords = geoString.replace('POINT(', '').replace(')', '').split(' ')
-                return {
-                    longitude: parseFloat(coords[0]),
-                    latitude: parseFloat(coords[1]),
-                }
-            } else if (typeof geoString === 'object' && geoString.coordinates) {
-                return {
-                    longitude: parseFloat(geoString.coordinates[0]),
-                    latitude: parseFloat(geoString.coordinates[1]),
-                }
+  const [distanceRemaining, setDistanceRemaining] = useState(null)
+  const [etaRemaining, setEtaRemaining] = useState(null)
+  const [totalDistance, setTotalDistance] = useState(null)
+  const [progress, setProgress] = useState(0)
+
+  const pickupCoords = parseGeometry(contractData?.pickup_location_geo)
+  const currentCoords = parseGeometry(contractData?.current_location_geo)
+  const dropOffCoords = parseGeometry(contractData?.drop_off_location_geo)
+
+  if (contractData?.contract_status_id !== 4) return null
+
+  return (
+    <View style={styles.progressContainer}>
+      {/* Pickup → Dropoff (total baseline) */}
+      {pickupCoords && dropOffCoords && (
+        <MapViewDirections
+          origin={pickupCoords}
+          destination={dropOffCoords}
+          apikey={GOOGLE_MAPS_API_KEY}
+          strokeWidth={0}
+          onReady={(result) => setTotalDistance(result.distance)}
+          onError={(err) => console.error("Total route error:", err)}
+        />
+      )}
+
+      {/* Current → Dropoff (remaining) */}
+      {currentCoords && dropOffCoords && (
+        <MapViewDirections
+          origin={currentCoords}
+          destination={dropOffCoords}
+          apikey={GOOGLE_MAPS_API_KEY}
+          strokeWidth={0}
+          onReady={(result) => {
+            setDistanceRemaining(result.distance)
+            setEtaRemaining(result.duration)
+
+            if (totalDistance) {
+              const ratio = (totalDistance - result.distance) / totalDistance
+              setProgress(Math.max(0, Math.min(1, ratio)))
             }
-        } catch (error) {
-            console.error('Error parsing geometry:', error)
-        }
-        return null
-    }
+          }}
+          onError={(err) => console.error("Remaining route error:", err)}
+        />
+      )}
 
-    const pickupCoords = parseGeometry(contractData?.pickup_location_geo)
-    const currentCoords = parseGeometry(contractData?.current_location_geo)
-    const dropOffCoords = parseGeometry(contractData?.drop_off_location_geo)
-    
-    const distance = calculateDistance(currentCoords, dropOffCoords)
-    const eta = estimateETA(distance)
-    
-    // Calculate progress based on total journey distance
-    const totalDistance = calculateDistance(pickupCoords, dropOffCoords)
-    
-    // Calculate progress as a ratio of remaining distance to total distance
-    const progress = totalDistance ? Math.max(0, Math.min(1, 1 - (distance / totalDistance))) : 0
+      <View style={styles.progressInfo}>
+        <Text style={[styles.progressText, { color: colors.primary }]}>
+          Distance Remaining: {distanceRemaining ? `${distanceRemaining.toFixed(1)} km` : 'Calculating...'}
+        </Text>
+        <Text style={[styles.progressText, { color: colors.primary }]}>
+          ETA: {etaRemaining ? `${Math.round(etaRemaining)} min` : 'Calculating...'}
+        </Text>
+      </View>
 
-    return (
-        <View style={styles.progressContainer}>
-            <View style={styles.progressInfo}>
-                <Text style={[styles.progressText, { color: colors.primary }]}>
-                    Distance Remaining: {distance ? `${distance.toFixed(1)} km` : 'Calculating...'}
-                </Text>
-                <Text style={[styles.progressText, { color: colors.primary }]}>
-                    ETA: {eta || 'Calculating...'}
-                </Text>
-            </View>
-            <ProgressBar
-                progress={progress}
-                color={colors.primary}
-                style={styles.progressBar}
-            />
-        </View>
-    )
+      <ProgressBar
+        progress={progress}
+        color={colors.primary}
+        style={styles.progressBar}
+      />
+    </View>
+  )
 }
 
 // Contract Info Component
@@ -283,32 +257,15 @@ const ContractInfo = ({ contractData, colors, fonts }) => {
                         colors={colors}
                         contractData={contractData}
                     />
-                    <InfoRow 
-                        label="Pickup Location:" 
-                        value={contractData.pickup_location} 
-                        colors={colors} 
-                        fonts={fonts.bodySmall}
-                        style={{ marginHorizontal: '2%' }}
-                    />
-                    <InfoRow 
-                        label="Recent Location:" 
-                        value={contractData.current_location} 
-                        colors={colors} 
-                        fonts={fonts.bodySmall}
-                        style={{ marginHorizontal: '2%' }}
-                    />
-                    <InfoRow 
-                        label="Drop-Off Location:" 
-                        value={contractData.drop_off_location} 
-                        colors={colors} 
-                        fonts={fonts.bodySmall}
-                        style={{ marginHorizontal: '2%' }}
-                    />
+                    <InfoRow label="Pickup Location:" value={contractData.pickup_location} colors={colors} fonts={fonts.bodySmall} style={{ marginHorizontal: '2%' }} />
+                    <InfoRow label="Recent Location:" value={contractData.current_location} colors={colors} fonts={fonts.bodySmall} style={{ marginHorizontal: '2%' }} />
+                    <InfoRow label="Drop-Off Location:" value={contractData.drop_off_location} colors={colors} fonts={fonts.bodySmall} style={{ marginHorizontal: '2%' }} />
                     <TrackingMap
-                        currentLocation={contractData.current_location_geo}
-                        dropOffLocation={contractData.drop_off_location_geo}
-                        deliveryProfile={contractData.delivery_profile}
-                        colors={colors}
+                    currentLocation={contractData.current_location_geo}
+                    dropOffLocation={contractData.drop_off_location_geo}
+                    deliveryProfile={contractData.delivery_profile}
+                    colors={colors}
+                    contractStatusId={contractData.contract_status_id}
                     />
                 </View>
             )}
@@ -319,13 +276,7 @@ const ContractInfo = ({ contractData, colors, fonts }) => {
                 <Divider style={{ marginBottom: 10 }} />
                 
                 <InfoRow label="Contract ID:" value={contractData.id} colors={colors} fonts={fonts}/>
-                <InfoRow 
-                    label="Status:" 
-                    value={contractData.contract_status?.status_name} 
-                    colors={colors} 
-                    fonts={fonts}
-                    style={{ color: colors.primary }}
-                />
+                <InfoRow label="Status:" value={contractData.contract_status?.status_name} colors={colors} fonts={fonts} style={{ color: colors.primary }} />
                 <InfoRow label="Remarks:" value={contractData.remarks} colors={colors} fonts={fonts} />
 
                 <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
@@ -375,13 +326,7 @@ const ContractInfo = ({ contractData, colors, fonts }) => {
                     <InfoRow label="Delivered:" value={formatDate(contractData.delivered_at)} colors={colors} fonts={fonts} />
                 )}
                 {contractData.cancelled_at && (
-                    <InfoRow 
-                        label="Cancelled:" 
-                        value={formatDate(contractData.cancelled_at)} 
-                        colors={colors} 
-                        fonts={fonts}
-                        style={{ color: colors.error }}
-                    />
+                    <InfoRow label="Cancelled:" value={formatDate(contractData.cancelled_at)} colors={colors} fonts={fonts} style={{ color: colors.error }} />
                 )}
             </Card.Content>
         </Card>
@@ -406,20 +351,15 @@ const TrackLuggage = ({ navigation, route }) => {
         }
     }, [contractId])
 
-    // Debounce the tracking number input
     useEffect(() => {
         if (debounceTimer.current) {
             clearTimeout(debounceTimer.current)
         }
-
         debounceTimer.current = setTimeout(() => {
             setDebouncedTrackingNumber(trackingNumber)
-        }, 500) // 500ms delay
-
+        }, 500)
         return () => {
-            if (debounceTimer.current) {
-                clearTimeout(debounceTimer.current)
-            }
+            if (debounceTimer.current) clearTimeout(debounceTimer.current)
         }
     }, [trackingNumber])
 
@@ -436,13 +376,11 @@ const TrackLuggage = ({ navigation, route }) => {
                 .single()
 
             if (error) throw error
-
             if (!data) {
                 showSnackbar('No contract found with this tracking number')
                 setContractData(null)
                 return
             }
-
             setContractData(data)
         } catch (error) {
             showSnackbar('Invalid tracking ID')
@@ -453,20 +391,13 @@ const TrackLuggage = ({ navigation, route }) => {
         }
     }
 
-    // Subscribe only while screen is focused; unsubscribe on blur
     useFocusEffect(
         useCallback(() => {
             if (!debouncedTrackingNumber) return
-
-            // Initial fetch
             fetchData()
-
-            // Real-time updates for this contract
             const subscription = supabase
                 .channel(`contract-${debouncedTrackingNumber}`)
-                .on(
-                    'postgres_changes',
-                    {
+                .on('postgres_changes', {
                         event: '*',
                         schema: 'public',
                         table: 'contracts',
@@ -475,10 +406,7 @@ const TrackLuggage = ({ navigation, route }) => {
                     fetchData
                 )
                 .subscribe()
-
-            return () => {
-                subscription.unsubscribe()
-            }
+            return () => subscription.unsubscribe()
         }, [debouncedTrackingNumber])
     )
 
@@ -521,11 +449,7 @@ const TrackLuggage = ({ navigation, route }) => {
                     />
                 </View>
 
-                <ContractInfo 
-                    contractData={contractData} 
-                    colors={colors} 
-                    fonts={fonts} 
-                />
+                <ContractInfo contractData={contractData} colors={colors} fonts={fonts} />
 
                 <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={2}>
                     <Text style={[styles.surfaceText, { ...fonts.default, color: colors.onSurface }]}>
@@ -543,52 +467,16 @@ const TrackLuggage = ({ navigation, route }) => {
 }
 
 const styles = StyleSheet.create({
-    scrollView: {
-        flex: 1,
-    },
-    container: {
-        padding: 16,
-        alignItems: 'center',
-    },
-    title: {
-        fontSize: 24,
-        textAlign: 'center',
-        marginVertical: 10,
-    },
-    subtitle: {
-        fontSize: 16,
-        textAlign: 'center',
-        marginBottom: 20,
-    },
-    inputContainer: {
-        width: '100%',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    textInput: {
-        width: '90%',
-        marginBottom: 10,
-    },
-    surface: {
-        padding: 16,
-        marginTop: 20,
-        marginHorizontal: 10,
-        borderRadius: 8,
-    },
-    surfaceText: {
-        textAlign: 'center',
-    },
-    image: {
-        width: width,
-        height: height * 0.35,
-        resizeMode: 'contain',
-        marginTop: 10,
-    },
-    contractCard: {
-        width: '100%',
-        marginVertical: 10,
-        borderRadius: 12,
-    },
+    scrollView: { flex: 1 },
+    container: { padding: 16, alignItems: 'center' },
+    title: { fontSize: 24, textAlign: 'center', marginVertical: 10 },
+    subtitle: { fontSize: 16, textAlign: 'center', marginBottom: 20 },
+    inputContainer: { width: '100%', alignItems: 'center', marginBottom: 20 },
+    textInput: { width: '90%', marginBottom: 10 },
+    surface: { padding: 16, marginTop: 20, marginHorizontal: 10, borderRadius: 8 },
+    surfaceText: { textAlign: 'center' },
+    image: { width, height: height * 0.35, resizeMode: 'contain', marginTop: 10 },
+    contractCard: { width: '100%', marginVertical: 10, borderRadius: 12 },
     infoRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
