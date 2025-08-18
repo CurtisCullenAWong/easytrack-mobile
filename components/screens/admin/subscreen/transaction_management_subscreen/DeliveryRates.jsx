@@ -8,9 +8,7 @@ import {
   Text,
   useTheme,
   Menu,
-  Dialog,
-  Portal,
-  TextInput,
+  Surface,
 } from 'react-native-paper'
 import Header from '../../../../customComponents/Header'
 import { supabase } from '../../../../../lib/supabaseAdmin'
@@ -32,65 +30,13 @@ const DeliveryRates = ({ navigation }) => {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [itemsPerPage, setItemsPerPage] = useState(10)
-  const [actionMenuVisible, setActionMenuVisible] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
-  const [editDialogVisible, setEditDialogVisible] = useState(false)
-  const [editingRate, setEditingRate] = useState({
-    id: null,
-    city: '',
-    region_id: null,
-  })
-  const [editingPrice, setEditingPrice] = useState('')
-  const [editError, setEditError] = useState('')
-
-  const MIN_PRICE = 1.00
-  const MAX_PRICE = 99999.99
-
-  const formatPrice = (value) => {
-    // Remove any non-numeric characters except decimal point
-    let numericValue = value.replace(/[^0-9.]/g, '')
-    
-    // Ensure only one decimal point
-    const parts = numericValue.split('.')
-    if (parts.length > 2) {
-      numericValue = parts[0] + '.' + parts.slice(1).join('')
-    }
-    
-    // Limit to 2 decimal places
-    if (parts.length === 2 && parts[1].length > 2) {
-      numericValue = parts[0] + '.' + parts[1].substring(0, 2)
-    }
-    
-    // Convert to number and validate range
-    const numValue = parseFloat(numericValue)
-    if (!isNaN(numValue)) {
-      if (numValue < MIN_PRICE) {
-        return MIN_PRICE.toFixed(2)
-      }
-      if (numValue > MAX_PRICE) {
-        return MAX_PRICE.toFixed(2)
-      }
-    }
-    
-    return numericValue
-  }
-
-  const handlePriceChange = (text) => {
-    const formattedPrice = formatPrice(text)
-    setEditingPrice(formattedPrice)
-  }
 
   const fetchRates = async () => {
     setLoading(true)
     const { data, error } = await supabase
       .from('pricing')
-      .select(`
-        *,
-        region:region_id (
-          id,
-          region
-        )
-      `)
+      .select(`*, region:region_id(id, region)`)
       .order('city', { ascending: true })
 
     if (error) {
@@ -105,8 +51,9 @@ const DeliveryRates = ({ navigation }) => {
       price: rate.price ? `₱${rate.price.toFixed(2)}` : 'N/A',
       region: rate.region?.region || 'N/A',
       updated_at: rate.updated_at
-        ? new Date(rate.updated_at).toLocaleString()
+        ? new Date(rate.updated_at).toLocaleString('en-PH')
         : 'N/A',
+      region_id: rate.region_id,
     }))
     setRates(formatted)
     setLoading(false)
@@ -118,10 +65,11 @@ const DeliveryRates = ({ navigation }) => {
     }, [])
   )
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = async () => {
     setRefreshing(true)
-    fetchRates().finally(() => setRefreshing(false))
-  }, [])
+    await fetchRates()
+    setRefreshing(false)
+  }
 
   const handleSort = (column) => {
     setSortDirection(prev =>
@@ -136,33 +84,27 @@ const DeliveryRates = ({ navigation }) => {
   const filteredAndSortedRates = rates
     .filter(rate => {
       const searchValue = String(rate[searchColumn] || '').toLowerCase()
-      const query = searchQuery.toLowerCase()
-      return searchValue.includes(query)
+      return searchValue.includes(searchQuery.toLowerCase())
     })
     .sort((a, b) => {
       const valA = a[sortColumn]
       const valB = b[sortColumn]
 
-      // Special handling for price column
       if (sortColumn === 'price') {
         const priceA = parseFloat(valA.replace('₱', '')) || 0
         const priceB = parseFloat(valB.replace('₱', '')) || 0
         return sortDirection === 'ascending' ? priceA - priceB : priceB - priceA
       }
 
-      // Special handling for date columns
       if (sortColumn === 'updated_at') {
-        if (valA === 'N/A') return sortDirection === 'ascending' ? -1 : 1
-        if (valB === 'N/A') return sortDirection === 'ascending' ? 1 : -1
         return sortDirection === 'ascending'
           ? new Date(valA) - new Date(valB)
           : new Date(valB) - new Date(valA)
       }
 
-      // Default sorting for non-date columns
-      if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
-      if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
-      return 0
+      return sortDirection === 'ascending'
+        ? String(valA).localeCompare(String(valB))
+        : String(valB).localeCompare(String(valA))
     })
 
   const from = page * itemsPerPage
@@ -183,405 +125,251 @@ const DeliveryRates = ({ navigation }) => {
     { key: 'updated_at', label: 'Last Updated', width: COLUMN_WIDTH },
   ]
 
-  const handleDeleteRate = async (rateId) => {
-    try {
-      const { error } = await supabase
-        .from('pricing')
-        .delete()
-        .eq('id', rateId)
-      
-      if (error) {
-        console.error('Error deleting rate:', error)
-      } else {
-        fetchRates()
-      }
-    } catch (error) {
-      console.error('Error deleting rate:', error)
-    }
-  }
-
-  const handleEditRate = async () => {
-    try {
-      setEditError('')
-      
-      // Validate price
-      if (!editingPrice.trim()) {
-        setEditError('Price is required')
-        return
-      }
-
-      // Convert price to number and validate
-      const price = parseFloat(editingPrice)
-      if (isNaN(price) || price < MIN_PRICE || price > MAX_PRICE) {
-        setEditError(`Price must be between ₱${MIN_PRICE.toFixed(2)} and ₱${MAX_PRICE.toFixed(2)}`)
-        return
-      }
-
-      const { error } = await supabase
-        .from('pricing')
-        .update({
-          price: price,
-          region_id: editingRate.region_id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', editingRate.id)
-
-      if (error) {
-        console.error('Error updating rate:', error)
-        setEditError('Failed to update rate. Please try again.')
-      } else {
-        setEditDialogVisible(false)
-        fetchRates()
-      }
-    } catch (error) {
-      console.error('Error updating rate:', error)
-      setEditError('An unexpected error occurred')
-    }
-  }
-
-  const openEditDialog = (rate) => {
-    setEditingRate({
-      id: rate.id,
-      city: rate.city,
-      region_id: rate.region_id,
-    })
-    setEditingPrice(rate.price.replace('₱', ''))
-    setEditDialogVisible(true)
-  }
-
   return (
-    <ScrollView 
-      style={{ flex: 1, backgroundColor: colors.background }}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
+    <ScrollView
+      style={[styles.scrollView, { backgroundColor: colors.background }]}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <View style={styles.searchActionsRow}>
-        <Searchbar
-          placeholder={`Search by ${filterOptions.find(opt => opt.value === searchColumn)?.label}`}
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-          style={[styles.searchbar, { backgroundColor: colors.surface }]}
-        />
-      </View>
 
-      <View style={styles.buttonContainer}>
-        <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Filter by:</Text>
-        <View style={styles.menuAnchor}>
-          <Menu
-            visible={filterMenuVisible}
-            onDismiss={() => setFilterMenuVisible(false)}
-            anchor={
-              <Button
-                mode="contained"
-                icon="filter-variant"
-                onPress={() => setFilterMenuVisible(true)}
-                style={[styles.button, { borderColor: colors.primary, flex: 1 }]}
-                contentStyle={styles.buttonContent}
-                labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
-              >
-                {filterOptions.find(opt => opt.value === searchColumn)?.label}
-              </Button>
-            }
-            contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
-          >
-            {filterOptions.map(option => (
-              <Menu.Item
-                key={option.value}
-                onPress={() => {
-                  setSearchColumn(option.value)
-                  setFilterMenuVisible(false)
-                }}
-                title={option.label}
-                titleStyle={[
-                  {
-                    color: searchColumn === option.value
-                      ? colors.primary
-                      : colors.onSurface,
-                  },
-                  fonts.bodyLarge,
-                ]}
-                leadingIcon={searchColumn === option.value ? 'check' : undefined}
-              />
-            ))}
-          </Menu>
-        </View>
-      </View>
+      <View style={styles.container}>
+        {/* Search Section */}
+        <Surface style={[styles.searchSurface, { backgroundColor: colors.surface }]} elevation={1}>
+          <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
+            Search & Filter
+          </Text>
+          <Searchbar
+            placeholder={`Search by ${filterOptions.find(opt => opt.value === searchColumn)?.label}`}
+            onChangeText={setSearchQuery}
+            value={searchQuery}
+            style={[styles.searchbar, { backgroundColor: colors.surfaceVariant }]}
+            iconColor={colors.onSurfaceVariant}
+            inputStyle={[styles.searchInput, { color: colors.onSurface }]}
+          />
+        </Surface>
 
-      {loading ? (
-        <Text style={[styles.loadingText, { color: colors.onSurface }, fonts.bodyMedium]}>
-          Loading rates...
-        </Text>
-      ) : (
-        <View style={styles.tableContainer}>
-          <ScrollView horizontal>
-            <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
-              <DataTable.Header style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
-                <DataTable.Title style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
-                  <Text style={[styles.headerText, { color: colors.onSurface }]}>Actions</Text>
-                </DataTable.Title>
-                {columns.map(({ key, label, width }) => (
-                  <DataTable.Title
-                    key={key}
-                    style={{ width: width || COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}
-                    onPress={() => handleSort(key)}
-                  >
-                    <View style={styles.sortableHeader}>
-                      <Text style={[styles.headerText, { color: colors.onSurface }]}>{label}</Text>
-                      <Text style={[styles.sortIcon, { color: colors.onSurface }]}>{getSortIcon(key)}</Text>
-                    </View>
-                  </DataTable.Title>
-                ))}
-                </DataTable.Header>
-
-              {filteredAndSortedRates.length === 0 ? (
-                <DataTable.Row>
-                  <DataTable.Cell style={styles.noDataCell}>
-                    <Text style={[{ color: colors.onSurface, textAlign: 'center' }, fonts.bodyMedium]}>
-                      No delivery rates available
-                    </Text>
-                  </DataTable.Cell>
-                </DataTable.Row>
-              ) : (
-                paginatedRates.map(rate => (
-                  <DataTable.Row key={rate.id}>
-                    <DataTable.Cell numeric style={{ width: COLUMN_WIDTH, justifyContent: 'center', paddingVertical: 12 }}>
-                      <Menu
-                        visible={actionMenuVisible === rate.id}
-                        onDismiss={() => setActionMenuVisible(null)}
-                        anchor={
-                          <Button
-                            mode="outlined"
-                            icon="dots-vertical"
-                            onPress={() => setActionMenuVisible(rate.id)}
-                            style={[styles.actionButton, { borderColor: colors.primary }]}
-                            contentStyle={styles.buttonContent}
-                            labelStyle={[styles.buttonLabel, { color: colors.primary }]}
-                          >
-                            Actions
-                          </Button>
-                        }
-                        contentStyle={{ backgroundColor: colors.surface }}
-                      >
-                        <Menu.Item
-                          onPress={() => {
-                            setActionMenuVisible(null)
-                            openEditDialog(rate)
-                          }}
-                          title="Edit Rate"
-                          leadingIcon="pencil"
-                          titleStyle={[
-                            {
-                              color: colors.onSurface,
-                            },
-                            fonts.bodyLarge,
-                          ]}
-                        />
-                      </Menu>
-                    </DataTable.Cell>
-                    {[
-                      { value: rate.price, width: PRICE_COLUMN_WIDTH },
-                      { value: rate.city, width: CITY_COLUMN_WIDTH },
-                      { value: rate.region, width: REGION_COLUMN_WIDTH },
-                      { value: rate.updated_at, width: COLUMN_WIDTH },
-                    ].map(({ value, width }, idx) => (
-                      <DataTable.Cell
-                        key={idx}
-                        style={{ width, justifyContent: 'center', paddingVertical: 12 }}
-                      >
-                        <Text style={[{ color: colors.onSurface }, fonts.bodyMedium]}>{value}</Text>
-                      </DataTable.Cell>
-                    ))}
-                    
-                  </DataTable.Row>
-                ))
-              )}
-            </DataTable>
-          </ScrollView>
-
-          <View style={[styles.paginationContainer, { backgroundColor: colors.surface }]}>
-            <DataTable.Pagination
-              page={page}
-              numberOfPages={Math.ceil(filteredAndSortedRates.length / itemsPerPage)}
-              onPageChange={page => setPage(page)}
-              label={`${from + 1}-${to} of ${filteredAndSortedRates.length}`}
-              labelStyle={[{ color: colors.onSurface }, fonts.bodyMedium]}
-              showFirstPageButton
-              showLastPageButton
-              showFastPaginationControls
-              numberOfItemsPerPageList={[5, 10, 20, 50]}
-              numberOfItemsPerPage={itemsPerPage}
-              onItemsPerPageChange={setItemsPerPage}
-              selectPageDropdownLabel={'Rows per page'}
-              style={[styles.pagination, { backgroundColor: colors.surfaceVariant }]}
-              theme={{
-                colors: {
-                  onSurface: colors.onSurface,
-                  text: colors.onSurface,
-                  elevation: {
-                    level2: colors.surface,
-                  },
-                },
-                fonts: {
-                  bodyMedium: fonts.bodyMedium,
-                  labelMedium: fonts.labelMedium,
-                },
-              }}
-            />
+        {/* Filter Section */}
+        <Surface style={[styles.filtersSurface, { backgroundColor: colors.surface }]} elevation={1}>
+          <View style={styles.filterGroup}>
+            <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+              Filter Column
+            </Text>
+            <Menu
+              visible={filterMenuVisible}
+              onDismiss={() => setFilterMenuVisible(false)}
+              anchor={
+                <Button
+                  mode="outlined"
+                  icon="filter-variant"
+                  onPress={() => setFilterMenuVisible(true)}
+                  style={[styles.filterButton, { borderColor: colors.outline }]}
+                  contentStyle={styles.buttonContent}
+                  labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                >
+                  {filterOptions.find(opt => opt.value === searchColumn)?.label}
+                </Button>
+              }
+              contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+            >
+              {filterOptions.map(option => (
+                <Menu.Item
+                  key={option.value}
+                  onPress={() => {
+                    setSearchColumn(option.value)
+                    setFilterMenuVisible(false)
+                  }}
+                  title={option.label}
+                  titleStyle={[
+                    {
+                      color: searchColumn === option.value
+                        ? colors.primary
+                        : colors.onSurface,
+                    },
+                    fonts.bodyLarge,
+                  ]}
+                  leadingIcon={searchColumn === option.value ? 'check' : undefined}
+                />
+              ))}
+            </Menu>
           </View>
-        </View>
-      )}
+        </Surface>
 
-      <Portal>
-        <Dialog visible={editDialogVisible} onDismiss={() => setEditDialogVisible(false)} style={{backgroundColor: colors.surface}}>
-          <Dialog.Title>Edit Delivery Rate</Dialog.Title>
-          <Dialog.Content>
-            <View style={styles.infoContainer}>
-              <Text style={[styles.infoLabel, { color: colors.onSurface }]}>City:</Text>
-              <Text style={[styles.infoValue, { color: colors.onSurface }]}>{editingRate.city}</Text>
+        {/* Results Section */}
+        <Surface style={[styles.resultsSurface, { backgroundColor: colors.surface }]} elevation={1}>
+          <View style={styles.resultsHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
+              Delivery Rates
+            </Text>
+            {!loading && (
+              <Text style={[styles.resultsCount, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>
+                {filteredAndSortedRates.length} rate{filteredAndSortedRates.length !== 1 ? 's' : ''} found
+              </Text>
+            )}
+          </View>
+
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={[styles.loadingText, { color: colors.onSurface }, fonts.bodyLarge]}>
+                Loading rates...
+              </Text>
             </View>
-            <View style={styles.infoContainer}>
-              <Text style={[styles.infoLabel, { color: colors.onSurface }]}>Region:</Text>
-              <Text style={[styles.infoValue, { color: colors.onSurface }]}>{rates.find(r => r.id === editingRate.id)?.region || 'N/A'}</Text>
+          ) : (
+            <View style={styles.tableContainer}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
+                  <DataTable.Header style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
+                    <DataTable.Title style={[styles.actionColumn, { justifyContent: 'center' }]}>
+                      <Text style={[styles.headerText, { color: colors.onSurface }, fonts.labelLarge]}>Actions</Text>
+                    </DataTable.Title>
+                    {columns.map(({ key, label, width }) => (
+                      <DataTable.Title
+                        key={key}
+                        style={[styles.tableColumn, { width: width || COLUMN_WIDTH, justifyContent: 'center' }]}
+                        onPress={() => handleSort(key)}
+                      >
+                        <View style={styles.sortableHeader}>
+                          <Text style={[styles.headerText, { color: colors.onSurface }, fonts.labelLarge]}>{label}</Text>
+                          <Text style={[styles.sortIcon, { color: colors.onSurface }]}>{getSortIcon(key)}</Text>
+                        </View>
+                      </DataTable.Title>
+                    ))}
+                  </DataTable.Header>
+
+                  {filteredAndSortedRates.length === 0 ? (
+                    <DataTable.Row>
+                      <DataTable.Cell style={styles.noDataCell}>
+                        <Text style={[styles.noDataText, { color: colors.onSurfaceVariant }, fonts.bodyLarge]}>
+                          No rates found
+                        </Text>
+                      </DataTable.Cell>
+                    </DataTable.Row>
+                  ) : (
+                    paginatedRates.map((rate, index) => (
+                      <DataTable.Row
+                        key={rate.id}
+                        style={[
+                          styles.tableRow,
+                          index % 2 === 0 && { backgroundColor: colors.surfaceVariant + '20' }
+                        ]}
+                      >
+                        <DataTable.Cell style={[styles.actionColumn, { justifyContent: 'center' }]}>
+                          <Button
+                            mode="contained"
+                            style={[styles.actionButton, { backgroundColor: colors.primary }]}
+                            contentStyle={styles.buttonContent}
+                            labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
+                            onPress={() => console.log('Edit pressed')}
+                          >
+                            Edit
+                          </Button>
+                        </DataTable.Cell>
+                        {columns.map(({ key, width }) => (
+                          <DataTable.Cell
+                            key={key}
+                            style={[styles.tableColumn, { width: width || COLUMN_WIDTH, justifyContent: 'center' }]}
+                          >
+                            <Text style={[styles.cellText, { color: colors.onSurface }, fonts.bodyMedium]}>
+                              {rate[key]}
+                            </Text>
+                          </DataTable.Cell>
+                        ))}
+                      </DataTable.Row>
+                    ))
+                  )}
+                </DataTable>
+              </ScrollView>
+
+              {/* Pagination */}
+              {filteredAndSortedRates.length > 0 && (
+                <View style={[styles.paginationContainer, { backgroundColor: colors.surfaceVariant }]}>
+                  <DataTable.Pagination
+                    page={page}
+                    numberOfPages={Math.ceil(filteredAndSortedRates.length / itemsPerPage)}
+                    onPageChange={page => setPage(page)}
+                    label={`${from + 1}-${to} of ${filteredAndSortedRates.length}`}
+                    labelStyle={[styles.paginationLabel, { color: colors.onSurface }, fonts.bodyMedium]}
+                    showFirstPageButton
+                    showLastPageButton
+                    showFastPaginationControls
+                    numberOfItemsPerPageList={[5, 10, 20, 50]}
+                    numberOfItemsPerPage={itemsPerPage}
+                    onItemsPerPageChange={setItemsPerPage}
+                    selectPageDropdownLabel={'Rows per page'}
+                    style={styles.pagination}
+                    theme={{
+                      colors: {
+                        onSurface: colors.onSurface,
+                        text: colors.onSurface,
+                        elevation: { level2: colors.surface },
+                      },
+                      fonts: {
+                        bodyMedium: fonts.bodyMedium,
+                        labelMedium: fonts.labelMedium,
+                      },
+                    }}
+                  />
+                </View>
+              )}
             </View>
-            <View style={styles.infoContainer}>
-              <Text style={[styles.infoLabel, { color: colors.onSurface }]}>Last Updated:</Text>
-              <Text style={[styles.infoValue, { color: colors.onSurface }]}>{editingRate.updated_at}</Text>
-            </View>
-            <TextInput
-              label="Price"
-              value={editingPrice}
-              onChangeText={handlePriceChange}
-              keyboardType="numeric"
-              style={styles.input}
-              placeholder={`₱${MIN_PRICE.toFixed(2)} - ₱${MAX_PRICE.toFixed(2)}`}
-              error={editError}
-              left={<TextInput.Icon icon={() => <Text>₱</Text>} />}
-            />
-            {editError ? (
-              <Text style={[styles.errorText, { color: colors.error }]}>{editError}</Text>
-            ) : null}
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setEditDialogVisible(false)}>Cancel</Button>
-            <Button onPress={handleEditRate}>Save</Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
+          )}
+        </Surface>
+      </View>
     </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  searchActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginTop: 16,
-    gap: 10,
+  scrollView: { flex: 1 },
+  container: { padding: 16, gap: 16 },
+  searchSurface: { padding: 16, borderRadius: 12 },
+  sectionTitle: { marginBottom: 12, fontWeight: '600' },
+  searchbar: { borderRadius: 8 },
+  searchInput: { fontSize: 16 },
+  filtersSurface: { padding: 16, borderRadius: 12 },
+  filterGroup: { flex: 1 },
+  filterLabel: { marginBottom: 8, fontWeight: '500' },
+  filterButton: { borderRadius: 8 },
+  menuContent: { width: '100%', left: 0, right: 0 },
+  resultsSurface: { borderRadius: 12, overflow: 'hidden' },
+  resultsHeader: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.12)',
   },
-  searchbar: {
-    flex: 1,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    gap: 10,
-  },
-  filterLabel: {
-    marginRight: 8,
-  },
-  menuAnchor: {
-    flex: 1,
-    position: 'relative',
-  },
-  menuContent: {
-    width: '100%',
-    left: 0,
-    right: 0,
-  },
-  button: {
-    marginVertical: 10,
-    height: 48,
-    borderRadius: 8,
-  },
-  buttonContent: {
-    height: 48,
-  },
-  buttonLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  tableContainer: {
-    flex: 1,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 8,
-    minHeight: '70%',
-    overflow: 'hidden',
-  },
-  table: {
-    flex: 1,
-  },
-  sortableHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sortIcon: {
-    marginLeft: 4,
-  },
-  actionButton: {
-    borderRadius: 8,
-    minWidth: 100,
-  },
-  noDataCell: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 16,
-    flex: 1,
-  },
-  loadingText: {
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  paginationContainer: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.12)',
-  },
-  pagination: {
-    justifyContent: 'space-evenly',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.12)',
-  },
-  input: {
-    marginBottom: 16,
-  },
-  errorText: {
-    marginTop: 8,
-    fontSize: 14,
-  },
-  infoContainer: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  infoLabel: {
-    fontWeight: 'bold',
-    marginRight: 8,
-    fontSize: 16,
-  },
-  infoValue: {
-    fontSize: 16,
-  },
+  resultsCount: { marginTop: 4 },
+  loadingContainer: { padding: 32, alignItems: 'center' },
+  loadingText: { textAlign: 'center' },
+  tableContainer: { flex: 1 },
+  table: { flex: 1 },
   tableHeader: {
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.12)',
   },
-  headerText: {
-    fontSize: 14,
-    fontWeight: 'bold',
+  tableRow: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
   },
+  actionColumn: { width: 140, paddingVertical: 12 },
+  tableColumn: { paddingVertical: 12 },
+  sortableHeader: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  sortIcon: { fontSize: 12 },
+  headerText: { fontWeight: '600' },
+  cellText: { textAlign: 'center' },
+  actionButton: { borderRadius: 8 },
+  buttonContent: { height: 40 },
+  buttonLabel: { fontSize: 14, fontWeight: '600' },
+  noDataCell: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 32,
+    flex: 1,
+  },
+  noDataText: { textAlign: 'center' },
+  paginationContainer: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.12)',
+  },
+  pagination: { justifyContent: 'space-evenly' },
+  paginationLabel: { fontWeight: '500' },
 })
 
-export default DeliveryRates 
+export default DeliveryRates

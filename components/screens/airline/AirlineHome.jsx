@@ -1,6 +1,6 @@
 import React from 'react'
 import { ScrollView, View, Dimensions, FlatList, StyleSheet } from 'react-native'
-import { Text, Button, Surface, Card, Title, Paragraph, useTheme } from 'react-native-paper'
+import { Text, Button, Surface, Card, useTheme, Divider } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 
 const { width } = Dimensions.get('window')
@@ -15,9 +15,7 @@ const AirlineHome = ({ navigation }) => {
   ]
 
   const renderItem = ({ item }) => (
-    <Card
-      style={[styles.card, { backgroundColor: colors.surface, elevation: colors.elevation.level1 }]}
-    >
+    <Card style={[styles.card, { backgroundColor: colors.surface, elevation: colors.elevation.level1 }]}>
       <Card.Cover source={item} style={styles.cardCover} />
     </Card>
   )
@@ -30,54 +28,64 @@ const AirlineHome = ({ navigation }) => {
 
   return (
     <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
-      <Header navigation={navigation} title={'Home'}/>
-
+      <Header navigation={navigation} title={'Home'} />
       <View style={styles.container}>
-        <Title style={[styles.title, { color: colors.onBackground, ...fonts.titleLarge }]}>
-          Welcome Aboard!
-        </Title>
-        <Text style={[styles.subTitle, { color: colors.onBackground, ...fonts.titleMedium }]}>
-          Hi, Airline Staff
-        </Text>
-
-        {images.length ? (
-          <FlatList
-            data={images}
-            renderItem={renderItem}
-            keyExtractor={(_, index) => index.toString()}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.flatList}
-          />
-        ) : (
-          <Text style={[styles.noImages, { color: colors.error, ...fonts.bodyLarge }]}>
-            No images available.
+        {/* Welcome Section */}
+        <Surface style={[styles.welcomeSurface, { backgroundColor: colors.surface }]} elevation={1}>
+          <Text style={[styles.welcomeTitle, { color: colors.onSurface, ...fonts.headlineMedium }]}>Welcome Aboard!</Text>
+          <Text style={[styles.welcomeSubTitle, { color: colors.onSurface, ...fonts.titleMedium }]}>Airline Staff Dashboard</Text>
+          <Divider style={styles.divider} />
+          <Text style={[styles.welcomeParagraph, { color: colors.onSurfaceVariant, ...fonts.bodyLarge }]}>
+            Manage luggage bookings, track delivery statuses, and ensure smooth handling of passenger belongings.
           </Text>
-        )}
+        </Surface>
 
-        <Paragraph style={[styles.paragraph, { color: colors.onBackground, ...fonts.bodyLarge }]}>
-          Manage luggage bookings, track delivery statuses, and ensure smooth handling of passenger belongings.
-        </Paragraph>
+        {/* Carousel Section */}
+        <Surface style={[styles.carouselSurface, { backgroundColor: colors.surface }]} elevation={1}>
+          <Text style={[styles.sectionTitle, { color: colors.onSurface, ...fonts.titleLarge }]}>Featured Images</Text>
+          {images.length ? (
+            <FlatList
+              data={images}
+              renderItem={renderItem}
+              keyExtractor={(_, index) => index.toString()}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.flatList}
+              snapToInterval={width * 0.85 + 16}
+              decelerationRate="fast"
+              snapToAlignment="start"
+            />
+          ) : (
+            <Text style={[styles.noImages, { color: colors.error, ...fonts.bodyLarge }]}>
+              No images available.
+            </Text>
+          )}
+        </Surface>
 
-        <View style={styles.buttonContainer}>
-          {buttons.map(({ label, icon, screen }) => (
-            <Button
-              key={label}
-              icon={icon}
-              mode="contained"
-              style={[styles.button, { backgroundColor: colors.primary }]}
-              contentStyle={styles.buttonContent}
-              onPress={() => navigation.navigate(screen)}
-              labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
-            >
-              {label}
-            </Button>
-          ))}
-        </View>
+        {/* Actions Section */}
+        <Surface style={[styles.actionsSurface, { backgroundColor: colors.surface }]} elevation={1}>
+          <Text style={[styles.sectionTitle, { color: colors.onSurface, ...fonts.titleLarge }]}>Quick Actions</Text>
+          <View style={styles.buttonContainer}>
+            {buttons.map(({ label, icon, screen }) => (
+              <Button
+                key={label}
+                icon={icon}
+                mode="contained"
+                style={[styles.button, { backgroundColor: colors.primary }]}
+                contentStyle={styles.buttonContent}
+                onPress={() => navigation.navigate(screen)}
+                labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
+              >
+                {label}
+              </Button>
+            ))}
+          </View>
+        </Surface>
 
-        <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
-          <Text style={[styles.surfaceText, { color: colors.onSurface, ...fonts.bodyMedium }]}>
+        {/* Quote Section */}
+        <Surface style={[styles.quoteSurface, { backgroundColor: colors.surface }]} elevation={1}>
+          <Text style={[styles.quoteText, { color: colors.onSurface, ...fonts.bodyMedium }]}>
             “Keep every delivery smooth and every passenger satisfied. You're the bridge between service and success.”
           </Text>
         </Surface>
@@ -92,14 +100,37 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: 16,
+    gap: 16,
   },
-  title: {
-    textAlign: 'center',
-    marginTop: 10,
+  welcomeSurface: {
+    padding: 20,
+    borderRadius: 12,
   },
-  subTitle: {
+  welcomeTitle: {
     textAlign: 'center',
-    marginBottom: 20,
+    fontWeight: 'bold',
+  },
+  welcomeSubTitle: {
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  divider: {
+    marginVertical: 12,
+    height: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.12)',
+  },
+  welcomeParagraph: {
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  carouselSurface: {
+    padding: 16,
+    borderRadius: 12,
+  },
+  sectionTitle: {
+    textAlign: 'center',
+    marginBottom: 16,
+    fontWeight: '600',
   },
   flatList: {
     paddingVertical: 10,
@@ -116,31 +147,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: 10,
   },
-  paragraph: {
-    textAlign: 'center',
-    marginVertical: 20,
+  actionsSurface: {
+    padding: 16,
+    borderRadius: 12,
   },
   buttonContainer: {
-    marginBottom: 10,
+    gap: 12,
     alignItems: 'center',
   },
   button: {
-    marginVertical: 6,
     width: '90%',
+    borderRadius: 8,
   },
   buttonContent: {
     height: 48,
   },
   buttonLabel: {
     fontSize: 16,
+    fontWeight: 'bold',
   },
-  surface: {
+  quoteSurface: {
     padding: 16,
-    marginVertical: 20,
-    marginHorizontal: 10,
-    borderRadius: 8,
+    borderRadius: 12,
   },
-  surfaceText: {
+  quoteText: {
     textAlign: 'center',
   },
 })
