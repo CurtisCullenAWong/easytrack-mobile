@@ -215,7 +215,7 @@ const ProgressMeter = ({ colors, contractData }) => {
           Distance Remaining: {distanceRemaining ? `${distanceRemaining.toFixed(1)} km` : 'Calculating...'}
         </Text>
         <Text style={[styles.progressText, { color: colors.primary }]}>
-          ETA: {etaRemaining ? `${Math.round(etaRemaining)} min` : 'Calculating...'}
+        ETA: {etaRemaining ? `${Math.round(etaRemaining)} min` : 'Calculating...'}
         </Text>
       </View>
 
@@ -509,8 +509,8 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     progressInfo: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+        flexDirection: 'column',
+        alignItems:'center',
         marginBottom: 8,
     },
     progressText: {
