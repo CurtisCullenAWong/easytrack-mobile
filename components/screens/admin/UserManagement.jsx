@@ -203,45 +203,45 @@ const UserManagement = ({ navigation }) => {
               iconColor={colors.onSurfaceVariant}
               inputStyle={[styles.searchInput, { color: colors.onSurfaceVariant }]}
             />
-            <View style={styles.filterButtonContainer}>
-              <Menu
-                visible={filterMenuVisible}
-                onDismiss={() => setFilterMenuVisible(false)}
-                anchor={
-                  <Button
-                    mode="outlined"
-                    icon="filter-variant"
-                    onPress={() => setFilterMenuVisible(true)}
-                    style={[styles.filterButton, { borderColor: colors.outline }]}
-                    contentStyle={styles.buttonContent}
-                    labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
-                  >
-                    Filter
-                  </Button>
-                }
-                contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
-              >
-                {filterOptions.map(option => (
-                  <Menu.Item
-                    key={option.value}
-                    onPress={() => {
-                      setSearchColumn(option.value)
-                      setFilterMenuVisible(false)
-                    }}
-                    title={option.label}
-                    titleStyle={[
-                      {
-                        color: searchColumn === option.value
-                          ? colors.primary
-                          : colors.onSurface,
-                      },
-                      fonts.bodyLarge,
-                    ]}
-                    leadingIcon={searchColumn === option.value ? 'check' : undefined}
-                  />
-                ))}
-              </Menu>
-            </View>
+          </View>
+          <View style={styles.controlsRow}>
+                <Menu
+                  visible={filterMenuVisible}
+                  onDismiss={() => setFilterMenuVisible(false)}
+                  anchor={
+                    <Button
+                      mode="outlined"
+                      icon="filter-variant"
+                      onPress={() => setFilterMenuVisible(true)}
+                      style={[styles.filterButton, { borderColor: colors.outline }]}
+                      contentStyle={styles.buttonContent}
+                      labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                    >
+                      Filter
+                    </Button>
+                  }
+                  contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+                >
+                  {filterOptions.map(option => (
+                    <Menu.Item
+                      key={option.value}
+                      onPress={() => {
+                        setSearchColumn(option.value)
+                        setFilterMenuVisible(false)
+                      }}
+                      title={option.label}
+                      titleStyle={[
+                        {
+                          color: searchColumn === option.value
+                            ? colors.primary
+                            : colors.onSurface,
+                        },
+                        fonts.bodyLarge,
+                      ]}
+                      leadingIcon={searchColumn === option.value ? 'check' : undefined}
+                    />
+                  ))}
+                </Menu>
           </View>
         </Surface>
 
@@ -508,6 +508,8 @@ const styles = StyleSheet.create({
   controlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent:'flex-start',
+    margin: 5,
     gap: 10,
   },
   searchbar: {
@@ -517,12 +519,9 @@ const styles = StyleSheet.create({
   searchInput: {
     fontSize: 16,
   },
-  filterButtonContainer: {
-    position: 'relative',
-  },
   filterButton: {
     borderRadius: 8,
-    minWidth: 100,
+    minWidth: '100%',
   },
   button: {
     marginVertical: 10,

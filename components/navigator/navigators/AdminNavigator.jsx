@@ -1,11 +1,30 @@
-import React from 'react'
+import { useState, useContext, useEffect } from 'react'
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  BackHandler,
+  TouchableOpacity,
+} from 'react-native'
+import {
+  Text,
+  List,
+  Surface,
+  Divider,
+  useTheme,
+  IconButton,
+  ActivityIndicator,
+} from 'react-native-paper'
+import { ThemeContext } from '../../themes/themeContext'
 import useLogout from '../../hooks/useLogout'
 import useVerificationStatus from '../../hooks/useVerificationStatus'
-import SideNavigator from '../shared/SideNavigator'
 
 const AdminNavigator = ({ navigation }) => {
+  const { toggleTheme } = useContext(ThemeContext)
+  const { colors, fonts } = useTheme()
   const { handleLogout, LogoutDialog } = useLogout(navigation)
   const { isVerified } = useVerificationStatus()
+
   const ADMIN_SECTIONS = [
     {
       title: 'My Account',
@@ -26,7 +45,6 @@ const AdminNavigator = ({ navigation }) => {
         { icon: 'map-marker-path', label: 'Booking Management', screen: 'AdminBookingManagement' },
         { icon: 'bank-transfer', label: 'Transaction Management', screen: 'TransactionManagement' },
         { icon: 'map', label: 'Track Luggage', screen: 'TrackLuggage' },
-  
       ],
     },
     {
@@ -48,15 +66,141 @@ const AdminNavigator = ({ navigation }) => {
       ],
     },
   ]
+
+  const [expandedSections, setExpandedSections] = useState(
+    Object.fromEntries(ADMIN_SECTIONS.map(s => [s.key, true]))
+  )
+
+  useEffect(() => {
+    if (__DEV__ && navigation && navigation.getState) {
+      const registeredScreens = new Set(navigation.getState()?.routeNames || [])
+      ADMIN_SECTIONS.forEach(section => {
+        section.items.forEach(item => {
+          if (item.screen && !registeredScreens.has(item.screen)) {
+            console.warn(`[AdminNavigator] Screen "${item.screen}" missing.`)
+          }
+        })
+      })
+    }
+  }, [navigation])
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (handleLogout) handleLogout()
+      return true
+    })
+    return () => sub.remove()
+  }, [handleLogout])
+
+  const toggleSection = key =>
+    setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }))
+
   return (
-    <SideNavigator
-      navigation={navigation}
-      sections={ADMIN_SECTIONS}
-      LogoutDialog={LogoutDialog}
-      handleLogout={handleLogout}
-      isVerified={isVerified}
-    />
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+      <Surface style={[styles.surface, { backgroundColor: colors.background }]}>
+        <Image source={require('../../../assets/icon-w_o-name.png')} style={styles.logo} />
+        <Text style={[styles.appName, { color: colors.primary, ...fonts.headlineLarge }]}>
+          EasyTrack
+        </Text>
+      </Surface>
+
+      {!isVerified && (
+        <Surface style={[styles.warningSurface, { backgroundColor: colors.errorContainer }]} elevation={1}>
+          <Text style={[styles.warningText, { color: colors.onErrorContainer, ...fonts.bodyMedium }]}>
+            NOTICE: Your account is not verified yet. Some features are limited. Please complete your profile verification. ⚠️
+          </Text>
+        </Surface>
+      )}
+
+      <Divider style={styles.divider} />
+
+      {ADMIN_SECTIONS.map(section => {
+        const filtered = section.items.filter(item => {
+          if (item.screen === 'Profile' || item.screen === 'TermsAndConditions' || item.actionKey === 'logout') return true
+          return isVerified
+        })
+        if (filtered.length === 0) return null
+
+        return (
+          <ExpandableSection
+            key={section.key}
+            title={section.title}
+            expanded={expandedSections[section.key]}
+            onToggle={() => toggleSection(section.key)}
+            icon={section.icon}
+            items={filtered.map(item =>
+              item.actionKey === 'logout' ? { ...item, action: handleLogout } : item
+            )}
+            navigation={navigation}
+            fonts={fonts}
+          />
+        )
+      })}
+
+      <Divider style={styles.divider} />
+
+      <TouchableOpacity style={styles.themeToggleContainer} onPress={toggleTheme}>
+        <IconButton
+          style={{ backgroundColor: colors.background }}
+          mode="contained-tonal"
+          icon="theme-light-dark"
+          iconColor={colors.primary}
+        />
+        <Text style={[{ color: colors.onBackground }, fonts.labelMedium]}>Switch Theme</Text>
+      </TouchableOpacity>
+
+      {LogoutDialog}
+    </ScrollView>
   )
 }
+
+const ExpandableSection = ({ title, expanded, onToggle, icon, items, navigation, fonts }) => {
+  const { colors } = useTheme()
+  const [navLock, setNavLock] = useState(false)
+  const [loadingIdx, setLoadingIdx] = useState(null)
+
+  const handlePress = (action, screen, idx) => {
+    if (navLock) return
+    setNavLock(true)
+    setLoadingIdx(idx)
+    if (action) action()
+    else if (screen) navigation.navigate(screen)
+    setTimeout(() => { setNavLock(false); setLoadingIdx(null) }, 500)
+  }
+
+  return (
+    <List.Accordion
+      title={title}
+      titleStyle={[{ color: colors.onSurface }, fonts.labelLarge]}
+      left={props => <List.Icon {...props} icon={icon} />}
+      expanded={expanded}
+      onPress={onToggle}
+    >
+      {items.map(({ icon, label, screen, action, color }, idx) => (
+        <List.Item
+          key={idx}
+          title={label}
+          titleStyle={[{ color: colors.onSurface }, fonts.labelMedium]}
+          left={props => <List.Icon {...props} icon={icon} color={color || colors.primary} />}
+          right={() => loadingIdx === idx ? <ActivityIndicator size={18} color={colors.primary} /> : null}
+          onPress={() => handlePress(action, screen, idx)}
+          style={styles.listItem}
+        />
+      ))}
+    </List.Accordion>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  surface: { padding: 20, marginTop: 40, elevation: 4, alignItems: 'center' },
+  logo: { width: 200, height: 150, resizeMode: 'contain' },
+  appName: { marginTop: 10 },
+  divider: { height: 0.8 },
+  warningSurface: { margin: 16, padding: 16, borderRadius: 8, marginBottom: 8 },
+  warningText: { textAlign: 'center', lineHeight: 20 },
+  themeToggleContainer: { alignItems: 'center', marginVertical: 20, flexDirection: 'row', paddingLeft: 32 },
+  listItem: { paddingLeft: 30 },
+})
 
 export default AdminNavigator
