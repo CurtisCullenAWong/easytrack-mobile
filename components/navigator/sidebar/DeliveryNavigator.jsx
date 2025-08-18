@@ -1,10 +1,11 @@
-import { useState, useContext, useEffect } from 'react'
+import { useState, useContext, useEffect, memo } from 'react'
 import {
   Image,
   ScrollView,
   StyleSheet,
   BackHandler,
   TouchableOpacity,
+  InteractionManager,
 } from 'react-native'
 import {
   Text,
@@ -19,19 +20,84 @@ import { ThemeContext } from '../../themes/themeContext'
 import useLogout from '../../hooks/useLogout'
 import useVerificationStatus from '../../hooks/useVerificationStatus'
 
-const AdminNavigator = ({ navigation }) => {
+// Memoize the List.Item component to prevent unnecessary re-renders
+const MemoizedListItem = memo(
+  ({ icon, label, screen, action, color, colors, fonts, handlePress, idx, loadingIdx }) => {
+    return (
+      <List.Item
+        title={label}
+        titleStyle={[{ color: colors.onSurface }, fonts.labelMedium]}
+        left={props => <List.Icon {...props} icon={icon} color={color || colors.primary} />}
+        right={() => loadingIdx === idx ? <ActivityIndicator size={18} color={colors.primary} /> : null}
+        onPress={() => handlePress(action, screen, idx)}
+        style={styles.listItem}
+      />
+    )
+  }
+)
+
+const ExpandableSection = ({ title, expanded, onToggle, icon, items, navigation, fonts }) => {
+  const { colors } = useTheme()
+  const [navLock, setNavLock] = useState(false)
+  const [loadingIdx, setLoadingIdx] = useState(null)
+
+  const handlePress = (action, screen, idx) => {
+    if (navLock) return
+    setNavLock(true)
+    setLoadingIdx(idx)
+
+    // Use InteractionManager to ensure navigation happens after any active animations
+    InteractionManager.runAfterInteractions(() => {
+      if (action) {
+        action()
+      } else if (screen) {
+        navigation.navigate(screen)
+      }
+      // Delay state reset to give time for navigation transition
+      setTimeout(() => {
+        setNavLock(false)
+        setLoadingIdx(null)
+      }, 300)
+    })
+  }
+
+  return (
+    <List.Accordion
+      title={title}
+      titleStyle={[{ color: colors.onSurface }, fonts.labelLarge]}
+      left={props => <List.Icon {...props} icon={icon} />}
+      expanded={expanded}
+      onPress={onToggle}
+    >
+      {items.map((item, idx) => (
+        <MemoizedListItem
+          key={item.label} // Use a unique and stable key like the label
+          {...item}
+          idx={idx}
+          colors={colors}
+          fonts={fonts}
+          handlePress={handlePress}
+          loadingIdx={loadingIdx}
+        />
+      ))}
+    </List.Accordion>
+  )
+}
+
+const DeliveryNavigator = ({ navigation }) => {
   const { toggleTheme } = useContext(ThemeContext)
   const { colors, fonts } = useTheme()
   const { handleLogout, LogoutDialog } = useLogout(navigation)
   const { isVerified } = useVerificationStatus()
+  const [themeLoading, setThemeLoading] = useState(false)
 
-  const ADMIN_SECTIONS = [
+  const SECTIONS = [
     {
       title: 'My Account',
       key: 'account',
       icon: 'account',
       items: [
-        { icon: 'home-outline', label: 'Home', screen: 'AdminHome' },
+        { icon: 'home-outline', label: 'Home', screen: 'DeliveryHome' },
         { icon: 'card-account-details-outline', label: 'Profile', screen: 'Profile' },
         { icon: 'logout', label: 'Logout', color: 'red', actionKey: 'logout' },
       ],
@@ -41,10 +107,7 @@ const AdminNavigator = ({ navigation }) => {
       key: 'transactions',
       icon: 'package',
       items: [
-        { icon: 'account-group-outline', label: 'User Management', screen: 'UserManagement' },
-        { icon: 'map-marker-path', label: 'Booking Management', screen: 'AdminBookingManagement' },
-        { icon: 'bank-transfer', label: 'Transaction Management', screen: 'TransactionManagement' },
-        { icon: 'map', label: 'Track Luggage', screen: 'TrackLuggage' },
+        { icon: 'clipboard-edit-outline', label: 'Booking Management', screen: 'BookingManagement' },
       ],
     },
     {
@@ -52,8 +115,8 @@ const AdminNavigator = ({ navigation }) => {
       key: 'results',
       icon: 'chart-bar',
       items: [
-        { icon: 'history', label: 'Booking History (Completed)', screen: 'AdminBookingHistory' },
-        { icon: 'chart-line', label: 'Performance Statistics', screen: 'PerformanceStatistics' },
+        { icon: 'history', label: 'Booking History (Completed)', screen: 'BookingHistory' },
+        { icon: 'chart-line', label: 'Performance Statistics', screen: 'UserPerformanceStatistics' },
       ],
     },
     {
@@ -68,16 +131,16 @@ const AdminNavigator = ({ navigation }) => {
   ]
 
   const [expandedSections, setExpandedSections] = useState(
-    Object.fromEntries(ADMIN_SECTIONS.map(s => [s.key, true]))
+    Object.fromEntries(SECTIONS.map(s => [s.key, true]))
   )
 
   useEffect(() => {
     if (__DEV__ && navigation && navigation.getState) {
       const registeredScreens = new Set(navigation.getState()?.routeNames || [])
-      ADMIN_SECTIONS.forEach(section => {
+      SECTIONS.forEach(section => {
         section.items.forEach(item => {
           if (item.screen && !registeredScreens.has(item.screen)) {
-            console.warn(`[AdminNavigator] Screen "${item.screen}" missing.`)
+            console.warn(`[DeliveryNavigator] Screen "${item.screen}" missing.`)
           }
         })
       })
@@ -94,6 +157,15 @@ const AdminNavigator = ({ navigation }) => {
 
   const toggleSection = key =>
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }))
+
+  const handleThemeToggle = () => {
+    setThemeLoading(true)
+    // Use InteractionManager to ensure the theme change happens smoothly after any UI updates
+    InteractionManager.runAfterInteractions(() => {
+      toggleTheme()
+      setThemeLoading(false)
+    })
+  }
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -114,9 +186,15 @@ const AdminNavigator = ({ navigation }) => {
 
       <Divider style={styles.divider} />
 
-      {ADMIN_SECTIONS.map(section => {
+      {SECTIONS.map(section => {
         const filtered = section.items.filter(item => {
-          if (item.screen === 'Profile' || item.screen === 'TermsAndConditions' || item.actionKey === 'logout') return true
+          if (
+            item.screen === 'Profile' ||
+            item.screen === 'TermsAndConditions' ||
+            item.actionKey === 'logout'
+          ) {
+            return true
+          }
           return isVerified
         })
         if (filtered.length === 0) return null
@@ -139,55 +217,26 @@ const AdminNavigator = ({ navigation }) => {
 
       <Divider style={styles.divider} />
 
-      <TouchableOpacity style={styles.themeToggleContainer} onPress={toggleTheme}>
-        <IconButton
-          style={{ backgroundColor: colors.background }}
-          mode="contained-tonal"
-          icon="theme-light-dark"
-          iconColor={colors.primary}
-        />
+      <TouchableOpacity
+        style={styles.themeToggleContainer}
+        onPress={handleThemeToggle}
+        disabled={themeLoading}
+      >
+        {themeLoading ? (
+          <ActivityIndicator size={24} color={colors.primary} style={{ marginRight: 8 }} />
+        ) : (
+          <IconButton
+            style={{ backgroundColor: colors.background }}
+            mode="contained-tonal"
+            icon="theme-light-dark"
+            iconColor={colors.primary}
+          />
+        )}
         <Text style={[{ color: colors.onBackground }, fonts.labelMedium]}>Switch Theme</Text>
       </TouchableOpacity>
 
       {LogoutDialog}
     </ScrollView>
-  )
-}
-
-const ExpandableSection = ({ title, expanded, onToggle, icon, items, navigation, fonts }) => {
-  const { colors } = useTheme()
-  const [navLock, setNavLock] = useState(false)
-  const [loadingIdx, setLoadingIdx] = useState(null)
-
-  const handlePress = (action, screen, idx) => {
-    if (navLock) return
-    setNavLock(true)
-    setLoadingIdx(idx)
-    if (action) action()
-    else if (screen) navigation.navigate(screen)
-    setTimeout(() => { setNavLock(false); setLoadingIdx(null) }, 500)
-  }
-
-  return (
-    <List.Accordion
-      title={title}
-      titleStyle={[{ color: colors.onSurface }, fonts.labelLarge]}
-      left={props => <List.Icon {...props} icon={icon} />}
-      expanded={expanded}
-      onPress={onToggle}
-    >
-      {items.map(({ icon, label, screen, action, color }, idx) => (
-        <List.Item
-          key={idx}
-          title={label}
-          titleStyle={[{ color: colors.onSurface }, fonts.labelMedium]}
-          left={props => <List.Icon {...props} icon={icon} color={color || colors.primary} />}
-          right={() => loadingIdx === idx ? <ActivityIndicator size={18} color={colors.primary} /> : null}
-          onPress={() => handlePress(action, screen, idx)}
-          style={styles.listItem}
-        />
-      ))}
-    </List.Accordion>
   )
 }
 
@@ -203,4 +252,4 @@ const styles = StyleSheet.create({
   listItem: { paddingLeft: 30 },
 })
 
-export default AdminNavigator
+export default DeliveryNavigator

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { Provider as PaperProvider } from 'react-native-paper'
-import { SafeAreaProvider } from 'react-native-safe-area-context'
 import * as Font from 'expo-font'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import StackNavigator from './components/navigator/StackNavigator'
@@ -10,10 +9,6 @@ import { ThemeContext } from './components/themes/themeContext'
 import { ActivityIndicator, View, Text } from 'react-native'
 import useAuth from './components/hooks/useAuth'
 import useAppUpdate from './components/hooks/useAppUpdate'
-import { LogBox } from 'react-native';
-LogBox.ignoreLogs([
-  'When setting overflow to hidden on Surface the shadow will not be displayed correctly'
-]);
 const THEME_KEY = 'appTheme'
 
 const App = () => {
@@ -73,7 +68,6 @@ const App = () => {
         setError('Failed to initialize app. Please restart the app.')
       }
     }
-
     initializeApp()
   }, [fontsLoaded, themeLoaded])
 
@@ -97,12 +91,10 @@ const App = () => {
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
-      <SafeAreaProvider>
         <PaperProvider theme={theme}>
           <StackNavigator />
           <UpdateModal visible={isUpdating} status={updateStatus} theme={theme} />
         </PaperProvider>
-      </SafeAreaProvider>
     </ThemeContext.Provider>
   )
 }
