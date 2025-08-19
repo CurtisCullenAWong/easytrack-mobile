@@ -294,7 +294,7 @@ const UpdateProfileScreen = ({ navigation, route }) => {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps='handled'>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.navigate('ProfileCompletionCheck')} />
         <Appbar.Content title='Complete Profile' />
@@ -308,7 +308,6 @@ const UpdateProfileScreen = ({ navigation, route }) => {
         />
       </Appbar.Header>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps='handled'>
         <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
           <Text style={[styles.headerText, { color: colors.onSurface, ...fonts.headlineSmall }]}>
             Complete Your Profile
@@ -420,7 +419,6 @@ const UpdateProfileScreen = ({ navigation, route }) => {
             />
           )}
         </Surface>
-      </ScrollView>
 
       <Portal>
         <DatePickerModal
@@ -463,7 +461,7 @@ const UpdateProfileScreen = ({ navigation, route }) => {
         </Dialog>
       </Portal>
       {SnackbarElement}
-    </SafeAreaView>
+      </ScrollView>
   )
 }
 
@@ -473,7 +471,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: { 
     flexGrow: 1, 
-    padding: 16
   },
   surface: {
     padding: 16,

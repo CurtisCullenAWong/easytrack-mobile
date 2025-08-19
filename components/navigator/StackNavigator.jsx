@@ -31,7 +31,7 @@ import AddAccount from '../screens/admin/subscreen/AddAccount'
 import ViewAccountScreen from '../screens/admin/subscreen/ViewAccountScreen'
 import PerformanceStatistics from '../screens/admin/PerformanceStatistics'
 import SelectLocation from '../screens/airline/subscreen/SelectLocation'
-
+import AdminCheckLocation from '../screens/admin/subscreen/AdminCheckLocation'
 // Airline Screens
 import AirlineHome from '../screens/airline/AirlineHome'
 import AirlineBookingManagement from '../screens/airline/AirlineBookingManagement'
@@ -81,7 +81,7 @@ const AdminDrawer = () => (
     <Drawer.Screen name="AdminBookingManagement" component={AdminBookingManagement} />
     <Drawer.Screen name="AdminBookingHistory" component={AdminBookingHistory} />
     <Drawer.Screen name="TrackLuggage" component={TrackLuggage} />
-
+    <Drawer.Screen name="AdminCheckLocation" component={AdminCheckLocation} />
     <Drawer.Screen name="AddAccount" component={AddAccount} />
     <Drawer.Screen name="ViewAccount" component={ViewAccountScreen} />
 

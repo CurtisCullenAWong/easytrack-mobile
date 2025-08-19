@@ -1,63 +1,97 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { View, StyleSheet, TouchableOpacity } from 'react-native'
-import { Text, useTheme, Appbar, IconButton } from 'react-native-paper'
+import { Text, useTheme, Appbar, IconButton, Button } from 'react-native-paper'
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import * as Location from 'expo-location'
+import { supabase } from '../../../../lib/supabaseAdmin' // Adjust path as needed
 
-const CheckLocation = ({ route, navigation }) => {
+const AdminCheckLocation = ({ route, navigation }) => {
   const { colors, fonts } = useTheme()
-  const { dropOffLocation, dropOffLocationGeo } = route.params
+  const { id } = route.params
   const mapRef = useRef(null)
   const [currentLocation, setCurrentLocation] = useState(null)
+  const [dropOffLocation, setDropOffLocation] = useState('')
+  const [dropOffLocationGeo, setDropOffLocationGeo] = useState(null)
+  const [contract_status_id, setContractStatusId] = useState(null)
 
   useEffect(() => {
+    // Fetch contract info from Supabase
+    const fetchContract = async () => {
+      const { data, error } = await supabase
+        .from('contracts')
+        .select('drop_off_location, drop_off_location_geo, contract_status_id')
+        .eq('id', id)
+        .single()
+      if (error) {
+        console.error('Supabase error:', error)
+        return
+      }
+      setDropOffLocation(data.drop_off_location)
+      setDropOffLocationGeo(data.drop_off_location_geo)
+      setContractStatusId(data.contract_status_id)
+    }
+    fetchContract()
+  }, [id])
+
+  useEffect(() => {
+    if (contract_status_id !== 1) return
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync()
       if (status !== 'granted') {
         console.log('Permission to access location was denied')
         return
       }
-
       let location = await Location.getCurrentPositionAsync({})
       setCurrentLocation({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
       })
     })()
-  }, [])
+  }, [contract_status_id])
 
   const parseGeometry = (geoString) => {
     if (!geoString) return null
-
     try {
       if (typeof geoString === 'string') {
+        // Handles "POINT(lon lat)" or "POINT(lat lon)"
         const coords = geoString.replace('POINT(', '').replace(')', '').split(' ')
-        return {
-          longitude: parseFloat(coords[0]),
-          latitude: parseFloat(coords[1]),
+        // Try both orders, fallback to default if invalid
+        const lon = parseFloat(coords[0])
+        const lat = parseFloat(coords[1])
+        if (!isNaN(lat) && !isNaN(lon)) {
+          // If latitude is in valid range, use as is
+          if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+            return { latitude: lat, longitude: lon }
+          }
+          // If reversed, swap
+          if (lon >= -90 && lon <= 90 && lat >= -180 && lat <= 180) {
+            return { latitude: lon, longitude: lat }
+          }
         }
       } else if (typeof geoString === 'object' && geoString.coordinates) {
-        return {
-          longitude: parseFloat(geoString.coordinates[0]),
-          latitude: parseFloat(geoString.coordinates[1]),
+        // Handles GeoJSON: [lon, lat]
+        const lon = parseFloat(geoString.coordinates[0])
+        const lat = parseFloat(geoString.coordinates[1])
+        if (!isNaN(lat) && !isNaN(lon)) {
+          return { latitude: lat, longitude: lon }
         }
       }
     } catch (error) {
       console.error('Error parsing geometry:', error)
     }
-
     return null
   }
 
   const dropOffCoords = parseGeometry(dropOffLocationGeo)
-
+  console.log('dropOffLocationGeo:', dropOffLocationGeo)
+  console.log('dropOffCoords:', dropOffCoords)
+  console.log('Route Params:', route.params)
   const defaultRegion = {
     latitude: 14.5995,
     longitude: 120.9842,
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   }
-
   const mapRegion = dropOffCoords
     ? {
         latitude: dropOffCoords.latitude,
@@ -89,10 +123,27 @@ const CheckLocation = ({ route, navigation }) => {
     }
   }
 
+  if (contract_status_id !== 1) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <Appbar.Header>
+          <Appbar.BackAction onPress={() => navigation.goBack()} />
+          <Appbar.Content title="Drop-Off Location" />
+        </Appbar.Header>
+        <Text style={[fonts.bodyLarge, { color: colors.error, marginTop: 32 }]}>
+          Location can only be checked for Pending contracts.
+        </Text>
+        <Button mode="contained" style={{ marginTop: 24 }} onPress={() => navigation.goBack()}>
+          Go Back
+        </Button>
+      </View>
+    )
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Appbar.Header>
-        <Appbar.BackAction onPress={() => navigation.navigate('BookingManagement')} />
+        <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="Drop-Off Location" />
       </Appbar.Header>
 
@@ -117,9 +168,12 @@ const CheckLocation = ({ route, navigation }) => {
           showsIndoors={true}
           loadingEnabled={true}
         >
-          {dropOffCoords && (
+          {dropOffCoords && dropOffCoords.latitude && dropOffCoords.longitude && (
             <Marker
-              coordinate={dropOffCoords}
+              coordinate={{
+                latitude: dropOffCoords.latitude,
+                longitude: dropOffCoords.longitude,
+              }}
               title="Drop-off Location"
               description={dropOffLocation}
               pinColor={colors.primary}
@@ -193,4 +247,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default CheckLocation
+export default AdminCheckLocation

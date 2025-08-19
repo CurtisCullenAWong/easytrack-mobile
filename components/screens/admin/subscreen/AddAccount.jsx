@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import {
   StyleSheet,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -204,7 +203,7 @@ const AddAccount = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.navigate('UserManagement')} />
         <Appbar.Content title="Create an Account" />
@@ -238,7 +237,7 @@ const AddAccount = ({ navigation }) => {
                 editable={false}
                 mode="outlined"
                 style={styles.input}
-                right={<TextInput.Icon icon="account-cog" />}
+                right={<TextInput.Icon icon="account-cog" onPress={() => setShowRoleMenu(true)}/>}
                 error={!!errors.role}
               />
             </TouchableOpacity>
@@ -251,7 +250,7 @@ const AddAccount = ({ navigation }) => {
                 editable={false}
                 mode="outlined"
                 style={styles.input}
-                right={<TextInput.Icon icon="office-building" />}
+                right={<TextInput.Icon icon="office-building" onPress={() => setShowCorpMenu(true)}/>}
                 error={!!errors.corporation}
               />
             </TouchableOpacity>
@@ -371,7 +370,7 @@ const AddAccount = ({ navigation }) => {
       </Portal>
 
       {SnackbarElement}
-    </SafeAreaView>
+    </ScrollView>
   )
 }
 

@@ -19,7 +19,6 @@ const BookingHistoryAdmin = ({ navigation }) => {
     const [searchQuery, setSearchQuery] = useState('')
     const [searchColumn, setSearchColumn] = useState('id')
     const [filterMenuVisible, setFilterMenuVisible] = useState(false)
-    const [statusFilter, setStatusFilter] = useState('all')
     const [loading, setLoading] = useState(true)
     const [selectedImage, setSelectedImage] = useState(null)
     const [showImageModal, setShowImageModal] = useState(false)

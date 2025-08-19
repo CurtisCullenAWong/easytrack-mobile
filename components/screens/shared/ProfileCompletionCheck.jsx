@@ -158,7 +158,7 @@ const ProfileCompletionCheck = ({ navigation, route }) => {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
       <Appbar.Header>
         <Appbar.Content title='Profile Check' titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} />
         <Appbar.Action 
@@ -168,7 +168,6 @@ const ProfileCompletionCheck = ({ navigation, route }) => {
         />
       </Appbar.Header>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
           {state.isComplete ? (
             <View style={styles.completeContainer}>
@@ -245,9 +244,8 @@ const ProfileCompletionCheck = ({ navigation, route }) => {
             </View>
           )}
         </Surface>
-      </ScrollView>
       {SnackbarElement}
-    </SafeAreaView>
+      </ScrollView>
   )
 }
 
@@ -257,7 +255,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    padding: 16,
   },
   surface: {
     padding: 24,

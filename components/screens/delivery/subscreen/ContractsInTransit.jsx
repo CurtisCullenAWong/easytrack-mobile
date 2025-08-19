@@ -328,15 +328,14 @@ const ContractsInTransit = ({ navigation }) => {
           setShowCancelConfirmation(true)
           setActionLoading(false)
           return
-        }
+        }w
         
         const { error } = await supabase
           .from('contracts')
           .update({
             cancelled_at: new Date().toISOString(),
-            contract_status_id: 6,
+            contract_status_id: 2,
             remarks: remarks,
-            proof_of_delivery: proofOfDeliveryImageUrl
           })
           .eq('id', selectedContract.id)
         if (error) throw error
@@ -787,7 +786,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 16,
     borderRadius: 12,
-    overflow: 'hidden',
   },
   resultsHeader: {
     padding: 16,

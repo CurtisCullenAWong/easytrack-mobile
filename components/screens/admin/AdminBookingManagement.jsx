@@ -568,9 +568,7 @@ const AdminBookingManagement = ({ navigation }) => {
                               title="Contract Details"
                               leadingIcon="file-document"
                               titleStyle={[
-                                {
-                                  color: colors.onSurface,
-                                },
+                                { color: colors.onSurface },
                                 fonts.bodyLarge,
                               ]}
                             />
@@ -584,9 +582,23 @@ const AdminBookingManagement = ({ navigation }) => {
                                 title="Assign Luggage"
                                 leadingIcon="account-plus"
                                 titleStyle={[
-                                  {
-                                    color: colors.onSurface,
-                                  },
+                                  { color: colors.onSurface },
+                                  fonts.bodyLarge,
+                                ]}
+                              />
+                            )}
+                            {contract.contract_status_id === 1 && (
+                              <Menu.Item
+                                onPress={() => {
+                                  setActionMenuVisible(null)
+                                  navigation.navigate('AdminCheckLocation', {
+                                    id: contract.id
+                                  })
+                                }}
+                                title="Check Location"
+                                leadingIcon="map-marker"
+                                titleStyle={[
+                                  { color: colors.primary },
                                   fonts.bodyLarge,
                                 ]}
                               />
@@ -600,9 +612,7 @@ const AdminBookingManagement = ({ navigation }) => {
                                 title="Cancel Contract"
                                 leadingIcon="cancel"
                                 titleStyle={[
-                                  {
-                                    color: colors.error,
-                                  },
+                                  { color: colors.error },
                                   fonts.bodyLarge,
                                 ]}
                               />
@@ -616,9 +626,7 @@ const AdminBookingManagement = ({ navigation }) => {
                                 title="Track Luggage"
                                 leadingIcon="map-marker"
                                 titleStyle={[
-                                  {
-                                    color: colors.onSurface,
-                                  },
+                                  { color: colors.onSurface },
                                   fonts.bodyLarge,
                                 ]}
                               />

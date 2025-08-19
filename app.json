@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "EasyTrack",
-    "slug": "EasyTrack",
+    "slug": "easytrack",
     "version": "1.0.0",
     "runtimeVersion": {
       "policy": "appVersion"
@@ -17,6 +17,7 @@
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
       ]
+      ,"versionCode": 1
     },
     "updates": {
       "enabled": true,
@@ -40,7 +41,13 @@
     "newArchEnabled": true,
     "extra": {
       "eas": {
-        "projectId": "4f7faf57-3a1d-4031-ba72-c5d5b5b084de"
+        "projectId": "0739b4b6-b97b-48a7-97d7-93ca4ab06257"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "EasyTrack",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
       }
     }
   }

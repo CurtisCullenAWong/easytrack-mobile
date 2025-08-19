@@ -398,11 +398,11 @@ const PendingContracts = ({ navigation }) => {
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <DataTable style={[styles.table, { backgroundColor: colors.surface }]}>
                   <DataTable.Header style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
-                    <DataTable.Title style={[styles.actionColumn, { justifyContent: 'center' }]}>
-                      <Text style={[styles.headerText, { color: colors.onSurface }, fonts.labelLarge]}>Actions</Text>
-                    </DataTable.Title>
                     <DataTable.Title style={[styles.selectColumn, { justifyContent: 'center' }]}>
                       <Text style={[styles.headerText, { color: colors.onSurface }, fonts.labelLarge]}>Select</Text>
+                    </DataTable.Title>
+                    <DataTable.Title style={[styles.actionColumn, { justifyContent: 'center' }]}>
+                      <Text style={[styles.headerText, { color: colors.onSurface }, fonts.labelLarge]}>Details</Text>
                     </DataTable.Title>
                     {columns.map(({ key, label, width }) => (
                       <DataTable.Title
@@ -435,6 +435,13 @@ const PendingContracts = ({ navigation }) => {
                           index % 2 === 0 && { backgroundColor: colors.surfaceVariant + '20' }
                         ]}
                       >
+                        <DataTable.Cell style={[styles.selectColumn, { justifyContent: 'center' }]}>
+                          <Checkbox
+                            status={selectedContracts.has(transaction.id) ? 'checked' : 'unchecked'}
+                            onPress={() => handleContractSelection(transaction.id)}
+                            color={colors.primary}
+                          />
+                        </DataTable.Cell>
                         <DataTable.Cell style={[styles.actionColumn, { justifyContent: 'center' }]}>
                           <Button
                             mode="outlined"
@@ -446,13 +453,6 @@ const PendingContracts = ({ navigation }) => {
                           >
                             View Details
                           </Button>
-                        </DataTable.Cell>
-                        <DataTable.Cell style={[styles.selectColumn, { justifyContent: 'center' }]}>
-                          <Checkbox
-                            status={selectedContracts.has(transaction.id) ? 'checked' : 'unchecked'}
-                            onPress={() => handleContractSelection(transaction.id)}
-                            color={colors.primary}
-                          />
                         </DataTable.Cell>
                         {columns.map(({ key, width }, idx) => (
                           <DataTable.Cell
