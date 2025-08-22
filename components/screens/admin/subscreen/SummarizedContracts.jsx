@@ -8,17 +8,10 @@ import {
   Text,
   useTheme,
   Menu,
-  Portal,
-  Dialog,
-  TextInput,
   Surface,
 } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabaseAdmin'
 import useSnackbar from '../../../hooks/useSnackbar'
-import { printPDF, sharePDF } from '../../../../utils/pdfUtils'
-import * as ImagePicker from 'expo-image-picker'
-import * as FileSystem from 'expo-file-system'
-import { decode } from 'base64-arraybuffer'
 
 const COLUMN_WIDTH = 180
 
@@ -38,15 +31,6 @@ const SummarizedContracts = ({ navigation }) => {
   const [page, setPage] = useState(0)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [refreshing, setRefreshing] = useState(false)
-  const [confirmDialogVisible, setConfirmDialogVisible] = useState(false)
-  const [transactionToUpdate, setTransactionToUpdate] = useState(null)
-
-  const [invoiceDialogVisible, setInvoiceDialogVisible] = useState(false)
-  const [selectedSummaryId, setSelectedSummaryId] = useState(null)
-  const [invoiceNumber, setInvoiceNumber] = useState('')
-  const [invoiceImage, setInvoiceImage] = useState(null)
-  const [uploading, setUploading] = useState(false)
-  const [imageSourceDialogVisible, setImageSourceDialogVisible] = useState(false)
 
   const filterOptions = [
     { label: 'Summary ID', value: 'summary_id' },
@@ -180,157 +164,8 @@ const SummarizedContracts = ({ navigation }) => {
     fetchTransactions().finally(() => setRefreshing(false))
   }, [])
 
-  const handlePrint = async (transaction) => {
-    try {
-      if (transaction.summary_status_id !== 2) {
-        showSnackbar('Invoice not available yet. Please create the invoice first.')
-        return
-      }
-      const summary = {
-        totalTransactions: transaction.contracts.length,
-        totalAmount: transaction.amount_per_passenger,
-        totalSurcharge: transaction.delivery_surcharge || 0,
-        totalDiscount: transaction.delivery_discount || 0,
-        statusCounts: { [transaction.status]: 1 }
-      }
-      await printPDF([transaction], transaction.invoice_image)
-    } catch (error) {
-      console.error('Error printing PDF:', error)
-      showSnackbar(`Failed to print PDF: ${error.message}`)
-    }
-  }
-
-  const handleShare = async (transaction) => {
-    try {
-      if (transaction.summary_status_id !== 2) {
-        showSnackbar('Invoice not available yet. Please create the invoice first.')
-        return
-      }
-      const summary = {
-        totalTransactions: transaction.contracts.length,
-        totalAmount: transaction.amount_per_passenger,
-        totalSurcharge: transaction.delivery_surcharge || 0,
-        totalDiscount: transaction.delivery_discount || 0,
-        statusCounts: { [transaction.status]: 1 }
-      }
-      await sharePDF([transaction], transaction.invoice_image)
-    } catch (error) {
-      console.error('Error sharing PDF:', error)
-      showSnackbar(`Failed to share PDF: ${error.message}`)
-    }
-  }
-
-  const handleMarkAsPaid = async (transaction) => {
-    try {
-      const { error } = await supabase
-        .from('summary')
-        .update({ summary_status_id: 2 })
-        .eq('id', transaction.summary_id)
-
-      if (error) throw error
-
-      showSnackbar('Summary status updated successfully', true)
-      fetchTransactions()
-    } catch (error) {
-      console.error('Error updating summary status:', error)
-      showSnackbar(`Failed to update summary status: ${error.message}`)
-    }
-  }
-
   const handleCreateInvoice = async (transaction) => {
     navigation.navigate('CreateInvoice', { summary: { summary_id: transaction.summary_id } })
-  }
-
-  const handleInvoiceNumberChange = (text) => {
-    const numbersOnly = text.replace(/[^0-9]/g, '')
-    if (numbersOnly.length <= 4) setInvoiceNumber(numbersOnly)
-  }
-
-  const getFullInvoiceNumber = () => {
-    const currentYear = new Date().getFullYear()
-    return `${currentYear}${invoiceNumber}`
-  }
-
-  const handleImageSource = async (source) => {
-    setImageSourceDialogVisible(false)
-    try {
-      const options = { mediaTypes: 'images', allowsEditing: true, quality: 1, aspect: [3, 4] }
-      const result = source === 'camera' ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options)
-      if (!result.canceled) setInvoiceImage(result.assets[0].uri)
-    } catch (error) {
-      console.error('Error picking image:', error)
-      showSnackbar('Error picking image: ' + error.message)
-    }
-  }
-
-  const uploadInvoiceImage = async () => {
-    if (!invoiceImage?.startsWith('file://')) return null
-    try {
-      const bucket = 'invoices'
-      const fileName = `${invoiceNumber}.png`
-      const filePath = `/${fileName}`
-      const { error: deleteError } = await supabase.storage.from(bucket).remove([filePath])
-      if (deleteError && !deleteError.message.includes('not found')) {
-        console.error('Error deleting existing file:', deleteError)
-      }
-      const base64 = await FileSystem.readAsStringAsync(invoiceImage, { encoding: FileSystem.EncodingType.Base64 })
-      const contentType = 'image/png'
-      const { error } = await supabase.storage.from(bucket).upload(filePath, decode(base64), { contentType, upsert: true })
-      if (error) {
-        showSnackbar('Error uploading image: ' + error.message)
-        return null
-      }
-      const { data: { signedUrl }, error: signedUrlError } = await supabase.storage.from(bucket).createSignedUrl(filePath, 31536000)
-      if (signedUrlError) throw signedUrlError
-      return signedUrl
-    } catch (error) {
-      showSnackbar('Error uploading image: ' + error.message)
-      return null
-    }
-  }
-
-  const handleAssignPayment = async () => {
-    try {
-      if (!invoiceNumber.trim() || invoiceNumber.length !== 4) {
-        showSnackbar('Please enter a 4-digit invoice number')
-        return
-      }
-      if (!invoiceImage) {
-        showSnackbar('Please upload an invoice image')
-        return
-      }
-      setUploading(true)
-      const invoiceImageUrl = await uploadInvoiceImage()
-      const { data: contracts, error: contractsError } = await supabase
-        .from('contracts')
-        .select('id, delivery_charge, delivery_surcharge, delivery_discount')
-        .eq('summary_id', selectedSummaryId)
-        .is('summary_id', null)
-      if (contractsError) throw contractsError
-      const { error: paymentError } = await supabase
-        .from('payment')
-        .insert({ id: getFullInvoiceNumber(), invoice_image: invoiceImageUrl })
-        .select()
-        .single()
-      if (paymentError) throw paymentError
-      const { error: contractError } = await supabase
-        .from('contracts')
-        .update({ summary_id: getFullInvoiceNumber() })
-        .eq('summary_id', selectedSummaryId)
-        .is('summary_id', null)
-      if (contractError) throw contractError
-      showSnackbar('Payment created successfully', true)
-      setInvoiceNumber('')
-      setInvoiceImage(null)
-      setSelectedSummaryId(null)
-      setInvoiceDialogVisible(false)
-      fetchTransactions()
-    } catch (error) {
-      console.error('Error creating payment:', error)
-      showSnackbar('Failed to create payment: ' + error.message)
-    } finally {
-      setUploading(false)
-    }
   }
 
   const handleSort = (column) => {
@@ -498,45 +333,20 @@ const SummarizedContracts = ({ navigation }) => {
                         ]}
                       >
                         <DataTable.Cell style={[styles.actionColumn, { justifyContent: 'center' }]}>
-                          <Menu
-                            visible={actionsMenuVisible && selectedTransaction === transaction.id}
-                            onDismiss={() => {
+                          <Button
+                            mode="outlined"
+                            icon="file-document"
+                            onPress={() => {
+                              handleCreateInvoice(transaction)
                               setActionsMenuVisible(false)
                               setSelectedTransaction(null)
                             }}
-                            anchor={
-                              <Button
-                                mode="outlined"
-                                icon="dots-vertical"
-                                onPress={() => {
-                                  if (selectedTransaction === transaction.id) {
-                                    setActionsMenuVisible(false)
-                                    setSelectedTransaction(null)
-                                  } else {
-                                    setSelectedTransaction(transaction.id)
-                                    setActionsMenuVisible(true)
-                                  }
-                                }}
-                                style={[styles.actionButton, { borderColor: colors.primary }]}
-                                contentStyle={styles.buttonContent}
-                                labelStyle={[styles.buttonLabel, { color: colors.primary }]}
-                              >
-                                Actions
-                              </Button>
-                            }
-                            contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+                            style={[styles.actionButton, { borderColor: colors.primary }]}
+                            contentStyle={styles.buttonContent}
+                            labelStyle={[styles.buttonLabel, { color: colors.primary }]}
                           >
-                            <Menu.Item
-                              onPress={() => {
-                                handleCreateInvoice(transaction)
-                                setActionsMenuVisible(false)
-                                setSelectedTransaction(null)
-                              }}
-                              title="Create Invoice"
-                              leadingIcon="file-document"
-                              titleStyle={[{ color: colors.onSurface }, fonts.bodyLarge]}
-                            />
-                          </Menu>
+                            View Invoice
+                          </Button>
                         </DataTable.Cell>
                         {columns.map(({ key, width }, idx) => (
                           <DataTable.Cell 
@@ -587,104 +397,6 @@ const SummarizedContracts = ({ navigation }) => {
         </Surface>
       </View>
 
-      <Portal>
-        <Dialog
-          visible={confirmDialogVisible}
-          onDismiss={() => setConfirmDialogVisible(false)}
-          style={[styles.dialog, { backgroundColor: colors.surface }]}
-        >
-          <Dialog.Title style={[styles.dialogTitle, { color: colors.onSurface }]}>
-            Confirm Summary Status Update
-          </Dialog.Title>
-          <Dialog.Content>
-            <Text style={[styles.dialogContent, { color: colors.onSurface }]}>
-              Are you sure you want to mark this summary as completed?
-            </Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setConfirmDialogVisible(false)} textColor={colors.primary}>
-              Cancel
-            </Button>
-            <Button
-              onPress={() => {
-                handleMarkAsPaid(transactionToUpdate)
-                setConfirmDialogVisible(false)
-                setTransactionToUpdate(null)
-              }}
-              textColor={colors.primary}
-            >
-              Confirm
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-
-      <Portal>
-        <Dialog
-          visible={invoiceDialogVisible}
-          onDismiss={() => setInvoiceDialogVisible(false)}
-          style={[styles.dialog, { backgroundColor: colors.surface }]}
-        >
-          <Dialog.Title style={[styles.dialogTitle, { color: colors.onSurface }]}>
-            Create Payment
-          </Dialog.Title>
-          <Dialog.Content>
-            <Text style={[styles.dialogContent, { color: colors.onSurfaceVariant, marginBottom: 16 }]}>
-              Create payment for Summary ID: {selectedSummaryId}
-            </Text>
-
-            <TextInput
-              label="Payment Number"
-              value={invoiceNumber}
-              onChangeText={handleInvoiceNumberChange}
-              mode="outlined"
-              style={styles.invoiceInput}
-              placeholder="Enter 4 digits (e.g., 0001)"
-              keyboardType="numeric"
-              maxLength={4}
-            />
-            <Text style={[styles.invoicePreview, { color: colors.onSurfaceVariant }]}>
-              Full Payment Number: {invoiceNumber ? getFullInvoiceNumber() : 'YYYYxxxx'}
-            </Text>
-
-            <Button mode="outlined" onPress={() => setImageSourceDialogVisible(true)} style={styles.uploadButton} icon="camera">
-              {invoiceImage ? 'Change Payment Image' : 'Upload Payment Image'}
-            </Button>
-
-            {invoiceImage && (
-              <View style={styles.imagePreviewContainer}>
-                <Image source={{ uri: invoiceImage }} style={styles.imagePreview} resizeMode="contain" />
-              </View>
-            )}
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setInvoiceDialogVisible(false)} textColor={colors.primary}>
-              Cancel
-            </Button>
-            <Button onPress={handleAssignPayment} textColor={colors.primary} disabled={!invoiceNumber.trim() || !invoiceImage || uploading} loading={uploading}>
-              Create Payment
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-
-      <Portal>
-        <Dialog
-          visible={imageSourceDialogVisible}
-          onDismiss={() => setImageSourceDialogVisible(false)}
-          style={[styles.dialog, { backgroundColor: colors.surface }]}
-        >
-          <Dialog.Title style={[styles.dialogTitle, { color: colors.onSurface }]}>Choose Image Source</Dialog.Title>
-          <Dialog.Content>
-            <Text style={[styles.dialogContent, { color: colors.onSurfaceVariant }]}>Select where you want to get the image from</Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => handleImageSource('camera')} textColor={colors.primary}>Camera</Button>
-            <Button onPress={() => handleImageSource('gallery')} textColor={colors.primary}>Gallery</Button>
-            <Button onPress={() => setImageSourceDialogVisible(false)} textColor={colors.error}>Cancel</Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
     </ScrollView>
   )
 }

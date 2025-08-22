@@ -19,6 +19,11 @@ const INITIAL_CONTRACT = {
   deliveryAddress: "",
   addressLine1: "",
   addressLine2: "",
+  // Separate address fields
+  province: "",
+  cityMunicipality: "",
+  barangay: "",
+  postalCode: "",
   errors: {
     caseNumber: false,
     firstName: false,
@@ -28,17 +33,21 @@ const INITIAL_CONTRACT = {
     itemDescription: false,
     weight: false,
     quantity: false,
-    deliveryAddress: false,
-    addressLine1: false
+    addressLine1: false,
+    // Error fields for separate address components
+    province: false,
+    cityMunicipality: false,
+    barangay: false,
+    postalCode: false
   }
 }
 
-// Memoized Contract Form Component
-const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDelete, isLastContract }) => {
+  // Memoized Contract Form Component
+const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDelete, isLastContract, isDisabled }) => {
   const { colors, fonts } = useTheme()
 
   return (
-    <View style={[styles.luggageBlock, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
+    <View style={[styles.luggageBlock, { backgroundColor: colors.surface, borderColor: colors.primary, opacity: isDisabled ? 0.6 : 1 }]}>
       <View style={styles.headerContainer}>
         <Text style={[fonts.titleMedium, { color: colors.primary }]}>
           Passenger {index + 1}
@@ -48,19 +57,20 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
           size={20}
           onPress={() => onDelete(index)}
           style={{ margin: 0 }}
-          disabled={isLastContract}
+          disabled={isLastContract || isDisabled}
           iconColor={isLastContract ? colors.disabled : colors.error}
         />
       </View>
               <View style={styles.nameRow}>
           <TextInput
-            label="First Name"
+            label="First Name*"
             value={contract.firstName}
             onChangeText={(text) => onInputChange(index, "firstName", text)}
             mode="outlined"
             style={[styles.nameField, { marginRight: 8 }]}
             error={contract.errors?.firstName}
             placeholder="Enter first name"
+            disabled={isDisabled}
           />
           <TextInput
             label="M.I."
@@ -70,19 +80,21 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
             style={[styles.middleInitialField]}
             maxLength={1}
             placeholder="M"
+            disabled={isDisabled}
           />
         </View>
         <TextInput
-          label="Last Name"
+          label="Last Name*"
           value={contract.lastName}
           onChangeText={(text) => onInputChange(index, "lastName", text)}
           mode="outlined"
           style={{ marginBottom: 12 }}
           error={contract.errors?.lastName}
           placeholder="Enter last name"
+          disabled={isDisabled}
         />
       <TextInput
-        label="Owner's Contact Number"
+        label="Owner's Contact Number*"
         value={contract.contact}
         onChangeText={(text) => onInputChange(index, "contact", text)}
         mode="outlined"
@@ -93,9 +105,10 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
         maxLength={10}
         inputMode="numeric"
         placeholder="9xxxxxxxxx"
+        disabled={isDisabled}
       />
       <TextInput
-        label="Luggage Description"
+        label="Luggage Description*"
         value={contract.itemDescription}
         onChangeText={(text) => onInputChange(index, "itemDescription", text)}
         mode="outlined"
@@ -104,9 +117,10 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
         placeholder="Describe the luggage contents"
         multiline
         numberOfLines={2}
+        disabled={isDisabled}
       />
       <TextInput
-        label="Weight (kg)"
+        label="Weight (kg)*"
         value={contract.weight}
         onChangeText={(text) => onInputChange(index, "weight", text)}
         inputMode="numeric"
@@ -115,9 +129,10 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
         error={contract.errors?.weight}
         maxLength={2}
         placeholder="Max 20kg"
+        disabled={isDisabled}
       />
       <TextInput
-        label="Quantity"
+        label="Quantity*"
         value={contract.quantity}
         onChangeText={(text) => onInputChange(index, "quantity", text)}
         inputMode="numeric"
@@ -126,9 +141,10 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
         error={contract.errors?.quantity}
         maxLength={1}
         placeholder="Max 8"
+        disabled={isDisabled}
       />
       <TextInput
-        label="Flight Number"
+        label="Flight Number*"
         value={contract.flightNumber}
         onChangeText={(text) => onInputChange(index, "flightNumber", text)}
         mode="outlined"
@@ -136,9 +152,10 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
         error={contract.errors?.flightNumber}
         maxLength={5}
         placeholder="e.g., 1234"
+        disabled={isDisabled}
       />
       <TextInput
-        label="Case Number"
+        label="Case Number*"
         value={contract.caseNumber}
         onChangeText={(text) => onInputChange(index, "caseNumber", text)}
         mode="outlined"
@@ -148,29 +165,70 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
         inputMode="numeric"
         left={<TextInput.Affix text="AHLMNLZ" />}
         placeholder='xxxxxxxxxx'
+        disabled={isDisabled}
       />
-      <View style={styles.addressSection}>
+              <View style={styles.addressSection}>
         <Text style={[fonts.titleSmall, { color: colors.primary, marginBottom: 8 }]}>
           Delivery Address
         </Text>
         
+        <View style={styles.addressRow}>
+          <TextInput
+            label="Province*"
+            value={contract.province}
+            onChangeText={(text) => onInputChange(index, "province", text)}
+            mode="outlined"
+            style={[styles.addressField, { marginRight: 8 }]}
+            error={contract.errors?.province}
+            placeholder="e.g., Metro Manila"
+            disabled={isDisabled}
+          />
+          <TextInput
+            label="City/Municipality*"
+            value={contract.cityMunicipality}
+            onChangeText={(text) => onInputChange(index, "cityMunicipality", text)}
+            mode="outlined"
+            style={styles.addressField}
+            error={contract.errors?.cityMunicipality}
+            placeholder="e.g., Manila"
+            disabled={isDisabled}
+          />
+        </View>
+        
+        <View style={styles.addressRow}>
+          <TextInput
+            label="Barangay*"
+            value={contract.barangay}
+            onChangeText={(text) => onInputChange(index, "barangay", text)}
+            mode="outlined"
+            style={[styles.addressField, { marginRight: 8 }]}
+            error={contract.errors?.barangay}
+            placeholder="e.g., Tondo"
+            disabled={isDisabled}
+          />
+          <TextInput
+            label="Postal Code*"
+            value={contract.postalCode}
+            onChangeText={(text) => onInputChange(index, "postalCode", text)}
+            mode="outlined"
+            style={styles.addressField}
+            error={contract.errors?.postalCode}
+            placeholder="e.g., 1012"
+            keyboardType="numeric"
+            maxLength={4}
+            disabled={isDisabled}
+          />
+        </View>
+        
         <TextInput
-          label="Region, Province, Municipality, Barangay"
-          value={contract.deliveryAddress}
-          onChangeText={(text) => onInputChange(index, "deliveryAddress", text)}
-          mode="outlined"
-          style={{ marginBottom: 12 }}
-          error={contract.errors?.deliveryAddress}
-          placeholder="e.g., NCR, Manila, Tondo, Barangay 123"
-        />
-        <TextInput
-          label="Village/Building"
+          label="Village/Building*"
           value={contract.addressLine1}
           onChangeText={(text) => onInputChange(index, "addressLine1", text)}
           mode="outlined"
           style={{ marginBottom: 12 }}
           error={contract.errors?.addressLine1}
           placeholder="e.g., SM Mall of Asia, Greenbelt Tower"
+          disabled={isDisabled}
         />
         <TextInput
           label="Room/Unit No. (Optional)"
@@ -179,6 +237,7 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
           mode="outlined"
           style={{ marginBottom: 12 }}
           placeholder="e.g., Unit 1234, Room 567"
+          disabled={isDisabled}
         />
       </View>
       
@@ -187,6 +246,7 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
         onPress={() => onClear(index)}
         style={{ marginTop: 12 }}
         icon="refresh"
+        disabled={isDisabled}
       >
         Clear Form
       </Button>
@@ -286,6 +346,11 @@ const MakeContracts = () => {
         deliveryAddress: "",
         addressLine1: "",
         addressLine2: "",
+        // Separate address fields
+        province: "",
+        cityMunicipality: "",
+        barangay: "",
+        postalCode: "",
         errors: {
           caseNumber: false,
           firstName: false,
@@ -295,8 +360,12 @@ const MakeContracts = () => {
           itemDescription: false,
           weight: false,
           quantity: false,
-          deliveryAddress: false,
-          addressLine1: false
+          addressLine1: false,
+          // Error fields for separate address components
+          province: false,
+          cityMunicipality: false,
+          barangay: false,
+          postalCode: false
         }
       }
       return updated
@@ -325,6 +394,11 @@ const MakeContracts = () => {
       deliveryAddress: "",
       addressLine1: "",
       addressLine2: "",
+      // Separate address fields
+      province: "",
+      cityMunicipality: "",
+      barangay: "",
+      postalCode: "",
       errors: {
         caseNumber: false,
         firstName: false,
@@ -334,8 +408,12 @@ const MakeContracts = () => {
         itemDescription: false,
         weight: false,
         quantity: false,
-        deliveryAddress: false,
-        addressLine1: false
+        addressLine1: false,
+        // Error fields for separate address components
+        province: false,
+        cityMunicipality: false,
+        barangay: false,
+        postalCode: false
       }
     }])
   }, [])
@@ -350,8 +428,12 @@ const MakeContracts = () => {
       itemDescription: !contract.itemDescription.trim(),
       weight: !contract.weight.trim() || isNaN(contract.weight) || Number(contract.weight) <= 0 || Number(contract.weight) > 20,
       quantity: !contract.quantity.trim() || isNaN(contract.quantity) || Number(contract.quantity) <= 0 || Number(contract.quantity) > 8,
-      deliveryAddress: !contract.deliveryAddress.trim(),
-      addressLine1: !contract.addressLine1.trim()
+      addressLine1: !contract.addressLine1.trim(),
+      // Validation for separate address components
+      province: !contract.province.trim(),
+      cityMunicipality: !contract.cityMunicipality.trim(),
+      barangay: !contract.barangay.trim(),
+      postalCode: !contract.postalCode.trim()
     }
   }, [])
 
@@ -433,6 +515,9 @@ const MakeContracts = () => {
           collisionCheck = existing.length > 0
         } while (collisionCheck)
 
+        // Combine separate address fields into delivery_address
+        const combinedDeliveryAddress = `${contract.province}, ${contract.cityMunicipality}, ${contract.barangay}, ${contract.postalCode}`.trim()
+        
         // Insert contract with all luggage information directly into contracts table
         const contractData = {
           id: trackingID,
@@ -446,13 +531,13 @@ const MakeContracts = () => {
           luggage_quantity: contract.quantity,
           flight_number: contract.flightNumber,
           case_number: 'AHLMNLZ' + contract.caseNumber,
-          delivery_address: contract.deliveryAddress,
+          delivery_address: combinedDeliveryAddress,
           address_line_1: contract.addressLine1,
           address_line_2: contract.addressLine2,
           pickup_location: pickupLocation,
           drop_off_location: dropOffLocation.location,
           drop_off_location_geo: `POINT(${dropOffLocation.lng} ${dropOffLocation.lat})`,
-          delivery_charge: deliveryFee // Use base delivery fee since it's per passenger
+          delivery_charge: deliveryFee
         }
 
         const { data: insertedContract, error: contractError } = await supabase
@@ -549,9 +634,11 @@ const MakeContracts = () => {
           </Text>
         </View>
       ) : (
-        <Text style={[fonts.bodyMedium, { color: colors.onSurfaceVariant }]}>
-          Please provide a drop-off location pin to help the delivery team the location more easily.
-        </Text>
+        <View style={[styles.locationContent, { backgroundColor: colors.errorContainer }]}>
+          <Text style={[fonts.bodyMedium, { color: colors.error, textAlign: 'center', fontStyle: 'italic' }]}>
+            Drop-off location is required to proceed with booking
+          </Text>
+        </View>
       )}
     </Surface>
   ), [dropOffLocation, colors, fonts, navigation])
@@ -605,6 +692,40 @@ const MakeContracts = () => {
           Total Luggage Quantity: {totalLuggageQuantity}
         </Text>
 
+        {/* Warning message when drop-off location is not selected */}
+        {!dropOffLocation.location && (
+          <Surface style={[styles.warningSurface, { backgroundColor: colors.errorContainer }]} elevation={1}>
+            <View style={styles.warningContent}>
+              <IconButton icon="alert-circle" size={24} iconColor={colors.error} />
+              <View style={styles.warningText}>
+                <Text style={[fonts.titleSmall, { color: colors.error, marginBottom: 4 }]}>
+                  Drop-off Location Required
+                </Text>
+                <Text style={[fonts.bodyMedium, { color: colors.onErrorContainer }]}>
+                  Please select a drop-off location first before filling up passenger information.
+                </Text>
+              </View>
+            </View>
+          </Surface>
+        )}
+
+        {/* Success message when drop-off location is selected */}
+        {dropOffLocation.location && (
+          <Surface style={[styles.warningSurface, { backgroundColor: colors.primaryContainer }]} elevation={1}>
+            <View style={styles.warningContent}>
+              <IconButton icon="check-circle" size={24} iconColor={colors.primary} />
+              <View style={styles.warningText}>
+                <Text style={[fonts.titleSmall, { color: colors.primary, marginBottom: 4 }]}>
+                  Drop-off Location Selected
+                </Text>
+                <Text style={[fonts.bodyMedium, { color: colors.onPrimaryContainer }]}>
+                  You can now fill up passenger information below.
+                </Text>
+              </View>
+            </View>
+          </Surface>
+        )}
+
         {contracts.map((contract, index) => (
           <ContractForm
             key={index}
@@ -614,6 +735,7 @@ const MakeContracts = () => {
             onClear={clearSingleContract}
             onDelete={deleteContract}
             isLastContract={contracts.length === 1}
+            isDisabled={!dropOffLocation.location}
           />
         ))}
 
@@ -622,6 +744,7 @@ const MakeContracts = () => {
             mode="outlined"
             onPress={addContract}
             icon="plus"
+            disabled={!dropOffLocation.location}
           >
             Add Passenger
           </Button>
@@ -629,7 +752,7 @@ const MakeContracts = () => {
             mode="contained"
             onPress={handleSubmit}
             loading={loading}
-            disabled={loading}
+            disabled={loading || !dropOffLocation.location}
             icon="send"
           >
             Create Contracts
@@ -678,9 +801,16 @@ const styles = StyleSheet.create({
   middleInitialField: {
     width: 80,
   },
+  addressRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  addressField: {
+    flex: 1,
+  },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
+    justifyContent: 'center',
     marginTop: 24,
     marginBottom: 32,
   },
@@ -699,11 +829,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
-  },
-  centerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
   },
   dropoffContainer: {
     flexDirection: 'row',
@@ -729,6 +854,19 @@ const styles = StyleSheet.create({
   locationContent: {
     padding: 12,
     borderRadius: 8,
+  },
+  warningSurface: {
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  warningContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  warningText: {
+    flex: 1,
+    marginLeft: 8,
   },
 })
 

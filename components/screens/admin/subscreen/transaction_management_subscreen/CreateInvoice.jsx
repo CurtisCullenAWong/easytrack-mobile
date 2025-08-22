@@ -26,8 +26,45 @@ const CreateInvoice = () => {
   const [certify, setCertify] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [summaryStatusId, setSummaryStatusId] = useState(null)
+  const [currentInvoiceId, setCurrentInvoiceId] = useState(null)
 
-
+  // Function to generate a unique invoice ID that doesn't exist in the summary table
+  const generateUniqueInvoiceId = async () => {
+    let attempts = 0
+    const maxAttempts = 10
+    
+    while (attempts < maxAttempts) {
+      const now = new Date()
+      const yyyy = String(now.getFullYear())
+      const mm = String(now.getMonth() + 1).padStart(2, '0')
+      const dd = String(now.getDate()).padStart(2, '0')
+      const hh = String(now.getHours()).padStart(2, '0')
+      const min = String(now.getMinutes()).padStart(2, '0')
+      const ss = String(now.getSeconds()).padStart(2, '0')
+      const ms = String(now.getMilliseconds()).padStart(3, '0')
+      const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+      const newInvoiceId = `INV-${yyyy}${mm}${dd}-${hh}${min}${ss}${ms}-${rand}`
+      
+      // Check if this invoice_id already exists in the summary table
+      const { data, error } = await supabase
+        .from('summary')
+        .select('id')
+        .eq('invoice_id', newInvoiceId)
+        .single()
+      
+      if (error && error.code === 'PGRST116') {
+        // No record found, this invoice_id is unique
+        return newInvoiceId
+      } else if (error) {
+        throw error
+      }
+      
+      // If we get here, the invoice_id already exists, try again
+      attempts++
+    }
+    
+    throw new Error('Failed to generate unique invoice ID after maximum attempts')
+  }
 
   const generatedInvoiceId = useMemo(() => {
     const now = new Date()
@@ -65,16 +102,32 @@ const CreateInvoice = () => {
 
     try {
       setIsSubmitting(true)
+      
+      let updateData = { summary_status_id: nextStatusId }
+      
+      if (nextStatusId === 2) {
+        // Mark as receipted - generate and set unique invoice_id
+        const uniqueInvoiceId = await generateUniqueInvoiceId()
+        updateData.invoice_id = uniqueInvoiceId
+      } else {
+        // Unmark as receipted - set invoice_id to null
+        updateData.invoice_id = null
+      }
+      
       const { error } = await supabase
         .from('summary')
-        .update({ summary_status_id: nextStatusId })
+        .update(updateData)
         .eq('id', summary.summary_id)
+        
       if (error) throw error
+      
       setSummaryStatusId(nextStatusId)
       if (nextStatusId === 2) {
+        setCurrentInvoiceId(updateData.invoice_id)
         showSnackbar('Marked as receipted', true)
         navigation.navigate('TransactionManagement', { segment: 'completed' })
       } else {
+        setCurrentInvoiceId(null)
         showSnackbar('Unmarked as receipted', true)
         navigation.navigate('TransactionManagement', { segment: 'completed' })
       }
@@ -100,7 +153,7 @@ const CreateInvoice = () => {
     const due = new Date(now)
     due.setDate(due.getDate() + 30)
     return {
-      invoice_id: generatedInvoiceId,
+      invoice_id: currentInvoiceId || generatedInvoiceId,
       summary_id: summary?.summary_id,
       date: now.toISOString(),
       due_date: due.toISOString(),
@@ -162,11 +215,12 @@ const CreateInvoice = () => {
         if (!summary?.summary_id) return
         const { data, error } = await supabase
           .from('summary')
-          .select('summary_status_id')
+          .select('summary_status_id, invoice_id')
           .eq('id', summary.summary_id)
           .single()
         if (error) throw error
         setSummaryStatusId(data?.summary_status_id ?? 1)
+        setCurrentInvoiceId(data?.invoice_id ?? null)
       } catch (err) {
         console.error('Error fetching summary status:', err)
       }
@@ -178,7 +232,7 @@ const CreateInvoice = () => {
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       <Appbar.Header style={[styles.header, { backgroundColor: colors.surface }]}>
         <Appbar.BackAction onPress={() => navigation.navigate('TransactionManagement', {segment:'completed'})} />
-        <Appbar.Content title="Create Invoice" titleStyle={[styles.headerTitle, { color: colors.onSurface }]} />
+        <Appbar.Content title="View Invoice" titleStyle={[styles.headerTitle, { color: colors.onSurface }]} />
       </Appbar.Header>
 
       {SnackbarElement}
@@ -190,8 +244,15 @@ const CreateInvoice = () => {
             <Text style={[styles.value, { color: colors.onSurface }, fonts.titleMedium]}>{summary?.summary_id || 'N/A'}</Text>
             <Divider style={[styles.divider, { backgroundColor: colors.outline }]} />
 
-            <Text style={[styles.label, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>Generated Invoice ID</Text>
-            <Text style={[styles.value, { color: colors.primary }, fonts.titleMedium]}>{generatedInvoiceId}</Text>
+            <Text style={[styles.label, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>Invoice ID</Text>
+            <Text style={[styles.value, { color: colors.primary }, fonts.titleMedium]}>
+              {currentInvoiceId || generatedInvoiceId}
+            </Text>
+            {currentInvoiceId && (
+              <Text style={[styles.value, { color: colors.onSurfaceVariant, fontSize: 12 }, fonts.bodySmall]}>
+                (Current assigned invoice)
+              </Text>
+            )}
 
             <Divider style={[styles.divider, { backgroundColor: colors.outline }]} />
 

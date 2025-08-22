@@ -168,7 +168,7 @@ const TransactionSummary = () => {
                     = Accumulated total:
                   </Text>
                 <Text style={[styles.summaryValue, { color: colors.primary }, fonts.bodyLarge]}>
-                {formatCurrency(summaryData.totalAmount + summaryData.totalSurcharge)}</Text>
+                {formatCurrency(summaryData.totalAmount + summaryData.totalSurcharge - summaryData.totalDiscount)}</Text>
                 </View>
               </View>
 

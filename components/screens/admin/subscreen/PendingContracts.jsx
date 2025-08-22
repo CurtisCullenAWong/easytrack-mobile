@@ -230,9 +230,9 @@ const PendingContracts = ({ navigation }) => {
 
     const selectedTransactions = transactions.filter(t => selectedContracts.has(t.id))
 
+    // Summarized amount should be the sum of delivery_charge only
     const totalAmount = selectedTransactions.reduce((sum, t) => {
-      const amount = (t.delivery_charge || 0) + (t.delivery_surcharge || 0) - (t.delivery_discount || 0)
-      return sum + amount
+      return sum + (t.delivery_charge || 0)
     }, 0)
 
     const totalDiscount = selectedTransactions.reduce((sum, t) => sum + (t.delivery_discount || 0), 0)

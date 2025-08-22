@@ -113,7 +113,6 @@ const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors
             pinColor={colors.error}
           />
         )}
-
         {/* {contractStatusId === 4 && currentLocationCoords && dropOffCoords && (
         <MapViewDirections
             origin={currentLocationCoords}
@@ -163,69 +162,69 @@ const InfoRow = ({ label, value, colors, fonts, style }) => (
 )
 
 // ProgressMeter component (using Directions API)
-const ProgressMeter = ({ colors, contractData }) => {
-  const [distanceRemaining, setDistanceRemaining] = useState(null)
-  const [etaRemaining, setEtaRemaining] = useState(null)
-  const [totalDistance, setTotalDistance] = useState(null)
-  const [progress, setProgress] = useState(0)
+// const ProgressMeter = ({ colors, contractData }) => {
+//   const [distanceRemaining, setDistanceRemaining] = useState(null)
+//   const [etaRemaining, setEtaRemaining] = useState(null)
+//   const [totalDistance, setTotalDistance] = useState(null)
+//   const [progress, setProgress] = useState(0)
 
-  const pickupCoords = parseGeometry(contractData?.pickup_location_geo)
-  const currentCoords = parseGeometry(contractData?.current_location_geo)
-  const dropOffCoords = parseGeometry(contractData?.drop_off_location_geo)
+//   const pickupCoords = parseGeometry(contractData?.pickup_location_geo)
+//   const currentCoords = parseGeometry(contractData?.current_location_geo)
+//   const dropOffCoords = parseGeometry(contractData?.drop_off_location_geo)
 
-  if (contractData?.contract_status_id !== 4) return null
+//   if (contractData?.contract_status_id !== 4) return null
 
-  return (
-    <View style={styles.progressContainer}>
-      {/* Pickup → Dropoff (total baseline) */}
-      {pickupCoords && dropOffCoords && (
-        <MapViewDirections
-          origin={pickupCoords}
-          destination={dropOffCoords}
-          apikey={GOOGLE_MAPS_API_KEY}
-          strokeWidth={0}
-          onReady={(result) => setTotalDistance(result.distance)}
-          onError={(err) => console.error("Total route error:", err)}
-        />
-      )}
+//   return (
+//     <View style={styles.progressContainer}>
+//       {/* Pickup → Dropoff (total baseline) */}
+//       {pickupCoords && dropOffCoords && (
+//         <MapViewDirections
+//           origin={pickupCoords}
+//           destination={dropOffCoords}
+//           apikey={GOOGLE_MAPS_API_KEY}
+//           strokeWidth={0}
+//           onReady={(result) => setTotalDistance(result.distance)}
+//           onError={(err) => console.error("Total route error:", err)}
+//         />
+//       )}
 
-      {/* Current → Dropoff (remaining) */}
-      {currentCoords && dropOffCoords && (
-        <MapViewDirections
-          origin={currentCoords}
-          destination={dropOffCoords}
-          apikey={GOOGLE_MAPS_API_KEY}
-          strokeWidth={0}
-          onReady={(result) => {
-            setDistanceRemaining(result.distance)
-            setEtaRemaining(result.duration)
+//       {/* Current → Dropoff (remaining) */}
+//       {currentCoords && dropOffCoords && (
+//         <MapViewDirections
+//           origin={currentCoords}
+//           destination={dropOffCoords}
+//           apikey={GOOGLE_MAPS_API_KEY}
+//           strokeWidth={0}
+//           onReady={(result) => {
+//             setDistanceRemaining(result.distance)
+//             setEtaRemaining(result.duration)
 
-            if (totalDistance) {
-              const ratio = (totalDistance - result.distance) / totalDistance
-              setProgress(Math.max(0, Math.min(1, ratio)))
-            }
-          }}
-          onError={(err) => console.error("Remaining route error:", err)}
-        />
-      )}
+//             if (totalDistance) {
+//               const ratio = (totalDistance - result.distance) / totalDistance
+//               setProgress(Math.max(0, Math.min(1, ratio)))
+//             }
+//           }}
+//           onError={(err) => console.error("Remaining route error:", err)}
+//         />
+//       )}
 
-      <View style={styles.progressInfo}>
-        <Text style={[styles.progressText, { color: colors.primary }]}>
-          Distance Remaining: {distanceRemaining ? `${distanceRemaining.toFixed(1)} km` : 'Calculating...'}
-        </Text>
-        <Text style={[styles.progressText, { color: colors.primary }]}>
-        ETA: {etaRemaining ? `${Math.round(etaRemaining)} min` : 'Calculating...'}
-        </Text>
-      </View>
+//       <View style={styles.progressInfo}>
+//         <Text style={[styles.progressText, { color: colors.primary }]}>
+//           Distance Remaining: {distanceRemaining ? `${distanceRemaining.toFixed(1)} km` : 'Calculating...'}
+//         </Text>
+//         <Text style={[styles.progressText, { color: colors.primary }]}>
+//         ETA: {etaRemaining ? `${Math.round(etaRemaining)} min` : 'Calculating...'}
+//         </Text>
+//       </View>
 
-      <ProgressBar
-        progress={progress}
-        color={colors.primary}
-        style={styles.progressBar}
-      />
-    </View>
-  )
-}
+//       <ProgressBar
+//         progress={progress}
+//         color={colors.primary}
+//         style={styles.progressBar}
+//       />
+//     </View>
+//   )
+// }
 
 // Contract Info Component
 const ContractInfo = ({ contractData, colors, fonts }) => {
@@ -252,10 +251,10 @@ const ContractInfo = ({ contractData, colors, fonts }) => {
                         Location Tracking
                     </Text>
                     <Divider style={{ marginBottom: 10 }} />
-                    <ProgressMeter
+                    {/* <ProgressMeter
                         colors={colors}
                         contractData={contractData}
-                    />
+                    /> */}
                     <InfoRow label="Pickup Location:" value={contractData.pickup_location} colors={colors} fonts={fonts.bodySmall} style={{ marginHorizontal: '2%' }} />
                     <InfoRow label="Recent Location:" value={contractData.current_location} colors={colors} fonts={fonts.bodySmall} style={{ marginHorizontal: '2%' }} />
                     <InfoRow label="Drop-Off Location:" value={contractData.drop_off_location} colors={colors} fonts={fonts.bodySmall} style={{ marginHorizontal: '2%' }} />
