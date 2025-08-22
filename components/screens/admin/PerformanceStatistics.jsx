@@ -9,36 +9,23 @@ import useSnackbar from '../../hooks/useSnackbar'
 const PerformanceStatisticsScreen = ({ navigation }) => {
   const { colors } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
-  const [user, setUser] = useState(null)
   const [stats, setStats] = useState({
     totalDeliveries: 0,
     successfulDeliveries: 0,
     failedDeliveries: 0,
     successRate: 0,
     totalEarnings: 0,
-    totalExpenses: 0,
     averageDeliveryTime: 0,
     deliveriesByRegion: [],
   })
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [isDeliveryUser, setIsDeliveryUser] = useState(false)
   const [aiInsights, setAiInsights] = useState(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [showDateMenu, setShowDateMenu] = useState(false)
   const [dateFilter, setDateFilter] = useState('all')
 
-
   const getDateFilterOptions = () => {
-    const today = new Date()
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-    
-    const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
-    const thisYear = new Date(today.getFullYear(), 0, 1)
-    const lastYear = new Date(today.getFullYear() - 1, 0, 1)
-
     return [
       { label: 'All Time', value: 'all' },
       { label: 'Today', value: 'today' },
@@ -102,7 +89,7 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
           end: today.toISOString()
         }
       case 'last_year':
-        const lastYearEnd = new Date(today.getFullYear(), 0, 0, 23, 59, 59, 999)
+        const lastYearEnd = new Date(today.getFullYear() - 1, 11, 31, 23, 59, 59, 999)
         return {
           start: lastYear.toISOString(),
           end: lastYearEnd.toISOString()
@@ -112,186 +99,149 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
     }
   }
 
-  const fetchUser = async () => {
-    try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-      
-      if (authError) {
-        setLoading(false)
-        navigation.navigate('Login')
-        return
-      }
-
-      if (!user) {
-        setLoading(false)
-        navigation.navigate('Login')
-        return
-      }
-      
-      // Check if user is a delivery personnel
-      const { data: userRole, error: roleError } = await supabase
-        .from('profiles')
-        .select('*')
-        .single()
-      
-      if (roleError) {
-        setLoading(false)
-        return
-      }
-      
-      const isDelivery = userRole?.role_id === 2 // Assuming 2 is the role_id for delivery personnel
-      setUser(user)
-      setIsDeliveryUser(isDelivery)
-      
-      // Only fetch statistics after we have both user and role data
-      await fetchStatistics(user, isDelivery)
-    } catch (error) {
-      setLoading(false)
-      navigation.navigate('Login')
-    }
-  }
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
     await fetchStatistics()
     setRefreshing(false)
   }, [])
 
+  useEffect(() => {
+    fetchStatistics()
+  }, [dateFilter])
 
-const fetchStatistics = async () => {
-  try {
-    setLoading(true)
+  const fetchStatistics = async () => {
+    try {
+      setLoading(true)
 
-    let query = supabase
-      .from('contracts')
-      .select(`
-        *,
-        contract_status:contract_status_id (status_name)
-      `)
-      .in('contract_status_id', [5, 6]) // 5 = delivered, 6 = failed
+      let query = supabase
+        .from('contracts')
+        .select(`
+          *,
+          contract_status:contract_status_id (status_name)
+        `)
 
-    // Apply date filter
-    const dateRange = getDateRange()
-    if (dateRange) {
-      query = query.or(
-        `and(contract_status_id.eq.5,delivered_at.gte.${dateRange.start},delivered_at.lte.${dateRange.end}),
-         and(contract_status_id.eq.6,cancelled_at.gte.${dateRange.start},cancelled_at.lte.${dateRange.end})`
-      )
-    }
-
-    const { data: deliveries, error: deliveriesError } = await query
-    if (deliveriesError) {
-      console.error('Error fetching deliveries:', deliveriesError)
-      setLoading(false)
-      return
-    }
-
-    console.log('Fetched deliveries:', deliveries?.length || 0)
-
-    // Fetch region names
-    const { data: regionData, error: regionError } = await supabase
-      .from('pricing_region')
-      .select('id, region')
-
-    if (regionError) {
-      console.error('Error fetching regions:', regionError)
-      setLoading(false)
-      return
-    }
-
-    const regionNamesMap = regionData.reduce((acc, item) => {
-      acc[item.id] = item.region
-      return acc
-    }, {})
-
-    // City → Region mapping
-    const { data: pricingData, error: pricingError } = await supabase
-      .from('pricing')
-      .select('city, region_id')
-
-    if (pricingError) {
-      console.error('Error fetching pricing:', pricingError)
-      setLoading(false)
-      return
-    }
-
-    const cityToRegionMap = pricingData.reduce((acc, item) => {
-      if (item.city && item.region_id !== null && regionNamesMap[item.region_id]) {
-        acc[item.city.toLowerCase()] = regionNamesMap[item.region_id]
+      // Apply date filter if selected
+      const dateRange = getDateRange()
+      if (dateRange) {
+        console.log('Applying date filter:', dateFilter, dateRange)
+        query = query.or(`and(contract_status_id.eq.5,delivered_at.gte.${dateRange.start},delivered_at.lte.${dateRange.end}),and(contract_status_id.eq.6,cancelled_at.gte.${dateRange.start},cancelled_at.lte.${dateRange.end})`)
+      } else {
+        // If no date filter, just filter by status
+        console.log('No date filter applied, showing all time data')
+        query = query.in('contract_status_id', [5, 6]) // 5 = delivered, 6 = failed
       }
-      return acc
-    }, {})
 
-    // Stats
-    const totalDeliveries = deliveries.length
-    const successfulDeliveries = deliveries.filter(d => d.contract_status_id === 5).length
-    const failedDeliveries = deliveries.filter(d => d.contract_status_id === 6).length
-    const successRate = totalDeliveries > 0 ? successfulDeliveries / totalDeliveries : 0
+      const { data: deliveries, error: deliveriesError } = await query
+      if (deliveriesError) {
+        console.error('Error fetching deliveries:', deliveriesError)
+        setLoading(false)
+        return
+      }
 
-    const validDeliveryTimes = deliveries
-      .filter(d => d.pickup_at && d.delivered_at)
-      .map(d => {
-        const pickup = new Date(d.pickup_at)
-        const delivered = new Date(d.delivered_at)
-        return (delivered - pickup) / (1000 * 60)
-      })
+      console.log('Fetched deliveries:', deliveries?.length || 0)
 
-    const averageDeliveryTime =
-      validDeliveryTimes.length > 0
-        ? Math.round(validDeliveryTimes.reduce((a, b) => a + b, 0) / validDeliveryTimes.length)
-        : 0
+      // Fetch region names
+      const { data: regionData, error: regionError } = await supabase
+        .from('pricing_region')
+        .select('id, region')
 
-    // Global earnings/expenses (sum all)
-    const totalAmount = deliveries.reduce((sum, delivery) => {
-      const amount =
-        (delivery.delivery_charge || 0) +
-        (delivery.delivery_surcharge || 0) -
-        (delivery.delivery_discount || 0)
-      return sum + amount
-    }, 0)
+      if (regionError) {
+        console.error('Error fetching regions:', regionError)
+        setLoading(false)
+        return
+      }
 
-    // Group by region
-    const regionCounts = deliveries.reduce((acc, delivery) => {
-      const dropOffLocation = delivery.drop_off_location
-        ? delivery.drop_off_location.toLowerCase()
-        : ''
-      let region = 'Unknown Region'
+      const regionNamesMap = regionData.reduce((acc, item) => {
+        acc[item.id] = item.region
+        return acc
+      }, {})
 
-      for (const city in cityToRegionMap) {
-        if (dropOffLocation.includes(city)) {
-          region = cityToRegionMap[city]
-          break
+      // City → Region mapping
+      const { data: pricingData, error: pricingError } = await supabase
+        .from('pricing')
+        .select('city, region_id')
+
+      if (pricingError) {
+        console.error('Error fetching pricing:', pricingError)
+        setLoading(false)
+        return
+      }
+
+      const cityToRegionMap = pricingData.reduce((acc, item) => {
+        if (item.city && item.region_id !== null && regionNamesMap[item.region_id]) {
+          acc[item.city.toLowerCase()] = regionNamesMap[item.region_id]
         }
-      }
+        return acc
+      }, {})
 
-      acc[region] = (acc[region] || 0) + 1
-      return acc
-    }, {})
+      // Calculate statistics
+      const totalDeliveries = deliveries.length
+      const successfulDeliveries = deliveries.filter(d => d.contract_status_id === 5).length
+      const failedDeliveries = deliveries.filter(d => d.contract_status_id === 6).length
+      const successRate = totalDeliveries > 0 ? successfulDeliveries / totalDeliveries : 0
 
-    const deliveriesByRegion = Object.values(regionNamesMap)
-      .map(regionName => ({
-        region: regionName,
-        count: regionCounts[regionName] || 0,
-      }))
-      .sort((a, b) => a.region.localeCompare(b.region))
+      const validDeliveryTimes = deliveries
+        .filter(d => d.pickup_at && d.delivered_at)
+        .map(d => {
+          const pickup = new Date(d.pickup_at)
+          const delivered = new Date(d.delivered_at)
+          return (delivered - pickup) / (1000 * 60)
+        })
 
-    setStats({
-      totalDeliveries,
-      successfulDeliveries,
-      failedDeliveries,
-      successRate,
-      totalEarnings: totalAmount, // use one field
-      totalExpenses: 0, // unused in global mode
-      averageDeliveryTime,
-      deliveriesByRegion,
-    })
-  } catch (error) {
-    console.error('Error in fetchStatistics:', error)
-  } finally {
-    setLoading(false)
+      const averageDeliveryTime =
+        validDeliveryTimes.length > 0
+          ? Math.round(validDeliveryTimes.reduce((a, b) => a + b, 0) / validDeliveryTimes.length)
+          : 0
+
+      // Calculate total earnings
+      const totalEarnings = deliveries.reduce((sum, delivery) => {
+        const amount =
+          (delivery.delivery_charge || 0) +
+          (delivery.delivery_surcharge || 0) -
+          (delivery.delivery_discount || 0)
+        return sum + amount
+      }, 0)
+
+      // Group by region
+      const regionCounts = deliveries.reduce((acc, delivery) => {
+        const dropOffLocation = delivery.drop_off_location
+          ? delivery.drop_off_location.toLowerCase()
+          : ''
+        let region = 'Unknown Region'
+
+        for (const city in cityToRegionMap) {
+          if (dropOffLocation.includes(city)) {
+            region = cityToRegionMap[city]
+            break
+          }
+        }
+
+        acc[region] = (acc[region] || 0) + 1
+        return acc
+      }, {})
+
+      const deliveriesByRegion = Object.values(regionNamesMap)
+        .map(regionName => ({
+          region: regionName,
+          count: regionCounts[regionName] || 0,
+        }))
+        .sort((a, b) => a.region.localeCompare(b.region))
+
+      setStats({
+        totalDeliveries,
+        successfulDeliveries,
+        failedDeliveries,
+        successRate,
+        totalEarnings,
+        averageDeliveryTime,
+        deliveriesByRegion,
+      })
+    } catch (error) {
+      console.error('Error in fetchStatistics:', error)
+    } finally {
+      setLoading(false)
+    }
   }
-}
-
 
   const generateInsights = async () => {
     try {
@@ -301,7 +251,7 @@ const fetchStatistics = async () => {
         successfulDeliveries: stats.successfulDeliveries,
         failedDeliveries: stats.failedDeliveries,
         successRate: stats.successRate,
-        totalRevenue: isDeliveryUser ? stats.totalEarnings : stats.totalExpenses,
+        totalRevenue: stats.totalEarnings,
         averageDeliveryTime: stats.averageDeliveryTime,
         deliveriesByRegion: stats.deliveriesByRegion,
       })
@@ -346,7 +296,7 @@ const fetchStatistics = async () => {
           tintColor={colors.primary}
         />
       }>
-      <Header navigation={navigation} title="My Statistics" />
+      <Header navigation={navigation} title="Performance Statistics" />
       {SnackbarElement}
       <View style={styles.filterContainer}>
         <View style={styles.filterRow}>
@@ -400,15 +350,15 @@ const fetchStatistics = async () => {
         </Card>
       ) : (
         <>
-          {/* Personal Summary Card */}
+          {/* Summary Card */}
           <Card style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
             <Card.Content>
               <Text variant="titleLarge" style={[styles.sectionTitle, { color: colors.primary }]}>
-                My Performance Summary
+                Performance Summary
               </Text>
               <Divider style={[styles.divider, { backgroundColor: colors.outline }]} />
               <Text variant="bodyLarge" style={[styles.summaryText, { color: colors.onSurface }]}>
-                Here's an overview of your personal delivery performance. Track your progress and {isDeliveryUser ? 'earnings' : 'expenses'}.
+                Overview of delivery performance and statistics for the selected time period.
               </Text>
             </Card.Content>
           </Card>
@@ -466,19 +416,17 @@ const fetchStatistics = async () => {
             </Card.Content>
           </Card>
 
-          {/* Expenses Card (only for non-delivery users) */}
-          {!isDeliveryUser && stats.totalExpenses > 0 && (
-            <Card style={[styles.statCard, { backgroundColor: colors.surface }]}>
-              <Card.Content>
-                <Text variant="titleMedium" style={{ color: colors.primary }}>
-                  Total Expenses
-                </Text>
-                <Text variant="displaySmall" style={[styles.valueText, { color: colors.onSurface }]}>
-                  ₱{stats.totalExpenses.toLocaleString()}
-                </Text>
-              </Card.Content>
-            </Card>
-          )}
+          {/* Total Earnings Card */}
+          <Card style={[styles.statCard, { backgroundColor: colors.surface }]}>
+            <Card.Content>
+              <Text variant="titleMedium" style={{ color: colors.primary }}>
+                Total Earnings
+              </Text>
+              <Text variant="displaySmall" style={[styles.valueText, { color: colors.onSurface }]}>
+                ₱{stats.totalEarnings.toLocaleString()}
+              </Text>
+            </Card.Content>
+          </Card>
 
           {/* Average Delivery Time Card */}
           <Card style={[styles.statCard, { backgroundColor: colors.surface }]}>

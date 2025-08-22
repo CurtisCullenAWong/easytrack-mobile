@@ -92,8 +92,15 @@ const ConversationCard = ({
               ]}
             >
               {getDisplayName(conversation.otherUser)}
+            <Text
+              style={[
+                { color: colors.onSurfaceVariant, ...fonts.bodySmall }
+              ]}
+            >
+              {' • '+conversation.otherUser?.roles?.role_name || ""}
             </Text>
-
+            </Text>
+            
             <View style={styles.previewRow}>
               <Text
                 numberOfLines={1}
@@ -228,16 +235,20 @@ const Messages = ({ navigation }) => {
       setLoading(true)
       const { data: messages, error } = await supabase
         .from("messages")
-        .select(
-          `
+        .select(`
           id, content, created_at, read_at, status_id, sender_id, receiver_id,
-          sender:sender_id(id, first_name, last_name, pfp_id),
-          receiver:receiver_id(id, first_name, last_name, pfp_id)
-        `
-        )
+          sender:sender_id (
+            id, first_name, last_name, pfp_id, role_id,
+            roles:role_id ( role_name )
+          ),
+          receiver:receiver_id (
+            id, first_name, last_name, pfp_id, role_id,
+            roles:role_id ( role_name )
+          )
+        `)
         .or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
         .order("created_at", { ascending: false })
-
+  
       if (error) throw error
       setConversations(buildConversationMap(messages))
     } catch (e) {

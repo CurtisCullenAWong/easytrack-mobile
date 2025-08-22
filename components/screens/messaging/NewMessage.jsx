@@ -34,10 +34,18 @@ const NewMessage = ({ navigation }) => {
       setLoading(true)
       let query = supabase
         .from('profiles')
-        .select('id, first_name, last_name, pfp_id, email')
+        .select(`
+          id,
+          first_name,
+          last_name,
+          pfp_id,
+          email,
+          role_id,
+          roles:role_id ( role_name )
+        `)
         .neq('id', currentUser.id)
         .order('first_name', { ascending: true })
-
+  
       const { data, error } = await query
       if (error) throw error
       setProfiles(data || [])
@@ -79,7 +87,10 @@ const NewMessage = ({ navigation }) => {
             <View style={styles.info}>
               <Text selectable style={[{ color: colors.onSurface }, fonts.titleMedium]}>{getDisplayName(item)}</Text>
               {item.email ? (
-                <Text selectable style={[{ color: colors.onSurfaceVariant }, fonts.bodySmall]}>{item.email}</Text>
+              <Text selectable style={[{ color: colors.onSurfaceVariant }, fonts.bodySmall]}>
+              {item.email}
+              {item.roles?.role_name ? ` • ${item.roles.role_name}` : ""}
+              </Text>
               ) : null}
             </View>
           </Card.Content>

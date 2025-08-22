@@ -455,7 +455,7 @@ const MakeContracts = () => {
       }
       setPickupError(false)
       
-      if (!dropOffLocation.location) {
+      if (!dropOffLocation.location || deliveryFee <= 0) {
         setDropOffError(true)
         showSnackbar('Please select a drop-off location')
         return
@@ -692,39 +692,40 @@ const MakeContracts = () => {
           Total Luggage Quantity: {totalLuggageQuantity}
         </Text>
 
-        {/* Warning message when drop-off location is not selected */}
-        {!dropOffLocation.location && (
+        {/* Warning message when delivery fee is not available */}
+        {deliveryFee <= 0 && dropOffLocation.location && (
           <Surface style={[styles.warningSurface, { backgroundColor: colors.errorContainer }]} elevation={1}>
             <View style={styles.warningContent}>
               <IconButton icon="alert-circle" size={24} iconColor={colors.error} />
               <View style={styles.warningText}>
                 <Text style={[fonts.titleSmall, { color: colors.error, marginBottom: 4 }]}>
-                  Drop-off Location Required
+                  Delivery Fee Unavailable
                 </Text>
                 <Text style={[fonts.bodyMedium, { color: colors.onErrorContainer }]}>
-                  Please select a drop-off location first before filling up passenger information.
+                  The selected drop-off location is either invalid or out of bounds. Please select a valid one to proceed.
                 </Text>
               </View>
             </View>
           </Surface>
         )}
 
-        {/* Success message when drop-off location is selected */}
-        {dropOffLocation.location && (
+        {/* Success message when delivery fee is available */}
+        {deliveryFee > 0 && dropOffLocation.location && (
           <Surface style={[styles.warningSurface, { backgroundColor: colors.primaryContainer }]} elevation={1}>
             <View style={styles.warningContent}>
               <IconButton icon="check-circle" size={24} iconColor={colors.primary} />
               <View style={styles.warningText}>
                 <Text style={[fonts.titleSmall, { color: colors.primary, marginBottom: 4 }]}>
-                  Drop-off Location Selected
+                  Delivery Fee Applied
                 </Text>
                 <Text style={[fonts.bodyMedium, { color: colors.onPrimaryContainer }]}>
-                  You can now fill up passenger information below.
+                  A base delivery fee of ₱{deliveryFee.toFixed(2)} has been applied. You may now fill in passenger information.
                 </Text>
               </View>
             </View>
           </Surface>
         )}
+
 
         {contracts.map((contract, index) => (
           <ContractForm
@@ -735,7 +736,7 @@ const MakeContracts = () => {
             onClear={clearSingleContract}
             onDelete={deleteContract}
             isLastContract={contracts.length === 1}
-            isDisabled={!dropOffLocation.location}
+            isDisabled={!dropOffLocation.location || deliveryFee <= 0}
           />
         ))}
 
@@ -744,7 +745,7 @@ const MakeContracts = () => {
             mode="outlined"
             onPress={addContract}
             icon="plus"
-            disabled={!dropOffLocation.location}
+            disabled={!dropOffLocation.location || deliveryFee <= 0}
           >
             Add Passenger
           </Button>
@@ -752,7 +753,7 @@ const MakeContracts = () => {
             mode="contained"
             onPress={handleSubmit}
             loading={loading}
-            disabled={loading || !dropOffLocation.location}
+            disabled={loading || !dropOffLocation.locatio|| deliveryFee <= 0}
             icon="send"
           >
             Create Contracts

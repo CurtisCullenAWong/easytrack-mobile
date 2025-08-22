@@ -1012,12 +1012,9 @@ export const sharePDF = async (
       invoiceData
     )
 
-    // Generate filename in format EGCSUMMARYDDMMYYYY.pdf
-    const now = new Date()
-    const day = String(now.getDate()).padStart(2, '0')
-    const month = String(now.getMonth() + 1).padStart(2, '0')
-    const year = now.getFullYear()
-    const filename = `EGCSUMMARY${day}${month}${year}.pdf`
+    // Use summary_id for filename (take from first transaction)
+    const summaryId = transactions[0]?.summary_id || 'SUMMARY'
+    const filename = `${summaryId}.pdf`
 
     // 1. Generate PDF
     const { uri } = await Print.printToFileAsync({ html })
