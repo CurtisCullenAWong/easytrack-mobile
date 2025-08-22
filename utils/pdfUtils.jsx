@@ -1,3 +1,4 @@
+import * as FileSystem from 'expo-file-system'
 import * as Print from 'expo-print'
 import * as Sharing from 'expo-sharing'
 import { supabase } from '../lib/supabaseAdmin'
@@ -1011,26 +1012,30 @@ export const sharePDF = async (
       invoiceData
     )
 
-    const { uri } = await Print.printToFileAsync({
-      html,
-      width: 612,
-      height: 792,
-      base64: false
+    // Generate filename in format EGCSUMMARYDDMMYYYY.pdf
+    const now = new Date()
+    const day = String(now.getDate()).padStart(2, '0')
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const year = now.getFullYear()
+    const filename = `EGCSUMMARY${day}${month}${year}.pdf`
+
+    // 1. Generate PDF
+    const { uri } = await Print.printToFileAsync({ html })
+
+    // 2. Build new path in document directory
+    const newPath = `${FileSystem.documentDirectory}${filename}`
+
+    // 3. Move/overwrite file
+    await FileSystem.moveAsync({
+      from: uri,
+      to: newPath,
     })
 
-    if (!uri) {
-      throw new Error('Failed to generate PDF: No URI returned')
-    }
-
-    const isAvailable = await Sharing.isAvailableAsync()
-    if (!isAvailable) {
-      throw new Error('Sharing is not available on this device')
-    }
-
-    await Sharing.shareAsync(uri, {
+    // 4. Share the renamed file
+    await Sharing.shareAsync(newPath, {
       mimeType: 'application/pdf',
       dialogTitle: 'Share Transaction Report',
-      UTI: 'application/pdf'
+      UTI: 'com.adobe.pdf',
     })
   } catch (error) {
     console.error('Error sharing PDF:', error)

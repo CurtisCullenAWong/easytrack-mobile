@@ -255,7 +255,6 @@ const SelectionSection = ({
             status={selectAll ? 'checked' : 'unchecked'}
             onPress={onSelectAll}
             color={colors.primary}
-            disabled={selectedContracts.size === 0}
           />
           <Text style={[styles.selectAllText, { color: colors.onSurface }, fonts.bodyMedium]}>
             Select All ({paginatedTransactions.length})

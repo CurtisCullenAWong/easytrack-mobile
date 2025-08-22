@@ -177,6 +177,17 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
         } else {
             setDiscountAmountError('')
         }
+
+        // Validate that discount doesn't exceed delivery_charge + surcharge
+        if (discount.ok && surcharge.ok) {
+            const deliveryCharge = parseFloat(contractData.delivery_charge || 0)
+            const totalCharges = deliveryCharge + surcharge.num
+            if (discount.num > totalCharges) {
+                setDiscountAmountError(`Discount cannot exceed total charges (₱${totalCharges.toFixed(2)})`)
+                hasError = true
+            }
+        }
+
         if (hasError) return
 
         setLoadingAdjust(true)

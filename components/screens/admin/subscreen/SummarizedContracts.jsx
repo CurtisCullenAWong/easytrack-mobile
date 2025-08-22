@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
-import { ScrollView, StyleSheet, View, RefreshControl, Image } from 'react-native'
+import { ScrollView, StyleSheet, View, RefreshControl } from 'react-native'
 import {
   Searchbar,
   Button,
@@ -17,7 +17,7 @@ const COLUMN_WIDTH = 180
 
 const SummarizedContracts = ({ navigation }) => {
   const { colors, fonts } = useTheme()
-  const { showSnackbar, SnackbarElement } = useSnackbar()
+  const { SnackbarElement } = useSnackbar()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchColumn, setSearchColumn] = useState('summary_id')
@@ -41,6 +41,7 @@ const SummarizedContracts = ({ navigation }) => {
   const columns = [
     { key: 'summary_id', label: 'Summary ID', width: COLUMN_WIDTH },
     { key: 'invoice_id', label: 'Invoice ID', width: COLUMN_WIDTH },
+    { key: 'total', label: 'Total', width: COLUMN_WIDTH },
     { key: 'summary_status', label: 'Summary Status', width: COLUMN_WIDTH },
     { key: 'created_at', label: 'Created At', width: COLUMN_WIDTH },
     { key: 'due_date', label: 'Due Date', width: COLUMN_WIDTH },
@@ -84,17 +85,6 @@ const SummarizedContracts = ({ navigation }) => {
     const groupedTransactions = data.reduce((acc, transaction) => {
       const summaryId = transaction.summary_id
       if (!acc[summaryId]) {
-        let completionDate = 'N/A'
-        if (transaction.delivered_at) {
-          completionDate = new Date(transaction.delivered_at).toLocaleString('en-US', {
-            year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true
-          })
-        } else if (transaction.cancelled_at) {
-          completionDate = new Date(transaction.cancelled_at).toLocaleString('en-US', {
-            year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true
-          })
-        }
-
         const ownerName = [
           transaction.owner_first_name,
           transaction.owner_middle_initial,
@@ -106,46 +96,16 @@ const SummarizedContracts = ({ navigation }) => {
           summary_id: summaryId,
           invoice_id: transaction.summary?.invoice_id || 'N/A',
           summary_status: transaction.summary?.summary_status?.status_name || 'N/A',
-          summary_status_id: transaction.summary?.summary_status?.id || null,
           created_at: transaction.summary?.created_at ? new Date(transaction.summary.created_at).toLocaleString() : 'N/A',
           due_date: transaction.summary?.due_date ? new Date(transaction.summary.due_date).toLocaleString('en-US', {
             year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true
           }) : 'N/A',
-          id: transaction.id,
-          status: transaction.contract_status?.status_name || 'N/A',
-          delivery_charge: transaction.delivery_charge || 0,
-          delivery_surcharge: transaction.delivery_surcharge || 0,
-          delivery_discount: transaction.delivery_discount || 0,
-          remarks: transaction.remarks || 'N/A',
-          passenger_form: transaction.passenger_form || null,
-          drop_off_location: transaction.drop_off_location || transaction.delivery_address || 'N/A',
-          completion_date: completionDate,
-          airline: transaction.airline,
-          delivery: transaction.delivery,
-          amount_per_passenger: (transaction.delivery_charge || 0) + (transaction.delivery_surcharge || 0) - (transaction.delivery_discount || 0),
-          luggage_owner: ownerName,
-          luggage_description: transaction.luggage_description || 'N/A',
-          luggage_weight: transaction.luggage_weight || 'N/A',
-          luggage_quantity: transaction.luggage_quantity || 'N/A',
-          flight_number: transaction.flight_number || 'N/A',
-          case_number: transaction.case_number || 'N/A',
-          owner_contact: transaction.owner_contact || 'N/A',
-          passenger_id: transaction.passenger_id || 'N/A',
-          proof_of_delivery: transaction.proof_of_delivery || null,
-          contracts: []
+          total: 0
         }
       }
 
-      acc[summaryId].contracts.push({
-        contract_id: transaction.id,
-        luggage_owner: acc[summaryId].luggage_owner,
-        flight_number: transaction.flight_number || 'N/A',
-        luggage_quantity: transaction.luggage_quantity || 0,
-        case_number: transaction.case_number || 'N/A',
-        luggage_description: transaction.luggage_description || 'N/A',
-        luggage_weight: transaction.luggage_weight || 0,
-        owner_contact: transaction.owner_contact || 'N/A'
-      })
+      // Add to total for this summary
+      acc[summaryId].total += (transaction.delivery_charge || 0) + (transaction.delivery_surcharge || 0) - (transaction.delivery_discount || 0)
 
       return acc
     }, {})
@@ -165,14 +125,11 @@ const SummarizedContracts = ({ navigation }) => {
     fetchTransactions().finally(() => setRefreshing(false))
   }, [])
 
-  const handleCreateInvoice = async (transaction) => {
-    navigation.navigate('CreateInvoice', { summary: { summary_id: transaction.summary_id } })
-  }
-
   const handleSort = (column) => {
     setSortDirection(prev => (sortColumn === column && prev === 'ascending' ? 'descending' : 'ascending'))
     setSortColumn(column)
   }
+  
   const getSortIcon = (column) => (sortColumn === column ? (sortDirection === 'ascending' ? '▲' : '▼') : '')
 
   const filteredAndSortedTransactions = transactions
@@ -185,7 +142,7 @@ const SummarizedContracts = ({ navigation }) => {
     .sort((a, b) => {
       const valA = a[sortColumn]
       const valB = b[sortColumn]
-      if (['created_at', 'updated_at', 'completion_date', 'due_date'].includes(sortColumn)) {
+      if (['created_at', 'due_date'].includes(sortColumn)) {
         if (valA === 'N/A') return sortDirection === 'ascending' ? -1 : 1
         if (valB === 'N/A') return sortDirection === 'ascending' ? 1 : -1
         if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
@@ -202,7 +159,6 @@ const SummarizedContracts = ({ navigation }) => {
   const paginatedTransactions = filteredAndSortedTransactions.slice(from, to)
 
   const formatCurrency = (amount) => `₱${parseFloat(amount).toFixed(2)}`
-  const formatPercentage = (amount) => `${parseFloat(amount).toFixed(2)}%`
 
   return (
     <ScrollView 
@@ -352,12 +308,8 @@ const SummarizedContracts = ({ navigation }) => {
                             key={idx} 
                             style={[styles.tableColumn, { width: width || COLUMN_WIDTH, justifyContent: 'center' }]}
                           >
-                            <Text style={[styles.cellText, { color: colors.onSurface }, fonts.bodyMedium]}>
-                              {['delivery_charge', 'delivery_surcharge', 'total_amount', 'amount_per_passenger'].includes(key)
-                                ? formatCurrency(transaction[key])
-                                : key === 'delivery_discount'
-                                ? formatPercentage(transaction[key])
-                                : transaction[key]}
+                            <Text style={[styles.cellText, { color: colors.onSurface }, fonts.bodyMedium]} selectable>
+                              {key === 'total' ? formatCurrency(transaction[key]) : transaction[key]}
                             </Text>
                           </DataTable.Cell>
                         ))}
@@ -528,52 +480,6 @@ const styles = StyleSheet.create({
   paginationLabel: {
     fontWeight: '500',
   },
-  dialog: {
-    borderRadius: 8,
-    maxWidth: 500,
-    width: '90%',
-    alignSelf: 'center',
-  },
-  dialogTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    paddingHorizontal: 24,
-    paddingTop: 24,
-  },
-  dialogContent: {
-    paddingHorizontal: 24,
-    paddingTop: 8,
-    paddingBottom: 24,
-  },
-  invoiceInput: {
-    marginBottom: 16,
-  },
-  uploadButton: {
-    marginBottom: 16,
-  },
-  imagePreviewContainer: {
-    marginVertical: 8,
-    position: 'relative',
-    alignSelf: 'center',
-    width: '100%',
-    aspectRatio: 3/4,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  imagePreview: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 8,
-  },
-  invoicePreview: {
-    fontSize: 14,
-    marginTop: -12,
-    marginBottom: 16,
-    marginLeft: 4,
-  },
 })
 
 export default SummarizedContracts
-
-

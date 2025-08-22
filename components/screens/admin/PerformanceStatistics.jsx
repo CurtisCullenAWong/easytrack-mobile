@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { ScrollView, StyleSheet, View, RefreshControl } from 'react-native'
 import { useTheme, Card, Text, ProgressBar, Divider, Button, ActivityIndicator, Menu } from 'react-native-paper'
 import Header from '../../customComponents/Header'
-import { supabase } from '../../../lib/supabase'
+import { supabase } from '../../../lib/supabaseAdmin'
 import { analyzeDeliveryStats } from '../../../utils/geminiUtils'
 import useSnackbar from '../../hooks/useSnackbar'
 
@@ -28,9 +28,6 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
   const [showDateMenu, setShowDateMenu] = useState(false)
   const [dateFilter, setDateFilter] = useState('all')
 
-  useEffect(() => {
-    fetchUser()
-  }, [dateFilter])
 
   const getDateFilterOptions = () => {
     const today = new Date()
@@ -135,7 +132,6 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
       const { data: userRole, error: roleError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
         .single()
       
       if (roleError) {
@@ -161,148 +157,141 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
     setRefreshing(false)
   }, [])
 
-  const fetchStatistics = async (userData, isDelivery) => {
-    if (!userData) {
-      console.log('No user data provided, skipping statistics fetch')
+
+const fetchStatistics = async () => {
+  try {
+    setLoading(true)
+
+    let query = supabase
+      .from('contracts')
+      .select(`
+        *,
+        contract_status:contract_status_id (status_name)
+      `)
+      .in('contract_status_id', [5, 6]) // 5 = delivered, 6 = failed
+
+    // Apply date filter
+    const dateRange = getDateRange()
+    if (dateRange) {
+      query = query.or(
+        `and(contract_status_id.eq.5,delivered_at.gte.${dateRange.start},delivered_at.lte.${dateRange.end}),
+         and(contract_status_id.eq.6,cancelled_at.gte.${dateRange.start},cancelled_at.lte.${dateRange.end})`
+      )
+    }
+
+    const { data: deliveries, error: deliveriesError } = await query
+    if (deliveriesError) {
+      console.error('Error fetching deliveries:', deliveriesError)
       setLoading(false)
       return
     }
 
-    try {
-      setLoading(true)
-      
-      let query = supabase
-        .from('contracts')
-        .select(`
-          *,
-          contract_status:contract_status_id (status_name)
-        `)
-        .in('contract_status_id', [5, 6]) // 5 for delivered, 6 for failed
+    console.log('Fetched deliveries:', deliveries?.length || 0)
 
-      // Apply date filter if selected
-      const dateRange = getDateRange()
-      if (dateRange) {
-        query = query.or(`and(contract_status_id.eq.5,delivered_at.gte.${dateRange.start},delivered_at.lte.${dateRange.end}),and(contract_status_id.eq.6,cancelled_at.gte.${dateRange.start},cancelled_at.lte.${dateRange.end})`)
+    // Fetch region names
+    const { data: regionData, error: regionError } = await supabase
+      .from('pricing_region')
+      .select('id, region')
+
+    if (regionError) {
+      console.error('Error fetching regions:', regionError)
+      setLoading(false)
+      return
+    }
+
+    const regionNamesMap = regionData.reduce((acc, item) => {
+      acc[item.id] = item.region
+      return acc
+    }, {})
+
+    // City → Region mapping
+    const { data: pricingData, error: pricingError } = await supabase
+      .from('pricing')
+      .select('city, region_id')
+
+    if (pricingError) {
+      console.error('Error fetching pricing:', pricingError)
+      setLoading(false)
+      return
+    }
+
+    const cityToRegionMap = pricingData.reduce((acc, item) => {
+      if (item.city && item.region_id !== null && regionNamesMap[item.region_id]) {
+        acc[item.city.toLowerCase()] = regionNamesMap[item.region_id]
       }
+      return acc
+    }, {})
 
-      const { data: deliveries, error: deliveriesError } = await query
+    // Stats
+    const totalDeliveries = deliveries.length
+    const successfulDeliveries = deliveries.filter(d => d.contract_status_id === 5).length
+    const failedDeliveries = deliveries.filter(d => d.contract_status_id === 6).length
+    const successRate = totalDeliveries > 0 ? successfulDeliveries / totalDeliveries : 0
 
-      if (deliveriesError) {
-        setLoading(false)
-        return
-      }
+    const validDeliveryTimes = deliveries
+      .filter(d => d.pickup_at && d.delivered_at)
+      .map(d => {
+        const pickup = new Date(d.pickup_at)
+        const delivered = new Date(d.delivered_at)
+        return (delivered - pickup) / (1000 * 60)
+      })
 
-      console.log('Fetched deliveries:', deliveries?.length || 0)
-
-      // Fetch region names from pricing_region table
-      const { data: regionData, error: regionError } = await supabase
-        .from('pricing_region')
-        .select('id, region')
-      
-      if (regionError) {
-        setLoading(false)
-        return
-      }
-
-      const regionNamesMap = regionData.reduce((acc, item) => {
-        acc[item.id] = item.region;
-        return acc;
-      }, {});
-
-      // Fetch city to region mapping from pricing table
-      const { data: pricingData, error: pricingError } = await supabase
-        .from('pricing')
-        .select('city, region_id')
-
-      if (pricingError) {
-        setLoading(false)
-        return
-      }
-
-      const cityToRegionMap = pricingData.reduce((acc, item) => {
-        if (item.city && item.region_id !== null && regionNamesMap[item.region_id]) {
-          acc[item.city.toLowerCase()] = regionNamesMap[item.region_id];
-        }
-        return acc;
-      }, {});
-
-      // Calculate statistics
-      const totalDeliveries = deliveries.length
-      const successfulDeliveries = deliveries.filter(d => d.contract_status_id === 5).length
-      const failedDeliveries = deliveries.filter(d => d.contract_status_id === 6).length
-      const successRate = totalDeliveries > 0 ? successfulDeliveries / totalDeliveries : 0
-
-      // Calculate average delivery time
-      const validDeliveryTimes = deliveries
-        .filter(d => d.pickup_at && d.delivered_at)
-        .map(d => {
-          const pickup = new Date(d.pickup_at)
-          const delivered = new Date(d.delivered_at)
-          return (delivered - pickup) / (1000 * 60) // Convert to minutes
-        })
-
-      const averageDeliveryTime = validDeliveryTimes.length > 0
+    const averageDeliveryTime =
+      validDeliveryTimes.length > 0
         ? Math.round(validDeliveryTimes.reduce((a, b) => a + b, 0) / validDeliveryTimes.length)
         : 0
 
-      // Calculate total earnings (for delivery personnel) or expenses (for non-delivery users)
-      let totalEarnings = 0
-      let totalExpenses = 0
+    // Global earnings/expenses (sum all)
+    const totalAmount = deliveries.reduce((sum, delivery) => {
+      const amount =
+        (delivery.delivery_charge || 0) +
+        (delivery.delivery_surcharge || 0) -
+        (delivery.delivery_discount || 0)
+      return sum + amount
+    }, 0)
 
-      if (isDelivery) {
-        totalEarnings = deliveries.reduce((sum, delivery) => {
-          if (delivery.delivery_id === userData.id) {
-            const amount = (delivery.delivery_charge || 0) + (delivery.delivery_surcharge || 0) - (delivery.delivery_discount || 0)
-            return sum + amount
-          }
-          return sum
-        }, 0)
-      } else {
-        totalExpenses = deliveries.reduce((sum, delivery) => {
-          if (delivery.airline_id === userData.id) {
-            const amount = (delivery.delivery_charge || 0) + (delivery.delivery_surcharge || 0) - (delivery.delivery_discount || 0)
-            return sum + amount
-          }
-          return sum
-        }, 0)
+    // Group by region
+    const regionCounts = deliveries.reduce((acc, delivery) => {
+      const dropOffLocation = delivery.drop_off_location
+        ? delivery.drop_off_location.toLowerCase()
+        : ''
+      let region = 'Unknown Region'
+
+      for (const city in cityToRegionMap) {
+        if (dropOffLocation.includes(city)) {
+          region = cityToRegionMap[city]
+          break
+        }
       }
 
-      // Group deliveries by region
-      const regionCounts = deliveries.reduce((acc, delivery) => {
-        const dropOffLocation = delivery.drop_off_location ? delivery.drop_off_location.toLowerCase() : '';
-        let region = 'Unknown Region';
+      acc[region] = (acc[region] || 0) + 1
+      return acc
+    }, {})
 
-        for (const city in cityToRegionMap) {
-          if (dropOffLocation.includes(city)) {
-            region = cityToRegionMap[city];
-            break;
-          }
-        }
-        
-        acc[region] = (acc[region] || 0) + 1
-        return acc
-      }, {})
-
-      const deliveriesByRegion = Object.values(regionNamesMap).map(regionName => ({
+    const deliveriesByRegion = Object.values(regionNamesMap)
+      .map(regionName => ({
         region: regionName,
         count: regionCounts[regionName] || 0,
-      })).sort((a, b) => a.region.localeCompare(b.region));
+      }))
+      .sort((a, b) => a.region.localeCompare(b.region))
 
-      setStats({
-        totalDeliveries,
-        successfulDeliveries,
-        failedDeliveries,
-        successRate,
-        totalEarnings,
-        totalExpenses,
-        averageDeliveryTime,
-        deliveriesByRegion,
-      })
-    } catch (error) {
-    } finally {
-      setLoading(false)
-    }
+    setStats({
+      totalDeliveries,
+      successfulDeliveries,
+      failedDeliveries,
+      successRate,
+      totalEarnings: totalAmount, // use one field
+      totalExpenses: 0, // unused in global mode
+      averageDeliveryTime,
+      deliveriesByRegion,
+    })
+  } catch (error) {
+    console.error('Error in fetchStatistics:', error)
+  } finally {
+    setLoading(false)
   }
+}
+
 
   const generateInsights = async () => {
     try {

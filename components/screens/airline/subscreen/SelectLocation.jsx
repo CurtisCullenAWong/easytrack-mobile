@@ -23,8 +23,12 @@ const SelectLocation = ({ navigation }) => {
   })
   const [isMapExpanded, setIsMapExpanded] = useState(true)
   const [isFetchingLocation, setIsFetchingLocation] = useState(false)
+  const [isGeocodingInProgress, setIsGeocodingInProgress] = useState(false)
   const mapRef = useRef(null)
   const geocodeTimeoutRef = useRef(null)
+
+  // Check if any geocoding operation is in progress
+  const isAnyGeocodingInProgress = isFetchingLocation || isGeocodingInProgress
 
   useEffect(() => {
     (async () => {
@@ -81,6 +85,7 @@ const SelectLocation = ({ navigation }) => {
 
   const handleMarkerDragEnd = useCallback(async (e) => {
     const { latitude, longitude } = e.nativeEvent.coordinate
+    setIsGeocodingInProgress(true)
     try {
       const [address] = await Location.reverseGeocodeAsync({ latitude, longitude })
       const formatted = address
@@ -89,8 +94,11 @@ const SelectLocation = ({ navigation }) => {
             .join(', ')
         : null
       setSelectedLocation({ location: formatted, lat: latitude, lng: longitude })
-    } catch {
+    } catch (error) {
+      console.error('Error in reverse geocoding:', error)
       setSelectedLocation({ location: null, lat: latitude, lng: longitude })
+    } finally {
+      setIsGeocodingInProgress(false)
     }
   }, [])
 
@@ -99,6 +107,7 @@ const SelectLocation = ({ navigation }) => {
     setSelectedLocation((prev) => ({ ...prev, lat: latitude, lng: longitude }))
     if (geocodeTimeoutRef.current) clearTimeout(geocodeTimeoutRef.current)
     geocodeTimeoutRef.current = setTimeout(async () => {
+      setIsGeocodingInProgress(true)
       try {
         const [address] = await Location.reverseGeocodeAsync({ latitude, longitude })
         const formatted = address
@@ -107,8 +116,11 @@ const SelectLocation = ({ navigation }) => {
               .join(', ')
           : null
         setSelectedLocation((prev) => ({ ...prev, location: formatted }))
-      } catch {
+      } catch (error) {
+        console.error('Error in reverse geocoding:', error)
         setSelectedLocation((prev) => ({ ...prev, location: null }))
+      } finally {
+        setIsGeocodingInProgress(false)
       }
     }, 500)
   }, [])
@@ -121,7 +133,7 @@ const SelectLocation = ({ navigation }) => {
   }, [])
 
   const handleConfirm = useCallback(() => {
-    if (!selectedLocation) return
+    if (!selectedLocation || isAnyGeocodingInProgress) return
     navigation.navigate('BookingManagement', {
       screen: 'create',
       locationData: {
@@ -129,7 +141,7 @@ const SelectLocation = ({ navigation }) => {
         drop_off_location_geo: `POINT(${selectedLocation.lng} ${selectedLocation.lat})`,
       },
     })
-  }, [selectedLocation, navigation])
+  }, [selectedLocation, navigation, isAnyGeocodingInProgress])
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -138,7 +150,7 @@ const SelectLocation = ({ navigation }) => {
         <Appbar.Content title="Drop-Off Location" titleStyle={[fonts.titleLarge, { color: colors.onSurface }]} />
       </Appbar.Header>
       <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={2}>
-        <GooglePlacesTextInput
+        {/* <GooglePlacesTextInput
           placeholder="Search for a location"
           apiKey={GOOGLE_MAPS_PLACES_API_KEY}
           language="en"
@@ -150,7 +162,7 @@ const SelectLocation = ({ navigation }) => {
             }
           }}
           placeHolderText='Search for a Location'
-        />
+        /> */}
       </Surface>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
@@ -214,11 +226,17 @@ const SelectLocation = ({ navigation }) => {
             <View style={styles.sectionHeader}>
               <IconButton icon="map-marker-check" size={20} iconColor={colors.primary} />
               <Text style={[fonts.titleMedium, { color: colors.primary, flex: 1 }]}>Selected Location</Text>
+              {isAnyGeocodingInProgress && (
+                <ActivityIndicator size="small" color={colors.primary} />
+              )}
             </View>
             <Divider style={[styles.divider, { backgroundColor: colors.outline }]} />
             <View style={styles.locationDetails}>
               <Text style={[fonts.bodyMedium, { color: colors.onSurface, lineHeight: 22 }]}>
-                {selectedLocation.location || 'No address found. Please drag the marker.'}
+                {isAnyGeocodingInProgress 
+                  ? 'Getting address...' 
+                  : selectedLocation.location || 'No address found. Please drag the marker.'
+                }
               </Text>
               <View style={styles.coordinatesContainer}>
                 <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
@@ -237,14 +255,14 @@ const SelectLocation = ({ navigation }) => {
           <Button
             mode="contained"
             onPress={handleConfirm}
-            // Disable the button while fetching location or if no location is selected
-            disabled={!selectedLocation || isFetchingLocation}
-            style={[styles.confirmButton, { backgroundColor: selectedLocation && !isFetchingLocation ? colors.primary : colors.surfaceVariant }]}
-            labelStyle={[fonts.labelLarge, { color: selectedLocation && !isFetchingLocation ? colors.onPrimary : colors.onSurfaceVariant }]}
+            // Disable the button while any geocoding operation is in progress or if no location is selected
+            disabled={!selectedLocation || isAnyGeocodingInProgress}
+            style={[styles.confirmButton, { backgroundColor: selectedLocation && !isAnyGeocodingInProgress ? colors.primary : colors.surfaceVariant }]}
+            labelStyle={[fonts.labelLarge, { color: selectedLocation && !isAnyGeocodingInProgress ? colors.onPrimary : colors.onSurfaceVariant }]}
             contentStyle={styles.confirmButtonContent}
-            icon={selectedLocation ? 'check' : 'map-marker-off'}
+            icon={selectedLocation && !isAnyGeocodingInProgress ? 'check' : 'map-marker-off'}
           >
-            {isFetchingLocation ? (
+            {isAnyGeocodingInProgress ? (
               <ActivityIndicator size="small" color={colors.onSurface} />
             ) : selectedLocation ? (
               'Confirm Location'

@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, View, StyleSheet, Image } from 'react-native'
 import { useTheme, Appbar, Card, Text, Button, Divider, Checkbox, Portal, Modal } from 'react-native-paper'
-import { useNavigation, useRoute } from '@react-navigation/native'
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../../../../../lib/supabaseAdmin'
 import { printPDF, sharePDF } from '../../../../../utils/pdfUtils'
 import useSnackbar from '../../../../hooks/useSnackbar'
@@ -234,6 +234,30 @@ const CreateInvoice = () => {
     fetchSummaryStatus()
   }, [summary?.summary_id])
 
+  useFocusEffect(
+    useCallback(() => {
+      setPreparedSignatureDataUrl('')
+      setPreparedSignatureSize(null)
+      setPreparedSignatureRotation(0)
+
+      setCheckedSignatureDataUrl('')
+      setCheckedSignatureSize(null)
+      setCheckedSignatureRotation(0)
+
+      setCertify(false)
+
+      if (signatureRef.current) {
+        signatureRef.current.clearSignature()
+      }
+
+      return () => {
+        if (signatureRef.current) {
+          signatureRef.current.clearSignature()
+        }
+      }
+    }, [])
+  )
+    
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       <Appbar.Header style={[styles.header, { backgroundColor: colors.surface }]}>
@@ -294,10 +318,17 @@ const CreateInvoice = () => {
                 />
                 <View style={{ height: 8 }} />
                 <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <Button mode="text" onPress={() => { setPreparedSignatureDataUrl(''); setPreparedSignatureSize(null) }}>Clear</Button>
+                  <Button 
+                    mode="text" 
+                    onPress={() => { setPreparedSignatureDataUrl(''); setPreparedSignatureSize(null) }}
+                    disabled={summaryStatusId === 2}
+                  >
+                    Clear
+                  </Button>
                   <Button
                     mode="text"
                     onPress={() => setPreparedSignatureRotation((r) => (r + 90) % 360)}
+                    disabled={summaryStatusId === 2}
                   >
                     Rotate 90°
                   </Button>
@@ -309,6 +340,7 @@ const CreateInvoice = () => {
                 icon="pencil"
                 onPress={() => { setActiveSigner('prepared'); setSignatureVisible(true) }}
                 style={{ marginTop: 4 }}
+                disabled={summaryStatusId === 2}
               >
                 Write signature (Prepared by)
               </Button>
@@ -344,10 +376,17 @@ const CreateInvoice = () => {
                 />
                 <View style={{ height: 8 }} />
                 <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <Button mode="text" onPress={() => { setCheckedSignatureDataUrl(''); setCheckedSignatureSize(null) }}>Clear</Button>
+                  <Button 
+                    mode="text" 
+                    onPress={() => { setCheckedSignatureDataUrl(''); setCheckedSignatureSize(null) }}
+                    disabled={summaryStatusId === 2}
+                  >
+                    Clear
+                  </Button>
                   <Button
                     mode="text"
                     onPress={() => setCheckedSignatureRotation((r) => (r + 90) % 360)}
+                    disabled={summaryStatusId === 2}
                   >
                     Rotate 90°
                   </Button>
@@ -359,6 +398,7 @@ const CreateInvoice = () => {
                 icon="pencil"
                 onPress={() => { setActiveSigner('checked'); setSignatureVisible(true) }}
                 style={{ marginTop: 4 }}
+                disabled={summaryStatusId === 2}
               >
                 Write signature (Checked by)
               </Button>
@@ -369,6 +409,7 @@ const CreateInvoice = () => {
                 status={certify ? 'checked' : 'unchecked'}
                 onPress={() => setCertify(prev => !prev)}
                 color={colors.primary}
+                disabled={summaryStatusId === 2}
               />
               <Text style={[{ color: colors.onSurfaceVariant, flex: 1 }, fonts.bodySmall]}>
                 I certify that the above information is correct. My handwritten signature is valid for this invoice.
