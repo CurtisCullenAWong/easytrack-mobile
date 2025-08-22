@@ -18,9 +18,19 @@ const TransactionSummary = () => {
 
   // Generate computer-generated summary ID
   const generateSummaryId = () => {
-    const timestamp = Date.now()
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
-    return `SUM${timestamp}${random}`
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    
+    // Generate 4 random alphanumeric characters
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    let randomPart = ''
+    for (let i = 0; i < 4; i++) {
+      randomPart += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    
+    return `SUM${year}${month}${day}${randomPart}`
   }
 
   const handleConfirmSummary = async () => {

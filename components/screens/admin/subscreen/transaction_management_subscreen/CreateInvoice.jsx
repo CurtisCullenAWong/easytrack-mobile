@@ -35,15 +35,18 @@ const CreateInvoice = () => {
     
     while (attempts < maxAttempts) {
       const now = new Date()
-      const yyyy = String(now.getFullYear())
-      const mm = String(now.getMonth() + 1).padStart(2, '0')
-      const dd = String(now.getDate()).padStart(2, '0')
-      const hh = String(now.getHours()).padStart(2, '0')
-      const min = String(now.getMinutes()).padStart(2, '0')
-      const ss = String(now.getSeconds()).padStart(2, '0')
-      const ms = String(now.getMilliseconds()).padStart(3, '0')
-      const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
-      const newInvoiceId = `INV-${yyyy}${mm}${dd}-${hh}${min}${ss}${ms}-${rand}`
+      const year = now.getFullYear()
+      const month = String(now.getMonth() + 1).padStart(2, '0')
+      const day = String(now.getDate()).padStart(2, '0')
+      
+      // Generate 4 random alphanumeric characters
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+      let randomPart = ''
+      for (let i = 0; i < 4; i++) {
+        randomPart += chars.charAt(Math.floor(Math.random() * chars.length))
+      }
+      
+      const newInvoiceId = `INV${year}${month}${day}${randomPart}`
       
       // Check if this invoice_id already exists in the summary table
       const { data, error } = await supabase
@@ -68,15 +71,18 @@ const CreateInvoice = () => {
 
   const generatedInvoiceId = useMemo(() => {
     const now = new Date()
-    const yyyy = String(now.getFullYear())
-    const mm = String(now.getMonth() + 1).padStart(2, '0')
-    const dd = String(now.getDate()).padStart(2, '0')
-    const hh = String(now.getHours()).padStart(2, '0')
-    const min = String(now.getMinutes()).padStart(2, '0')
-    const ss = String(now.getSeconds()).padStart(2, '0')
-    const ms = String(now.getMilliseconds()).padStart(3, '0')
-    const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
-    return `INV-${yyyy}${mm}${dd}-${hh}${min}${ss}${ms}-${rand}`
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    
+    // Generate 4 random alphanumeric characters
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    let randomPart = ''
+    for (let i = 0; i < 4; i++) {
+      randomPart += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    
+    return `INV${year}${month}${day}${randomPart}`
   }, [])
 
   const signatureRef = useRef(null)

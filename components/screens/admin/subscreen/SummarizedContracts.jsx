@@ -22,8 +22,6 @@ const SummarizedContracts = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchColumn, setSearchColumn] = useState('summary_id')
   const [filterMenuVisible, setFilterMenuVisible] = useState(false)
-  const [actionsMenuVisible, setActionsMenuVisible] = useState(false)
-  const [selectedTransaction, setSelectedTransaction] = useState(null)
   const [sortColumn, setSortColumn] = useState('created_at')
   const [sortDirection, setSortDirection] = useState('descending')
   const [transactions, setTransactions] = useState([])
@@ -42,6 +40,7 @@ const SummarizedContracts = ({ navigation }) => {
 
   const columns = [
     { key: 'summary_id', label: 'Summary ID', width: COLUMN_WIDTH },
+    { key: 'invoice_id', label: 'Invoice ID', width: COLUMN_WIDTH },
     { key: 'summary_status', label: 'Summary Status', width: COLUMN_WIDTH },
     { key: 'created_at', label: 'Created At', width: COLUMN_WIDTH },
     { key: 'due_date', label: 'Due Date', width: COLUMN_WIDTH },
@@ -56,7 +55,8 @@ const SummarizedContracts = ({ navigation }) => {
         summary:summary_id (
           summary_status:summary_status_id (status_name, id),
           due_date,
-          created_at
+          created_at,
+          invoice_id
         ),
         contract_status:contract_status_id (status_name),
         airline:airline_id (
@@ -104,6 +104,7 @@ const SummarizedContracts = ({ navigation }) => {
         acc[summaryId] = {
           key: summaryId,
           summary_id: summaryId,
+          invoice_id: transaction.summary?.invoice_id || 'N/A',
           summary_status: transaction.summary?.summary_status?.status_name || 'N/A',
           summary_status_id: transaction.summary?.summary_status?.id || null,
           created_at: transaction.summary?.created_at ? new Date(transaction.summary.created_at).toLocaleString() : 'N/A',
@@ -337,9 +338,7 @@ const SummarizedContracts = ({ navigation }) => {
                             mode="outlined"
                             icon="file-document"
                             onPress={() => {
-                              handleCreateInvoice(transaction)
-                              setActionsMenuVisible(false)
-                              setSelectedTransaction(null)
+                              navigation.navigate('CreateInvoice', { summary: { summary_id: transaction.summary_id } })
                             }}
                             style={[styles.actionButton, { borderColor: colors.primary }]}
                             contentStyle={styles.buttonContent}

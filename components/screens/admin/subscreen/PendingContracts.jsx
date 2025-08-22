@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import { ScrollView, StyleSheet, View, RefreshControl } from 'react-native'
 import {
@@ -17,23 +17,312 @@ import useSnackbar from '../../../hooks/useSnackbar'
 const COLUMN_WIDTH = 180
 const FULL_NAME_WIDTH = 200
 
+// Filter configuration
+const FILTER_OPTIONS = [
+  { label: 'Status', value: 'status' },
+  { label: 'Drop-off Location', value: 'drop_off_location' },
+  { label: 'Luggage Owner', value: 'luggage_owner' },
+  { label: 'Corporation', value: 'corporation' },
+  { label: 'Contract ID', value: 'id' },
+]
+
+const TABLE_COLUMNS = [
+  { key: 'id', label: 'Contract ID', width: COLUMN_WIDTH },
+  { key: 'luggage_owner', label: 'Luggage Owner', width: FULL_NAME_WIDTH },
+  { key: 'corporation', label: 'Corporation', width: COLUMN_WIDTH },
+  { key: 'drop_off_location', label: 'Address', width: COLUMN_WIDTH },
+  { key: 'completion_date', label: 'Date Received', width: COLUMN_WIDTH },
+  { key: 'status', label: 'Status', width: COLUMN_WIDTH },
+  { key: 'amount_per_passenger', label: 'Amount', width: COLUMN_WIDTH },
+  { key: 'remarks', label: 'Remarks', width: COLUMN_WIDTH },
+  { key: 'created_at', label: 'Created At', width: COLUMN_WIDTH },
+]
+
+// Custom hook for filtering and sorting
+const useFilteredTransactions = (transactions, filters, sortConfig) => {
+  return useMemo(() => {
+    let filtered = transactions.filter(transaction => {
+      // Search filter
+      if (filters.searchQuery && filters.searchColumn) {
+        const searchValue = String(transaction[filters.searchColumn] || '').toLowerCase()
+        const query = filters.searchQuery.toLowerCase()
+        if (!searchValue.includes(query)) return false
+      }
+      
+      // Corporation filter
+      if (filters.selectedCorporation && transaction.corporation !== filters.selectedCorporation) {
+        return false
+      }
+      
+      return true
+    })
+
+    // Sorting
+    if (sortConfig.column) {
+      filtered.sort((a, b) => {
+        const valA = a[sortConfig.column]
+        const valB = b[sortConfig.column]
+
+        // Handle date sorting
+        if (['created_at', 'updated_at', 'completion_date'].includes(sortConfig.column)) {
+          if (valA === 'N/A') return sortConfig.direction === 'ascending' ? -1 : 1
+          if (valB === 'N/A') return sortConfig.direction === 'ascending' ? 1 : -1
+          if (valA < valB) return sortConfig.direction === 'ascending' ? -1 : 1
+          if (valA > valB) return sortConfig.direction === 'ascending' ? 1 : -1
+          return 0
+        }
+
+        // Handle regular sorting
+        if (valA < valB) return sortConfig.direction === 'ascending' ? -1 : 1
+        if (valA > valB) return sortConfig.direction === 'ascending' ? 1 : -1
+        return 0
+      })
+    }
+
+    return filtered
+  }, [transactions, filters, sortConfig])
+}
+
+// Reusable Filter Menu Component
+const FilterMenu = ({ 
+  visible, 
+  onDismiss, 
+  anchor, 
+  options, 
+  selectedValue, 
+  onSelect, 
+  placeholder = 'Select Option' 
+}) => {
+  const { colors, fonts } = useTheme()
+  
+  return (
+    <Menu
+      visible={visible}
+      onDismiss={onDismiss}
+      anchor={anchor}
+      contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+    >
+      {options.map(option => (
+        <Menu.Item
+          key={option.value}
+          onPress={() => {
+            onSelect(option.value)
+            onDismiss()
+          }}
+          title={option.label}
+          titleStyle={[
+            {
+              color: selectedValue === option.value ? colors.primary : colors.onSurface,
+            },
+            fonts.bodyLarge,
+          ]}
+          leadingIcon={selectedValue === option.value ? 'check' : undefined}
+        />
+      ))}
+    </Menu>
+  )
+}
+
+// Search and Filter Section Component
+const SearchFilterSection = ({ 
+  filters, 
+  onFiltersChange, 
+  filterOptions, 
+  corporations 
+}) => {
+  const { colors, fonts } = useTheme()
+  const [filterMenuVisible, setFilterMenuVisible] = useState(false)
+  const [corporationMenuVisible, setCorporationMenuVisible] = useState(false)
+
+  const handleClearFilters = () => {
+    onFiltersChange({
+      searchQuery: '',
+      selectedCorporation: ''
+    })
+  }
+
+  const hasActiveFilters = filters.searchQuery || filters.selectedCorporation
+
+  return (
+    <>
+      {/* Search Section */}
+      <Surface style={[styles.searchSurface, { backgroundColor: colors.surface }]} elevation={1}>
+        <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
+          Search & Filter
+        </Text>
+        <Searchbar
+          placeholder={`Search by ${filterOptions.find(opt => opt.value === filters.searchColumn)?.label}`}
+          onChangeText={(query) => onFiltersChange({ searchQuery: query })}
+          value={filters.searchQuery}
+          style={[styles.searchbar, { backgroundColor: colors.surfaceVariant }]}
+          iconColor={colors.onSurfaceVariant}
+          inputStyle={[styles.searchInput, { color: colors.onSurfaceVariant }]}
+        />
+      </Surface>
+
+      {/* Filters Section */}
+      <Surface style={[styles.filtersSurface, { backgroundColor: colors.surface }]} elevation={1}>
+        <View style={styles.filtersRow}>
+          <View style={styles.filterGroup}>
+            <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+              Search Column
+            </Text>
+            <FilterMenu
+              visible={filterMenuVisible}
+              onDismiss={() => setFilterMenuVisible(false)}
+              anchor={
+                <Button
+                  mode="outlined"
+                  icon="filter-variant"
+                  onPress={() => setFilterMenuVisible(true)}
+                  style={[styles.filterButton, { borderColor: colors.outline }]}
+                  contentStyle={styles.buttonContent}
+                  labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                >
+                  {filterOptions.find(opt => opt.value === filters.searchColumn)?.label || 'Select Column'}
+                </Button>
+              }
+              options={filterOptions}
+              selectedValue={filters.searchColumn}
+              onSelect={(value) => onFiltersChange({ searchColumn: value })}
+            />
+          </View>
+          
+          <View style={styles.filterGroup}>
+            <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+              Corporation Filter
+            </Text>
+            <FilterMenu
+              visible={corporationMenuVisible}
+              onDismiss={() => setCorporationMenuVisible(false)}
+              anchor={
+                <Button
+                  mode="outlined"
+                  icon="office-building"
+                  onPress={() => setCorporationMenuVisible(true)}
+                  style={[styles.filterButton, { borderColor: colors.outline }]}
+                  contentStyle={styles.buttonContent}
+                  labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                >
+                  {filters.selectedCorporation || 'All Corporations'}
+                </Button>
+              }
+              options={[
+                { label: 'All Corporations', value: '' },
+                ...corporations.map(corp => ({ label: corp.corporation_name, value: corp.corporation_name }))
+              ]}
+              selectedValue={filters.selectedCorporation}
+              onSelect={(value) => onFiltersChange({ selectedCorporation: value })}
+            />
+          </View>
+        </View>
+        
+        {hasActiveFilters && (
+          <View style={styles.clearFiltersContainer}>
+            <Button
+              mode="text"
+              icon="close"
+              onPress={handleClearFilters}
+              style={styles.clearFiltersButton}
+              contentStyle={styles.buttonContent}
+              labelStyle={[styles.buttonLabel, { color: colors.primary }]}
+            >
+              Clear Filters
+            </Button>
+          </View>
+        )}
+      </Surface>
+    </>
+  )
+}
+
+// Selection Section Component
+const SelectionSection = ({ 
+  selectedContracts, 
+  selectAll, 
+  onSelectAll, 
+  onContractSelection, 
+  paginatedTransactions, 
+  onGenerateSummary 
+}) => {
+  const { colors, fonts } = useTheme()
+
+  return (
+    <Surface style={[styles.selectionSurface, { backgroundColor: colors.surface }]} elevation={1}>
+      <View style={styles.selectionContainer}>
+        <View style={styles.selectAllContainer}>
+          <Checkbox
+            status={selectAll ? 'checked' : 'unchecked'}
+            onPress={onSelectAll}
+            color={colors.primary}
+            disabled={selectedContracts.size === 0}
+          />
+          <Text style={[styles.selectAllText, { color: colors.onSurface }, fonts.bodyMedium]}>
+            Select All ({paginatedTransactions.length})
+          </Text>
+        </View>
+        <Text style={[styles.selectedCount, { color: colors.primary }, fonts.bodyMedium]}>
+          Selected: {selectedContracts.size}
+        </Text>
+      </View>
+      <Button
+        mode="contained"
+        icon="file-document-outline"
+        onPress={onGenerateSummary}
+        style={[
+          styles.generateButton, 
+          { 
+            backgroundColor: selectedContracts.size === 0 ? colors.surfaceDisabled : colors.primary,
+            opacity: selectedContracts.size === 0 ? 0.6 : 1
+          }
+        ]}
+        contentStyle={styles.buttonContent}
+        labelStyle={[
+          styles.buttonLabel, 
+          { 
+            color: selectedContracts.size === 0 ? colors.onSurfaceDisabled : colors.onPrimary 
+          }
+        ]}
+        disabled={selectedContracts.size === 0}
+      >
+        Generate Summary ({selectedContracts.size})
+      </Button>
+    </Surface>
+  )
+}
+
 const PendingContracts = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchColumn, setSearchColumn] = useState('status')
-  const [filterMenuVisible, setFilterMenuVisible] = useState(false)
-  const [sortColumn, setSortColumn] = useState('created_at')
-  const [sortDirection, setSortDirection] = useState('descending')
+  // State management
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [corporations, setCorporations] = useState([])
+  
+  // Filter state
+  const [filters, setFilters] = useState({
+    searchQuery: '',
+    searchColumn: 'status',
+    selectedCorporation: ''
+  })
+  
+  // Sort state
+  const [sortConfig, setSortConfig] = useState({
+    column: 'created_at',
+    direction: 'descending'
+  })
+  
+  // Pagination state
   const [page, setPage] = useState(0)
   const [itemsPerPage, setItemsPerPage] = useState(10)
-  const [refreshing, setRefreshing] = useState(false)
+  
+  // Selection state
   const [selectedContracts, setSelectedContracts] = useState(new Set())
   const [selectAll, setSelectAll] = useState(false)
 
+  // Data fetching
   const fetchTransactions = async () => {
     setLoading(true)
     const { data, error } = await supabase
@@ -45,7 +334,8 @@ const PendingContracts = ({ navigation }) => {
           first_name,
           middle_initial,
           last_name,
-          suffix
+          suffix,
+          corporation:corporation_id (corporation_name)
         ),
         delivery:delivery_id (
           first_name,
@@ -118,6 +408,7 @@ const PendingContracts = ({ navigation }) => {
         owner_contact: transaction.owner_contact || 'N/A',
         passenger_id: transaction.passenger_id || 'N/A',
         proof_of_delivery: transaction.proof_of_delivery || null,
+        corporation: transaction.airline?.corporation?.corporation_name || 'N/A',
       }
     })
 
@@ -125,68 +416,47 @@ const PendingContracts = ({ navigation }) => {
     setLoading(false)
   }
 
+  const fetchCorporations = async () => {
+    const { data, error } = await supabase
+      .from('profiles_corporation')
+      .select('corporation_name')
+      .order('corporation_name', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching corporations:', error)
+      return
+    }
+
+    setCorporations(data || [])
+  }
+
+  // Effects
   useFocusEffect(
     useCallback(() => {
       fetchTransactions()
+      fetchCorporations()
       resetSelection()
     }, [])
   )
 
-  const handleSort = (column) => {
-    setSortDirection(prev =>
-      sortColumn === column && prev === 'ascending' ? 'descending' : 'ascending'
-    )
-    setSortColumn(column)
-  }
+  // Filtered and sorted transactions
+  const filteredAndSortedTransactions = useFilteredTransactions(transactions, filters, sortConfig)
 
-  const getSortIcon = (column) =>
-    sortColumn === column ? (sortDirection === 'ascending' ? '▲' : '▼') : ''
-
-  const filteredAndSortedTransactions = transactions
-    .filter(transaction => {
-      if (!searchQuery) return true;
-      const searchValue = String(transaction[searchColumn] || '').toLowerCase()
-      const query = searchQuery.toLowerCase()
-      return searchValue.includes(query)
-    })
-    .sort((a, b) => {
-      const valA = a[sortColumn]
-      const valB = b[sortColumn]
-
-      if (['created_at', 'updated_at', 'completion_date'].includes(sortColumn)) {
-        if (valA === 'N/A') return sortDirection === 'ascending' ? -1 : 1
-        if (valB === 'N/A') return sortDirection === 'ascending' ? 1 : -1
-        if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
-        if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
-        return 0
-      }
-
-      if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
-      if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
-      return 0
-    })
-
+  // Pagination
   const from = page * itemsPerPage
   const to = Math.min((page + 1) * itemsPerPage, filteredAndSortedTransactions.length)
   const paginatedTransactions = filteredAndSortedTransactions.slice(from, to)
 
-  const filterOptions = [
-    { label: 'Status', value: 'status' },
-    { label: 'Drop-off Location', value: 'drop_off_location' },
-    { label: 'Luggage Owner', value: 'luggage_owner' },
-    { label: 'Contract ID', value: 'id' },
-  ]
+  // Handlers
+  const handleSort = (column) => {
+    setSortConfig(prev => ({
+      column,
+      direction: prev.column === column && prev.direction === 'ascending' ? 'descending' : 'ascending'
+    }))
+  }
 
-  const columns = [
-    { key: 'id', label: 'Contract ID', width: COLUMN_WIDTH },
-    { key: 'luggage_owner', label: 'Luggage Owner', width: FULL_NAME_WIDTH },
-    { key: 'drop_off_location', label: 'Address', width: COLUMN_WIDTH },
-    { key: 'completion_date', label: 'Date Received', width: COLUMN_WIDTH },
-    { key: 'status', label: 'Status', width: COLUMN_WIDTH },
-    { key: 'amount_per_passenger', label: 'Amount', width: COLUMN_WIDTH },
-    { key: 'remarks', label: 'Remarks', width: COLUMN_WIDTH },
-    { key: 'created_at', label: 'Created At', width: COLUMN_WIDTH },
-  ]
+  const getSortIcon = (column) =>
+    sortConfig.column === column ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : ''
 
   const onRefresh = useCallback(() => {
     setRefreshing(true)
@@ -196,9 +466,6 @@ const PendingContracts = ({ navigation }) => {
   const handleViewDetails = (transaction) => {
     navigation.navigate('ContractDetailsAdmin', { id: transaction.id })
   }
-
-  const formatCurrency = (amount) => `₱${parseFloat(amount).toFixed(2)}`
-  const formatPercentage = (amount) => `${parseFloat(amount).toFixed(2)}%`
 
   const handleContractSelection = (contractId) => {
     const newSelected = new Set(selectedContracts)
@@ -230,7 +497,6 @@ const PendingContracts = ({ navigation }) => {
 
     const selectedTransactions = transactions.filter(t => selectedContracts.has(t.id))
 
-    // Summarized amount should be the sum of delivery_charge only
     const totalAmount = selectedTransactions.reduce((sum, t) => {
       return sum + (t.delivery_charge || 0)
     }, 0)
@@ -260,6 +526,9 @@ const PendingContracts = ({ navigation }) => {
     setSelectAll(false)
   }
 
+  const formatCurrency = (amount) => `₱${parseFloat(amount).toFixed(2)}`
+  const formatPercentage = (amount) => `${parseFloat(amount).toFixed(2)}%`
+
   return (
     <ScrollView 
       style={[styles.scrollView, { backgroundColor: colors.background }]}
@@ -270,109 +539,23 @@ const PendingContracts = ({ navigation }) => {
       {SnackbarElement}
 
       <View style={styles.container}>
-        {/* Search Section */}
-        <Surface style={[styles.searchSurface, { backgroundColor: colors.surface }]} elevation={1}>
-          <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
-            Search & Filter
-          </Text>
-          <Searchbar
-            placeholder={`Search by ${filterOptions.find(opt => opt.value === searchColumn)?.label}`}
-            onChangeText={setSearchQuery}
-            value={searchQuery}
-            style={[styles.searchbar, { backgroundColor: colors.surfaceVariant }]}
-            iconColor={colors.onSurfaceVariant}
-            inputStyle={[styles.searchInput, { color: colors.onSurfaceVariant }]}
-          />
-        </Surface>
-
-        {/* Filters Section */}
-        <Surface style={[styles.filtersSurface, { backgroundColor: colors.surface }]} elevation={1}>
-          <View style={styles.filtersRow}>
-            <View style={styles.filterGroup}>
-              <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
-                Search Column
-              </Text>
-              <Menu
-                visible={filterMenuVisible}
-                onDismiss={() => setFilterMenuVisible(false)}
-                anchor={
-                  <Button
-                    mode="outlined"
-                    icon="filter-variant"
-                    onPress={() => setFilterMenuVisible(true)}
-                    style={[styles.filterButton, { borderColor: colors.outline }]}
-                    contentStyle={styles.buttonContent}
-                    labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
-                  >
-                    {filterOptions.find(opt => opt.value === searchColumn)?.label || 'Select Column'}
-                  </Button>
-                }
-                contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
-              >
-                {filterOptions.map(option => (
-                  <Menu.Item
-                    key={option.value}
-                    onPress={() => {
-                      setSearchColumn(option.value)
-                      setFilterMenuVisible(false)
-                    }}
-                    title={option.label}
-                    titleStyle={[
-                      {
-                        color: searchColumn === option.value
-                          ? colors.primary
-                          : colors.onSurface,
-                      },
-                      fonts.bodyLarge,
-                    ]}
-                    leadingIcon={searchColumn === option.value ? 'check' : undefined}
-                  />
-                ))}
-              </Menu>
-            </View>
-          </View>
-        </Surface>
+        {/* Search and Filter Section */}
+        <SearchFilterSection
+          filters={filters}
+          onFiltersChange={setFilters}
+          filterOptions={FILTER_OPTIONS}
+          corporations={corporations}
+        />
 
         {/* Selection Section */}
-        <Surface style={[styles.selectionSurface, { backgroundColor: colors.surface }]} elevation={1}>
-          <View style={styles.selectionContainer}>
-            <View style={styles.selectAllContainer}>
-              <Checkbox
-                status={selectAll ? 'checked' : 'unchecked'}
-                onPress={handleSelectAll}
-                color={colors.primary}
-              />
-              <Text style={[styles.selectAllText, { color: colors.onSurface }, fonts.bodyMedium]}>
-                Select All ({paginatedTransactions.length})
-              </Text>
-            </View>
-            <Text style={[styles.selectedCount, { color: colors.primary }, fonts.bodyMedium]}>
-              Selected: {selectedContracts.size}
-            </Text>
-          </View>
-          <Button
-            mode="contained"
-            icon="file-document-outline"
-            onPress={handleGenerateSummary}
-            style={[
-              styles.generateButton, 
-              { 
-                backgroundColor: selectedContracts.size === 0 ? colors.surfaceDisabled : colors.primary,
-                opacity: selectedContracts.size === 0 ? 0.6 : 1
-              }
-            ]}
-            contentStyle={styles.buttonContent}
-            labelStyle={[
-              styles.buttonLabel, 
-              { 
-                color: selectedContracts.size === 0 ? colors.onSurfaceDisabled : colors.onPrimary 
-              }
-            ]}
-            disabled={selectedContracts.size === 0}
-          >
-            Generate Summary ({selectedContracts.size})
-          </Button>
-        </Surface>
+        <SelectionSection
+          selectedContracts={selectedContracts}
+          selectAll={selectAll}
+          onSelectAll={handleSelectAll}
+          onContractSelection={handleContractSelection}
+          paginatedTransactions={paginatedTransactions}
+          onGenerateSummary={handleGenerateSummary}
+        />
 
         {/* Results Section */}
         <Surface style={[styles.resultsSurface, { backgroundColor: colors.surface }]} elevation={1}>
@@ -404,7 +587,7 @@ const PendingContracts = ({ navigation }) => {
                     <DataTable.Title style={[styles.actionColumn, { justifyContent: 'center' }]}>
                       <Text style={[styles.headerText, { color: colors.onSurface }, fonts.labelLarge]}>Details</Text>
                     </DataTable.Title>
-                    {columns.map(({ key, label, width }) => (
+                    {TABLE_COLUMNS.map(({ key, label, width }) => (
                       <DataTable.Title
                         key={key}
                         style={[styles.tableColumn, { width: width || COLUMN_WIDTH, justifyContent: 'center' }]}
@@ -454,7 +637,7 @@ const PendingContracts = ({ navigation }) => {
                             View Details
                           </Button>
                         </DataTable.Cell>
-                        {columns.map(({ key, width }, idx) => (
+                        {TABLE_COLUMNS.map(({ key, width }, idx) => (
                           <DataTable.Cell
                             key={idx}
                             style={[styles.tableColumn, { width: width || COLUMN_WIDTH, justifyContent: 'center' }]}
@@ -547,6 +730,13 @@ const styles = StyleSheet.create({
   },
   filterGroup: {
     flex: 1,
+  },
+  clearFiltersContainer: {
+    marginTop: 12,
+    alignItems: 'flex-start',
+  },
+  clearFiltersButton: {
+    paddingHorizontal: 0,
   },
   filterLabel: {
     marginBottom: 8,
