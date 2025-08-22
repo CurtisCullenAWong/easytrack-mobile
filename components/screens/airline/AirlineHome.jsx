@@ -33,7 +33,7 @@ const AirlineHome = ({ navigation }) => {
         {/* Welcome Section */}
         <Surface style={[styles.welcomeSurface, { backgroundColor: colors.surface }]} elevation={1}>
           <Text style={[styles.welcomeTitle, { color: colors.onSurface, ...fonts.headlineMedium }]}>Welcome Aboard!</Text>
-          <Text style={[styles.welcomeSubTitle, { color: colors.onSurface, ...fonts.titleMedium }]}>Airline Staff Dashboard</Text>
+          <Text style={[styles.welcomeSubTitle, { color: colors.onSurface, ...fonts.titleMedium }]}>Airline Staff</Text>
           <Divider style={styles.divider} />
           <Text style={[styles.welcomeParagraph, { color: colors.onSurfaceVariant, ...fonts.bodyLarge }]}>
             Manage luggage bookings, track delivery statuses, and ensure smooth handling of passenger belongings.

@@ -3,7 +3,6 @@ import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native'
 import { useTheme, TextInput, Button, Text, IconButton, Menu, Surface } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
-import * as Location from 'expo-location'
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'
 
 // Constants

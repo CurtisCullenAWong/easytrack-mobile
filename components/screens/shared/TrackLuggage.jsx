@@ -114,8 +114,7 @@ const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors
           />
         )}
 
-        {/* ✅ Only request directions if status = 4 */}
-        {contractStatusId === 4 && currentLocationCoords && dropOffCoords && (
+        {/* {contractStatusId === 4 && currentLocationCoords && dropOffCoords && (
         <MapViewDirections
             origin={currentLocationCoords}
             destination={dropOffCoords}
@@ -125,7 +124,7 @@ const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors
             optimizeWaypoints
             onError={(err) => console.error("Directions error:", err)}
         />
-        )}
+        )} */}
       </MapView>
 
       <View style={styles.mapButtons}>

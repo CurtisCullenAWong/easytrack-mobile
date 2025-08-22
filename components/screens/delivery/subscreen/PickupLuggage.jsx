@@ -101,7 +101,6 @@ const PickupLuggage = ({ navigation }) => {
       setLoading(true)
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
-
       const { data, error } = await supabase
         .from('contracts')
         .select(`
@@ -115,6 +114,7 @@ const PickupLuggage = ({ navigation }) => {
             suffix
           )
         `)
+        .eq('delivery_id', user.id)
         .eq('contract_status_id', 3)
         .order('created_at', { ascending: false })
 

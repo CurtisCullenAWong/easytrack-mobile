@@ -40,7 +40,7 @@ const DeliveryHome = ({ navigation }) => {
         {/* Welcome Section */}
         <Surface style={[styles.welcomeSurface, { backgroundColor: colors.surface }]} elevation={1}>
           <Text style={[styles.welcomeTitle, { color: colors.onSurface, ...fonts.headlineMedium }]}>Welcome Back!</Text>
-          <Text style={[styles.welcomeSubTitle, { color: colors.onSurface, ...fonts.titleMedium }]}>Delivery Partner Dashboard</Text>
+          <Text style={[styles.welcomeSubTitle, { color: colors.onSurface, ...fonts.titleMedium }]}>Delivery Partner</Text>
           <Divider style={styles.divider} />
           <Text style={[styles.welcomeParagraph, { color: colors.onSurfaceVariant, ...fonts.bodyLarge }]}>
             Efficient and reliable delivery services to meet customer needs. Manage your contracts, track deliveries, and analyze performance.

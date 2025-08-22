@@ -32,7 +32,7 @@ const AdminHome = ({ navigation }) => {
         {/* Welcome Section */}
         <Surface style={[styles.welcomeSurface, { backgroundColor: colors.surface }]} elevation={1}>
           <Text style={[styles.welcomeTitle, { color: colors.onSurface, ...fonts.headlineMedium }]}>Welcome Admin!</Text>
-          <Text style={[styles.welcomeSubTitle, { color: colors.onSurface, ...fonts.titleMedium }]}>System Administrator Dashboard</Text>
+          <Text style={[styles.welcomeSubTitle, { color: colors.onSurface, ...fonts.titleMedium }]}>System Administrator</Text>
           <Divider style={styles.divider} />
           <Text style={[styles.welcomeParagraph, { color: colors.onSurfaceVariant, ...fonts.bodyLarge }]}>
             Monitor system activities, manage user roles, and maintain platform efficiency. Access analytics, logs, and control permissions in real-time.

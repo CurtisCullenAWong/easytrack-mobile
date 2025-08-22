@@ -116,6 +116,7 @@ const ContractsMade = ({ navigation }) => {
           )
         `)
         .eq('airline_id', user.id)
+        .in('contract_status_id', [1, 3, 4])
         .order('created_at', { ascending: false })
 
       if (error) throw error

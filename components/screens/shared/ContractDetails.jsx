@@ -1,115 +1,10 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { View, ScrollView, StyleSheet, RefreshControl, Image, Dimensions } from 'react-native'
-import { Text, Card, Divider, useTheme, Appbar, ProgressBar } from 'react-native-paper'
+import { Text, Card, Divider, useTheme, Appbar } from 'react-native-paper'
 import { useFocusEffect } from '@react-navigation/native'
-import Constants from 'expo-constants'
 import { supabase } from '../../../lib/supabase'
 
 const { width } = Dimensions.get('window')
-const GOOGLE_MAPS_API_KEY = Constants.expoConfig.extra.googleMapsPlacesApiKey
-
-const calculateRouteDetails = async (origin, destination) => {
-    if (!origin || !destination) return { distance: null, duration: null }
-    
-    try {
-        const response = await fetch(
-            `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&key=${GOOGLE_MAPS_API_KEY}`
-        )
-        const data = await response.json()
-        
-        if (data.routes && data.routes.length > 0) {
-            const route = data.routes[0].legs[0]
-            return {
-                distance: route.distance.value / 1000, // Convert meters to kilometers
-                duration: route.duration.value // Duration in seconds
-            }
-        }
-        return { distance: null, duration: null }
-    } catch (error) {
-        console.error('Error calculating route:', error)
-        return { distance: null, duration: null }
-    }
-}
-
-const formatDuration = (seconds) => {
-    if (!seconds) return 'Calculating...'
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    
-    if (hours === 0) {
-        return `${minutes} min`
-    } else if (minutes === 0) {
-        return `${hours} hr`
-    } else {
-        return `${hours} hr ${minutes} min`
-    }
-}
-
-// ProgressMeter component
-const ProgressMeter = ({ colors, contractData }) => {
-    const [routeDetails, setRouteDetails] = useState({ distance: null, duration: null })
-    const [totalRouteDetails, setTotalRouteDetails] = useState({ distance: null, duration: null })
-
-    const parseGeometry = (geoString) => {
-        if (!geoString) return null
-        try {
-            if (typeof geoString === 'string') {
-                const coords = geoString.replace('POINT(', '').replace(')', '').split(' ')
-                return {
-                    longitude: parseFloat(coords[0]),
-                    latitude: parseFloat(coords[1]),
-                }
-            } else if (typeof geoString === 'object' && geoString.coordinates) {
-                return {
-                    longitude: parseFloat(geoString.coordinates[0]),
-                    latitude: parseFloat(geoString.coordinates[1]),
-                }
-            }
-        } catch (error) {
-            console.error('Error parsing geometry:', error)
-        }
-        return null
-    }
-
-    const pickupCoords = parseGeometry(contractData?.pickup_location_geo)
-    const currentCoords = parseGeometry(contractData?.current_location_geo)
-    const dropOffCoords = parseGeometry(contractData?.drop_off_location_geo)
-
-    useEffect(() => {
-        const fetchRouteDetails = async () => {
-            if (currentCoords && dropOffCoords) {
-                const details = await calculateRouteDetails(currentCoords, dropOffCoords)
-                setRouteDetails(details)
-            }
-            if (pickupCoords && dropOffCoords) {
-                const totalDetails = await calculateRouteDetails(pickupCoords, dropOffCoords)
-                setTotalRouteDetails(totalDetails)
-            }
-        }
-        fetchRouteDetails()
-    }, [currentCoords, dropOffCoords, pickupCoords])
-
-    const progress = totalRouteDetails.distance ? 
-        Math.max(0, Math.min(1, 1 - (routeDetails.distance / totalRouteDetails.distance))) : 0
-
-    return (
-        <View style={styles.progressContainer}>
-            <View style={styles.progressInfo}>
-                <Text style={[styles.progressText, { color: colors.primary }]}>
-                    Distance Remaining: {routeDetails.distance ? `${routeDetails.distance.toFixed(1)} km, ` : 'Calculating...'}
-                </Text>
-                <Text style={[styles.progressText, { color: colors.primary }]}>
-                    ETA: {formatDuration(routeDetails.duration)}
-                </Text>
-            </View>
-            <ProgressBar
-                progress={progress}
-                color={colors.primary}
-                style={styles.progressBar}
-            />
-        </View>
-    )
-}
 
 // Info Row Component
 const InfoRow = ({ label, value, colors, fonts, style }) => (
@@ -303,10 +198,6 @@ const ContractDetails = ({ navigation, route }) => {
                                 Location Tracking
                             </Text>
                             <Divider style={{ marginBottom: 10 }} />
-                            <ProgressMeter
-                                colors={colors}
-                                contractData={contractData}
-                            />
                             <InfoRow 
                                 label="Pickup Location:" 
                                 value={contractData.pickup_location} 

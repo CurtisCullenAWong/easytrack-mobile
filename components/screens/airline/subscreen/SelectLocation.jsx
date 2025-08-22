@@ -2,7 +2,7 @@ import 'react-native-get-random-values'
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { View, StyleSheet, ScrollView, Dimensions, ActivityIndicator } from 'react-native'
 import { Text, Button, Appbar, Surface, useTheme, IconButton, Divider } from 'react-native-paper'
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import * as Location from 'expo-location'
 import GooglePlacesTextInput from 'react-native-google-places-textinput'
 import { GOOGLE_MAPS_PLACES_API_KEY } from '@env'
@@ -183,12 +183,13 @@ const SelectLocation = ({ navigation }) => {
                 <MapView
                   ref={mapRef}
                   style={styles.map}
-                  provider={PROVIDER_GOOGLE}
+                  provider={PROVIDER_DEFAULT}
                   initialRegion={{ ...INITIAL_CENTER, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
                   onRegionChangeComplete={handleRegionChange}
                   maxZoomLevel={18}
                   minZoomLevel={5}
                   showsCompass
+                  showsUserLocation={true}
                 >
                   <Marker
                     coordinate={{ latitude: selectedLocation.lat, longitude: selectedLocation.lng }}
