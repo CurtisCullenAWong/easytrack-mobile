@@ -5,7 +5,7 @@ import { Text, Button, Card, Divider, IconButton, useTheme, Searchbar, Menu, Dia
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 
-const ContractsMade = ({ navigation }) => {
+const BookingList = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   const [currentTime, setCurrentTime] = useState('')
@@ -161,11 +161,13 @@ const ContractsMade = ({ navigation }) => {
 
   const filteredAndSortedContracts = contracts
     .filter(contract => {
-      const searchValue = String(
-        searchColumn === 'owner_first_name' || searchColumn === 'case_number'
-          ? contract[searchColumn] || ''
-          : contract[searchColumn] || ''
-      ).toLowerCase()
+      let fieldValue = ''
+      if (searchColumn === 'status') {
+        fieldValue = contract.contract_status?.status_name || ''
+      } else {
+        fieldValue = contract[searchColumn] || ''
+      }
+      const searchValue = String(fieldValue).toLowerCase()
       const query = searchQuery.toLowerCase()
       return searchValue.includes(query)
     })
@@ -381,21 +383,6 @@ const ContractsMade = ({ navigation }) => {
         </Text>
       </Surface>
 
-      {/* Search Section */}
-      <Surface style={[styles.searchSurface, { backgroundColor: colors.surface }]} elevation={1}>
-        <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
-          Search & Filter
-        </Text>
-        <Searchbar
-          placeholder={`Search by ${filterOptions.find(opt => opt.value === searchColumn)?.label}`}
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-          style={[styles.searchbar, { backgroundColor: colors.surfaceVariant }]}
-          iconColor={colors.onSurfaceVariant}
-          inputStyle={[styles.searchInput, { color: colors.onSurfaceVariant }]}
-        />
-      </Surface>
-
       {/* Filters Section */}
       <Surface style={[styles.filtersSurface, { backgroundColor: colors.surface }]} elevation={1}>
         <View style={styles.filtersRow}>
@@ -520,7 +507,20 @@ const ContractsMade = ({ navigation }) => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {SnackbarElement}
-      
+      {/* Search Section */}
+      <Surface style={[styles.searchSurface, { backgroundColor: colors.surface }]} elevation={1}>
+        <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
+          Search & Filter
+        </Text>
+        <Searchbar
+          placeholder={`Search by ${filterOptions.find(opt => opt.value === searchColumn)?.label}`}
+          onChangeText={setSearchQuery}
+          value={searchQuery}
+          style={[styles.searchbar, { backgroundColor: colors.surfaceVariant }]}
+          iconColor={colors.onSurfaceVariant}
+          inputStyle={[styles.searchInput, { color: colors.onSurfaceVariant }]}
+        />
+      </Surface>
       <FlatList
         data={filteredAndSortedContracts}
         keyExtractor={(item) => item.id.toString()}
@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
   },
   searchSurface: {
     marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 8,
     padding: 16,
     borderRadius: 12,
   },
@@ -739,4 +739,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default ContractsMade
+export default BookingList

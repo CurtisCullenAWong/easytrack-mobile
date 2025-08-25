@@ -17,6 +17,7 @@ import {
   Divider,
   Card,
   Appbar,
+  Icon,
 } from "react-native-paper"
 import { supabase } from "../../../lib/supabase"
 import { useFocusEffect } from "@react-navigation/native"
@@ -60,14 +61,14 @@ const ViewMessage = ({ navigation, route }) => {
   // Mark unread messages as read when opening chat
   useFocusEffect(
     useCallback(() => {
-      if (!currentUser || !otherUser) return
+      if (!currentUser || !otherUser || !statusMap.read) return
       supabase
         .from("messages")
-        .update({ status_id: 3, read_at: new Date().toISOString() })
+        .update({ status_id: statusMap.read, read_at: new Date().toISOString() })
         .eq("sender_id", otherUserId)
         .eq("receiver_id", currentUser.id)
         .is("read_at", null)
-    }, [currentUser, otherUser, otherUserId])
+    }, [currentUser, otherUser, otherUserId, statusMap.read])
   )
 
   // ------------------------------
@@ -109,11 +110,11 @@ const ViewMessage = ({ navigation, route }) => {
       const map = {}
       const labels = {}
       (data || []).forEach((row) => {
-        const key = (row.status || "").toLowerCase()
         labels[row.id] = row.status
-        if (key.includes("sent")) map.sent = row.id
-        if (key.includes("deliver")) map.delivered = row.id
-        if (key.includes("read") || key.includes("seen")) map.read = row.id
+        // Map specific status IDs: 1 = sent, 2 = delivered, 3 = read
+        if (row.id === 1) map.sent = row.id
+        if (row.id === 2) map.delivered = row.id
+        if (row.id === 3) map.read = row.id
       })
 
       setStatusMap(map)
@@ -174,10 +175,12 @@ const ViewMessage = ({ navigation, route }) => {
             setMessages((prev) => [...prev, msg])
 
             if (msg.receiver_id === currentUser.id) {
-              if (statusMap.delivered && !msg.read_at) {
+              if (!msg.read_at) {
+                // Use fallback value if status map is not loaded: 2 = delivered
+                const deliveredStatus = statusMap.delivered || 2
                 supabase
                   .from("messages")
-                  .update({ status_id: statusMap.delivered })
+                  .update({ status_id: deliveredStatus })
                   .eq("id", msg.id)
               }
               markMessagesAsRead()
@@ -214,7 +217,8 @@ const ViewMessage = ({ navigation, route }) => {
   const markMessagesAsRead = async () => {
     try {
       const payload = { read_at: new Date().toISOString() }
-      if (statusMap.read) payload.status_id = statusMap.read
+      // Use fallback value if status map is not loaded: 3 = read
+      payload.status_id = statusMap.read || 3
 
       await supabase
         .from("messages")
@@ -236,7 +240,8 @@ const ViewMessage = ({ navigation, route }) => {
         receiver_id: otherUser.id,
         content: newMessage.trim(),
       }
-      if (statusMap.sent) payload.status_id = statusMap.sent
+      // Use fallback value if status map is not loaded: 1 = sent
+      payload.status_id = statusMap.sent || 1
 
       await supabase.from("messages").insert(payload)
       setNewMessage("")
@@ -278,6 +283,36 @@ const ViewMessage = ({ navigation, route }) => {
       ? { uri: user.pfp_id }
       : require("../../../assets/profile-placeholder.png")
 
+  const getStatusColor = (statusId, colors, isOwn) => {
+    if (!isOwn) return colors.onSurfaceVariant
+    
+    switch (statusId) {
+      case 1: // Sent
+        return colors.onPrimary
+      case 2: // Delivered
+        return colors.onPrimary
+      case 3: // Read
+        return colors.onPrimary
+      default:
+        return colors.onPrimary
+    }
+  }
+
+  const getStatusIcon = (statusId, isOwn) => {
+    if (!isOwn) return null
+    
+    switch (statusId) {
+      case 1: // Sent
+        return "check"
+      case 2: // Delivered
+        return "check-all"
+      case 3: // Read
+        return "check-all"
+      default:
+        return null
+    }
+  }
+
   // ------------------------------
   // RENDER
   // ------------------------------
@@ -290,8 +325,13 @@ const ViewMessage = ({ navigation, route }) => {
         formatDateHeader(item.created_at)
 
     const getStatusLabel = () => {
-      if (item.read_at) return statusLabelById[statusMap.read] || ""
+      if (item.read_at) return statusLabelById[statusMap.read] || "Read"
       return item.status_id ? statusLabelById[item.status_id] || "" : ""
+    }
+
+    const getCurrentStatusId = () => {
+      if (item.read_at) return statusMap.read || 3
+      return item.status_id || 1
     }
 
     return (
@@ -345,20 +385,28 @@ const ViewMessage = ({ navigation, route }) => {
                 >
                   {formatTime(item.created_at)}
                 </Text>
-                {isOwn && (
-                  <Text
-                    style={[
-                      styles.messageStatus,
-                      {
-                        color: isOwn
-                          ? colors.onPrimary
-                          : colors.onSurfaceVariant,
-                        ...fonts.labelSmall,
-                      },
-                    ]}
-                  >
-                    {getStatusLabel()}
-                  </Text>
+                {getStatusLabel() && (
+                  <View style={styles.statusContainer}>
+                    {getStatusIcon(getCurrentStatusId(), isOwn) && (
+                      <Icon
+                        source={getStatusIcon(getCurrentStatusId(), isOwn)}
+                        size={12}
+                        color={getStatusColor(getCurrentStatusId(), colors, isOwn)}
+                        style={styles.statusIcon}
+                      />
+                    )}
+                    <Text
+                      style={[
+                        styles.messageStatus,
+                        {
+                          color: getStatusColor(getCurrentStatusId(), colors, isOwn),
+                          ...fonts.labelSmall,
+                        },
+                      ]}
+                    >
+                      {getStatusLabel()}
+                    </Text>
+                  </View>
                 )}
               </View>
             </Card.Content>
@@ -492,7 +540,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   messageTime: { alignSelf: "flex-end" },
+  statusContainer: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    gap: 4 
+  },
   messageStatus: { alignSelf: "flex-end" },
+  statusIcon: { marginRight: 2 },
 
   divider: { marginHorizontal: 16 },
 

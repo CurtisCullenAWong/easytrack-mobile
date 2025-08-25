@@ -638,7 +638,7 @@ const AdminBookingManagement = ({ navigation }) => {
                             key={idx}
                             style={[styles.tableColumn, { width: width || COLUMN_WIDTH, justifyContent: 'center' }]}
                           >
-                            <Text style={[styles.cellText, { color: colors.onSurface }, fonts.bodyMedium]}>
+                            <Text style={[styles.cellText, { color: colors.onSurface }, fonts.bodyMedium]} selectable>
                               {contract[key]}
                             </Text>
                           </DataTable.Cell>

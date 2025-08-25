@@ -16,6 +16,7 @@ import {
   ActivityIndicator,
   FAB,
   TextInput,
+  Icon,
 } from "react-native-paper"
 import { supabase } from "../../../lib/supabase"
 import Header from "../../customComponents/Header"
@@ -44,12 +45,40 @@ const getAvatarSource = (user) =>
     ? { uri: user.pfp_id }
     : require("../../../assets/profile-placeholder.png")
 
+const getStatusColor = (statusId, colors, isOwn) => {
+  if (!isOwn) return colors.onSurfaceVariant
+
+  switch (statusId) {
+    case 1: // Sent
+      return colors.onSurfaceVariant
+    case 2: // Delivered
+      return colors.primary
+    case 3: // Read
+      return colors.primary
+    default:
+      return colors.onSurfaceVariant
+  }
+}
+
+const getStatusIcon = (statusId, isOwn) => {
+  if (!isOwn) return null
+
+  switch (statusId) {
+    case 1: // Sent
+      return "check"
+    case 2: // Delivered
+      return "check-all"
+    case 3: // Read
+      return "check-all"
+    default:
+      return null
+  }
+}
+
 // --- UI Components ---
 const EmptyState = ({ title, subtitle, colors }) => (
   <View style={styles.emptyContainer}>
-    <Text style={[styles.emptyText, { color: colors.onBackground }]}>
-      {title}
-    </Text>
+    <Text style={[styles.emptyText, { color: colors.onBackground }]}>{title}</Text>
     <Text style={[styles.emptySubtext, { color: colors.onSurfaceVariant }]}>
       {subtitle}
     </Text>
@@ -92,15 +121,11 @@ const ConversationCard = ({
               ]}
             >
               {getDisplayName(conversation.otherUser)}
-            <Text
-              style={[
-                { color: colors.onSurfaceVariant, ...fonts.bodySmall }
-              ]}
-            >
-              {' • '+conversation.otherUser?.roles?.role_name || ""}
+              <Text style={[{ color: colors.onSurfaceVariant, ...fonts.bodySmall }]}>
+                {" • " + conversation.otherUser?.roles?.role_name || ""}
+              </Text>
             </Text>
-            </Text>
-            
+
             <View style={styles.previewRow}>
               <Text
                 numberOfLines={1}
@@ -118,15 +143,39 @@ const ConversationCard = ({
                 {conversation.lastMessage}
               </Text>
 
-              {!!conversation.lastStatus && conversation.isOwnLast && (
-                <Text
-                  style={[
-                    styles.statusText,
-                    { color: colors.onSurfaceVariant, ...fonts.labelSmall },
-                  ]}
-                >
-                  {conversation.lastStatus}
-                </Text>
+              {conversation.lastStatus && (
+                <View style={styles.statusContainer}>
+                  {getStatusIcon(conversation.lastStatusId, conversation.isOwnLast) && (
+                    <Icon
+                      source={getStatusIcon(
+                        conversation.lastStatusId,
+                        conversation.isOwnLast
+                      )}
+                      size={12}
+                      color={getStatusColor(
+                        conversation.lastStatusId,
+                        colors,
+                        conversation.isOwnLast
+                      )}
+                      style={styles.statusIcon}
+                    />
+                  )}
+                  <Text
+                    style={[
+                      styles.statusText,
+                      {
+                        color: getStatusColor(
+                          conversation.lastStatusId,
+                          colors,
+                          conversation.isOwnLast
+                        ),
+                        ...fonts.labelSmall,
+                      },
+                    ]}
+                  >
+                    {conversation.lastStatus}
+                  </Text>
+                </View>
               )}
             </View>
           </View>
@@ -186,6 +235,7 @@ const Messages = ({ navigation }) => {
   const [currentUser, setCurrentUser] = useState(null)
   const [statusMap, setStatusMap] = useState({})
   const [statusLabelById, setStatusLabelById] = useState({})
+  const [statusMapLoaded, setStatusMapLoaded] = useState(false)
   const [search, setSearch] = useState("")
 
   useEffect(() => {
@@ -195,11 +245,11 @@ const Messages = ({ navigation }) => {
 
   useFocusEffect(
     useCallback(() => {
-      if (!currentUser) return
+      if (!currentUser || !statusMapLoaded) return
       markSentAsDeliveredForMe().finally(fetchConversations)
       const unsubscribe = subscribeToMessages()
       return () => unsubscribe?.()
-    }, [currentUser])
+    }, [currentUser, statusMapLoaded])
   )
 
   // --- API Calls ---
@@ -211,21 +261,29 @@ const Messages = ({ navigation }) => {
 
   const fetchStatusMap = async () => {
     try {
-      const { data } = await supabase.from("messages_status").select("id, status")
+      const { data, error } = await supabase
+        .from("messages_status")
+        .select("id, status")
+      if (error) throw error
       if (!data) return
+
       const labels = {}
       const map = {}
       data.forEach((row) => {
         labels[row.id] = row.status
-        const key = row.status.toLowerCase()
-        if (key.includes("sent")) map.sent = row.id
-        if (key.includes("deliver")) map.delivered = row.id
-        if (key.includes("read") || key.includes("seen")) map.read = row.id
+        if (row.id === 1) map.sent = row.id
+        if (row.id === 2) map.delivered = row.id
+        if (row.id === 3) map.read = row.id
       })
       setStatusLabelById(labels)
       setStatusMap(map)
+      setStatusMapLoaded(true)
     } catch (e) {
       console.error("Status map error:", e)
+      // Set fallback status map on error
+      setStatusMap({ sent: 1, delivered: 2, read: 3 })
+      setStatusLabelById({ 1: "Sent", 2: "Delivered", 3: "Read" })
+      setStatusMapLoaded(true)
     }
   }
 
@@ -248,7 +306,7 @@ const Messages = ({ navigation }) => {
         `)
         .or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
         .order("created_at", { ascending: false })
-  
+
       if (error) throw error
       setConversations(buildConversationMap(messages))
     } catch (e) {
@@ -260,11 +318,14 @@ const Messages = ({ navigation }) => {
 
   const markSentAsDeliveredForMe = async () => {
     try {
+      const sentStatus = statusMap.sent || 1
+      const deliveredStatus = statusMap.delivered || 2
+
       await supabase
         .from("messages")
-        .update({ status_id: statusMap.delivered })
+        .update({ status_id: deliveredStatus })
         .eq("receiver_id", currentUser.id)
-        .eq("status_id", statusMap.sent)
+        .eq("status_id", sentStatus)
     } catch (e) {
       console.error("Delivery update error:", e)
     }
@@ -273,7 +334,8 @@ const Messages = ({ navigation }) => {
   const subscribeToMessages = () => {
     const channel = supabase
       .channel(`messages-${currentUser.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () =>
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages",
+        filter: `receiver_id=eq.${currentUser.id}` }, () =>
         fetchConversations()
       )
       .subscribe()
@@ -284,11 +346,18 @@ const Messages = ({ navigation }) => {
   const buildConversationMap = (messages) => {
     const map = new Map()
     messages.forEach((msg) => {
-      const otherUserId = msg.sender_id === currentUser.id ? msg.receiver_id : msg.sender_id
-      const otherUser = msg.sender_id === currentUser.id ? msg.receiver : msg.sender
+      const otherUserId =
+        msg.sender_id === currentUser.id ? msg.receiver_id : msg.sender_id
+      const otherUser =
+        msg.sender_id === currentUser.id ? msg.receiver : msg.sender
       const isOwn = msg.sender_id === currentUser.id
       const isUnread = msg.receiver_id === currentUser.id && !msg.read_at
-      const statusLabel = statusLabelById[msg.status_id] || ""
+      
+      // Get status label with fallback
+      let statusLabel = ""
+      if (msg.status_id) {
+        statusLabel = statusLabelById[msg.status_id] || getFallbackStatusLabel(msg.status_id)
+      }
 
       if (!map.has(otherUserId)) {
         map.set(otherUserId, {
@@ -299,7 +368,8 @@ const Messages = ({ navigation }) => {
           isOwnLast: isOwn,
           isRead: !isUnread,
           unreadCount: isUnread ? 1 : 0,
-          lastStatus: isOwn ? statusLabel : "",
+          lastStatus: statusLabel,
+          lastStatusId: msg.status_id,
         })
       } else {
         const convo = map.get(otherUserId)
@@ -309,13 +379,23 @@ const Messages = ({ navigation }) => {
             lastMessageTime: msg.created_at,
             isOwnLast: isOwn,
             isRead: !isUnread,
-            lastStatus: isOwn ? statusLabel : "",
+            lastStatus: statusLabel,
+            lastStatusId: msg.status_id,
           })
         }
         if (isUnread) convo.unreadCount++
       }
     })
     return Array.from(map.values())
+  }
+
+  const getFallbackStatusLabel = (statusId) => {
+    switch (statusId) {
+      case 1: return "Sent"
+      case 2: return "Delivered"
+      case 3: return "Read"
+      default: return ""
+    }
   }
 
   const onRefresh = async () => {
@@ -335,12 +415,14 @@ const Messages = ({ navigation }) => {
   })
 
   // --- Render ---
-  if (loading) {
+  if (loading || !statusMapLoaded) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+      <View
+        style={[styles.loadingContainer, { backgroundColor: colors.background }]}
+      >
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={{ color: colors.onBackground, marginTop: 16 }}>
-          Loading conversations...
+          {!statusMapLoaded ? "Loading status data..." : "Loading conversations..."}
         </Text>
       </View>
     )
@@ -365,7 +447,9 @@ const Messages = ({ navigation }) => {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: 88 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         showsVerticalScrollIndicator={false}
       >
         {filtered.length === 0 ? (
@@ -415,11 +499,28 @@ const styles = StyleSheet.create({
   cardContent: { flexDirection: "row", alignItems: "center" },
   cardTextContainer: { marginLeft: 12, flex: 1 },
   nameText: { flex: 1 },
-  previewRow: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
-  metaContainer: { alignItems: "flex-end", justifyContent: "center", marginLeft: 8, gap: 6 },
-  readIndicator: { borderRadius: 10, paddingHorizontal: 8, height: 20, justifyContent: "center" },
+  previewRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  metaContainer: {
+    alignItems: "flex-end",
+    justifyContent: "center",
+    marginLeft: 8,
+    gap: 6,
+  },
+  readIndicator: {
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    height: 20,
+    justifyContent: "center",
+  },
   readIndicatorText: { fontSize: 12, fontWeight: "bold" },
   lastMessage: { flex: 1 },
+  statusContainer: { marginLeft: 8, flexDirection: "row", alignItems: "center", gap: 4 },
+  statusText: { fontSize: 12, fontWeight: "500" },
+  statusIcon: { marginRight: 2 },
   timeText: { marginLeft: 8 },
   divider: { marginHorizontal: 10 },
   fab: { position: "absolute", right: 16, bottom: 24 },

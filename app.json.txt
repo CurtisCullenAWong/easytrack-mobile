@@ -1,0 +1,69 @@
+{
+  "expo": {
+    "name": "EasyTrack",
+    "slug": "easytrack",
+    "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "android": {
+      "package": "com.thewalkingdev_numoa.EasyTrack",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyB2fvlh9AZvzqY82xWrZ13aRPh2F3iNMhQ"
+        }
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "https",
+              "host": "easytrack.com",
+              "pathPrefix": "/"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "updates": {
+      "enabled": true,
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/4f7faf57-3a1d-4031-ba72-c5d5b5b084de"
+    },
+    "scheme": "easytrack",
+    "owner": "thewalkingdev_numoa",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F3F8F2",
+      "dark": {
+        "image": "./assets/images/splash.png",
+        "backgroundColor": "#121712"
+      }
+    },
+    "newArchEnabled": true,
+    "extra": {
+      "eas": {
+        "projectId": "0739b4b6-b97b-48a7-97d7-93ca4ab06257"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "EasyTrack",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "associatedDomains": [
+        "applinks:easytrack.com"        
+      ]
+    }
+  }
+}

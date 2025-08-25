@@ -35,6 +35,42 @@ const BookingHistory = ({ navigation }) => {
   }, [statusFilter, searchQuery])
 
 
+  // Listen to realtime changes for contracts related to the current user
+  useEffect(() => {
+    let activeChannel
+
+    const setupSubscription = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      activeChannel = supabase
+        .channel(`booking_history_contracts_${user.id}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'contracts', filter: `airline_id=eq.${user.id}` },
+          () => {
+            // Refetch whenever a relevant contract changes
+            fetchContracts()
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'contracts', filter: `delivery_id=eq.${user.id}` },
+          () => {
+            fetchContracts()
+          }
+        )
+        .subscribe()
+    }
+
+    setupSubscription()
+
+    return () => {
+      if (activeChannel) supabase.removeChannel(activeChannel)
+    }
+  }, [])
+
+
   const fetchStatusOptions = async () => {
     try {
       const { data, error } = await supabase

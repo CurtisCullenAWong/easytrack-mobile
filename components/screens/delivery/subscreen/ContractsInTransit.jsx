@@ -527,21 +527,6 @@ const ContractsInTransit = ({ navigation }) => {
         </Text>
       </Surface>
 
-      {/* Search Section */}
-      <Surface style={[styles.searchSurface, { backgroundColor: colors.surface }]} elevation={1}>
-        <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
-          Search & Filter
-        </Text>
-        <Searchbar
-          placeholder={`Search by ${FILTER_OPTIONS.find(opt => opt.value === searchColumn)?.label}`}
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-          style={[styles.searchbar, { backgroundColor: colors.surfaceVariant }]}
-          iconColor={colors.onSurfaceVariant}
-          inputStyle={[styles.searchInput, { color: colors.onSurfaceVariant }]}
-        />
-      </Surface>
-
       {/* Filters Section */}
       <Surface style={[styles.filtersSurface, { backgroundColor: colors.surface }]} elevation={1}>
         <View style={styles.filtersRow}>
@@ -666,7 +651,20 @@ const ContractsInTransit = ({ navigation }) => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {SnackbarElement}
-      
+      {/* Search Section */}
+      <Surface style={[styles.searchSurface, { backgroundColor: colors.surface }]} elevation={1}>
+        <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
+          Search & Filter
+        </Text>
+        <Searchbar
+          placeholder={`Search by ${FILTER_OPTIONS.find(opt => opt.value === searchColumn)?.label}`}
+          onChangeText={setSearchQuery}
+          value={searchQuery}
+          style={[styles.searchbar, { backgroundColor: colors.surfaceVariant }]}
+          iconColor={colors.onSurfaceVariant}
+          inputStyle={[styles.searchInput, { color: colors.onSurfaceVariant }]}
+        />
+      </Surface>
       <FlatList
         data={filteredAndSortedContracts}
         keyExtractor={(item) => item.id.toString()}
@@ -736,7 +734,7 @@ const styles = StyleSheet.create({
   },
   searchSurface: {
     marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 8,
     padding: 16,
     borderRadius: 12,
   },

@@ -107,10 +107,10 @@ const AdminNavigator = ({ navigation }) => {
       key: 'transactions',
       icon: 'package',
       items: [
-        { icon: 'account-group-outline', label: 'User Management', screen: 'UserManagement' },
         { icon: 'map-marker-path', label: 'Booking Management', screen: 'AdminBookingManagement' },
-        { icon: 'bank-transfer', label: 'Transaction Management', screen: 'TransactionManagement' },
         { icon: 'map', label: 'Track Luggage', screen: 'TrackLuggage' },
+        { icon: 'bank-transfer', label: 'Transaction Management', screen: 'TransactionManagement' },
+        { icon: 'account-group-outline', label: 'User Management', screen: 'UserManagement' },
       ],
     },
     {
@@ -118,7 +118,7 @@ const AdminNavigator = ({ navigation }) => {
       key: 'results',
       icon: 'chart-bar',
       items: [
-        { icon: 'history', label: 'Booking History (Completed)', screen: 'AdminBookingHistory' },
+        { icon: 'history', label: 'Booking History', screen: 'AdminBookingHistory' },
         { icon: 'chart-line', label: 'Performance Statistics', screen: 'PerformanceStatistics' },
       ],
     },

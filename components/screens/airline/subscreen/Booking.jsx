@@ -812,6 +812,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
+    gap:5,
     marginTop: 24,
     marginBottom: 32,
   },
