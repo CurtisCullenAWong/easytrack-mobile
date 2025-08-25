@@ -148,7 +148,6 @@ const ContractsInTransit = ({ navigation }) => {
       if (countError) throw countError
       count > 0 ? await startTracking() : await stopTracking()
     } catch (error) {
-      console.error('Error managing location tracking:', error)
       showSnackbar('Error managing location tracking: ' + error.message)
     }
   }
@@ -179,7 +178,6 @@ const ContractsInTransit = ({ navigation }) => {
       if (error) throw error
       setContracts(data || [])
     } catch (error) {
-      console.error('Error loading contracts:', error)
       showSnackbar('Error loading contracts: ' + error.message)
     } finally {
       setLoading(false)
@@ -348,7 +346,6 @@ const ContractsInTransit = ({ navigation }) => {
         showSnackbar('Contract cancelled successfully', true)
       }
     } catch (error) {
-      console.error('Error updating contract:', error)
       showSnackbar('Error updating contract: ' + error.message)
     } finally {
       setActionLoading(false)

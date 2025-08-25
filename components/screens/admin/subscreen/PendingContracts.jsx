@@ -204,12 +204,15 @@ const SearchFilterSection = ({
                   contentStyle={styles.buttonContent}
                   labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
                 >
-                  {filters.selectedCorporation || 'All Corporations'}
+                  {filters.selectedCorporation || 'Corporations'}
                 </Button>
               }
               options={[
                 { label: 'All Corporations', value: '' },
-                ...corporations.map(corp => ({ label: corp.corporation_name, value: corp.corporation_name }))
+                ...corporations.slice(0, 2).map(corp => ({
+                  label: corp.corporation_name,
+                  value: corp.corporation_name
+                }))
               ]}
               selectedValue={filters.selectedCorporation}
               onSelect={(value) => onFiltersChange({ selectedCorporation: value })}

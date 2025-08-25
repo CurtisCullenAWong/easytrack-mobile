@@ -35,13 +35,13 @@ const parseGeometry = (geoString) => {
             }
         }
     } catch (error) {
-        console.error('Error parsing geometry:', error)
+        // Surface parse errors via snackbar where available at call sites
     }
     return null
 }
 
 // Map Component
-const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors, contractStatusId }) => {
+const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors, contractStatusId, showSnackbar }) => {
   const mapRef = useRef(null)
 
   const centerOnLocation = (coords) => {
@@ -70,9 +70,7 @@ const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
         } : undefined}
-        showsCompass
         showsScale
-        showsTraffic
         loadingEnabled
         maxZoomLevel={18}
         minZoomLevel={5}
@@ -113,7 +111,7 @@ const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors
             pinColor={colors.error}
           />
         )}
-        {/* {contractStatusId === 4 && currentLocationCoords && dropOffCoords && (
+        {contractStatusId === 4 && currentLocationCoords && dropOffCoords && (
         <MapViewDirections
             origin={currentLocationCoords}
             destination={dropOffCoords}
@@ -121,9 +119,11 @@ const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors
             strokeWidth={4}
             strokeColor={colors.primary}
             optimizeWaypoints
-            onError={(err) => console.error("Directions error:", err)}
+            onError={(err) => {
+              showSnackbar("Unable to fetch route from Google Maps API")
+            }}
         />
-        )} */}
+        )}
       </MapView>
 
       <View style={styles.mapButtons}>
@@ -162,72 +162,76 @@ const InfoRow = ({ label, value, colors, fonts, style }) => (
 )
 
 // ProgressMeter component (using Directions API)
-// const ProgressMeter = ({ colors, contractData }) => {
-//   const [distanceRemaining, setDistanceRemaining] = useState(null)
-//   const [etaRemaining, setEtaRemaining] = useState(null)
-//   const [totalDistance, setTotalDistance] = useState(null)
-//   const [progress, setProgress] = useState(0)
+const ProgressMeter = ({ colors, contractData, showSnackbar }) => {
+  const [distanceRemaining, setDistanceRemaining] = useState(null)
+  const [etaRemaining, setEtaRemaining] = useState(null)
+  const [totalDistance, setTotalDistance] = useState(null)
+  const [progress, setProgress] = useState(0)
 
-//   const pickupCoords = parseGeometry(contractData?.pickup_location_geo)
-//   const currentCoords = parseGeometry(contractData?.current_location_geo)
-//   const dropOffCoords = parseGeometry(contractData?.drop_off_location_geo)
+  const pickupCoords = parseGeometry(contractData?.pickup_location_geo)
+  const currentCoords = parseGeometry(contractData?.current_location_geo)
+  const dropOffCoords = parseGeometry(contractData?.drop_off_location_geo)
 
-//   if (contractData?.contract_status_id !== 4) return null
+  if (contractData?.contract_status_id !== 4) return null
 
-//   return (
-//     <View style={styles.progressContainer}>
-//       {/* Pickup → Dropoff (total baseline) */}
-//       {pickupCoords && dropOffCoords && (
-//         <MapViewDirections
-//           origin={pickupCoords}
-//           destination={dropOffCoords}
-//           apikey={GOOGLE_MAPS_API_KEY}
-//           strokeWidth={0}
-//           onReady={(result) => setTotalDistance(result.distance)}
-//           onError={(err) => console.error("Total route error:", err)}
-//         />
-//       )}
+  return (
+    <View style={styles.progressContainer}>
+      {/* Pickup → Dropoff (total baseline) */}
+      {pickupCoords && dropOffCoords && (
+        <MapViewDirections
+          origin={pickupCoords}
+          destination={dropOffCoords}
+          apikey={GOOGLE_MAPS_API_KEY}
+          strokeWidth={0}
+          onReady={(result) => setTotalDistance(result.distance)}
+          onError={(err) => {
+            showSnackbar("Unable to fetch total route from Google Maps API")
+          }}
+        />
+      )}
 
-//       {/* Current → Dropoff (remaining) */}
-//       {currentCoords && dropOffCoords && (
-//         <MapViewDirections
-//           origin={currentCoords}
-//           destination={dropOffCoords}
-//           apikey={GOOGLE_MAPS_API_KEY}
-//           strokeWidth={0}
-//           onReady={(result) => {
-//             setDistanceRemaining(result.distance)
-//             setEtaRemaining(result.duration)
+      {/* Current → Dropoff (remaining) */}
+      {currentCoords && dropOffCoords && (
+        <MapViewDirections
+          origin={currentCoords}
+          destination={dropOffCoords}
+          apikey={GOOGLE_MAPS_API_KEY}
+          strokeWidth={0}
+          onReady={(result) => {
+            setDistanceRemaining(result.distance)
+            setEtaRemaining(result.duration)
 
-//             if (totalDistance) {
-//               const ratio = (totalDistance - result.distance) / totalDistance
-//               setProgress(Math.max(0, Math.min(1, ratio)))
-//             }
-//           }}
-//           onError={(err) => console.error("Remaining route error:", err)}
-//         />
-//       )}
+            if (totalDistance) {
+              const ratio = (totalDistance - result.distance) / totalDistance
+              setProgress(Math.max(0, Math.min(1, ratio)))
+            }
+          }}
+          onError={(err) => {
+            showSnackbar("Unable to fetch remaining route from Google Maps API")
+          }}
+        />
+      )}
 
-//       <View style={styles.progressInfo}>
-//         <Text style={[styles.progressText, { color: colors.primary }]}>
-//           Distance Remaining: {distanceRemaining ? `${distanceRemaining.toFixed(1)} km` : 'Calculating...'}
-//         </Text>
-//         <Text style={[styles.progressText, { color: colors.primary }]}>
-//         ETA: {etaRemaining ? `${Math.round(etaRemaining)} min` : 'Calculating...'}
-//         </Text>
-//       </View>
+      <View style={styles.progressInfo}>
+        <Text style={[styles.progressText, { color: colors.primary }]}>
+          Distance Remaining: {distanceRemaining ? `${distanceRemaining.toFixed(1)} km` : 'Calculating...'}
+        </Text>
+        <Text style={[styles.progressText, { color: colors.primary }]}>
+        ETA: {etaRemaining ? `${Math.round(etaRemaining)} min` : 'Calculating...'}
+        </Text>
+      </View>
 
-//       <ProgressBar
-//         progress={progress}
-//         color={colors.primary}
-//         style={styles.progressBar}
-//       />
-//     </View>
-//   )
-// }
+      <ProgressBar
+        progress={progress}
+        color={colors.primary}
+        style={styles.progressBar}
+      />
+    </View>
+  )
+}
 
 // Contract Info Component
-const ContractInfo = ({ contractData, colors, fonts }) => {
+const ContractInfo = ({ contractData, colors, fonts, showSnackbar }) => {
     const formatDate = (dateString) => {
         if (!dateString) return 'Not set'
         return new Date(dateString).toLocaleString('en-PH', {
@@ -247,23 +251,22 @@ const ContractInfo = ({ contractData, colors, fonts }) => {
         <Card style={[styles.contractCard, { backgroundColor: colors.surface }]}>
             {contractData.contract_status_id === 4 && (
                 <View>
-                    <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10, marginHorizontal:'2%' }]}>
+                    <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10, marginHorizontal:'5%' }]}>
                         Location Tracking
                     </Text>
                     <Divider style={{ marginBottom: 10 }} />
-                    {/* <ProgressMeter
+                    <ProgressMeter
                         colors={colors}
                         contractData={contractData}
-                    /> */}
-                    <InfoRow label="Pickup Location:" value={contractData.pickup_location} colors={colors} fonts={fonts.bodySmall} style={{ marginHorizontal: '2%' }} />
-                    <InfoRow label="Recent Location:" value={contractData.current_location} colors={colors} fonts={fonts.bodySmall} style={{ marginHorizontal: '2%' }} />
-                    <InfoRow label="Drop-Off Location:" value={contractData.drop_off_location} colors={colors} fonts={fonts.bodySmall} style={{ marginHorizontal: '2%' }} />
+                        showSnackbar={showSnackbar}
+                    />
                     <TrackingMap
-                    currentLocation={contractData.current_location_geo}
-                    dropOffLocation={contractData.drop_off_location_geo}
-                    deliveryProfile={contractData.delivery_profile}
-                    colors={colors}
-                    contractStatusId={contractData.contract_status_id}
+                      currentLocation={contractData.current_location_geo}
+                      dropOffLocation={contractData.drop_off_location_geo}
+                      deliveryProfile={contractData.delivery_profile}
+                      colors={colors}
+                      contractStatusId={contractData.contract_status_id}
+                      showSnackbar={showSnackbar}
                     />
                 </View>
             )}
@@ -382,7 +385,6 @@ const TrackLuggage = ({ navigation, route }) => {
             setContractData(data)
         } catch (error) {
             showSnackbar('Invalid tracking ID')
-            console.log(error.message)
             setContractData(null)
         } finally {
             setRefreshing(false)
@@ -447,7 +449,7 @@ const TrackLuggage = ({ navigation, route }) => {
                     />
                 </View>
 
-                <ContractInfo contractData={contractData} colors={colors} fonts={fonts} />
+                <ContractInfo contractData={contractData} colors={colors} fonts={fonts} showSnackbar={showSnackbar} />
 
                 <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={2}>
                     <Text style={[styles.surfaceText, { ...fonts.default, color: colors.onSurface }]}>
