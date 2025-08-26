@@ -8,6 +8,10 @@
     },
     "android": {
       "package": "com.thewalkingdev_numoa.EasyTrack",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#F3F8F2"
+      },
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyB2fvlh9AZvzqY82xWrZ13aRPh2F3iNMhQ"
@@ -40,7 +44,7 @@
     "newArchEnabled": true,
     "extra": {
       "eas": {
-        "projectId": "0739b4b6-b97b-48a7-97d7-93ca4ab06257"
+        "projectId": "b422706d-2b04-4b84-a7d8-c35b4ecd3bae"
       }
     },
     "ios": {
