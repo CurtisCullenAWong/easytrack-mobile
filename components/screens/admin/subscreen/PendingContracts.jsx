@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo, useRef } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import { ScrollView, StyleSheet, View, RefreshControl } from 'react-native'
 import {
@@ -438,6 +438,29 @@ const PendingContracts = ({ navigation }) => {
       fetchTransactions()
       fetchCorporations()
       resetSelection()
+    }, [])
+  )
+
+  // Realtime: subscribe while screen is focused
+  const subscriptionRef = useRef(null)
+  useFocusEffect(
+    useCallback(() => {
+      subscriptionRef.current = supabase
+        .channel('pending_contracts_admin')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'contracts' },
+          () => {
+            fetchTransactions()
+          }
+        )
+        .subscribe()
+
+      return () => {
+        if (subscriptionRef.current) {
+          subscriptionRef.current.unsubscribe()
+        }
+      }
     }, [])
   )
 

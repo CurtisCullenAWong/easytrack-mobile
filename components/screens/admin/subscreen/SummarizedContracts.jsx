@@ -17,7 +17,7 @@ const COLUMN_WIDTH = 180
 
 const SummarizedContracts = ({ navigation }) => {
   const { colors, fonts } = useTheme()
-  const { SnackbarElement } = useSnackbar()
+  const { showSnackbar, SnackbarElement } = useSnackbar()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchColumn, setSearchColumn] = useState('summary_id')
@@ -29,6 +29,7 @@ const SummarizedContracts = ({ navigation }) => {
   const [page, setPage] = useState(0)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [refreshing, setRefreshing] = useState(false)
+  const [actionMenuFor, setActionMenuFor] = useState(null)
 
   const filterOptions = [
     { label: 'Summary ID', value: 'summary_id' },
@@ -41,8 +42,8 @@ const SummarizedContracts = ({ navigation }) => {
   const columns = [
     { key: 'summary_id', label: 'Summary ID', width: COLUMN_WIDTH },
     { key: 'invoice_id', label: 'Invoice ID', width: COLUMN_WIDTH },
-    { key: 'total', label: 'Total', width: COLUMN_WIDTH },
     { key: 'summary_status', label: 'Summary Status', width: COLUMN_WIDTH },
+    { key: 'total', label: 'Total', width: COLUMN_WIDTH },
     { key: 'created_at', label: 'Created At', width: COLUMN_WIDTH },
     { key: 'due_date', label: 'Due Date', width: COLUMN_WIDTH },
   ]
@@ -96,6 +97,7 @@ const SummarizedContracts = ({ navigation }) => {
           summary_id: summaryId,
           invoice_id: transaction.summary?.invoice_id || 'N/A',
           summary_status: transaction.summary?.summary_status?.status_name || 'N/A',
+          summary_status_id: transaction.summary?.summary_status?.id ?? null,
           created_at: transaction.summary?.created_at ? new Date(transaction.summary.created_at).toLocaleString() : 'N/A',
           due_date: transaction.summary?.due_date ? new Date(transaction.summary.due_date).toLocaleString('en-US', {
             year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true
@@ -124,6 +126,31 @@ const SummarizedContracts = ({ navigation }) => {
     setRefreshing(true)
     fetchTransactions().finally(() => setRefreshing(false))
   }, [])
+
+  const toggleSummaryCompletion = async (summaryId, isCurrentlyCompleted) => {
+    try {
+      // Guard: prevent marking/unmarking complete without an assigned invoice
+      const target = transactions.find(t => t.summary_id === summaryId)
+      if (!target || !target.invoice_id || target.invoice_id === 'N/A') {
+        showSnackbar('Cannot change completion: missing Invoice ID')
+        return
+      }
+
+      const newStatusId = isCurrentlyCompleted ? 1 : 2
+      const { error } = await supabase
+        .from('summary')
+        .update({ summary_status_id: newStatusId })
+        .eq('id', summaryId)
+
+      if (error) throw error
+
+      showSnackbar(isCurrentlyCompleted ? 'Summary unmarked as complete' : 'Summary marked as complete', true)
+      await fetchTransactions()
+    } catch (err) {
+      console.error('Error updating summary status:', err)
+      showSnackbar('Failed to update summary status')
+    }
+  }
 
   const handleSort = (column) => {
     setSortDirection(prev => (sortColumn === column && prev === 'ascending' ? 'descending' : 'ascending'))
@@ -290,18 +317,57 @@ const SummarizedContracts = ({ navigation }) => {
                         ]}
                       >
                         <DataTable.Cell style={[styles.actionColumn, { justifyContent: 'center' }]}>
-                          <Button
-                            mode="outlined"
-                            icon="file-document"
-                            onPress={() => {
-                              navigation.navigate('CreateInvoice', { summary: { summary_id: transaction.summary_id } })
-                            }}
-                            style={[styles.actionButton, { borderColor: colors.primary }]}
-                            contentStyle={styles.buttonContent}
-                            labelStyle={[styles.buttonLabel, { color: colors.primary }]}
+                          <Menu
+                            visible={actionMenuFor === transaction.summary_id}
+                            onDismiss={() => setActionMenuFor(null)}
+                            anchor={
+                              <Button
+                                mode="outlined"
+                                icon="dots-vertical"
+                                onPress={() => setActionMenuFor(transaction.summary_id)}
+                                style={[styles.actionButton, { borderColor: colors.outline }]}
+                                contentStyle={styles.buttonContent}
+                                labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                              >
+                                Actions
+                              </Button>
+                            }
+                            contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
                           >
-                            View Invoice
-                          </Button>
+                            <Menu.Item
+                              onPress={() => {
+                                setActionMenuFor(null)
+                                navigation.navigate('CreateInvoice', { summary: { summary_id: transaction.summary_id } })
+                              }}
+                              title="View Invoice"
+                              leadingIcon="file-document"
+                              titleStyle={[{ color: colors.onSurface }, fonts.bodyLarge]}
+                            />
+                            <Menu.Item
+                              onPress={() => {
+                                setActionMenuFor(null)
+                                if (transaction.invoice_id && transaction.invoice_id !== 'N/A') {
+                                  toggleSummaryCompletion(transaction.summary_id, transaction.summary_status_id === 2)
+                                } else {
+                                  showSnackbar('Assign an Invoice ID before marking complete')
+                                }
+                              }}
+                              title={transaction.summary_status_id === 2 ? 'Un-mark as Complete' : 'Complete'}
+                              leadingIcon={transaction.summary_status_id === 2 ? 'undo' : 'check'}
+                              titleStyle={[
+                                {
+                                  color:
+                                    !transaction.invoice_id || transaction.invoice_id === 'N/A'
+                                      ? colors.onSurfaceDisabled
+                                      : transaction.summary_status_id === 2
+                                      ? colors.error
+                                      : colors.primary,
+                                },
+                                fonts.bodyLarge,
+                              ]}
+                              disabled={!transaction.invoice_id || transaction.invoice_id === 'N/A'}
+                            />
+                          </Menu>
                         </DataTable.Cell>
                         {columns.map(({ key, width }, idx) => (
                           <DataTable.Cell 

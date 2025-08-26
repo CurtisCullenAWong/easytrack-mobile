@@ -40,11 +40,7 @@ const CreateInvoice = () => {
   // Computed values for better UI state management
   const hasInvoiceAssigned = useMemo(() => Boolean(currentInvoiceId), [currentInvoiceId])
   const isReceipted = useMemo(() => summaryStatusId === 2, [summaryStatusId])
-  const canEditSignatures = useMemo(() => !isReceipted, [isReceipted])
-  const canGenerateOutputs = useMemo(
-    () => Boolean(preparedSignatureDataUrl) && Boolean(checkedSignatureDataUrl) && certify,
-    [preparedSignatureDataUrl, checkedSignatureDataUrl, certify]
-  )
+  const canEditSignatures = true
 
   // Invoice ID generation utilities
   const generateInvoiceIdFormat = () => {
@@ -170,59 +166,52 @@ const CreateInvoice = () => {
       showSnackbar('Missing summary reference')
       return
     }
-
-    const nextStatusId = summaryStatusId === 1 ? 2 : 1
-
-    if (nextStatusId === 2) {
-      if (!preparedSignatureDataUrl || !checkedSignatureDataUrl) {
-        showSnackbar('Please provide both signatures')
-        return
-      }
-      if (!certify) {
-        showSnackbar('Please certify the information to proceed')
-        return
-      }
-      // Show confirmation dialog for marking as receipted
-      setConfirmationVisible(true)
+    if (hasInvoiceAssigned) {
+      showSnackbar('Invoice ID already assigned')
       return
     }
-
-    // For removing invoice ID, show confirmation dialog
     setConfirmationVisible(true)
   }
 
-  const performStatusUpdate = async (nextStatusId) => {
+  const performStatusUpdate = async () => {
     try {
       setIsSubmitting(true)
       
-      let updateData = { summary_status_id: nextStatusId }
-      
-      if (nextStatusId === 2) {
-        // Mark as receipted - use the displayed invoice_id and ensure it's unique
-        const uniqueInvoiceId = await ensureUniqueInvoiceId(generatedInvoiceId)
-        updateData.invoice_id = uniqueInvoiceId
-      } else {
-        // Unmark as receipted - set invoice_id to null
-        updateData.invoice_id = null
-      }
-      
-      const { error } = await supabase
+      // Permanently assign an invoice ID and mark as receipted
+      const uniqueInvoiceId = await ensureUniqueInvoiceId(generatedInvoiceId)
+
+      // Atomic update: only set invoice_id if it is currently NULL
+      const { data: updatedRow, error: updateError } = await supabase
         .from('summary')
-        .update(updateData)
+        .update({ invoice_id: uniqueInvoiceId })
         .eq('id', summary.summary_id)
-        
-      if (error) throw error
-      
-      setSummaryStatusId(nextStatusId)
-      if (nextStatusId === 2) {
-        setCurrentInvoiceId(updateData.invoice_id)
-        showSnackbar('Marked as receipted', true)
-        navigation.navigate('TransactionManagement', { segment: 'completed' })
-      } else {
-        setCurrentInvoiceId(null)
-        showSnackbar('Invoice ID removed', true)
-        navigation.navigate('TransactionManagement', { segment: 'completed' })
+        .is('invoice_id', null)
+        .select('id, invoice_id')
+        .single()
+
+      if (updateError) {
+        // If no row was updated because invoice_id is already set, fetch and use the existing ID
+        if (updateError.code === 'PGRST116') {
+          const { data: existing, error: fetchError } = await supabase
+            .from('summary')
+            .select('invoice_id')
+            .eq('id', summary.summary_id)
+            .single()
+          if (fetchError) throw fetchError
+          if (existing?.invoice_id) {
+            setCurrentInvoiceId(existing.invoice_id)
+            showSnackbar('Invoice ID already assigned. Using existing ID.', true)
+            return
+          }
+          // Fallback: if still no invoice_id, surface a friendly error
+          throw new Error('Unable to assign or retrieve Invoice ID')
+        }
+        throw updateError
       }
+
+      setSummaryStatusId(2)
+      setCurrentInvoiceId(updatedRow?.invoice_id || uniqueInvoiceId)
+      showSnackbar('Invoice ID permanently assigned', true)
     } catch (err) {
       console.error(err)
       showSnackbar(`Failed to update summary: ${err.message}`)
@@ -247,8 +236,12 @@ const CreateInvoice = () => {
 
   const handlePrint = async () => {
     try {
-      if (!canGenerateOutputs) {
-        showSnackbar('Provide signature and certification first')
+      if (!certify) {
+        showSnackbar('Please certify the information to proceed')
+        return
+      }
+      if (!hasInvoiceAssigned) {
+        showSnackbar('Please assign an Invoice ID before printing or sharing')
         return
       }
       await printPDF(
@@ -272,8 +265,12 @@ const CreateInvoice = () => {
 
   const handleShare = async () => {
     try {
-      if (!canGenerateOutputs) {
-        showSnackbar('Provide signature and certification first')
+      if (!certify) {
+        showSnackbar('Please certify the information to proceed')
+        return
+      }
+      if (!hasInvoiceAssigned) {
+        showSnackbar('Please assign an Invoice ID before printing or sharing')
         return
       }
       await sharePDF(
@@ -299,11 +296,8 @@ const CreateInvoice = () => {
     const isChecked = signerType === 'checked'
     const signerLabel = isChecked ? 'Checked by' : 'Prepared by'
     
-    // Don't render signature sections if invoice is already assigned
-    if (hasInvoiceAssigned) {
-      return null
-    }
-    
+    // Always render signature sections; allow editing regardless of assignment
+
     return (
       <>
         <Text style={[styles.label, { color: colors.onSurfaceVariant, marginTop: isChecked ? 12 : 0 }, fonts.bodySmall]}>
@@ -457,80 +451,61 @@ const CreateInvoice = () => {
             {/* Checked by signature */}
             {renderSignatureSection('checked', checkedSignatureDataUrl, checkedSignatureSize, checkedSignatureRotation)}
 
-            {/* Certification - only show if no invoice assigned */}
-            {!hasInvoiceAssigned && (
-              <View style={styles.checkboxRow}>
-                <Checkbox
-                  status={certify ? 'checked' : 'unchecked'}
-                  onPress={() => setCertify(prev => !prev)}
-                  color={colors.primary}
-                  disabled={!canEditSignatures}
-                />
-                <Text style={[{ color: colors.onSurfaceVariant, flex: 1 }, fonts.bodySmall]}>
-                  I certify that the above information is correct. My handwritten signature is valid for this invoice.
-                </Text>
-              </View>
-            )}
+            {/* Certification - always available */}
+            <View style={styles.checkboxRow}>
+              <Checkbox
+                status={certify ? 'checked' : 'unchecked'}
+                onPress={() => setCertify(prev => !prev)}
+                color={colors.primary}
+                disabled={!canEditSignatures}
+              />
+              <Text style={[{ color: colors.onSurfaceVariant, flex: 1 }, fonts.bodySmall]}>
+                I certify that the above information is correct. My handwritten signature is valid for this invoice.
+              </Text>
+            </View>
+
+            {/* Include e-signatures toggle removed; signatures are always allowed */}
 
             <View style={{ height: 8 }} />
 
             {/* Notice if invoice already assigned */}
             {hasInvoiceAssigned && (
-              <Text
-                style={[
-                  {
-                    color: colors.error,
-                    fontSize: 13,
-                    marginBottom: 12,
-                    textAlign: 'center',
-                  },
-                  fonts.bodySmall
-                ]}
-              >
-                Notice: An Invoice ID is already assigned.{"\n"}
-                To re-generate or download the local PDF file again,{"\n"}
-                you must first remove the Invoice ID.{"\n"}
-                EasyTrack does not save your e-signatures.
-              </Text>
+              <></>
             )}
-
-            {/* Print / Share buttons - only show if signatures can be edited or if we have signatures */}
-            {(canEditSignatures || canGenerateOutputs) && !hasInvoiceAssigned && (
-              <>
-                <Button
-                  mode="outlined"
-                  icon="printer"
-                  onPress={handlePrint}
-                  disabled={!canGenerateOutputs}
-                  style={{ marginTop: 4 }}
-                  contentStyle={{ height: 48 }}
-                >
-                  Print
-                </Button>
-
-                <Button
-                  mode="outlined"
-                  icon="share"
-                  onPress={handleShare}
-                  disabled={!canGenerateOutputs}
-                  style={{ marginTop: 8 }}
-                  contentStyle={{ height: 48 }}
-                >
-                  Share
-                </Button>
-              </>
-            )}
-
             {/* Confirm Button */}
+            {!hasInvoiceAssigned && (
+              <Button
+                mode="contained"
+                onPress={handleConfirm}
+                disabled={isSubmitting}
+                loading={isSubmitting}
+                style={{ marginTop: 16 }}
+                contentStyle={{ height: 48 }}
+              >
+                Permanently Assign Invoice ID
+              </Button>
+            )}
+            {/* Print / Share buttons - always available */}
             <Button
-              mode="contained"
-              onPress={handleConfirm}
-              disabled={isSubmitting && !canGenerateOutputs}
-              loading={isSubmitting}
-              style={{ marginTop: 16 }}
+              mode="outlined"
+              icon="printer"
+              onPress={handlePrint}
+              disabled={!certify || !hasInvoiceAssigned}
+              style={{ marginTop: 4 }}
               contentStyle={{ height: 48 }}
             >
-              {isReceipted ? 'Remove Invoice ID' : 'Mark as Receipted'}
+              Print
+            </Button>
+
+            <Button
+              mode="outlined"
+              icon="share"
+              onPress={handleShare}
+              disabled={!certify || !hasInvoiceAssigned}
+              style={{ marginTop: 8 }}
+              contentStyle={{ height: 48 }}
+            >
+              Share
             </Button>
           </Card.Content>
         </Card>
@@ -566,7 +541,7 @@ const CreateInvoice = () => {
             </View>
           </Modal>
 
-          {/* Confirmation Dialog for Marking as Receipted */}
+          {/* Confirmation Dialog for Permanent Assignment */}
           <Modal
             visible={confirmationVisible}
             onDismiss={() => setConfirmationVisible(false)}
@@ -577,10 +552,7 @@ const CreateInvoice = () => {
                 Confirm Action
               </Text>
               <Text style={[styles.confirmationMessage, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>
-                {isReceipted 
-                  ? 'Are you sure you want to remove the Invoice ID? This will allow you to re-generate and download the PDF file again.'
-                  : 'Warning: continuing to mark this summary as receipted will assign an invoice ID and prevent you from re-downloading the file upon exit. Please save the PDF file locally.'
-                }
+                This will permanently assign an Invoice ID and mark the summary as receipted. This action cannot be undone.
               </Text>
               <View style={styles.confirmationButtons}>
                 <Button
@@ -594,7 +566,7 @@ const CreateInvoice = () => {
                   mode="contained"
                   onPress={() => {
                     setConfirmationVisible(false)
-                    performStatusUpdate(isReceipted ? 1 : 2)
+                    performStatusUpdate()
                   }}
                   style={{ flex: 1, marginLeft: 8 }}
                   loading={isSubmitting}
