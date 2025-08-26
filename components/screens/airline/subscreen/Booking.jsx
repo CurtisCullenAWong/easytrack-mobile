@@ -753,7 +753,7 @@ const MakeContracts = () => {
             mode="contained"
             onPress={handleSubmit}
             loading={loading}
-            disabled={loading || !dropOffLocation.locatio|| deliveryFee <= 0}
+            disabled={loading || !dropOffLocation.location|| deliveryFee <= 0}
             icon="send"
           >
             Create Contracts
