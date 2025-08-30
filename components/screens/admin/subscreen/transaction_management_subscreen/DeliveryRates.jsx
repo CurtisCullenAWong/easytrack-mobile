@@ -10,8 +10,9 @@ import {
   Menu,
   Surface,
 } from 'react-native-paper'
-import Header from '../../../../customComponents/Header'
 import { supabase } from '../../../../../lib/supabaseAdmin'
+import EditDeliveryRateModal from '../../../../customComponents/EditDeliveryRateModal'
+import useSnackbar from '../../../../hooks/useSnackbar'
 
 const COLUMN_WIDTH = 180
 const CITY_COLUMN_WIDTH = 200
@@ -20,6 +21,7 @@ const REGION_COLUMN_WIDTH = 200
 
 const DeliveryRates = ({ navigation }) => {
   const { colors, fonts } = useTheme()
+  const { showSnackbar, SnackbarElement } = useSnackbar()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchColumn, setSearchColumn] = useState('city')
@@ -31,6 +33,13 @@ const DeliveryRates = ({ navigation }) => {
   const [page, setPage] = useState(0)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [refreshing, setRefreshing] = useState(false)
+  
+  // Edit modal state
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [selectedRate, setSelectedRate] = useState(null)
+  const [priceAmount, setPriceAmount] = useState('')
+  const [priceError, setPriceError] = useState('')
+  const [loadingEdit, setLoadingEdit] = useState(false)
 
   const fetchRates = async () => {
     setLoading(true)
@@ -54,9 +63,67 @@ const DeliveryRates = ({ navigation }) => {
         ? new Date(rate.updated_at).toLocaleString('en-PH')
         : 'N/A',
       region_id: rate.region_id,
+      raw_price: rate.price, // Store the raw price for editing
     }))
     setRates(formatted)
     setLoading(false)
+  }
+
+  const handleEditRate = (rate) => {
+    setSelectedRate(rate)
+    setPriceAmount(String(rate.raw_price || 0))
+    setPriceError('')
+    setShowEditDialog(true)
+  }
+
+  const handleUpdatePrice = async (newPrice) => {
+    const sanitize = (val) => {
+      let v = (val ?? '').toString().trim()
+      if (v === '') return { ok: false, num: null }
+      v = v.replace(/[^0-9.]/g, '')
+      const parts = v.split('.')
+      if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('')
+      if (v.length > 1 && v.startsWith('0') && v[1] !== '.') {
+        v = v.replace(/^0+/, '')
+      }
+      if (v.includes('.')) {
+        const [intPart, decPart] = v.split('.')
+        v = intPart + '.' + decPart.slice(0, 2)
+      }
+      const num = parseFloat(v)
+      return { ok: !(isNaN(num) || num < 0), num }
+    }
+
+    const price = sanitize(newPrice)
+
+    if (!price.ok) {
+      setPriceError('Enter a valid, non-negative amount')
+      return
+    }
+
+    setLoadingEdit(true)
+    try {
+      const { error } = await supabase
+        .from('pricing')
+        .update({ 
+          price: price.num,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedRate.id)
+      
+      if (error) throw error
+      
+      setShowEditDialog(false)
+      setPriceAmount('')
+      setSelectedRate(null)
+      await fetchRates()
+      showSnackbar('Delivery rate updated successfully!', true)
+    } catch (error) {
+      showSnackbar('Error updating delivery rate.', false)
+      console.error('Error updating delivery rate:', error)
+    } finally {
+      setLoadingEdit(false)
+    }
   }
 
   useFocusEffect(
@@ -257,7 +324,7 @@ const DeliveryRates = ({ navigation }) => {
                             style={[styles.actionButton, { backgroundColor: colors.primary }]}
                             contentStyle={styles.buttonContent}
                             labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
-                            onPress={() => console.log('Edit pressed')}
+                            onPress={() => handleEditRate(rate)}
                           >
                             Edit
                           </Button>
@@ -313,6 +380,22 @@ const DeliveryRates = ({ navigation }) => {
           )}
         </Surface>
       </View>
+
+      <EditDeliveryRateModal
+        visible={showEditDialog}
+        onDismiss={() => setShowEditDialog(false)}
+        title="Edit Delivery Rate"
+        description={`Update delivery price for ${selectedRate?.city || 'this city'}. Enter a valid amount.`}
+        priceAmount={priceAmount}
+        setPriceAmount={setPriceAmount}
+        priceError={priceError}
+        setPriceError={setPriceError}
+        loading={loadingEdit}
+        onConfirm={handleUpdatePrice}
+        currencySymbol="₱"
+      />
+
+      {SnackbarElement}
     </ScrollView>
   )
 }

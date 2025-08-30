@@ -147,7 +147,7 @@ const useAuth = (navigation = null, onClose = null) => {
       const attemptsMessage = `You have ${remainingAttempts} login attempt${remainingAttempts !== 1 ? 's' : ''} remaining.`
       
       if (loginError?.message?.toLowerCase().includes('email not confirmed')) {
-        showSnackbar('Please login via email otp to confirm your email.')
+        showSnackbar('Account Activated, Please login directly or via email otp to confirm your email.', true)
         loginWithOtp(sanitizedEmail)
         return
       }

@@ -6,6 +6,21 @@
     "runtimeVersion": {
       "policy": "appVersion"
     },
+    "updates": {
+      "enabled": true,
+      "url": "https://u.expo.dev/b80883fc-3b91-405d-975f-1be228ccd95e"
+    },
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "easytrack",
+    "owner": "thewalkingdev_numoa",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F3F8F2"
+    },
     "android": {
       "package": "com.thewalkingdev_numoa.EasyTrack",
       "adaptiveIcon": {
@@ -22,29 +37,24 @@
         "ACCESS_FINE_LOCATION"
       ]
     },
-    "updates": {
-      "enabled": true,
-      "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/0739b4b6-b97b-48a7-97d7-93ca4ab06257"
-    },
-    "scheme": "easytrack",
-    "owner": "thewalkingdev_numoa",
-    "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/images/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#F3F8F2",
-      "dark": {
-        "image": "./assets/images/splash.png",
-        "backgroundColor": "#121712"
-      }
-    },
-    "newArchEnabled": true,
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F3F8F2",
+          "image": "./assets/images/splash-icon.png",
+          "dark": {
+            "image": "./assets/images/splash-icon.png",
+            "backgroundColor": "#121712"
+          },
+          "resizeMode": "contain",
+          "imageWidth": 200
+        }
+      ]
+    ],
     "extra": {
       "eas": {
-        "projectId": "b422706d-2b04-4b84-a7d8-c35b4ecd3bae"
+        "projectId": "b80883fc-3b91-405d-975f-1be228ccd95e"
       }
     },
     "ios": {
