@@ -5,6 +5,45 @@ import { Text, Button, Card, Divider, IconButton, useTheme, Searchbar, Menu, Por
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 
+// Utility functions
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371 // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1)
+  const dLon = deg2rad(lon2 - lon1)
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c // Distance in km
+}
+
+const deg2rad = (deg) => deg * (Math.PI / 180)
+
+const parseGeometry = (geoString) => {
+  if (!geoString) return null
+  
+  try {
+    if (typeof geoString === 'string') {
+      const coords = geoString.replace(/[POINT()]/g, '').split(' ')
+      return {
+        longitude: parseFloat(coords[0]),
+        latitude: parseFloat(coords[1]),
+      }
+    } 
+    
+    if (geoString?.coordinates?.length >= 2) {
+      return {
+        longitude: parseFloat(geoString.coordinates[0]),
+        latitude: parseFloat(geoString.coordinates[1]),
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing geometry:', error)
+  }
+  return null
+}
+
 const PickupLuggage = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
@@ -16,8 +55,8 @@ const PickupLuggage = ({ navigation }) => {
   const [searchColumn, setSearchColumn] = useState('id')
   const [filterMenuVisible, setFilterMenuVisible] = useState(false)
   const [sortMenuVisible, setSortMenuVisible] = useState(false)
-  const [sortColumn, setSortColumn] = useState('created_at')
-  const [sortDirection, setSortDirection] = useState('descending')
+  const [sortColumn, setSortColumn] = useState('distance')
+  const [sortDirection, setSortDirection] = useState('ascending')
   const [pickupDialogVisible, setPickupDialogVisible] = useState(false)
   const [selectedContract, setSelectedContract] = useState(null)
   const [pickingup, setPickingup] = useState(false)
@@ -32,6 +71,7 @@ const PickupLuggage = ({ navigation }) => {
   ]
 
   const sortOptions = [
+    { label: 'Distance', value: 'distance' },
     { label: 'Contract ID', value: 'id' },
     { label: 'Airline Name', value: 'airline_name' },
     { label: 'Owner Name', value: 'owner_name' },
@@ -39,6 +79,29 @@ const PickupLuggage = ({ navigation }) => {
     { label: 'Created Date', value: 'created_at' },
     { label: 'Luggage Quantity', value: 'luggage_quantity' },
   ]
+
+  // Calculate distances for contracts
+  const contractsWithDistance = useMemo(() => {
+    return contracts.map(contract => {
+      const pickupCoords = parseGeometry(contract.pickup_location_geo)
+      const dropOffCoords = parseGeometry(contract.drop_off_location_geo)
+      let distance = null
+
+      if (pickupCoords && dropOffCoords) {
+        distance = calculateDistance(
+          pickupCoords.latitude,
+          pickupCoords.longitude,
+          dropOffCoords.latitude,
+          dropOffCoords.longitude
+        )
+      }
+
+      return {
+        ...contract,
+        distance
+      }
+    })
+  }, [contracts])
 
   useEffect(() => {
     const updateTime = () =>
@@ -159,7 +222,7 @@ const PickupLuggage = ({ navigation }) => {
   }
 
   const filteredAndSortedContracts = useMemo(() => {
-    return contracts
+    return contractsWithDistance
       .filter(contract => {
         if (!searchQuery) return true;
         
@@ -197,6 +260,10 @@ const PickupLuggage = ({ navigation }) => {
         let valA, valB;
 
         switch (sortColumn) {
+          case 'distance':
+            valA = a.distance || 0;
+            valB = b.distance || 0;
+            break;
           case 'airline_name':
             valA = [
               a.airline_profile?.first_name,
@@ -259,7 +326,7 @@ const PickupLuggage = ({ navigation }) => {
           ? valA > valB ? 1 : -1
           : valA < valB ? 1 : -1;
       });
-  }, [contracts, searchQuery, searchColumn, sortColumn, sortDirection]);
+  }, [contractsWithDistance, searchQuery, searchColumn, sortColumn, sortDirection]);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Not set'
@@ -377,6 +444,24 @@ const PickupLuggage = ({ navigation }) => {
                 </View>
               </View>
             ))}
+            <View style={styles.locationRow}>
+              <IconButton 
+                icon={contract.distance !== null ? "map-marker-distance" : "map-marker-question"} 
+                size={20} 
+                iconColor={contract.distance !== null ? colors.tertiary : colors.outline} 
+              />
+              <View style={styles.locationTextContainer}>
+                <Text style={[fonts.labelSmall, { color: contract.distance !== null ? colors.tertiary : colors.outline }]}>Route Distance</Text>
+                <Text style={[fonts.bodySmall, styles.locationText]}>
+                  {contract.distance !== null
+                    ? contract.distance < 1 
+                      ? `${(contract.distance * 1000).toFixed(0)} m` 
+                      : `${contract.distance.toFixed(2)} km`
+                    : 'Location coordinates unavailable'
+                  }
+                </Text>
+              </View>
+            </View>
           </View>
           <Divider />
           <View style={styles.detailsContainer}>
@@ -445,21 +530,6 @@ const PickupLuggage = ({ navigation }) => {
         <Text style={[styles.timeText, { color: colors.onSurface }, fonts.titleMedium]}>
           {currentTime}
         </Text>
-      </Surface>
-
-      {/* Search Section */}
-      <Surface style={[styles.searchSurface, { backgroundColor: colors.surface }]} elevation={1}>
-        <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
-          Search & Filter
-        </Text>
-        <Searchbar
-          placeholder={`Search by ${filterOptions.find(opt => opt.value === searchColumn)?.label}`}
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-          style={[styles.searchbar, { backgroundColor: colors.surfaceVariant }]}
-          iconColor={colors.onSurfaceVariant}
-          inputStyle={[styles.searchInput, { color: colors.onSurfaceVariant }]}
-        />
       </Surface>
 
       {/* Filters Section */}

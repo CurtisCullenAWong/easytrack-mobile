@@ -22,17 +22,21 @@ const AdminBookingHistory = ({ navigation }) => {
   const [sortDirection, setSortDirection] = useState('descending')
   const [showStatusMenu, setShowStatusMenu] = useState(false)
   const [showDateMenu, setShowDateMenu] = useState(false)
+  const [showCorporationMenu, setShowCorporationMenu] = useState(false)
   const [statusFilter, setStatusFilter] = useState('all')
   const [dateFilter, setDateFilter] = useState('all')
+  const [corporationFilter, setCorporationFilter] = useState('all')
   const [statusOptions, setStatusOptions] = useState([])
+  const [corporations, setCorporations] = useState([])
 
   useEffect(() => {
     fetchStatusOptions()
+    fetchCorporations()
   }, [])
 
   useEffect(() => {
     fetchContracts()
-  }, [statusFilter, searchQuery])
+  }, [statusFilter, dateFilter, searchQuery])
 
 
   // Listen to realtime changes for all contracts (admin scope)
@@ -63,22 +67,110 @@ const AdminBookingHistory = ({ navigation }) => {
 
       if (error) throw error
 
-      const options = [
-        { label: 'All', value: 'all' },
-        ...data.map(status => ({
-          label: status.status_name,
-          value: status.id.toString()
-        }))
-      ]
-
-      setStatusOptions(options)
+      setStatusOptions(data || [])
     } catch (error) {
       console.error('Error fetching status options:', error.message)
     }
   }
 
   const getStatusOptions = () => {
-    return statusOptions
+    return [
+      { label: 'All Statuses', value: 'all' },
+      ...statusOptions.map(status => ({
+        label: status.status_name,
+        value: status.id.toString()
+      }))
+    ]
+  }
+
+  const fetchCorporations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles_corporation')
+        .select('corporation_name')
+        .order('corporation_name', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching corporations:', error)
+        return
+      }
+
+      setCorporations(data || [])
+    } catch (error) {
+      console.error('Error fetching corporations:', error)
+    }
+  }
+
+  const getCorporationFilterOptions = () => {
+    return [
+      { label: 'All Corporations', value: 'all' },
+      ...corporations.map(corp => ({
+        label: corp.corporation_name,
+        value: corp.corporation_name
+      }))
+    ]
+  }
+
+  const getCorporationFilterLabel = (value) => {
+    return getCorporationFilterOptions().find(opt => opt.value === value)?.label || 'All Corporations'
+  }
+
+  const getDateRange = () => {
+    const today = new Date()
+    today.setHours(23, 59, 59, 999) // End of today
+    
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    yesterday.setHours(0, 0, 0, 0) // Start of yesterday
+    
+    const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+    thisMonth.setHours(0, 0, 0, 0) // Start of this month
+    
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+    lastMonth.setHours(0, 0, 0, 0) // Start of last month
+    
+    const thisYear = new Date(today.getFullYear(), 0, 1)
+    thisYear.setHours(0, 0, 0, 0) // Start of this year
+    
+    const lastYear = new Date(today.getFullYear() - 1, 0, 1)
+    lastYear.setHours(0, 0, 0, 0) // Start of last year
+
+    switch (dateFilter) {
+      case 'today':
+        return {
+          start: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0).toISOString(),
+          end: today.toISOString()
+        }
+      case 'yesterday':
+        return {
+          start: yesterday.toISOString(),
+          end: new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999).toISOString()
+        }
+      case 'this_month':
+        return {
+          start: thisMonth.toISOString(),
+          end: today.toISOString()
+        }
+      case 'last_month':
+        const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999)
+        return {
+          start: lastMonth.toISOString(),
+          end: lastMonthEnd.toISOString()
+        }
+      case 'this_year':
+        return {
+          start: thisYear.toISOString(),
+          end: today.toISOString()
+        }
+      case 'last_year':
+        const lastYearEnd = new Date(today.getFullYear(), 0, 0, 23, 59, 59, 999)
+        return {
+          start: lastYear.toISOString(),
+          end: lastYearEnd.toISOString()
+        }
+      default:
+        return null
+    }
   }
 
   const fetchContracts = async () => {
@@ -95,7 +187,8 @@ const AdminBookingHistory = ({ navigation }) => {
             first_name,
             middle_initial,
             last_name,
-            suffix
+            suffix,
+            corporation:corporation_id (corporation_name)
           )
         `)
         .order('created_at', { ascending: false })
@@ -103,6 +196,12 @@ const AdminBookingHistory = ({ navigation }) => {
       // Apply status filter
       if (statusFilter !== 'all') {
         query = query.eq('contract_status_id', statusFilter)
+      }
+
+      // Apply date filter if selected
+      const dateRange = getDateRange()
+      if (dateRange) {
+        query = query.gte('created_at', dateRange.start).lte('created_at', dateRange.end)
       }
   
       const { data, error } = await query
@@ -161,15 +260,6 @@ const AdminBookingHistory = ({ navigation }) => {
   }
 
   const getDateFilterOptions = () => {
-    const today = new Date()
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-    
-    const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
-    const thisYear = new Date(today.getFullYear(), 0, 1)
-    const lastYear = new Date(today.getFullYear() - 1, 0, 1)
-
     return [
       { label: 'All Time', value: 'all' },
       { label: 'Today', value: 'today' },
@@ -185,60 +275,28 @@ const AdminBookingHistory = ({ navigation }) => {
     return getDateFilterOptions().find(opt => opt.value === value)?.label || 'All Time'
   }
 
-  const filterByDate = (contract) => {
-    if (dateFilter === 'all') return true
-
-    const createdDate = new Date(contract.created_at)
-    const today = new Date()
-    today.setHours(23, 59, 59, 999) // End of today
-    
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-    yesterday.setHours(0, 0, 0, 0) // Start of yesterday
-    
-    const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-    thisMonth.setHours(0, 0, 0, 0) // Start of this month
-    
-    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
-    lastMonth.setHours(0, 0, 0, 0) // Start of last month
-    
-    const thisYear = new Date(today.getFullYear(), 0, 1)
-    thisYear.setHours(0, 0, 0, 0) // Start of this year
-    
-    const lastYear = new Date(today.getFullYear() - 1, 0, 1)
-    lastYear.setHours(0, 0, 0, 0) // Start of last year
-
-    switch (dateFilter) {
-      case 'today':
-        return createdDate >= new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0) && 
-               createdDate <= today
-      case 'yesterday':
-        return createdDate >= yesterday && 
-               createdDate <= new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999)
-      case 'this_month':
-        return createdDate >= thisMonth && createdDate <= today
-      case 'last_month':
-        const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999)
-        return createdDate >= lastMonth && createdDate <= lastMonthEnd
-      case 'this_year':
-        return createdDate >= thisYear && createdDate <= today
-      case 'last_year':
-        const lastYearEnd = new Date(today.getFullYear(), 0, 0, 23, 59, 59, 999)
-        return createdDate >= lastYear && createdDate <= lastYearEnd
-      default:
-        return true
-    }
-  }
-
   const filteredAndSortedContracts = contracts
     .filter(contract => {
-      if (!searchQuery) return filterByDate(contract);
+      // Search filter
+      if (searchQuery) {
+        const searchValue = searchQuery.toLowerCase();
+        const contractId = String(contract.id || '').toLowerCase();
+        const dropOffLocation = String(contract.drop_off_location || '').toLowerCase();
+        
+        if (!contractId.includes(searchValue) && !dropOffLocation.includes(searchValue)) {
+          return false;
+        }
+      }
+
+      // Corporation filter
+      if (corporationFilter !== 'all') {
+        const contractCorporation = contract.airline_profile?.corporation?.corporation_name || 'N/A';
+        if (contractCorporation !== corporationFilter) {
+          return false;
+        }
+      }
       
-      const searchValue = searchQuery.toLowerCase();
-      const contractId = String(contract.id || '').toLowerCase();
-      const dropOffLocation = String(contract.drop_off_location || '').toLowerCase();
-      
-      return (contractId.includes(searchValue) || dropOffLocation.includes(searchValue)) && filterByDate(contract);
+      return true;
     })
     .sort((a, b) => {
       const valA = getSortValue(a, sortColumn)
@@ -274,6 +332,7 @@ const AdminBookingHistory = ({ navigation }) => {
     { key: 'id', label: 'Contract ID', width: ID_COLUMN_WIDTH },
     { key: 'drop_off_location', label: 'Drop-off Location', width: LOCATION_COLUMN_WIDTH },
     { key: 'status', label: 'Status', width: STATUS_COLUMN_WIDTH },
+    { key: 'corporation', label: 'Corporation', width: COLUMN_WIDTH },
     { key: 'timeline', label: 'Timeline', width: TIMELINE_COLUMN_WIDTH },
   ]
 
@@ -316,91 +375,142 @@ const AdminBookingHistory = ({ navigation }) => {
 
         {/* Filters Section */}
         <Surface style={[styles.filtersSurface, { backgroundColor: colors.surface }]} elevation={1}>
-          <View style={styles.filtersRow}>
-            <View style={styles.filterGroup}>
-              <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
-                Status Filter
-              </Text>
-              <Menu
-                visible={showStatusMenu}
-                onDismiss={() => setShowStatusMenu(false)}
-                anchor={
-                  <Button
-                    mode="outlined"
-                    icon="filter-variant"
-                    onPress={() => setShowStatusMenu(true)}
-                    style={[styles.filterButton, { borderColor: colors.outline }]}
-                    contentStyle={styles.buttonContent}
-                    labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
-                  >
-                    {getStatusOptions().find(opt => opt.value === statusFilter)?.label || 'All Status'}
-                  </Button>
-                }
-                contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
-              >
-                {getStatusOptions().map((option) => (
-                  <Menu.Item
-                    key={option.value}
-                    onPress={() => {
-                      setStatusFilter(option.value)
-                      setShowStatusMenu(false)
-                    }}
-                    title={option.label}
-                    titleStyle={[
-                      {
-                        color: statusFilter === option.value
-                          ? colors.primary
-                          : colors.onSurface,
-                      },
-                      fonts.bodyLarge,
-                    ]}
-                    leadingIcon={statusFilter === option.value ? 'check' : undefined}
-                  />
-                ))}
-              </Menu>
+          <View style={styles.filtersContainer}>
+            <View style={styles.filtersRow}>
+              <View style={styles.filterGroup}>
+                <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+                  Status Filter
+                </Text>
+                <Menu
+                  visible={showStatusMenu}
+                  onDismiss={() => setShowStatusMenu(false)}
+                  anchor={
+                    <Button
+                      mode="outlined"
+                      icon="flag"
+                      onPress={() => setShowStatusMenu(true)}
+                      style={[styles.filterButton, { borderColor: colors.outline }]}
+                      contentStyle={styles.buttonContent}
+                      labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                    >
+                      {getStatusOptions().find(opt => opt.value === statusFilter)?.label || 'All Status'}
+                    </Button>
+                  }
+                  contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+                >
+                  {getStatusOptions().map((option) => (
+                    <Menu.Item
+                      key={option.value}
+                      onPress={() => {
+                        setStatusFilter(option.value)
+                        setShowStatusMenu(false)
+                      }}
+                      title={option.label}
+                      titleStyle={[
+                        {
+                          color: statusFilter === option.value
+                            ? colors.primary
+                            : colors.onSurface,
+                        },
+                        fonts.bodyLarge,
+                      ]}
+                      leadingIcon={statusFilter === option.value ? 'check' : undefined}
+                    />
+                  ))}
+                </Menu>
+              </View>
+
+              <View style={styles.filterGroup}>
+                <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+                  Corporation Filter
+                </Text>
+                <Menu
+                  visible={showCorporationMenu}
+                  onDismiss={() => setShowCorporationMenu(false)}
+                  anchor={
+                    <Button
+                      mode="outlined"
+                      icon="office-building"
+                      onPress={() => setShowCorporationMenu(true)}
+                      style={[styles.filterButton, { borderColor: colors.outline }]}
+                      contentStyle={styles.buttonContent}
+                      labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                    >
+                      {getCorporationFilterLabel(corporationFilter)}
+                    </Button>
+                  }
+                  contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+                >
+                  {getCorporationFilterOptions().map((option) => (
+                    <Menu.Item
+                      key={option.value}
+                      onPress={() => {
+                        setCorporationFilter(option.value)
+                        setShowCorporationMenu(false)
+                      }}
+                      title={option.label}
+                      titleStyle={[
+                        {
+                          color: corporationFilter === option.value
+                            ? colors.primary
+                            : colors.onSurface,
+                        },
+                        fonts.bodyLarge,
+                      ]}
+                      leadingIcon={corporationFilter === option.value ? 'check' : undefined}
+                    />
+                  ))}
+                </Menu>
+              </View>
             </View>
 
-            <View style={styles.filterGroup}>
-              <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
-                Date Filter
-              </Text>
-              <Menu
-                visible={showDateMenu}
-                onDismiss={() => setShowDateMenu(false)}
-                anchor={
-                  <Button
-                    mode="outlined"
-                    icon="calendar"
-                    onPress={() => setShowDateMenu(true)}
-                    style={[styles.filterButton, { borderColor: colors.outline }]}
-                    contentStyle={styles.buttonContent}
-                    labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
-                  >
-                    {getDateFilterLabel(dateFilter)}
-                  </Button>
-                }
-                contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
-              >
-                {getDateFilterOptions().map((option) => (
-                  <Menu.Item
-                    key={option.value}
-                    onPress={() => {
-                      setDateFilter(option.value)
-                      setShowDateMenu(false)
-                    }}
-                    title={option.label}
-                    titleStyle={[
-                      {
-                        color: dateFilter === option.value
-                          ? colors.primary
-                          : colors.onSurface,
-                      },
-                      fonts.bodyLarge,
-                    ]}
-                    leadingIcon={dateFilter === option.value ? 'check' : undefined}
-                  />
-                ))}
-              </Menu>
+            <View style={styles.filtersRow}>
+              <View style={styles.filterGroup}>
+                <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+                  Date Filter
+                </Text>
+                <Menu
+                  visible={showDateMenu}
+                  onDismiss={() => setShowDateMenu(false)}
+                  anchor={
+                    <Button
+                      mode="outlined"
+                      icon="calendar"
+                      onPress={() => setShowDateMenu(true)}
+                      style={[styles.filterButton, { borderColor: colors.outline }]}
+                      contentStyle={styles.buttonContent}
+                      labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                    >
+                      {getDateFilterLabel(dateFilter)}
+                    </Button>
+                  }
+                  contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+                >
+                  {getDateFilterOptions().map((option) => (
+                    <Menu.Item
+                      key={option.value}
+                      onPress={() => {
+                        setDateFilter(option.value)
+                        setShowDateMenu(false)
+                      }}
+                      title={option.label}
+                      titleStyle={[
+                        {
+                          color: dateFilter === option.value
+                            ? colors.primary
+                            : colors.onSurface,
+                        },
+                        fonts.bodyLarge,
+                      ]}
+                      leadingIcon={dateFilter === option.value ? 'check' : undefined}
+                    />
+                  ))}
+                </Menu>
+              </View>
+
+              <View style={styles.filterGroup}>
+                {/* Empty space for balance */}
+              </View>
             </View>
           </View>
         </Surface>
@@ -510,6 +620,10 @@ const AdminBookingHistory = ({ navigation }) => {
                                   </Text>
                                 )}
                               </View>
+                            ) : key === 'corporation' ? (
+                              <Text style={[styles.cellText, { color: colors.onSurface }, fonts.bodyMedium]} selectable>
+                                {contract.airline_profile?.corporation?.corporation_name || 'N/A'}
+                              </Text>
                             ) : (
                               <Text style={[styles.cellText, { color: colors.onSurface }, fonts.bodyMedium]} selectable>
                                 {contract[key] || 'N/A'}
@@ -590,12 +704,16 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
   },
+  filtersContainer: {
+    gap: 16,
+  },
   filtersRow: {
     flexDirection: 'row',
     gap: 16,
   },
   filterGroup: {
     flex: 1,
+    minWidth: 0,
   },
   filterLabel: {
     marginBottom: 8,
@@ -603,6 +721,7 @@ const styles = StyleSheet.create({
   },
   filterButton: {
     borderRadius: 8,
+    minHeight: 40,
   },
   menuContent: {
     width: '100%',

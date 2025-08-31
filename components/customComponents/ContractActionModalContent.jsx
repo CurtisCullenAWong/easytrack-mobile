@@ -69,7 +69,7 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
     if (isCancelAction) {
       return showCancelConfirmation 
         ? 'WARNING: This action will cancel the contract and the airline will NOT be charged. This action cannot be undone. Are you absolutely sure you want to proceed?'
-        : 'Are you sure you want to cancel this contract?'
+        : 'Are you sure you want to cancel this contract? You will need to provide remarks and confirm the cancellation.'
     }
     return 'Are you sure you want to mark this contract as failed?'
   }
@@ -231,7 +231,8 @@ console.log(currentLocation.latitude,
   }
 
   const getButtonText = () => {
-    if (showCancelConfirmation) return 'Cancel'
+    if (isCancelAction && showCancelConfirmation) return 'Yes'
+    if (isCancelAction && !showCancelConfirmation) return 'Confirm'
     return 'Confirm'
   }
 

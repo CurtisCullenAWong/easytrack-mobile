@@ -78,7 +78,8 @@ const AdminDrawer = () => (
     <Drawer.Screen name="TransactionSummary" component={TransactionSummary} />
     <Drawer.Screen name="CreateInvoice" component={CreateInvoice} />
     <Drawer.Screen name="ContractDetailsAdmin" component={ContractDetailsAdmin} />
-    <Drawer.Screen name="AdminBookingManagement" component={AdminBookingManagement} />
+    <Drawer.Screen name="BookingManagement" component={AdminBookingManagement} />
+    <Drawer.Screen name="SelectLocation" component={SelectLocation} />
     <Drawer.Screen name="AdminBookingHistory" component={AdminBookingHistory} />
     <Drawer.Screen name="TrackLuggage" component={TrackLuggage} />
     <Drawer.Screen name="AdminCheckLocation" component={AdminCheckLocation} />

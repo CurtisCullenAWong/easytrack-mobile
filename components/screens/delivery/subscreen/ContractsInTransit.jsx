@@ -7,6 +7,7 @@ import { useLocation } from '../../../hooks/useLocation'
 import BottomModal from '../../../customComponents/BottomModal'
 import ContractActionModalContent from '../../../customComponents/ContractActionModalContent'
 import useSnackbar from '../../../hooks/useSnackbar'
+import * as Location from 'expo-location'
 
 // Constants
 const FILTER_OPTIONS = [
@@ -19,6 +20,7 @@ const FILTER_OPTIONS = [
 ]
 
 const SORT_OPTIONS = [
+  { label: 'Distance', value: 'distance' },
   { label: 'Contract ID', value: 'id' },
   { label: 'Owner Name', value: 'owner_name' },
   { label: 'Case Number', value: 'case_number' },
@@ -28,6 +30,44 @@ const SORT_OPTIONS = [
 ]
 
 // Utility functions
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371 // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1)
+  const dLon = deg2rad(lon2 - lon1)
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c // Distance in km
+}
+
+const deg2rad = (deg) => deg * (Math.PI / 180)
+
+const parseGeometry = (geoString) => {
+  if (!geoString) return null
+  
+  try {
+    if (typeof geoString === 'string') {
+      const coords = geoString.replace(/[POINT()]/g, '').split(' ')
+      return {
+        longitude: parseFloat(coords[0]),
+        latitude: parseFloat(coords[1]),
+      }
+    } 
+    
+    if (geoString?.coordinates?.length >= 2) {
+      return {
+        longitude: parseFloat(geoString.coordinates[0]),
+        latitude: parseFloat(geoString.coordinates[1]),
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing geometry:', error)
+  }
+  return null
+}
+
 const formatDate = (dateString) => {
   if (!dateString) return 'Not set'
   return new Date(dateString).toLocaleString('en-PH', {
@@ -64,13 +104,59 @@ const ContractsInTransit = ({ navigation }) => {
   const [searchColumn, setSearchColumn] = useState('id')
   const [filterMenuVisible, setFilterMenuVisible] = useState(false)
   const [sortMenuVisible, setSortMenuVisible] = useState(false)
-  const [sortColumn, setSortColumn] = useState('created_at')
-  const [sortDirection, setSortDirection] = useState('descending')
+  const [sortColumn, setSortColumn] = useState('distance')
+  const [sortDirection, setSortDirection] = useState('ascending')
   const [modalVisible, setModalVisible] = useState(false)
   const [dialogType, setDialogType] = useState(null)
   const [selectedContract, setSelectedContract] = useState(null)
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
+  const [userLocation, setUserLocation] = useState(null)
+  const [isLocationTrackingActive, setIsLocationTrackingActive] = useState(false)
+
+  // Get current user location
+  const getUserLocation = useCallback(async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync()
+      if (status !== 'granted') {
+        console.warn('Permission to access location was denied')
+        return null
+      }
+
+      const { coords } = await Location.getCurrentPositionAsync({})
+      return {
+        latitude: coords.latitude,
+        longitude: coords.longitude
+      }
+    } catch (error) {
+      console.error('Error getting user location:', error)
+      return null
+    }
+  }, [])
+
+  // Calculate distances for contracts
+  const contractsWithDistance = useMemo(() => {
+    if (!userLocation) return contracts
+
+    return contracts.map(contract => {
+      const dropOffCoords = parseGeometry(contract.drop_off_location_geo)
+      let distance = null
+
+      if (dropOffCoords) {
+        distance = calculateDistance(
+          userLocation.latitude,
+          userLocation.longitude,
+          dropOffCoords.latitude,
+          dropOffCoords.longitude
+        )
+      }
+
+      return {
+        ...contract,
+        distance
+      }
+    })
+  }, [contracts, userLocation])
 
   // Memoized date formatter
   const getFormattedDates = useCallback((contract) => {
@@ -90,11 +176,31 @@ const ContractsInTransit = ({ navigation }) => {
     return () => clearInterval(interval)
   }, [])
 
+  // Periodic refresh effect for contracts (every 10 seconds for better real-time updates)
+  useEffect(() => {
+    const refreshInterval = setInterval(async () => {
+      if (!loading) {
+        await fetchContracts()
+        await checkContractsAndManageTracking()
+        const newLocation = await getUserLocation()
+        setUserLocation(newLocation)
+      }
+    }, 10000) // 10 seconds for more frequent updates
+
+    return () => clearInterval(refreshInterval)
+  }, [loading, getUserLocation])
+
+  // Get user location on component mount
+  useEffect(() => {
+    getUserLocation().then(setUserLocation)
+  }, [getUserLocation])
+
   // Fetch on focus to avoid stale data on revisit
   useFocusEffect(
     useCallback(() => {
       fetchContracts()
       checkContractsAndManageTracking()
+      getUserLocation().then(setUserLocation)
     }, [])
   )
 
@@ -116,9 +222,41 @@ const ContractsInTransit = ({ navigation }) => {
               table: 'contracts',
               filter: `delivery_id=eq.${user.id}`
             },
-            async () => {
+            async (payload) => {
+              console.log('Contract change detected:', payload.eventType, payload.new?.id)
+              
+              // Check if it's a location update
+              const isLocationUpdate = payload.eventType === 'UPDATE' && 
+                (payload.new?.current_location !== payload.old?.current_location ||
+                 payload.new?.current_location_geo !== payload.old?.current_location_geo)
+              
+              if (isLocationUpdate) {
+                console.log('Location update detected, refreshing contracts and user location')
+                console.log('Old location:', payload.old?.current_location)
+                console.log('New location:', payload.new?.current_location)
+                // For location updates, refresh both contracts and user location
+                await fetchContracts()
+                const newLocation = await getUserLocation()
+                setUserLocation(newLocation)
+              } else {
+                // For other changes, refresh contracts and check tracking
+                await fetchContracts()
+                await checkContractsAndManageTracking()
+              }
+            }
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'contracts',
+              filter: `delivery_id=eq.${user.id} AND contract_status_id=eq.4`
+            },
+            async (payload) => {
+              console.log('In-transit contract update detected:', payload.new?.id)
+              // This is a backup subscription specifically for in-transit contracts
               await fetchContracts()
-              await checkContractsAndManageTracking()
             }
           )
           .subscribe()
@@ -130,7 +268,7 @@ const ContractsInTransit = ({ navigation }) => {
           supabase.removeChannel(activeChannel)
         }
       }
-    }, [])
+    }, [getUserLocation])
   )
 
   // Data fetching functions
@@ -146,7 +284,13 @@ const ContractsInTransit = ({ navigation }) => {
         .eq('contract_status_id', 4)
 
       if (countError) throw countError
-      count > 0 ? await startTracking() : await stopTracking()
+      if (count > 0) {
+        await startTracking()
+        setIsLocationTrackingActive(true)
+      } else {
+        await stopTracking()
+        setIsLocationTrackingActive(false)
+      }
     } catch (error) {
       showSnackbar('Error managing location tracking: ' + error.message)
     }
@@ -189,12 +333,14 @@ const ContractsInTransit = ({ navigation }) => {
     try {
       await fetchContracts()
       await checkContractsAndManageTracking()
+      const newLocation = await getUserLocation()
+      setUserLocation(newLocation)
     } catch (error) {
       showSnackbar('Error refreshing contracts: ' + error.message)
     } finally {
       setRefreshing(false)
     }
-  }, [])
+  }, [getUserLocation])
 
   // Sorting and filtering functions
   const handleSort = useCallback((column) => {
@@ -207,7 +353,7 @@ const ContractsInTransit = ({ navigation }) => {
   }, [sortColumn])
 
   const filteredAndSortedContracts = useMemo(() => {
-    return contracts
+    return contractsWithDistance
       .filter(contract => {
         if (!searchQuery) return true;
         
@@ -266,6 +412,12 @@ const ContractsInTransit = ({ navigation }) => {
             return sortDirection === 'ascending' 
               ? valA.getTime() - valB.getTime()
               : valB.getTime() - valA.getTime();
+          case 'distance':
+            valA = a[sortColumn] || 0;
+            valB = b[sortColumn] || 0;
+            return sortDirection === 'ascending'
+              ? valA - valB
+              : valB - valA;
           default:
             valA = a[sortColumn] || '';
             valB = b[sortColumn] || '';
@@ -287,7 +439,7 @@ const ContractsInTransit = ({ navigation }) => {
           ? valA > valB ? 1 : -1
           : valA < valB ? 1 : -1;
       });
-  }, [contracts, searchQuery, searchColumn, sortColumn, sortDirection]);
+  }, [contractsWithDistance, searchQuery, searchColumn, sortColumn, sortDirection]);
 
   // Dialog action handlers
   const handleDialogAction = async (remarks, proofOfDeliveryImageUrl) => {
@@ -326,7 +478,7 @@ const ContractsInTransit = ({ navigation }) => {
           setShowCancelConfirmation(true)
           setActionLoading(false)
           return
-        }w
+        }
         
         const { error } = await supabase
           .from('contracts')
@@ -419,6 +571,26 @@ const ContractsInTransit = ({ navigation }) => {
                 </View>
               </View>
             ))}
+            <View style={styles.locationRow}>
+              <IconButton 
+                icon={userLocation === null ? "map-marker-question" : "map-marker-distance"} 
+                size={20} 
+                iconColor={userLocation === null ? colors.outline : colors.tertiary} 
+              />
+              <View style={styles.locationTextContainer}>
+                <Text style={[fonts.labelSmall, { color: userLocation === null ? colors.outline : colors.tertiary }]}>Distance</Text>
+                <Text style={[fonts.bodySmall, styles.locationText]}>
+                  {userLocation === null 
+                    ? 'Getting location...'
+                    : contract.distance !== null
+                    ? contract.distance < 1 
+                      ? `${(contract.distance * 1000).toFixed(0)} m` 
+                      : `${contract.distance.toFixed(2)} km`
+                    : 'Location unavailable'
+                  }
+                </Text>
+              </View>
+            </View>
           </View>
           <Divider />
           <View style={styles.detailsContainer}>
@@ -496,7 +668,7 @@ const ContractsInTransit = ({ navigation }) => {
               setModalVisible(true)
             }}
             style={[styles.actionButton, { backgroundColor: colors.error }]}
-            disabled={contract.contract_status_id === 6 || contract.contract_status_id === 5}
+            disabled={contract.contract_status_id === 6 || contract.contract_status_id === 5 || contract.contract_status_id === 2}
           >
             Cancel Contract
           </Button>
@@ -507,21 +679,38 @@ const ContractsInTransit = ({ navigation }) => {
 
   const renderHeader = () => (
     <>
-      {/* Warning Section */}
-      <Surface style={[styles.warningSurface, { backgroundColor: colors.surfaceVariant }]} elevation={1}>
-        <View style={styles.warningContainer}>
-          <IconButton icon="information" size={24} iconColor={colors.primary} />
-          <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant, flex: 1 }]}>
-            Important: Keep this app running in the foreground to ensure real-time location tracking for your active deliveries. Closing the app will stop location updates.
-          </Text>
-        </View>
-      </Surface>
-
-      {/* Time Display Section */}
+      {/* Time Display Section with Location Tracking Indicator */}
       <Surface style={[styles.timeSurface, { backgroundColor: colors.surface }]} elevation={1}>
-        <Text style={[styles.timeText, { color: colors.onSurface }, fonts.titleMedium]}>
-          {currentTime}
-        </Text>
+        <View style={styles.timeContainer}>
+          <Text style={[styles.timeText, { color: colors.onSurface }, fonts.titleMedium]}>
+            {currentTime}
+          </Text>
+          <View style={styles.trackingIndicatorContainer}>
+            <View style={[
+              styles.trackingIndicator, 
+              { 
+                backgroundColor: isLocationTrackingActive ? colors.primary : colors.outline,
+                borderColor: isLocationTrackingActive ? colors.primary : colors.outline
+              }
+            ]}>
+              <IconButton 
+                icon={isLocationTrackingActive ? "crosshairs-gps" : "crosshairs-off"} 
+                size={16} 
+                iconColor={isLocationTrackingActive ? colors.onPrimary : colors.onSurfaceVariant} 
+              />
+            </View>
+            <Text style={[
+              styles.trackingText, 
+              { color: isLocationTrackingActive ? colors.primary : colors.onSurfaceVariant }, 
+              fonts.labelSmall
+            ]}>
+              {isLocationTrackingActive ? 'LIVE' : 'OFF'}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.timeContainer}>
+        
+        </View>
       </Surface>
 
       {/* Filters Section */}
@@ -684,6 +873,8 @@ const ContractsInTransit = ({ navigation }) => {
         setModalVisible(false)
         setShowCancelConfirmation(false)
         setActionLoading(false)
+        setSelectedContract(null)
+        setDialogType(null)
       }}>
         <ContractActionModalContent
           dialogType={dialogType}
@@ -691,6 +882,8 @@ const ContractsInTransit = ({ navigation }) => {
             setModalVisible(false)
             setShowCancelConfirmation(false)
             setActionLoading(false)
+            setSelectedContract(null)
+            setDialogType(null)
           }}
           onConfirm={handleDialogAction}
           loading={actionLoading}
@@ -709,26 +902,32 @@ const styles = StyleSheet.create({
   flatListContent: {
     paddingBottom: 20,
   },
-  warningSurface: {
-    margin: 16,
-    marginBottom: 8,
-    borderRadius: 12,
-  },
-  warningContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-  },
   timeSurface: {
     marginHorizontal: 16,
     marginBottom: 16,
     padding: 16,
     borderRadius: 12,
+  },
+  timeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
   timeText: {
     fontWeight: '600',
   },
+  trackingIndicatorContainer: {
+    alignItems: 'center',
+  },
+  trackingIndicator: {
+    borderRadius: 20,
+    borderWidth: 2,
+    marginBottom: 4,
+  },
+  trackingText: {
+    fontWeight: '600',
+  },
+
   searchSurface: {
     marginHorizontal: 16,
     marginBottom: 8,
