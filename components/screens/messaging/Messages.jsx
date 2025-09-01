@@ -43,7 +43,7 @@ const getDisplayName = (user) =>
 const getAvatarSource = (user) =>
   user?.pfp_id
     ? { uri: user.pfp_id }
-    : require("../../../assets/profile-placeholder.png")
+    : null
 
 const getStatusColor = (statusId, colors, isOwn) => {
   if (!isOwn) return colors.onSurfaceVariant
@@ -112,7 +112,19 @@ const ConversationCard = ({
         ]}
       >
         <Card.Content style={styles.cardContent}>
-          <Avatar.Image size={48} source={getAvatarSource(conversation.otherUser)} />
+          {getAvatarSource(conversation.otherUser) ? (
+            <Avatar.Image 
+              size={48} 
+              source={getAvatarSource(conversation.otherUser)} 
+            />
+          ) : (
+            <Avatar.Text 
+              size={48} 
+              label={conversation.otherUser?.first_name ? conversation.otherUser.first_name[0].toUpperCase() : 'U'}
+              style={{ backgroundColor: colors.primary }}
+              labelStyle={{ color: colors.onPrimary }}
+            />
+          )}
           <View style={styles.cardTextContainer}>
             <Text
               style={[

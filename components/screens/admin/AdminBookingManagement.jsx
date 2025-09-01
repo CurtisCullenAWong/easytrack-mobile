@@ -12,7 +12,7 @@ const AdminBookingManagement = ({ navigation }) => {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Header navigation={navigation} title="Booking Management" />
 
-      <View style={styles.segmentContainer}>
+      {/* <View style={styles.segmentContainer}>
         <SegmentedButtons
           value={mode}
           onValueChange={setMode}
@@ -22,7 +22,7 @@ const AdminBookingManagement = ({ navigation }) => {
           ]}
           style={{ marginHorizontal: 16 }}
         />
-      </View>
+      </View> */}
 
       <View style={styles.content}>
         {mode === 'made' ? (

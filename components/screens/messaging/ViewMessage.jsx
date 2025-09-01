@@ -281,7 +281,7 @@ const ViewMessage = ({ navigation, route }) => {
   const getAvatarSource = (user) =>
     user?.pfp_id
       ? { uri: user.pfp_id }
-      : require("../../../assets/profile-placeholder.png")
+      : null
 
   const getStatusColor = (statusId, colors, isOwn) => {
     if (!isOwn) return colors.onSurfaceVariant
@@ -454,7 +454,16 @@ const ViewMessage = ({ navigation, route }) => {
           }
           style={{ marginRight: 12 }}
         >
-          <Avatar.Image size={40} source={getAvatarSource(otherUser)} />
+          {getAvatarSource(otherUser) ? (
+            <Avatar.Image size={40} source={getAvatarSource(otherUser)} />
+          ) : (
+            <Avatar.Text 
+              size={40} 
+              label={otherUser?.first_name ? otherUser.first_name[0].toUpperCase() : 'U'}
+              style={{ backgroundColor: colors.primary }}
+              labelStyle={{ color: colors.onPrimary }}
+            />
+          )}
         </TouchableOpacity>
       </Appbar.Header>
 

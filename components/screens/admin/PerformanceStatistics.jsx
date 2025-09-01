@@ -6,9 +6,20 @@ import { supabase } from '../../../lib/supabaseAdmin'
 import { analyzeDeliveryStats } from '../../../utils/geminiUtils'
 import useSnackbar from '../../hooks/useSnackbar'
 
+/**
+ * Admin Performance Statistics Screen Component
+ * 
+ * Displays comprehensive performance statistics for the entire system including
+ * delivery metrics, success rates, earnings, and AI-powered insights for administrators.
+ * 
+ * @param {Object} navigation - React Navigation object
+ * @returns {JSX.Element} The admin performance statistics screen
+ */
 const PerformanceStatisticsScreen = ({ navigation }) => {
   const { colors } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
+  
+  // State management
   const [stats, setStats] = useState({
     totalDeliveries: 0,
     successfulDeliveries: 0,
@@ -25,6 +36,10 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
   const [showDateMenu, setShowDateMenu] = useState(false)
   const [dateFilter, setDateFilter] = useState('all')
 
+  /**
+   * Get available date filter options
+   * @returns {Array} Array of date filter options
+   */
   const getDateFilterOptions = () => {
     return [
       { label: 'All Time', value: 'all' },
@@ -37,10 +52,19 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
     ]
   }
 
+  /**
+   * Get display label for date filter value
+   * @param {string} value - Date filter value
+   * @returns {string} Display label
+   */
   const getDateFilterLabel = (value) => {
     return getDateFilterOptions().find(opt => opt.value === value)?.label || 'All Time'
   }
 
+  /**
+   * Calculate date range based on selected filter
+   * @returns {Object|null} Date range object with start and end dates
+   */
   const getDateRange = () => {
     const today = new Date()
     today.setHours(23, 59, 59, 999) // End of today
@@ -89,7 +113,7 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
           end: today.toISOString()
         }
       case 'last_year':
-        const lastYearEnd = new Date(today.getFullYear() - 1, 11, 31, 23, 59, 59, 999)
+        const lastYearEnd = new Date(today.getFullYear(), 0, 0, 23, 59, 59, 999)
         return {
           start: lastYear.toISOString(),
           end: lastYearEnd.toISOString()
@@ -99,16 +123,23 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
     }
   }
 
+  /**
+   * Handle pull-to-refresh functionality
+   */
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
     await fetchStatistics()
     setRefreshing(false)
   }, [])
 
+  // Effect to fetch statistics when date filter changes
   useEffect(() => {
     fetchStatistics()
   }, [dateFilter])
 
+  /**
+   * Fetch and calculate performance statistics
+   */
   const fetchStatistics = async () => {
     try {
       setLoading(true)
@@ -174,23 +205,24 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
         return acc
       }, {})
 
-      // Calculate statistics
+      // Calculate basic statistics
       const totalDeliveries = deliveries.length
       const successfulDeliveries = deliveries.filter(d => d.contract_status_id === 5).length
       const failedDeliveries = deliveries.filter(d => d.contract_status_id === 6).length
       const successRate = totalDeliveries > 0 ? successfulDeliveries / totalDeliveries : 0
 
+      // Calculate average delivery time in hours
       const validDeliveryTimes = deliveries
         .filter(d => d.pickup_at && d.delivered_at)
         .map(d => {
           const pickup = new Date(d.pickup_at)
           const delivered = new Date(d.delivered_at)
-          return (delivered - pickup) / (1000 * 60)
+          return (delivered - pickup) / (1000 * 60 * 60) // Convert to hours
         })
 
       const averageDeliveryTime =
         validDeliveryTimes.length > 0
-          ? Math.round(validDeliveryTimes.reduce((a, b) => a + b, 0) / validDeliveryTimes.length)
+          ? Math.round((validDeliveryTimes.reduce((a, b) => a + b, 0) / validDeliveryTimes.length) * 10) / 10 // Round to 1 decimal place
           : 0
 
       // Calculate total earnings
@@ -243,6 +275,9 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
     }
   }
 
+  /**
+   * Generate AI-powered insights based on performance data
+   */
   const generateInsights = async () => {
     try {
       setAnalyzing(true)
@@ -285,6 +320,26 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
     }
   }
 
+  /**
+   * Format delivery time for display
+   * @param {number} timeInHours - Time in hours
+   * @returns {string} Formatted time string
+   */
+  const formatDeliveryTime = (timeInHours) => {
+    if (timeInHours === 0) return '0 hours'
+    if (timeInHours < 1) {
+      const minutes = Math.round(timeInHours * 60)
+      return `${minutes} minute${minutes !== 1 ? 's' : ''}`
+    }
+    const hours = Math.floor(timeInHours)
+    const minutes = Math.round((timeInHours - hours) * 60)
+    
+    if (minutes === 0) {
+      return `${hours} hour${hours !== 1 ? 's' : ''}`
+    }
+    return `${hours} hour${hours !== 1 ? 's' : ''} ${minutes} minute${minutes !== 1 ? 's' : ''}`
+  }
+
   return (
     <ScrollView 
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -298,6 +353,8 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
       }>
       <Header navigation={navigation} title="Performance Statistics" />
       {SnackbarElement}
+      
+      {/* Date Filter Section */}
       <View style={styles.filterContainer}>
         <View style={styles.filterRow}>
           <Text style={[styles.filterLabel, { color: colors.onSurface }]}>Filter by Date:</Text>
@@ -435,7 +492,7 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
                 Average Delivery Time
               </Text>
               <Text variant="displaySmall" style={[styles.valueText, { color: colors.onSurface }]}>
-                {stats.averageDeliveryTime} minutes
+                {formatDeliveryTime(stats.averageDeliveryTime)}
               </Text>
             </Card.Content>
           </Card>
@@ -521,6 +578,7 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
   )
 }
 
+// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,

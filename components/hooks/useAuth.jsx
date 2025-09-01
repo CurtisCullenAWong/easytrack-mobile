@@ -39,12 +39,12 @@ const useAuth = (navigation = null, onClose = null) => {
 
       if (error) {
         // Fail closed to avoid leaking existence; surface a general error
-        showSnackbar('Email existence check failed:', error)
+        showSnackbar('Email existence check failed: ' + error.message)
         return { exists: false, userStatusId: null }
       }
       return { exists: Boolean(data?.id), userStatusId: data?.user_status_id ?? null }
     } catch (e) {
-      showSnackbar('Email existence check exception:', e)
+      showSnackbar('Email existence check exception: ' + e.message)
       return { exists: false, userStatusId: null }
     }
   }

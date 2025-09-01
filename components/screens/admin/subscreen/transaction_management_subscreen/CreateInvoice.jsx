@@ -27,13 +27,10 @@ const CreateInvoice = () => {
   const [signatureVisible, setSignatureVisible] = useState(false)
   const [activeSigner, setActiveSigner] = useState(null)
   const [certify, setCertify] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [confirmationVisible, setConfirmationVisible] = useState(false)
   
   // Data states
   const [summaryStatusId, setSummaryStatusId] = useState(null)
   const [currentInvoiceId, setCurrentInvoiceId] = useState(null)
-  const [generatedInvoiceId, setGeneratedInvoiceId] = useState('')
 
   const signatureRef = useRef(null)
 
@@ -41,87 +38,6 @@ const CreateInvoice = () => {
   const hasInvoiceAssigned = useMemo(() => Boolean(currentInvoiceId), [currentInvoiceId])
   const isReceipted = useMemo(() => summaryStatusId === 2, [summaryStatusId])
   const canEditSignatures = true
-
-  // Invoice ID generation utilities
-  const generateInvoiceIdFormat = () => {
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = String(now.getMonth() + 1).padStart(2, '0')
-    const day = String(now.getDate()).padStart(2, '0')
-    
-    // Generate 4 random alphanumeric characters
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    let randomPart = ''
-    for (let i = 0; i < 4; i++) {
-      randomPart += chars.charAt(Math.floor(Math.random() * chars.length))
-    }
-    
-    return `INV${year}${month}${day}${randomPart}`
-  }
-
-  // Check if invoice ID exists in summary table
-  const checkInvoiceIdExists = async (invoiceId) => {
-    try {
-      const { data, error } = await supabase
-        .from('summary')
-        .select('id')
-        .eq('invoice_id', invoiceId)
-        .single()
-      
-      if (error && error.code === 'PGRST116') {
-        // No record found, invoice_id is unique
-        return false
-      } else if (error) {
-        throw error
-      }
-      
-      // Record found, invoice_id already exists
-      return true
-    } catch (error) {
-      console.error('Error checking invoice ID existence:', error)
-      throw error
-    }
-  }
-
-  // Generate a unique invoice ID that doesn't exist in the summary table
-  const generateUniqueInvoiceId = async () => {
-    let attempts = 0
-    const maxAttempts = 10
-    
-    while (attempts < maxAttempts) {
-      const newInvoiceId = generateInvoiceIdFormat()
-      
-      try {
-        const exists = await checkInvoiceIdExists(newInvoiceId)
-        if (!exists) {
-          return newInvoiceId
-        }
-      } catch (error) {
-        console.error(`Error checking invoice ID on attempt ${attempts + 1}:`, error)
-        throw error
-      }
-      
-      attempts++
-    }
-    
-    throw new Error('Failed to generate unique invoice ID after maximum attempts')
-  }
-
-  // Ensure the displayed invoice ID is unique, generate new one if needed
-  const ensureUniqueInvoiceId = async (invoiceId) => {
-    try {
-      const exists = await checkInvoiceIdExists(invoiceId)
-      if (!exists) {
-        return invoiceId
-      }
-      
-      // If the displayed ID exists, generate a new unique one
-      return await generateUniqueInvoiceId()
-    } catch (error) {
-      console.error('Error ensuring unique invoice ID:', error)
-      throw error
-    }
-  }
 
   // Signature handling functions
   const handleSignatureSave = useCallback((signatureDataUrl, signerType) => {
@@ -161,65 +77,6 @@ const CreateInvoice = () => {
     }
   }, [])
 
-  const handleConfirm = async () => {
-    if (!summary?.summary_id) {
-      showSnackbar('Missing summary reference')
-      return
-    }
-    if (hasInvoiceAssigned) {
-      showSnackbar('Invoice ID already assigned')
-      return
-    }
-    setConfirmationVisible(true)
-  }
-
-  const performStatusUpdate = async () => {
-    try {
-      setIsSubmitting(true)
-      
-      // Permanently assign an invoice ID and mark as receipted
-      const uniqueInvoiceId = await ensureUniqueInvoiceId(generatedInvoiceId)
-
-      // Atomic update: only set invoice_id if it is currently NULL
-      const { data: updatedRow, error: updateError } = await supabase
-        .from('summary')
-        .update({ invoice_id: uniqueInvoiceId })
-        .eq('id', summary.summary_id)
-        .is('invoice_id', null)
-        .select('id, invoice_id')
-        .single()
-
-      if (updateError) {
-        // If no row was updated because invoice_id is already set, fetch and use the existing ID
-        if (updateError.code === 'PGRST116') {
-          const { data: existing, error: fetchError } = await supabase
-            .from('summary')
-            .select('invoice_id')
-            .eq('id', summary.summary_id)
-            .single()
-          if (fetchError) throw fetchError
-          if (existing?.invoice_id) {
-            setCurrentInvoiceId(existing.invoice_id)
-            showSnackbar('Invoice ID already assigned. Using existing ID.', true)
-            return
-          }
-          // Fallback: if still no invoice_id, surface a friendly error
-          throw new Error('Unable to assign or retrieve Invoice ID')
-        }
-        throw updateError
-      }
-
-      setSummaryStatusId(2)
-      setCurrentInvoiceId(updatedRow?.invoice_id || uniqueInvoiceId)
-      showSnackbar('Invoice ID permanently assigned', true)
-    } catch (err) {
-      console.error(err)
-      showSnackbar(`Failed to update summary: ${err.message}`)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
   const buildTransactionsPayload = () => [{ summary_id: summary?.summary_id }]
 
   const buildInvoiceData = () => {
@@ -227,7 +84,7 @@ const CreateInvoice = () => {
     const due = new Date(now)
     due.setDate(due.getDate() + 30)
     return {
-      invoice_id: currentInvoiceId || generatedInvoiceId,
+      invoice_id: currentInvoiceId,
       summary_id: summary?.summary_id,
       date: now.toISOString(),
       due_date: due.toISOString(),
@@ -241,7 +98,7 @@ const CreateInvoice = () => {
         return
       }
       if (!hasInvoiceAssigned) {
-        showSnackbar('Please assign an Invoice ID before printing or sharing')
+        showSnackbar('No Invoice ID available for this summary')
         return
       }
       await printPDF(
@@ -270,7 +127,7 @@ const CreateInvoice = () => {
         return
       }
       if (!hasInvoiceAssigned) {
-        showSnackbar('Please assign an Invoice ID before printing or sharing')
+        showSnackbar('No Invoice ID available for this summary')
         return
       }
       await sharePDF(
@@ -387,9 +244,6 @@ const CreateInvoice = () => {
 
   useFocusEffect(
     useCallback(() => {
-      // Generate new invoice ID on focus
-      setGeneratedInvoiceId(generateInvoiceIdFormat())
-      
       // Reset signature states
       setPreparedSignatureDataUrl('')
       setPreparedSignatureSize(null)
@@ -433,11 +287,11 @@ const CreateInvoice = () => {
             {/* Invoice ID */}
             <Text style={[styles.label, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>Invoice ID</Text>
             <Text style={[styles.value, { color: colors.primary }, fonts.titleMedium]}>
-              {currentInvoiceId || generatedInvoiceId}
+              {currentInvoiceId || 'Not assigned'}
             </Text>
-            {hasInvoiceAssigned && (
+            {!hasInvoiceAssigned && (
               <Text style={[styles.value, { color: colors.onSurfaceVariant, fontSize: 12 }, fonts.bodySmall]}>
-                (Current assigned invoice)
+                (Invoice ID must be assigned during summary generation)
               </Text>
             )}
             <Divider style={[styles.divider, { backgroundColor: colors.outline }]} />
@@ -464,28 +318,9 @@ const CreateInvoice = () => {
               </Text>
             </View>
 
-            {/* Include e-signatures toggle removed; signatures are always allowed */}
-
             <View style={{ height: 8 }} />
 
-            {/* Notice if invoice already assigned */}
-            {hasInvoiceAssigned && (
-              <></>
-            )}
-            {/* Confirm Button */}
-            {!hasInvoiceAssigned && (
-              <Button
-                mode="contained"
-                onPress={handleConfirm}
-                disabled={isSubmitting}
-                loading={isSubmitting}
-                style={{ marginTop: 16 }}
-                contentStyle={{ height: 48 }}
-              >
-                Permanently Assign Invoice ID
-              </Button>
-            )}
-            {/* Print / Share buttons - always available */}
+            {/* Print / Share buttons - only available if invoice ID is assigned */}
             <Button
               mode="outlined"
               icon="printer"
@@ -540,43 +375,6 @@ const CreateInvoice = () => {
               <Button mode="text" onPress={() => setSignatureVisible(false)} style={{ marginTop: 8, paddingHorizontal: 16, paddingBottom: 16 }}>Close</Button>
             </View>
           </Modal>
-
-          {/* Confirmation Dialog for Permanent Assignment */}
-          <Modal
-            visible={confirmationVisible}
-            onDismiss={() => setConfirmationVisible(false)}
-            contentContainerStyle={[styles.confirmationModal, { backgroundColor: colors.surface }]}
-          >
-            <View style={styles.confirmationContent}>
-              <Text style={[styles.confirmationTitle, { color: colors.onSurface }, fonts.titleLarge]}>
-                Confirm Action
-              </Text>
-              <Text style={[styles.confirmationMessage, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>
-                This will permanently assign an Invoice ID and mark the summary as receipted. This action cannot be undone.
-              </Text>
-              <View style={styles.confirmationButtons}>
-                <Button
-                  mode="outlined"
-                  onPress={() => setConfirmationVisible(false)}
-                  style={{ flex: 1, marginRight: 8 }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  mode="contained"
-                  onPress={() => {
-                    setConfirmationVisible(false)
-                    performStatusUpdate()
-                  }}
-                  style={{ flex: 1, marginLeft: 8 }}
-                  loading={isSubmitting}
-                  disabled={isSubmitting}
-                >
-                  Confirm
-                </Button>
-              </View>
-            </View>
-          </Modal>
       </Portal>
     </ScrollView>
   )
@@ -594,11 +392,6 @@ const styles = StyleSheet.create({
   fullscreenModal: { flex: 1, margin: 0, borderRadius: 0, paddingTop: 16 },
   signatureModalContent: { flex: 1 },
   fullscreenSignaturePad: { flex: 1, minHeight: '75%' },
-  confirmationModal: { margin: 20, borderRadius: 8 },
-  confirmationContent: { padding: 24 },
-  confirmationTitle: { marginBottom: 16, textAlign: 'center' },
-  confirmationMessage: { marginBottom: 24, textAlign: 'center', lineHeight: 20 },
-  confirmationButtons: { flexDirection: 'row', gap: 8 },
 })
 
 export default CreateInvoice

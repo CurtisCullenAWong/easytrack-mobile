@@ -13,11 +13,13 @@ const TransactionSummary = () => {
   const [currentTime, setCurrentTime] = useState('')
   const [confirmDialogVisible, setConfirmDialogVisible] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [generatedInvoiceId, setGeneratedInvoiceId] = useState('')
+  const [generatedSummaryId, setGeneratedSummaryId] = useState('')
 
   const { summaryData, transactions, pendingContracts } = route.params
 
-  // Generate computer-generated summary ID
-  const generateSummaryId = () => {
+  // Generate computer-generated IDs
+  const generateIds = () => {
     const now = new Date()
     const year = now.getFullYear()
     const month = String(now.getMonth() + 1).padStart(2, '0')
@@ -30,7 +32,60 @@ const TransactionSummary = () => {
       randomPart += chars.charAt(Math.floor(Math.random() * chars.length))
     }
     
-    return `SUM${year}${month}${day}${randomPart}`
+    return {
+      summaryId: `SUM${year}${month}${day}${randomPart}`,
+      invoiceId: `INV${year}${month}${day}${randomPart}`
+    }
+  }
+
+  // Check if ID exists in summary table
+  const checkIdExists = async (id, field = 'id') => {
+    try {
+      const { data, error } = await supabase
+        .from('summary')
+        .select('id')
+        .eq(field, id)
+        .single()
+      
+      if (error && error.code === 'PGRST116') {
+        // No record found, ID is unique
+        return false
+      } else if (error) {
+        throw error
+      }
+      
+      // Record found, ID already exists
+      return true
+    } catch (error) {
+      console.error(`Error checking ${field} existence:`, error)
+      throw error
+    }
+  }
+
+  // Generate unique IDs that don't exist in the summary table
+  const generateUniqueIds = async () => {
+    let attempts = 0
+    const maxAttempts = 10
+    
+    while (attempts < maxAttempts) {
+      const { summaryId, invoiceId } = generateIds()
+      
+      try {
+        const summaryExists = await checkIdExists(summaryId, 'id')
+        const invoiceExists = await checkIdExists(invoiceId, 'invoice_id')
+        
+        if (!summaryExists && !invoiceExists) {
+          return { summaryId, invoiceId }
+        }
+      } catch (error) {
+        console.error(`Error checking IDs on attempt ${attempts + 1}:`, error)
+        throw error
+      }
+      
+      attempts++
+    }
+    
+    throw new Error('Failed to generate unique IDs after maximum attempts')
   }
 
   const handleConfirmSummary = async () => {
@@ -45,13 +100,15 @@ const TransactionSummary = () => {
   const confirmGenerateSummary = async () => {
     try {
       setIsProcessing(true)
-      const summaryId = generateSummaryId()
+      
+      // Generate unique IDs
+      const { summaryId, invoiceId } = await generateUniqueIds()
       
       const { error: summaryError } = await supabase
         .from('summary')
         .insert({
           id: summaryId,
-          summary_status_id: 1
+          invoice_id: invoiceId
         })
         .select()
         .single()
@@ -69,7 +126,8 @@ const TransactionSummary = () => {
         throw updateError
       }
 
-      showSnackbar('Summary generated successfully', true)
+      const successMessage = `Summary generated successfully with Summary ID: ${summaryId} and Invoice ID: ${invoiceId}`
+      showSnackbar(successMessage, true)
       
       // Navigate back to TransactionManagement
       navigation.navigate('TransactionManagement', { segment: 'pending' })
@@ -86,7 +144,10 @@ const TransactionSummary = () => {
   // Reset form fields when screen is focused
   useFocusEffect(
     useCallback(() => {
-      // No form fields to reset in this version
+      // Generate new IDs on focus
+      const { summaryId, invoiceId } = generateIds()
+      setGeneratedSummaryId(summaryId)
+      setGeneratedInvoiceId(invoiceId)
     }, [])
   )
 
@@ -208,6 +269,42 @@ const TransactionSummary = () => {
                 Review the summary details above. Click "Generate Summary" to create the summary and tag the selected contracts.
               </Text>
               
+              {/* ID Preview Section */}
+              <View style={styles.idPreviewSection}>
+                <Text style={[styles.idPreviewTitle, { color: colors.onSurface }, fonts.titleSmall]}>
+                  Generated IDs Preview
+                </Text>
+                <Text style={[styles.idPreviewDescription, { color: colors.onSurfaceVariant }, fonts.bodySmall]}>
+                  The following unique IDs will be generated for this summary:
+                </Text>
+                
+                <View style={styles.idPreviewContainer}>
+                  <View style={styles.idPreviewRow}>
+                    <Text style={[styles.idPreviewLabel, { color: colors.onSurfaceVariant }, fonts.bodySmall]}>
+                      Summary ID:
+                    </Text>
+                    <Text style={[styles.idPreviewValue, { color: colors.primary }, fonts.bodyMedium]}>
+                      {generatedSummaryId}
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.idPreviewRow}>
+                    <Text style={[styles.idPreviewLabel, { color: colors.onSurfaceVariant }, fonts.bodySmall]}>
+                      Invoice ID:
+                    </Text>
+                    <Text style={[styles.idPreviewValue, { color: colors.secondary }, fonts.bodyMedium]}>
+                      {generatedInvoiceId}
+                    </Text>
+                  </View>
+                </View>
+                
+                <View style={styles.idNoteContainer}>
+                  <Text style={[styles.idNoteText, { color: colors.primary }, fonts.bodySmall]}>
+                    ✓ Summary will be marked as receipted with both IDs assigned
+                  </Text>
+                </View>
+              </View>
+              
               <View style={styles.buttonContainer}>
                 <Button
                   mode="contained"
@@ -276,6 +373,18 @@ const TransactionSummary = () => {
           <Dialog.Content>
             <Text style={[styles.dialogText, { color: colors.onSurface }, fonts.bodyMedium]}>
               Are you sure you want to generate a summary for {pendingContracts?.length || 0} pending contracts?
+            </Text>
+            
+            <View style={styles.dialogIdPreview}>
+              <Text style={[styles.dialogIdLabel, { color: colors.onSurfaceVariant }, fonts.bodySmall]}>
+                Summary ID: <Text style={{ color: colors.primary, fontWeight: 'bold' }}>{generatedSummaryId}</Text>
+              </Text>
+              <Text style={[styles.dialogIdLabel, { color: colors.onSurfaceVariant }, fonts.bodySmall]}>
+                Invoice ID: <Text style={{ color: colors.secondary, fontWeight: 'bold' }}>{generatedInvoiceId}</Text>
+              </Text>
+            </View>
+            
+            <Text style={[styles.dialogText, { color: colors.onSurface }, fonts.bodyMedium]}>
               This action cannot be undone.
             </Text>
           </Dialog.Content>
@@ -399,6 +508,50 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 20,
   },
+  idPreviewSection: {
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+  },
+  idPreviewTitle: {
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  idPreviewDescription: {
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  idPreviewContainer: {
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  idPreviewRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  idPreviewLabel: {
+    fontWeight: '500',
+  },
+  idPreviewValue: {
+    fontWeight: 'bold',
+  },
+  idNoteContainer: {
+    padding: 8,
+    backgroundColor: '#e8f5e8',
+    borderRadius: 4,
+    borderLeftWidth: 3,
+    borderLeftColor: '#4caf50',
+  },
+  idNoteText: {
+    fontWeight: '500',
+  },
   buttonContainer: {
     gap: 12,
   },
@@ -443,6 +596,15 @@ const styles = StyleSheet.create({
   },
   dialogText: {
     lineHeight: 22,
+  },
+  dialogIdPreview: {
+    marginVertical: 12,
+    padding: 12,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 6,
+  },
+  dialogIdLabel: {
+    marginBottom: 4,
   },
   dialogActions: {
     paddingHorizontal: 20,

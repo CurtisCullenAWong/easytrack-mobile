@@ -71,7 +71,7 @@ const NewMessage = ({ navigation }) => {
 
   const getAvatar = (p) => {
     if (p.pfp_id) return { uri: p.pfp_id }
-    return require('../../../assets/profile-placeholder.png')
+    return null
   }
 
   const openChat = (p) => {
@@ -83,7 +83,16 @@ const NewMessage = ({ navigation }) => {
       <TouchableOpacity onPress={() => openChat(item)}>
         <Card style={[styles.card, { backgroundColor: colors.surface, elevation: colors.elevation?.level1 || 1 }]}>
           <Card.Content style={styles.row}>
-            <Avatar.Image size={44} source={getAvatar(item)} />
+            {getAvatar(item) ? (
+              <Avatar.Image size={44} source={getAvatar(item)} />
+            ) : (
+              <Avatar.Text 
+                size={44} 
+                label={item?.first_name ? item.first_name[0].toUpperCase() : 'U'}
+                style={{ backgroundColor: colors.primary }}
+                labelStyle={{ color: colors.onPrimary }}
+              />
+            )}
             <View style={styles.info}>
               <Text selectable style={[{ color: colors.onSurface }, fonts.titleMedium]}>{getDisplayName(item)}</Text>
               {item.email ? (

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native'
-import { useTheme, TextInput, Button, Text, IconButton, Menu, Surface } from 'react-native-paper'
+import { useTheme, TextInput, Button, Text, IconButton, Menu, Surface, List } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'
@@ -59,6 +59,10 @@ const INITIAL_CONTRACT = {
   cityMunicipality: "",
   barangay: "",
   postalCode: "",
+  street: "",
+  villageBuilding: "",
+  roomUnitNo: "",
+  landmarkEntrance: "",
   errors: {
     caseNumber: false,
     firstName: false,
@@ -73,7 +77,10 @@ const INITIAL_CONTRACT = {
     province: false,
     cityMunicipality: false,
     barangay: false,
-    postalCode: false
+    postalCode: false,
+    street: false,
+    villageBuilding: false,
+    landmarkEntrance: false
   }
 }
 
@@ -86,35 +93,69 @@ const INPUT_LIMITS = {
   flightNumber: { maxLength: 6, minLength: 3 },
   itemDescription: { maxLength: 200, minLength: 6 },
   weight: { maxLength: 2, minLength: 1 },
-  quantity: { maxLength: 1, minLength: 1 },
+  quantity: { maxLength: 2, minLength: 1 },
   caseNumber: { maxLength: 10, minLength: 6 },
   province: { maxLength: 50, minLength: 2 },
   cityMunicipality: { maxLength: 50, minLength: 2 },
   barangay: { maxLength: 50, minLength: 2 },
   postalCode: { maxLength: 4, minLength: 4 },
-  addressLine1: { maxLength: 100, minLength: 5 },
-  addressLine2: { maxLength: 50 }
+  street: { maxLength: 50, minLength: 5 },
+  villageBuilding: { maxLength: 50, minLength: 5 },
+  roomUnitNo: { maxLength: 50 },
+  landmarkEntrance: { maxLength: 100 }
 }
 
 // Validation patterns
 const VALIDATION_PATTERNS = {
   contact: /^9\d{9}$/, // Must start with 9 and be exactly 10 digits
   flightNumber: /^[A-Z0-9]{3,6}$/, // Alphanumeric, 3-6 characters
-  caseNumber: /^[A-Z0-9]{6,10}$/, // Alphanumeric, 6-10 characters (updated range)
+  caseNumber: /^[A-Z0-9]{6,10}$/, // Alphanumeric, 6-10 characters
   postalCode: /^\d{4}$/, // Exactly 4 digits
-  weight: /^([1-9]|1[0-9]|20)$/, // 1-20
-  quantity: /^[1-8]$/, // 1-8
+  weight: /^([1-9]|[1-5][0-9]|50)$/, // 1-50
+  quantity: /^([1-9]|10)$/, // 1-10
   // Address validation patterns
   province: /^[A-Za-z\s\-\.]+$/, // Letters, spaces, hyphens, dots
   cityMunicipality: /^[A-Za-z\s\-\.]+$/, // Letters, spaces, hyphens, dots
   barangay: /^[A-Za-z\s\-\.]+$/, // Letters, spaces, hyphens, dots
-  addressLine1: /^[A-Za-z0-9\s\-\.\,\#]+$/, // Letters, numbers, spaces, hyphens, dots, commas, hash
-  addressLine2: /^[A-Za-z0-9\s\-\.\,\#]*$/ // Optional: Letters, numbers, spaces, hyphens, dots, commas, hash
+  street: /^[A-Za-z0-9\s\-\.\,\#]+$/, // Letters, numbers, spaces, hyphens, dots, commas, hash
+  villageBuilding: /^[A-Za-z0-9\s\-\.\,\#]+$/, // Letters, numbers, spaces, hyphens, dots, commas, hash
+  roomUnitNo: /^[A-Za-z0-9\s\-\.\,\#]*$/, // Optional: Letters, numbers, spaces, hyphens, dots, commas, hash
+  landmarkEntrance: /^[A-Za-z0-9\s\-\.\,\#]*$/ // Optional: Letters, numbers, spaces, hyphens, dots, commas, hash
 }
 
   // Memoized Contract Form Component
 const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDelete, isLastContract, isDisabled }) => {
   const { colors, fonts } = useTheme()
+  const [expandedSections, setExpandedSections] = useState({
+    personalInfo: false,
+    luggageInfo: false,
+    deliveryAddress: false,
+    addressDetails: false
+  })
+
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }))
+  }
+
+  // Check if sections have errors and expand them
+  const hasPersonalInfoErrors = contract.errors?.firstName || contract.errors?.lastName || contract.errors?.contact
+  const hasLuggageInfoErrors = contract.errors?.itemDescription || contract.errors?.weight || contract.errors?.quantity || contract.errors?.flightNumber || contract.errors?.caseNumber
+  const hasDeliveryAddressErrors = contract.errors?.province || contract.errors?.cityMunicipality || contract.errors?.barangay || contract.errors?.postalCode
+  const hasAddressDetailsErrors = contract.errors?.street || contract.errors?.villageBuilding
+
+  // Auto-expand sections with errors
+  useEffect(() => {
+    setExpandedSections(prev => ({
+      ...prev,
+      personalInfo: hasPersonalInfoErrors || prev.personalInfo,
+      luggageInfo: hasLuggageInfoErrors || prev.luggageInfo,
+      deliveryAddress: hasDeliveryAddressErrors || prev.deliveryAddress,
+      addressDetails: hasAddressDetailsErrors || prev.addressDetails
+    }))
+  }, [contract.errors, hasPersonalInfoErrors, hasLuggageInfoErrors, hasDeliveryAddressErrors, hasAddressDetailsErrors])
 
   return (
     <View style={[styles.luggageBlock, { backgroundColor: colors.surface, borderColor: colors.primary, opacity: isDisabled ? 0.6 : 1 }]}>
@@ -131,215 +172,282 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
           iconColor={isLastContract ? colors.disabled : colors.error}
         />
       </View>
-              <View style={styles.nameRow}>
-          <TextInput
-            label="First Name*"
-            value={contract.firstName}
-            onChangeText={(text) => onInputChange(index, "firstName", filterSpecialCharacters(text, 'name'))}
-            mode="outlined"
-            style={[styles.nameField, { marginRight: 8 }]}
-            error={contract.errors?.firstName}
-            placeholder="Enter first name (2-50 characters)"
-            maxLength={INPUT_LIMITS.firstName.maxLength}
-            disabled={isDisabled}
-          />
-          <TextInput
-            label="M.I."
-            value={contract.middleInitial}
-            onChangeText={(text) => onInputChange(index, "middleInitial", filterSpecialCharacters(text, 'name'))}
-            mode="outlined"
-            style={[styles.middleInitialField]}
-            maxLength={INPUT_LIMITS.middleInitial.maxLength}
-            placeholder="M"
-            disabled={isDisabled}
-          />
-        </View>
-        <TextInput
-          label="Last Name*"
-          value={contract.lastName}
-          onChangeText={(text) => onInputChange(index, "lastName", filterSpecialCharacters(text, 'name'))}
-          mode="outlined"
-          style={{ marginBottom: 12 }}
-          error={contract.errors?.lastName}
-          placeholder="Enter last name (2-50 characters)"
-          maxLength={INPUT_LIMITS.lastName.maxLength}
-          disabled={isDisabled}
-        />
-      <TextInput
-        label="Owner's Contact Number*"
-        value={contract.contact}
-        onChangeText={(text) => onInputChange(index, "contact", filterSpecialCharacters(text, 'contact'))}
-        mode="outlined"
-        style={{ marginBottom: 12 }}
-        keyboardType="phone-pad"
-        left={<TextInput.Affix text="+63" />}
-        error={contract.errors?.contact}
-        maxLength={INPUT_LIMITS.contact.maxLength}
-        inputMode="numeric"
-        placeholder="9xxxxxxxxx (10 digits)"
-        disabled={isDisabled}
-      />
-      <TextInput
-        label="Luggage Description*"
-        value={contract.itemDescription}
-        onChangeText={(text) => onInputChange(index, "itemDescription", filterSpecialCharacters(text, 'itemDescription'))}
-        mode="outlined"
-        style={{ marginBottom: 12 }}
-        error={contract.errors?.itemDescription}
-        placeholder="Describe the luggage contents (6-200 characters)"
-        multiline
-        numberOfLines={2}
-        maxLength={INPUT_LIMITS.itemDescription.maxLength}
-        disabled={isDisabled}
-      />
-      <TextInput
-        label="Weight (kg)*"
-        value={contract.weight}
-        onChangeText={(text) => onInputChange(index, "weight", filterSpecialCharacters(text, 'weight'))}
-        inputMode="numeric"
-        mode="outlined"
-        style={{ marginBottom: 12 }}
-        error={contract.errors?.weight}
-        maxLength={INPUT_LIMITS.weight.maxLength}
-        placeholder="1-20 kg"
-        disabled={isDisabled}
-      />
-      <TextInput
-        label="Quantity*"
-        value={contract.quantity}
-        onChangeText={(text) => onInputChange(index, "quantity", filterSpecialCharacters(text, 'quantity'))}
-        inputMode="numeric"
-        mode="outlined"
-        style={{ marginBottom: 12 }}
-        error={contract.errors?.quantity}
-        maxLength={INPUT_LIMITS.quantity.maxLength}
-        placeholder="1-8 pieces"
-        disabled={isDisabled}
-      />
-      <TextInput
-        label="Flight Number*"
-        value={contract.flightNumber}
-        onChangeText={(text) => onInputChange(index, "flightNumber", filterSpecialCharacters(text, 'flightNumber').toUpperCase())}
-        mode="outlined"
-        style={{ marginBottom: 12 }}
-        error={contract.errors?.flightNumber}
-        maxLength={INPUT_LIMITS.flightNumber.maxLength}
-        placeholder="e.g., PR123, 5J1234"
-        disabled={isDisabled}
-      />
-      <TextInput
-        label="Case Number*"
-        value={contract.caseNumber}
-        onChangeText={(text) => onInputChange(index, "caseNumber", filterSpecialCharacters(text, 'caseNumber').toUpperCase())}
-        mode="outlined"
-        style={{ marginBottom: 12 }}
-        error={contract.errors?.caseNumber}
-        maxLength={INPUT_LIMITS.caseNumber.maxLength}
-        inputMode="text"
-        placeholder='XXXXXXXX (6-10 characters)'
-        disabled={isDisabled}
-      />
-              <View style={styles.addressSection}>
-        <Text style={[fonts.titleSmall, { color: colors.primary, marginBottom: 8 }]}>
-          Delivery Address
-        </Text>
-        <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant, marginBottom: 12, fontStyle: 'italic' }]}>
-          Please provide complete and accurate delivery information
-        </Text>
-        
-        <View style={styles.addressRow}>
-          <TextInput
-            label="Province*"
-            value={contract.province}
-            onChangeText={(text) => onInputChange(index, "province", filterSpecialCharacters(text, 'address'))}
-            mode="outlined"
-            style={[styles.addressField, { marginRight: 8 }]}
-            error={contract.errors?.province}
-            placeholder="e.g., Metro Manila (2-50 characters)"
-            maxLength={INPUT_LIMITS.province.maxLength}
-            autoCapitalize="words"
-            disabled={isDisabled}
-          />
-          <TextInput
-            label="City/Municipality*"
-            value={contract.cityMunicipality}
-            onChangeText={(text) => onInputChange(index, "cityMunicipality", filterSpecialCharacters(text, 'address'))}
-            mode="outlined"
-            style={styles.addressField}
-            error={contract.errors?.cityMunicipality}
-            placeholder="e.g., Manila (2-50 characters)"
-            maxLength={INPUT_LIMITS.cityMunicipality.maxLength}
-            autoCapitalize="words"
-            disabled={isDisabled}
-          />
-        </View>
-        
-        <View style={styles.addressRow}>
-          <TextInput
-            label="Barangay*"
-            value={contract.barangay}
-            onChangeText={(text) => onInputChange(index, "barangay", filterSpecialCharacters(text, 'address'))}
-            mode="outlined"
-            style={[styles.addressField, { marginRight: 8 }]}
-            error={contract.errors?.barangay}
-            placeholder="e.g., Tondo (2-50 characters)"
-            maxLength={INPUT_LIMITS.barangay.maxLength}
-            autoCapitalize="words"
-            disabled={isDisabled}
-          />
-          <TextInput
-            label="Postal Code*"
-            value={contract.postalCode}
-            onChangeText={(text) => onInputChange(index, "postalCode", filterSpecialCharacters(text, 'postalCode'))}
-            mode="outlined"
-            style={styles.addressField}
-            error={contract.errors?.postalCode}
-            placeholder="e.g., 1012 (4 digits)"
-            keyboardType="numeric"
-            maxLength={INPUT_LIMITS.postalCode.maxLength}
-            inputMode="numeric"
-            disabled={isDisabled}
-          />
-        </View>
-        
-        <TextInput
-          label="Village/Building*"
-          value={contract.addressLine1}
-          onChangeText={(text) => onInputChange(index, "addressLine1", filterSpecialCharacters(text, 'address'))}
-          mode="outlined"
-          style={{ marginBottom: 12 }}
-          error={contract.errors?.addressLine1}
-          placeholder="e.g., SM Mall of Asia, Greenbelt Tower (5-100 characters)"
-          maxLength={INPUT_LIMITS.addressLine1.maxLength}
-          autoCapitalize="words"
-          multiline
-          numberOfLines={2}
-          disabled={isDisabled}
-        />
-        <TextInput
-          label="Room/Unit No. (Optional)"
-          value={contract.addressLine2}
-          onChangeText={(text) => onInputChange(index, "addressLine2", filterSpecialCharacters(text, 'address'))}
-          mode="outlined"
-          style={{ marginBottom: 12 }}
-          placeholder="e.g., Unit 1234, Room 567 (max 50 characters)"
-          maxLength={INPUT_LIMITS.addressLine2.maxLength}
-          autoCapitalize="words"
-          error={contract.addressLine2 && !VALIDATION_PATTERNS.addressLine2.test(contract.addressLine2)}
-          disabled={isDisabled}
-        />
-      </View>
-      
-      <Button
-        mode="outlined"
-        onPress={() => onClear(index)}
-        style={{ marginTop: 12 }}
-        icon="refresh"
-        disabled={isDisabled}
+      <List.Accordion
+        title={`Personal Information${hasPersonalInfoErrors ? ' ⚠️' : ''}`}
+        expanded={expandedSections.personalInfo}
+        onPress={() => toggleSection('personalInfo')}
+        titleStyle={[fonts.titleSmall, { color: hasPersonalInfoErrors ? colors.error : colors.primary }]}
+        style={{ padding: 0, marginBottom: 8 }}
       >
-        Clear Form
-      </Button>
-    </View>
+        <View style={styles.sectionContent}>
+          <View style={styles.nameRow}>
+            <TextInput
+              label="First Name*"
+              value={contract.firstName}
+              onChangeText={(text) => onInputChange(index, "firstName", filterSpecialCharacters(text, 'name'))}
+              mode="outlined"
+              style={[styles.nameField, { marginRight: 8 }]}
+              error={contract.errors?.firstName}
+              placeholder="Enter first name (2-50 characters)"
+              maxLength={INPUT_LIMITS.firstName.maxLength}
+              disabled={isDisabled}
+            />
+            <TextInput
+              label="M.I."
+              value={contract.middleInitial}
+              onChangeText={(text) => onInputChange(index, "middleInitial", filterSpecialCharacters(text, 'name'))}
+              mode="outlined"
+              style={[styles.middleInitialField]}
+              maxLength={INPUT_LIMITS.middleInitial.maxLength}
+              placeholder="M"
+              disabled={isDisabled}
+            />
+          </View>
+          <TextInput
+            label="Last Name*"
+            value={contract.lastName}
+            onChangeText={(text) => onInputChange(index, "lastName", filterSpecialCharacters(text, 'name'))}
+            mode="outlined"
+            style={{ marginBottom: 12 }}
+            error={contract.errors?.lastName}
+            placeholder="Enter last name (2-50 characters)"
+            maxLength={INPUT_LIMITS.lastName.maxLength}
+            disabled={isDisabled}
+          />
+          <TextInput
+            label="Owner's Contact Number*"
+            value={contract.contact}
+            onChangeText={(text) => onInputChange(index, "contact", filterSpecialCharacters(text, 'contact'))}
+            mode="outlined"
+            style={{ marginBottom: 12 }}
+            keyboardType="phone-pad"
+            left={<TextInput.Affix text="+63" />}
+            error={contract.errors?.contact}
+            maxLength={INPUT_LIMITS.contact.maxLength}
+            inputMode="numeric"
+            placeholder="9xx xxx xxxx (10 digits)"
+            disabled={isDisabled}
+          />
+        </View>
+      </List.Accordion>
+      <List.Accordion
+        title={`Luggage Information${hasLuggageInfoErrors ? ' ⚠️' : ''}`}
+        expanded={expandedSections.luggageInfo}
+        onPress={() => toggleSection('luggageInfo')}
+        titleStyle={[fonts.titleSmall, { color: hasLuggageInfoErrors ? colors.error : colors.primary }]}
+        style={{ padding: 0, marginBottom: 8 }}
+      >
+        <View style={styles.sectionContent}>
+          <TextInput
+            label="Luggage Description*"
+            value={contract.itemDescription}
+            onChangeText={(text) => onInputChange(index, "itemDescription", filterSpecialCharacters(text, 'itemDescription'))}
+            mode="outlined"
+            style={{ marginBottom: 12 }}
+            error={contract.errors?.itemDescription}
+            placeholder="Describe the luggage contents (6-200 characters)"
+            multiline
+            numberOfLines={2}
+            maxLength={INPUT_LIMITS.itemDescription.maxLength}
+            disabled={isDisabled}
+          />
+          <TextInput
+            label="Weight (kg)*"
+            value={contract.weight}
+            onChangeText={(text) => onInputChange(index, "weight", filterSpecialCharacters(text, 'weight'))}
+            inputMode="numeric"
+            mode="outlined"
+            style={{ marginBottom: 12 }}
+            error={contract.errors?.weight}
+            maxLength={INPUT_LIMITS.weight.maxLength}
+            placeholder="1-50 kg"
+            disabled={isDisabled}
+          />
+          <TextInput
+            label="Quantity*"
+            value={contract.quantity}
+            onChangeText={(text) => onInputChange(index, "quantity", filterSpecialCharacters(text, 'quantity'))}
+            inputMode="numeric"
+            mode="outlined"
+            style={{ marginBottom: 12 }}
+            error={contract.errors?.quantity}
+            maxLength={INPUT_LIMITS.quantity.maxLength}
+            placeholder="1-10 pieces"
+            disabled={isDisabled}
+          />
+          <TextInput
+            label="Flight Number*"
+            value={contract.flightNumber}
+            onChangeText={(text) => onInputChange(index, "flightNumber", filterSpecialCharacters(text, 'flightNumber').toUpperCase())}
+            mode="outlined"
+            style={{ marginBottom: 12 }}
+            error={contract.errors?.flightNumber}
+            maxLength={INPUT_LIMITS.flightNumber.maxLength}
+            placeholder="e.g., PR123, 5J1234"
+            disabled={isDisabled}
+          />
+          <TextInput
+            label="Case Number*"
+            value={contract.caseNumber}
+            onChangeText={(text) => onInputChange(index, "caseNumber", filterSpecialCharacters(text, 'caseNumber').toUpperCase())}
+            mode="outlined"
+            style={{ marginBottom: 12 }}
+            error={contract.errors?.caseNumber}
+            maxLength={INPUT_LIMITS.caseNumber.maxLength}
+            inputMode="text"
+            placeholder='XXXXXXXX (6-10 characters)'
+            disabled={isDisabled}
+          />
+        </View>
+      </List.Accordion>
+      <List.Accordion
+        title={`Delivery Address${hasDeliveryAddressErrors ? ' ⚠️' : ''}`}
+        expanded={expandedSections.deliveryAddress}
+        onPress={() => toggleSection('deliveryAddress')}
+        titleStyle={[fonts.titleSmall, { color: hasDeliveryAddressErrors ? colors.error : colors.primary }]}
+        style={{ padding: 0, marginBottom: 8 }}
+      >
+        <View style={styles.sectionContent}>
+          <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant, marginBottom: 12, fontStyle: 'italic' }]}>
+            Please provide complete and accurate delivery information
+          </Text>
+          
+          <View style={styles.addressRow}>
+            <TextInput
+              label="Province*"
+              value={contract.province}
+              onChangeText={(text) => onInputChange(index, "province", filterSpecialCharacters(text, 'address'))}
+              mode="outlined"
+              style={[styles.addressField, { marginRight: 8 }]}
+              error={contract.errors?.province}
+              placeholder="e.g., Metro Manila (2-50 characters)"
+              maxLength={INPUT_LIMITS.province.maxLength}
+              autoCapitalize="words"
+              disabled={isDisabled}
+            />
+          </View>
+          <View style={styles.addressRow}>
+          <TextInput
+              label="City/Municipality*"
+              value={contract.cityMunicipality}
+              onChangeText={(text) => onInputChange(index, "cityMunicipality", filterSpecialCharacters(text, 'address'))}
+              mode="outlined"
+              style={styles.addressField}
+              error={contract.errors?.cityMunicipality}
+              placeholder="e.g., Manila (2-50 characters)"
+              maxLength={INPUT_LIMITS.cityMunicipality.maxLength}
+              autoCapitalize="words"
+              disabled={isDisabled}
+            />
+          </View>
+          <View style={styles.addressRow}>
+            <TextInput
+              label="Barangay*"
+              value={contract.barangay}
+              onChangeText={(text) => onInputChange(index, "barangay", filterSpecialCharacters(text, 'address'))}
+              mode="outlined"
+              style={[styles.addressField, { marginRight: 8 }]}
+              error={contract.errors?.barangay}
+              placeholder="e.g., Tondo (2-50 characters)"
+              maxLength={INPUT_LIMITS.barangay.maxLength}
+              autoCapitalize="words"
+              disabled={isDisabled}
+            />
+            <TextInput
+              label="Postal Code*"
+              value={contract.postalCode}
+              onChangeText={(text) => onInputChange(index, "postalCode", filterSpecialCharacters(text, 'postalCode'))}
+              mode="outlined"
+              style={styles.addressField}
+              error={contract.errors?.postalCode}
+              placeholder="e.g., 1012 (4 digits)"
+              keyboardType="numeric"
+              maxLength={INPUT_LIMITS.postalCode.maxLength}
+              inputMode="numeric"
+              disabled={isDisabled}
+            />
+          </View>
+                </View>
+      </List.Accordion>
+      
+      <List.Accordion
+        title={`Address Details${hasAddressDetailsErrors ? ' ⚠️' : ''}`}
+        expanded={expandedSections.addressDetails}
+        onPress={() => toggleSection('addressDetails')}
+        titleStyle={[fonts.titleSmall, { color: hasAddressDetailsErrors ? colors.error : colors.primary }]}
+        style={{ padding: 0, marginBottom: 8 }}
+      >
+        <View style={styles.sectionContent}>
+          <Text style={[fonts.titleSmall, { color: colors.primary, marginTop: 16, marginBottom: 8 }]}>
+            Address Line 1
+          </Text>
+          <TextInput
+            label="Street*"
+            value={contract.street}
+            onChangeText={(text) => onInputChange(index, "street", filterSpecialCharacters(text, 'address'))}
+            mode="outlined"
+            style={{ marginBottom: 12 }}
+            error={contract.errors?.street}
+            placeholder="e.g., Roxas Boulevard (5-50 characters)"
+            maxLength={INPUT_LIMITS.street.maxLength}
+            autoCapitalize="words"
+            disabled={isDisabled}
+          />
+          <TextInput
+            label="Village/Building*"
+            value={contract.villageBuilding}
+            onChangeText={(text) => onInputChange(index, "villageBuilding", filterSpecialCharacters(text, 'address'))}
+            mode="outlined"
+            style={{ marginBottom: 12 }}
+            error={contract.errors?.villageBuilding}
+            placeholder="e.g., SM Mall of Asia (5-50 characters)"
+            maxLength={INPUT_LIMITS.villageBuilding.maxLength}
+            autoCapitalize="words"
+            disabled={isDisabled}
+          />
+          
+          <Text style={[fonts.titleSmall, { color: colors.primary, marginTop: 16, marginBottom: 8 }]}>
+            Address Line 2
+          </Text>
+          <TextInput
+            label="Room/Unit No. (Optional)"
+            value={contract.roomUnitNo}
+            onChangeText={(text) => onInputChange(index, "roomUnitNo", filterSpecialCharacters(text, 'address'))}
+            mode="outlined"
+            style={{ marginBottom: 12 }}
+            placeholder="e.g., Unit 1234, Room 567 (max 50 characters)"
+            maxLength={INPUT_LIMITS.roomUnitNo.maxLength}
+            autoCapitalize="words"
+            error={contract.roomUnitNo && !VALIDATION_PATTERNS.roomUnitNo.test(contract.roomUnitNo)}
+            disabled={isDisabled}
+          />
+          <TextInput
+            label="Landmark / Entrance Details (Optional)"
+            value={contract.landmarkEntrance}
+            onChangeText={(text) => onInputChange(index, "landmarkEntrance", filterSpecialCharacters(text, 'address'))}
+            mode="outlined"
+            style={{ marginBottom: 12 }}
+            placeholder="e.g., Near SM Mall entrance, Blue gate, 2nd floor elevator (max 100 characters)"
+            maxLength={INPUT_LIMITS.landmarkEntrance.maxLength}
+            autoCapitalize="words"
+            multiline
+            numberOfLines={2}
+            error={contract.landmarkEntrance && !VALIDATION_PATTERNS.landmarkEntrance.test(contract.landmarkEntrance)}
+            disabled={isDisabled}
+          />
+        </View>
+      </List.Accordion>
+      
+             <Button
+         mode="outlined"
+         onPress={() => onClear(index)}
+         style={{ marginTop: 12 }}
+         icon="refresh"
+         disabled={isDisabled}
+       >
+         Clear Form
+       </Button>
+     </View>
   )
 })
 
@@ -442,6 +550,10 @@ const MakeContracts = () => {
         cityMunicipality: "",
         barangay: "",
         postalCode: "",
+        street: "",
+        villageBuilding: "",
+        roomUnitNo: "",
+        landmarkEntrance: "",
         errors: {
           caseNumber: false,
           firstName: false,
@@ -456,7 +568,9 @@ const MakeContracts = () => {
           province: false,
           cityMunicipality: false,
           barangay: false,
-          postalCode: false
+          postalCode: false,
+          street: false,
+          villageBuilding: false
         }
       }
       return updated
@@ -490,6 +604,9 @@ const MakeContracts = () => {
       cityMunicipality: "",
       barangay: "",
       postalCode: "",
+      street: "",
+      villageBuilding: "",
+      roomUnitNo: "",
       errors: {
         caseNumber: false,
         firstName: false,
@@ -504,7 +621,9 @@ const MakeContracts = () => {
         province: false,
         cityMunicipality: false,
         barangay: false,
-        postalCode: false
+        postalCode: false,
+        street: false,
+        villageBuilding: false
       }
     }])
   }, [])
@@ -532,10 +651,6 @@ const MakeContracts = () => {
               !VALIDATION_PATTERNS.weight.test(contract.weight),
       quantity: !contract.quantity.trim() || 
                 !VALIDATION_PATTERNS.quantity.test(contract.quantity),
-      addressLine1: !contract.addressLine1.trim() || 
-                    contract.addressLine1.length < INPUT_LIMITS.addressLine1.minLength ||
-                    contract.addressLine1.length > INPUT_LIMITS.addressLine1.maxLength ||
-                    !VALIDATION_PATTERNS.addressLine1.test(contract.addressLine1),
       // Validation for separate address components
       province: !contract.province.trim() || 
                 contract.province.length < INPUT_LIMITS.province.minLength ||
@@ -550,7 +665,15 @@ const MakeContracts = () => {
                 contract.barangay.length > INPUT_LIMITS.barangay.maxLength ||
                 !VALIDATION_PATTERNS.barangay.test(contract.barangay),
       postalCode: !contract.postalCode.trim() || 
-                  !VALIDATION_PATTERNS.postalCode.test(contract.postalCode)
+                  !VALIDATION_PATTERNS.postalCode.test(contract.postalCode),
+      street: !contract.street.trim() || 
+              contract.street.length < INPUT_LIMITS.street.minLength ||
+              contract.street.length > INPUT_LIMITS.street.maxLength ||
+              !VALIDATION_PATTERNS.street.test(contract.street),
+      villageBuilding: !contract.villageBuilding.trim() || 
+                       contract.villageBuilding.length < INPUT_LIMITS.villageBuilding.minLength ||
+                       contract.villageBuilding.length > INPUT_LIMITS.villageBuilding.maxLength ||
+                       !VALIDATION_PATTERNS.villageBuilding.test(contract.villageBuilding)
     }
   }, [])
 
@@ -597,13 +720,6 @@ const MakeContracts = () => {
     return true
   }, [contracts, dropOffLocation, pickupLocation, deliveryFee, showSnackbar, validateContract])
 
-  const handleSubmit = useCallback(() => {
-    // Show confirmation modal first
-    if (validateForm()) {
-      setShowConfirmationModal(true)
-    }
-  }, [validateForm])
-
   const handleConfirmSubmit = useCallback(async () => {
     try {
       setLoading(true)
@@ -624,8 +740,6 @@ const MakeContracts = () => {
         const randomPart = [...Array(4)].map(() => Math.random().toString(36)[2].toUpperCase()).join('')
         return `${year}${month}${day}MKTP${randomPart}`
       }
-
-
 
       // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -661,6 +775,12 @@ const MakeContracts = () => {
           return `+63 ${contact}`
         }
 
+        // Combine street and village/building into address_line_1
+        const combinedAddressLine1 = `${contract.street}, ${contract.villageBuilding}`.trim()
+
+        // Combine room/unit and landmark into address_line_2
+        const combinedAddressLine2 = `${contract.roomUnitNo}, ${contract.landmarkEntrance}`.trim()
+
         // Insert contract with all luggage information directly into contracts table
         const contractData = {
           id: trackingID,
@@ -675,8 +795,8 @@ const MakeContracts = () => {
           flight_number: contract.flightNumber,
           case_number: contract.caseNumber,
           delivery_address: combinedDeliveryAddress,
-          address_line_1: contract.addressLine1,
-          address_line_2: contract.addressLine2,
+          address_line_1: combinedAddressLine1,
+          address_line_2: combinedAddressLine2,
           pickup_location: pickupLocation,
           drop_off_location: dropOffLocation.location,
           drop_off_location_geo: `POINT(${dropOffLocation.lng} ${dropOffLocation.lat})`,
@@ -1004,6 +1124,10 @@ const styles = StyleSheet.create({
   },
   addressField: {
     flex: 1,
+  },
+  sectionContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
   buttonContainer: {
     flexDirection: 'row',

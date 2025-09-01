@@ -56,9 +56,9 @@ const AirlineHome = ({ navigation }) => {
         } else {
           // fallback images
           imgs = [
-            require('../../../assets/airport1.png'),
-            require('../../../assets/airport2.png'),
-            require('../../../assets/airport3.png'),
+            require('../../../assets/airline_home/airline1.png'),
+            require('../../../assets/airline_home/airline2.png'),
+            require('../../../assets/airline_home/airline3.png'),
           ]
         }
         setImages(imgs)

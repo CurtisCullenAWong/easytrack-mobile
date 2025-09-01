@@ -8,9 +8,9 @@ const { width } = Dimensions.get('window')
 const AdminHome = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const images = [
-    require('../../../assets/airport1.png'),
-    require('../../../assets/airport2.png'),
-    require('../../../assets/airport3.png'),
+    require('../../../assets/admin_home/admin1.png'),
+    require('../../../assets/admin_home/admin2.png'),
+    require('../../../assets/admin_home/admin3.png'),
   ]
 
   const renderItem = ({ item }) => (

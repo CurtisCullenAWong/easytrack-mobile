@@ -9,6 +9,7 @@ import {
   useTheme,
   Menu,
   Surface,
+  Chip,
 } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabaseAdmin'
 import useSnackbar from '../../../hooks/useSnackbar'
@@ -30,13 +31,23 @@ const SummarizedContracts = ({ navigation }) => {
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [refreshing, setRefreshing] = useState(false)
   const [actionMenuFor, setActionMenuFor] = useState(null)
+  
+  // Date filtering states
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [dateFilterType, setDateFilterType] = useState('created_at')
+  const [dateFilterMenuVisible, setDateFilterMenuVisible] = useState(false)
 
   const filterOptions = [
     { label: 'Summary ID', value: 'summary_id' },
-    { label: 'Status', value: 'status' },
-    { label: 'Drop-off Location', value: 'drop_off_location' },
-    { label: 'Luggage Owner', value: 'luggage_owner' },
-    { label: 'Contract ID', value: 'id' },
+    { label: 'Invoice ID', value: 'invoice_id' },
+    { label: 'Summary Status', value: 'summary_status' },
+    { label: 'Total Amount', value: 'total' },
+  ]
+
+  const dateFilterOptions = [
+    { label: 'Created Date', value: 'created_at' },
+    { label: 'Due Date', value: 'due_date' },
   ]
 
   const columns = [
@@ -102,6 +113,9 @@ const SummarizedContracts = ({ navigation }) => {
           due_date: transaction.summary?.due_date ? new Date(transaction.summary.due_date).toLocaleString('en-US', {
             year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true
           }) : 'N/A',
+          // Store raw dates for filtering
+          created_at_raw: transaction.summary?.created_at ? new Date(transaction.summary.created_at) : null,
+          due_date_raw: transaction.summary?.due_date ? new Date(transaction.summary.due_date) : null,
           total: 0
         }
       }
@@ -159,23 +173,82 @@ const SummarizedContracts = ({ navigation }) => {
   
   const getSortIcon = (column) => (sortColumn === column ? (sortDirection === 'ascending' ? '▲' : '▼') : '')
 
+  // Enhanced filtering function with date filtering
   const filteredAndSortedTransactions = transactions
     .filter(transaction => {
-      if (!searchQuery) return true
-      const searchValue = String(transaction[searchColumn] || '').toLowerCase()
-      const query = searchQuery.toLowerCase()
-      return searchValue.includes(query)
+      // Text search filtering
+      if (searchQuery) {
+        const searchValue = String(transaction[searchColumn] || '').toLowerCase()
+        const query = searchQuery.toLowerCase()
+        if (!searchValue.includes(query)) {
+          return false
+        }
+      }
+
+      // Date filtering
+      if (startDate || endDate) {
+        const dateField = dateFilterType === 'created_at' ? 'created_at_raw' : 'due_date_raw'
+        const transactionDate = transaction[dateField]
+        
+        if (!transactionDate) {
+          return false // Exclude items without dates when date filter is active
+        }
+
+        if (startDate) {
+          const startDateTime = new Date(startDate)
+          if (transactionDate < startDateTime) {
+            return false
+          }
+        }
+
+        if (endDate) {
+          const endDateTime = new Date(endDate)
+          endDateTime.setHours(23, 59, 59, 999) // Set to end of day
+          if (transactionDate > endDateTime) {
+            return false
+          }
+        }
+      }
+
+      return true
     })
     .sort((a, b) => {
       const valA = a[sortColumn]
       const valB = b[sortColumn]
-      if (['created_at', 'due_date'].includes(sortColumn)) {
-        if (valA === 'N/A') return sortDirection === 'ascending' ? -1 : 1
-        if (valB === 'N/A') return sortDirection === 'ascending' ? 1 : -1
-        if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
-        if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
+      
+      // Handle date sorting using raw dates
+      if (sortColumn === 'created_at') {
+        const dateA = a.created_at_raw
+        const dateB = b.created_at_raw
+        if (!dateA && !dateB) return 0
+        if (!dateA) return sortDirection === 'ascending' ? -1 : 1
+        if (!dateB) return sortDirection === 'ascending' ? 1 : -1
+        if (dateA < dateB) return sortDirection === 'ascending' ? -1 : 1
+        if (dateA > dateB) return sortDirection === 'ascending' ? 1 : -1
         return 0
       }
+      
+      if (sortColumn === 'due_date') {
+        const dateA = a.due_date_raw
+        const dateB = b.due_date_raw
+        if (!dateA && !dateB) return 0
+        if (!dateA) return sortDirection === 'ascending' ? -1 : 1
+        if (!dateB) return sortDirection === 'ascending' ? 1 : -1
+        if (dateA < dateB) return sortDirection === 'ascending' ? -1 : 1
+        if (dateA > dateB) return sortDirection === 'ascending' ? 1 : -1
+        return 0
+      }
+
+      // Handle numeric sorting for total
+      if (sortColumn === 'total') {
+        const numA = parseFloat(valA) || 0
+        const numB = parseFloat(valB) || 0
+        if (numA < numB) return sortDirection === 'ascending' ? -1 : 1
+        if (numA > numB) return sortDirection === 'ascending' ? 1 : -1
+        return 0
+      }
+
+      // Default string sorting
       if (valA < valB) return sortDirection === 'ascending' ? -1 : 1
       if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
       return 0
@@ -186,6 +259,13 @@ const SummarizedContracts = ({ navigation }) => {
   const paginatedTransactions = filteredAndSortedTransactions.slice(from, to)
 
   const formatCurrency = (amount) => `₱${parseFloat(amount).toFixed(2)}`
+
+  const clearDateFilters = () => {
+    setStartDate('')
+    setEndDate('')
+  }
+
+  const hasActiveFilters = searchQuery || startDate || endDate
 
   return (
     <ScrollView 
@@ -255,7 +335,129 @@ const SummarizedContracts = ({ navigation }) => {
                 ))}
               </Menu>
             </View>
+
+            <View style={styles.filterGroup}>
+              <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+                Date Filter Type
+              </Text>
+              <Menu
+                visible={dateFilterMenuVisible}
+                onDismiss={() => setDateFilterMenuVisible(false)}
+                anchor={
+                  <Button
+                    mode="outlined"
+                    icon="calendar"
+                    onPress={() => setDateFilterMenuVisible(true)}
+                    style={[styles.filterButton, { borderColor: colors.outline }]}
+                    contentStyle={styles.buttonContent}
+                    labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                  >
+                    {dateFilterOptions.find(opt => opt.value === dateFilterType)?.label || 'Select Date Type'}
+                  </Button>
+                }
+                contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+              >
+                {dateFilterOptions.map(option => (
+                  <Menu.Item
+                    key={option.value}
+                    onPress={() => {
+                      setDateFilterType(option.value)
+                      setDateFilterMenuVisible(false)
+                    }}
+                    title={option.label}
+                    titleStyle={[
+                      {
+                        color: dateFilterType === option.value
+                          ? colors.primary
+                          : colors.onSurface,
+                      },
+                      fonts.bodyLarge,
+                    ]}
+                    leadingIcon={dateFilterType === option.value ? 'check' : undefined}
+                  />
+                ))}
+              </Menu>
+            </View>
           </View>
+
+          {/* Date Range Filters */}
+          <View style={styles.dateFiltersRow}>
+            <View style={styles.dateFilterGroup}>
+              <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+                Start Date
+              </Text>
+              <Searchbar
+                placeholder="YYYY-MM-DD"
+                onChangeText={setStartDate}
+                value={startDate}
+                style={[styles.dateInput, { backgroundColor: colors.surfaceVariant }]}
+                iconColor={colors.onSurfaceVariant}
+                inputStyle={[styles.dateInputText, { color: colors.onSurfaceVariant }]}
+              />
+            </View>
+            <View style={styles.dateFilterGroup}>
+              <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+                End Date
+              </Text>
+              <Searchbar
+                placeholder="YYYY-MM-DD"
+                onChangeText={setEndDate}
+                value={endDate}
+                style={[styles.dateInput, { backgroundColor: colors.surfaceVariant }]}
+                iconColor={colors.onSurfaceVariant}
+                inputStyle={[styles.dateInputText, { color: colors.onSurfaceVariant }]}
+              />
+            </View>
+          </View>
+
+          {/* Active Filters Display */}
+          {hasActiveFilters && (
+            <View style={styles.activeFiltersContainer}>
+              <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+                Active Filters:
+              </Text>
+              <View style={styles.activeFiltersChips}>
+                {searchQuery && (
+                  <Chip
+                    mode="outlined"
+                    onClose={() => setSearchQuery('')}
+                    style={[styles.filterChip, { borderColor: colors.outline }]}
+                    textStyle={[styles.chipText, { color: colors.onSurface }]}
+                  >
+                    {filterOptions.find(opt => opt.value === searchColumn)?.label}: {searchQuery}
+                  </Chip>
+                )}
+                {startDate && (
+                  <Chip
+                    mode="outlined"
+                    onClose={() => setStartDate('')}
+                    style={[styles.filterChip, { borderColor: colors.outline }]}
+                    textStyle={[styles.chipText, { color: colors.onSurface }]}
+                  >
+                    From: {startDate}
+                  </Chip>
+                )}
+                {endDate && (
+                  <Chip
+                    mode="outlined"
+                    onClose={() => setEndDate('')}
+                    style={[styles.filterChip, { borderColor: colors.outline }]}
+                    textStyle={[styles.chipText, { color: colors.onSurface }]}
+                  >
+                    To: {endDate}
+                  </Chip>
+                )}
+                <Button
+                  mode="text"
+                  onPress={clearDateFilters}
+                  style={styles.clearFiltersButton}
+                  labelStyle={[styles.clearFiltersText, { color: colors.primary }]}
+                >
+                  Clear All
+                </Button>
+              </View>
+            </View>
+          )}
         </Surface>
 
         {/* Results Section */}
@@ -447,6 +649,7 @@ const styles = StyleSheet.create({
   filtersRow: {
     flexDirection: 'row',
     gap: 16,
+    marginBottom: 16,
   },
   filterGroup: {
     flex: 1,
@@ -468,6 +671,42 @@ const styles = StyleSheet.create({
   },
   buttonLabel: {
     fontSize: 14,
+    fontWeight: '600',
+  },
+  dateFiltersRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 16,
+  },
+  dateFilterGroup: {
+    flex: 1,
+  },
+  dateInput: {
+    borderRadius: 8,
+  },
+  dateInputText: {
+    fontSize: 16,
+  },
+  activeFiltersContainer: {
+    marginTop: 8,
+  },
+  activeFiltersChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  filterChip: {
+    marginRight: 8,
+  },
+  chipText: {
+    fontSize: 12,
+  },
+  clearFiltersButton: {
+    marginLeft: 8,
+  },
+  clearFiltersText: {
+    fontSize: 12,
     fontWeight: '600',
   },
   resultsSurface: {

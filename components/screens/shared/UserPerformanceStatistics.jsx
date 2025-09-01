@@ -6,9 +6,20 @@ import { supabase } from '../../../lib/supabase'
 import { analyzeDeliveryStats } from '../../../utils/geminiUtils'
 import useSnackbar from '../../hooks/useSnackbar'
 
+/**
+ * User Performance Statistics Screen Component
+ * 
+ * Displays comprehensive performance statistics for individual users including
+ * delivery metrics, success rates, earnings/expenses, and AI-powered insights.
+ * 
+ * @param {Object} navigation - React Navigation object
+ * @returns {JSX.Element} The performance statistics screen
+ */
 const UserPerformanceStatisticsScreen = ({ navigation }) => {
   const { colors } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
+  
+  // State management
   const [user, setUser] = useState(null)
   const [stats, setStats] = useState({
     totalDeliveries: 0,
@@ -28,20 +39,16 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
   const [showDateMenu, setShowDateMenu] = useState(false)
   const [dateFilter, setDateFilter] = useState('all')
 
+  // Effect to fetch user data when date filter changes
   useEffect(() => {
     fetchUser()
   }, [dateFilter])
 
+  /**
+   * Get available date filter options
+   * @returns {Array} Array of date filter options
+   */
   const getDateFilterOptions = () => {
-    const today = new Date()
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-    
-    const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
-    const thisYear = new Date(today.getFullYear(), 0, 1)
-    const lastYear = new Date(today.getFullYear() - 1, 0, 1)
-
     return [
       { label: 'All Time', value: 'all' },
       { label: 'Today', value: 'today' },
@@ -53,10 +60,19 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
     ]
   }
 
+  /**
+   * Get display label for date filter value
+   * @param {string} value - Date filter value
+   * @returns {string} Display label
+   */
   const getDateFilterLabel = (value) => {
     return getDateFilterOptions().find(opt => opt.value === value)?.label || 'All Time'
   }
 
+  /**
+   * Calculate date range based on selected filter
+   * @returns {Object|null} Date range object with start and end dates
+   */
   const getDateRange = () => {
     const today = new Date()
     today.setHours(23, 59, 59, 999) // End of today
@@ -115,6 +131,9 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
     }
   }
 
+  /**
+   * Fetch user data and determine user role
+   */
   const fetchUser = async () => {
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -155,12 +174,20 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
     }
   }
 
+  /**
+   * Handle pull-to-refresh functionality
+   */
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
     await fetchStatistics()
     setRefreshing(false)
   }, [])
 
+  /**
+   * Fetch and calculate performance statistics
+   * @param {Object} userData - User data object
+   * @param {boolean} isDelivery - Whether user is delivery personnel
+   */
   const fetchStatistics = async (userData, isDelivery) => {
     if (!userData) {
       console.log('No user data provided, skipping statistics fetch')
@@ -227,23 +254,23 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
         return acc;
       }, {});
 
-      // Calculate statistics
+      // Calculate basic statistics
       const totalDeliveries = deliveries.length
       const successfulDeliveries = deliveries.filter(d => d.contract_status_id === 5).length
       const failedDeliveries = deliveries.filter(d => d.contract_status_id === 6).length
       const successRate = totalDeliveries > 0 ? successfulDeliveries / totalDeliveries : 0
 
-      // Calculate average delivery time
+      // Calculate average delivery time in hours
       const validDeliveryTimes = deliveries
         .filter(d => d.pickup_at && d.delivered_at)
         .map(d => {
           const pickup = new Date(d.pickup_at)
           const delivered = new Date(d.delivered_at)
-          return (delivered - pickup) / (1000 * 60) // Convert to minutes
+          return (delivered - pickup) / (1000 * 60 * 60) // Convert to hours
         })
 
       const averageDeliveryTime = validDeliveryTimes.length > 0
-        ? Math.round(validDeliveryTimes.reduce((a, b) => a + b, 0) / validDeliveryTimes.length)
+        ? Math.round((validDeliveryTimes.reduce((a, b) => a + b, 0) / validDeliveryTimes.length) * 10) / 10 // Round to 1 decimal place
         : 0
 
       // Calculate total earnings (for delivery personnel) or expenses (for non-delivery users)
@@ -300,11 +327,15 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
         deliveriesByRegion,
       })
     } catch (error) {
+      console.error('Error fetching statistics:', error)
     } finally {
       setLoading(false)
     }
   }
 
+  /**
+   * Generate AI-powered insights based on performance data
+   */
   const generateInsights = async () => {
     try {
       setAnalyzing(true)
@@ -347,6 +378,26 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
     }
   }
 
+  /**
+   * Format delivery time for display
+   * @param {number} timeInHours - Time in hours
+   * @returns {string} Formatted time string
+   */
+  const formatDeliveryTime = (timeInHours) => {
+    if (timeInHours === 0) return '0 hours'
+    if (timeInHours < 1) {
+      const minutes = Math.round(timeInHours * 60)
+      return `${minutes} minute${minutes !== 1 ? 's' : ''}`
+    }
+    const hours = Math.floor(timeInHours)
+    const minutes = Math.round((timeInHours - hours) * 60)
+    
+    if (minutes === 0) {
+      return `${hours} hour${hours !== 1 ? 's' : ''}`
+    }
+    return `${hours} hour${hours !== 1 ? 's' : ''} ${minutes} minute${minutes !== 1 ? 's' : ''}`
+  }
+
   return (
     <ScrollView 
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -360,6 +411,8 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
       }>
       <Header navigation={navigation} title="My Statistics" />
       {SnackbarElement}
+      
+      {/* Date Filter Section */}
       <View style={styles.filterContainer}>
         <View style={styles.filterRow}>
           <Text style={[styles.filterLabel, { color: colors.onSurface }]}>Filter by Date:</Text>
@@ -499,7 +552,7 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
                 Average Delivery Time
               </Text>
               <Text variant="displaySmall" style={[styles.valueText, { color: colors.onSurface }]}>
-                {stats.averageDeliveryTime} minutes
+                {formatDeliveryTime(stats.averageDeliveryTime)}
               </Text>
             </Card.Content>
           </Card>
@@ -585,6 +638,7 @@ const UserPerformanceStatisticsScreen = ({ navigation }) => {
   )
 }
 
+// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -680,4 +734,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default UserPerformanceStatisticsScreen 
+export default UserPerformanceStatisticsScreen

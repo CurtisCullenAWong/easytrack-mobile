@@ -117,6 +117,13 @@ const ContractsInTransit = ({ navigation }) => {
   // Get current user location
   const getUserLocation = useCallback(async () => {
     try {
+      // Check if location services are enabled
+      const isEnabled = await Location.hasServicesEnabledAsync()
+      if (!isEnabled) {
+        console.warn('Location services are disabled')
+        return null
+      }
+
       const { status } = await Location.requestForegroundPermissionsAsync()
       if (status !== 'granted') {
         console.warn('Permission to access location was denied')
@@ -129,7 +136,7 @@ const ContractsInTransit = ({ navigation }) => {
         longitude: coords.longitude
       }
     } catch (error) {
-      console.error('Error getting user location:', error)
+      console.warn('Error getting location:', error.message)
       return null
     }
   }, [])
@@ -156,7 +163,7 @@ const ContractsInTransit = ({ navigation }) => {
         distance
       }
     })
-  }, [contracts, userLocation])
+  }, [contracts, userLocation?.latitude, userLocation?.longitude]) // More specific dependencies
 
   // Memoized date formatter
   const getFormattedDates = useCallback((contract) => {
@@ -178,17 +185,31 @@ const ContractsInTransit = ({ navigation }) => {
 
   // Periodic refresh effect for contracts (every 10 seconds for better real-time updates)
   useEffect(() => {
+    // Only set up refresh interval if there are contracts and location tracking is active
+    if (contracts.length === 0 || !isLocationTrackingActive) {
+      return
+    }
+
     const refreshInterval = setInterval(async () => {
       if (!loading) {
         await fetchContracts()
         await checkContractsAndManageTracking()
-        const newLocation = await getUserLocation()
-        setUserLocation(newLocation)
+        
+        // Only get location update if location services are enabled
+        try {
+          const isLocationEnabled = await Location.hasServicesEnabledAsync()
+          if (isLocationEnabled) {
+            const newLocation = await getUserLocation()
+            setUserLocation(newLocation)
+          }
+        } catch (error) {
+          console.warn('Location services not available during refresh:', error.message)
+        }
       }
     }, 10000) // 10 seconds for more frequent updates
 
     return () => clearInterval(refreshInterval)
-  }, [loading, getUserLocation])
+  }, [loading, contracts.length, isLocationTrackingActive, fetchContracts, checkContractsAndManageTracking, getUserLocation])
 
   // Get user location on component mount
   useEffect(() => {
@@ -198,13 +219,18 @@ const ContractsInTransit = ({ navigation }) => {
   // Fetch on focus to avoid stale data on revisit
   useFocusEffect(
     useCallback(() => {
-      fetchContracts()
-      checkContractsAndManageTracking()
-      getUserLocation().then(setUserLocation)
-    }, [])
+      setLoading(true)
+      Promise.all([
+        fetchContracts(),
+        checkContractsAndManageTracking(),
+        getUserLocation().then(setUserLocation)
+      ]).finally(() => {
+        setLoading(false)
+      })
+    }, [fetchContracts, checkContractsAndManageTracking, getUserLocation])
   )
 
-  // Real-time subscription only while screen is focused
+  // Real-time subscription for contracts
   useFocusEffect(
     useCallback(() => {
       let activeChannel
@@ -213,50 +239,42 @@ const ContractsInTransit = ({ navigation }) => {
         if (!user) return
 
         activeChannel = supabase
-          .channel('contracts_changes')
+          .channel('contracts_in_transit_changes')
           .on(
             'postgres_changes',
             {
               event: '*',
               schema: 'public',
               table: 'contracts',
-              filter: `delivery_id=eq.${user.id}`
-            },
-            async (payload) => {
-              console.log('Contract change detected:', payload.eventType, payload.new?.id)
-              
-              // Check if it's a location update
-              const isLocationUpdate = payload.eventType === 'UPDATE' && 
-                (payload.new?.current_location !== payload.old?.current_location ||
-                 payload.new?.current_location_geo !== payload.old?.current_location_geo)
-              
-              if (isLocationUpdate) {
-                console.log('Location update detected, refreshing contracts and user location')
-                console.log('Old location:', payload.old?.current_location)
-                console.log('New location:', payload.new?.current_location)
-                // For location updates, refresh both contracts and user location
-                await fetchContracts()
-                const newLocation = await getUserLocation()
-                setUserLocation(newLocation)
-              } else {
-                // For other changes, refresh contracts and check tracking
-                await fetchContracts()
-                await checkContractsAndManageTracking()
-              }
-            }
-          )
-          .on(
-            'postgres_changes',
-            {
-              event: 'UPDATE',
-              schema: 'public',
-              table: 'contracts',
               filter: `delivery_id=eq.${user.id} AND contract_status_id=eq.4`
             },
             async (payload) => {
-              console.log('In-transit contract update detected:', payload.new?.id)
-              // This is a backup subscription specifically for in-transit contracts
+              console.log('In-transit contract change detected:', payload.eventType, payload.new?.id)
+              
+              // Refresh contracts and check tracking
               await fetchContracts()
+              await checkContractsAndManageTracking()
+              
+              // Update user location if it's a location update
+              if (payload.eventType === 'UPDATE' && 
+                  (payload.new?.current_location !== payload.old?.current_location ||
+                   payload.new?.current_location_geo !== payload.old?.current_location_geo)) {
+                try {
+                  const isLocationEnabled = await Location.hasServicesEnabledAsync()
+                  if (isLocationEnabled) {
+                    const { status } = await Location.requestForegroundPermissionsAsync()
+                    if (status === 'granted') {
+                      const { coords } = await Location.getCurrentPositionAsync({})
+                      setUserLocation({
+                        latitude: coords.latitude,
+                        longitude: coords.longitude
+                      })
+                    }
+                  }
+                } catch (locationError) {
+                  console.warn('Error getting location in realtime callback:', locationError.message)
+                }
+              }
             }
           )
           .subscribe()
@@ -268,11 +286,11 @@ const ContractsInTransit = ({ navigation }) => {
           supabase.removeChannel(activeChannel)
         }
       }
-    }, [getUserLocation])
+    }, [fetchContracts, checkContractsAndManageTracking])
   )
 
   // Data fetching functions
-  const checkContractsAndManageTracking = async () => {
+  const checkContractsAndManageTracking = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -284,7 +302,11 @@ const ContractsInTransit = ({ navigation }) => {
         .eq('contract_status_id', 4)
 
       if (countError) throw countError
-      if (count > 0) {
+      
+      // Check if location services are available before starting tracking
+      const isLocationEnabled = await Location.hasServicesEnabledAsync()
+      
+      if (count > 0 && isLocationEnabled) {
         await startTracking()
         setIsLocationTrackingActive(true)
       } else {
@@ -292,11 +314,15 @@ const ContractsInTransit = ({ navigation }) => {
         setIsLocationTrackingActive(false)
       }
     } catch (error) {
-      showSnackbar('Error managing location tracking: ' + error.message)
+      console.warn('Error managing location tracking:', error.message)
+      // Don't show snackbar for location service errors to avoid spam
+      if (!error.message.includes('location') && !error.message.includes('Location')) {
+        showSnackbar('Error managing location tracking: ' + error.message)
+      }
     }
-  }
+  }, [startTracking, stopTracking, showSnackbar])
 
-  const fetchContracts = async () => {
+  const fetchContracts = useCallback(async () => {
     try {
       setLoading(true)
       const { data: { user } } = await supabase.auth.getUser()
@@ -326,7 +352,7 @@ const ContractsInTransit = ({ navigation }) => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [showSnackbar])
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -340,7 +366,7 @@ const ContractsInTransit = ({ navigation }) => {
     } finally {
       setRefreshing(false)
     }
-  }, [getUserLocation])
+  }, [fetchContracts, checkContractsAndManageTracking, getUserLocation, showSnackbar])
 
   // Sorting and filtering functions
   const handleSort = useCallback((column) => {
@@ -467,10 +493,9 @@ const ContractsInTransit = ({ navigation }) => {
           .eq('id', selectedContract.id)
         if (error) throw error
 
-        await checkContractsAndManageTracking()
+        // Don't call fetchContracts here as the subscription will handle the update
         setModalVisible(false)
         setSelectedContract(null)
-        await fetchContracts()
         showSnackbar('Contract marked as failed successfully', true)
       }
       else if (dialogType === 'cancel') {
@@ -490,11 +515,10 @@ const ContractsInTransit = ({ navigation }) => {
           .eq('id', selectedContract.id)
         if (error) throw error
 
-        await checkContractsAndManageTracking()
+        // Don't call fetchContracts here as the subscription will handle the update
         setModalVisible(false)
         setSelectedContract(null)
         setShowCancelConfirmation(false)
-        await fetchContracts()
         showSnackbar('Contract cancelled successfully', true)
       }
     } catch (error) {
@@ -506,7 +530,7 @@ const ContractsInTransit = ({ navigation }) => {
 
   const ContractCard = ({ contract }) => {
     // Memoize formatted dates for this contract
-    const formattedDates = useMemo(() => getFormattedDates(contract), [contract, getFormattedDates])
+    const formattedDates = useMemo(() => getFormattedDates(contract), [contract]) // Removed getFormattedDates dependency
     
     return (
       <Card style={[styles.contractCard, { backgroundColor: colors.surfaceVariant }]}>
@@ -678,7 +702,7 @@ const ContractsInTransit = ({ navigation }) => {
   }
 
   const renderHeader = () => (
-    <>
+    <View>
       {/* Time Display Section with Location Tracking Indicator */}
       <Surface style={[styles.timeSurface, { backgroundColor: colors.surface }]} elevation={1}>
         <View style={styles.timeContainer}>
@@ -803,21 +827,7 @@ const ContractsInTransit = ({ navigation }) => {
           </View>
         </View>
       </Surface>
-
-      {/* Results Header */}
-      <Surface style={[styles.resultsSurface, { backgroundColor: colors.surface }]} elevation={1}>
-        <View style={styles.resultsHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
-            In Transit Results
-          </Text>
-          {!loading && (
-            <Text style={[styles.resultsCount, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>
-              {filteredAndSortedContracts.length} contract{filteredAndSortedContracts.length !== 1 ? 's' : ''} found
-            </Text>
-          )}
-        </View>
-      </Surface>
-    </>
+    </View>
   )
 
   const renderEmptyComponent = () => (
@@ -975,19 +985,6 @@ const styles = StyleSheet.create({
   buttonLabel: {
     fontSize: 14,
     fontWeight: '600',
-  },
-  resultsSurface: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 12,
-  },
-  resultsHeader: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.12)',
-  },
-  resultsCount: {
-    marginTop: 4,
   },
   emptyContainer: {
     padding: 32,

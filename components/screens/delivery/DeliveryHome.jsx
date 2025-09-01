@@ -9,15 +9,15 @@ const DeliveryHome = ({ navigation }) => {
   const { colors, fonts } = useTheme()
 
   const images = [
-    require('../../../assets/airport1.png'),
-    require('../../../assets/airport2.png'),
-    require('../../../assets/airport3.png'),
+    require('../../../assets/delivery_home/delivery1.png'),
+    require('../../../assets/delivery_home/delivery2.png'),
+    require('../../../assets/delivery_home/delivery3.png'),
   ]
 
   const performanceImages = [
-    require('../../../assets/delivery1.png'),
-    require('../../../assets/delivery2.png'),
-    require('../../../assets/delivery3.png'),
+    require('../../../assets/delivery_home/delivery4.png'),
+    require('../../../assets/delivery_home/delivery5.png'),
+    require('../../../assets/delivery_home/delivery6.png'),
   ]
 
   const renderItem = ({ item }) => (

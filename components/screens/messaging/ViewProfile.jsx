@@ -152,7 +152,7 @@ const ViewProfile = ({ navigation, route }) => {
     if (profile.pfp_id) {
       return { uri: profile.pfp_id }
     }
-    return require('../../../assets/profile-placeholder.png')
+    return null
   }
 
   const handleCall = () => {
@@ -203,10 +203,19 @@ const ViewProfile = ({ navigation, route }) => {
       
       <Card style={[styles.profileCard, { backgroundColor: colors.surface }]}>
         <Card.Content style={styles.profileHeader}>
-          <Avatar.Image 
-            size={80} 
-            source={getAvatarSource()} 
-          />
+          {getAvatarSource() ? (
+            <Avatar.Image 
+              size={80} 
+              source={getAvatarSource()} 
+            />
+          ) : (
+            <Avatar.Text 
+              size={80} 
+              label={profile?.first_name ? profile.first_name[0].toUpperCase() : 'U'}
+              style={{ backgroundColor: colors.primary }}
+              labelStyle={{ color: colors.onPrimary }}
+            />
+          )}
           <View style={styles.profileInfo}>
             <View style={styles.nameRow}>
               <Text selectable style={[styles.profileName, { color: colors.onSurface, ...fonts.headlineSmall }]}>
