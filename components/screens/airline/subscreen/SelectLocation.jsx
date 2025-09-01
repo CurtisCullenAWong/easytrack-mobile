@@ -144,11 +144,11 @@ const SelectLocation = ({ navigation }) => {
             key: GOOGLE_MAPS_PLACES_API_KEY,
             language: 'en',
             components: 'country:ph',
-            types: ['establishment', 'geocode'],
           }}
-          onPress={(data, details = null) => {
-            console.log('Selected place:', data, details);
-          }}
+          minLength={3}
+          debounce={1500}
+          timeout={15000}
+          fetchDetails={true}
           renderRow={(data) => (
             <View style={styles.searchRow}>
               <Text style={[fonts.bodyMedium, { color: colors.onSurface, flex: 1 }]}>
@@ -161,6 +161,15 @@ const SelectLocation = ({ navigation }) => {
               )}
             </View>
           )}
+          listEmptyComponent={
+            <View style={styles.emptyListContainer}>
+              <Text style={[fonts.bodyMedium, { margin: 10, color: colors.onSurfaceVariant, textAlign: 'center' }]}>
+                Start typing to search for locations
+              </Text>
+            </View>
+          }
+          predefinedPlaces={[]}
+          textInputProps={{}}
           styles={{
             container: styles.autocompleteContainer,
             textInputContainer: {
@@ -185,21 +194,6 @@ const SelectLocation = ({ navigation }) => {
             },
             description: { color: colors.onSurface },
           }}
-          debounce={2000}
-          minLength={3}
-          enableHighAccuracyLocation={true}
-          timeout={15000}
-          fetchDetails={true}
-          enablePoweredByContainer={false}
-          listEmptyComponent={
-            <View style={styles.emptyListContainer}>
-              <Text style={[fonts.bodyMedium, { margin: 10, color: colors.onSurfaceVariant, textAlign: 'center' }]}>
-                Start typing to search for locations
-              </Text>
-            </View>
-          }
-          predefinedPlaces={[]}
-          textInputProps={{}}
         />
       </Surface>
 
@@ -357,6 +351,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
+    maxHeight: 100
   },
   emptyListContainer: {
     padding: 16,
