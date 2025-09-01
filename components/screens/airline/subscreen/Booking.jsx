@@ -111,7 +111,7 @@ const VALIDATION_PATTERNS = {
   flightNumber: /^[A-Z0-9]{3,6}$/, // Alphanumeric, 3-6 characters
   caseNumber: /^[A-Z0-9]{6,10}$/, // Alphanumeric, 6-10 characters
   postalCode: /^\d{4}$/, // Exactly 4 digits
-  weight: /^([1-9]|[1-5][0-9]|40)$/, // 1-50
+  weight: /^([1-9]|50)$/, // 1-50
   quantity: /^([1-9]|10)$/, // 1-10
   // Address validation patterns
   province: /^[A-Za-z\s\-\.]+$/, // Letters, spaces, hyphens, dots
