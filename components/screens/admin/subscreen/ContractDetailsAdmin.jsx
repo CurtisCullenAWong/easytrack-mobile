@@ -334,6 +334,7 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
                         <Button
                             mode="outlined"
                             icon="pencil"
+                            disabled={contractData.summary_id !== null}
                             onPress={() => {
                                 setSurchargeAmount(String(contractData.delivery_surcharge ?? 0))
                                 setDiscountAmount(String(contractData.delivery_discount ?? 0))
@@ -341,11 +342,22 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
                                 setDiscountAmountError('')
                                 setShowAdjustDialog(true)
                             }}
-                            style={[styles.actionButton, { borderColor: colors.primary }]}
+                            style={[
+                                styles.actionButton, 
+                                { 
+                                    borderColor: contractData.summary_id !== null ? colors.outline : colors.primary,
+                                    opacity: contractData.summary_id !== null ? 0.6 : 1
+                                }
+                            ]}
                             contentStyle={styles.buttonContent}
-                            labelStyle={[styles.buttonLabel, { color: colors.primary }]}
+                            labelStyle={[
+                                styles.buttonLabel, 
+                                { 
+                                    color: contractData.summary_id !== null ? colors.outline : colors.primary 
+                                }
+                            ]}
                         >
-                            Adjust Surcharge & Discount
+                            {contractData.summary_id !== null ? 'Invoice Already Exists' : 'Adjust Surcharge & Discount'}
                         </Button>
                     </View>
                     <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>

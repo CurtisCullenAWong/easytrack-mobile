@@ -31,6 +31,14 @@ const UpdateProfileScreen = ({ navigation, route }) => {
   // Get missing fields from route params
   const missingFields = route.params?.missingFields || []
   
+  // Add formatContactNumber function
+  const formatContactNumber = (contact) => {
+    if (contact.length === 10 && contact.startsWith('9')) {
+      return `+63 ${contact.slice(0, 3)} ${contact.slice(3, 6)} ${contact.slice(6)}`;
+    }
+    return `+63 ${contact}`
+  }
+  
   // Add error state
   const [errors, setErrors] = useState({
     first_name: '',
@@ -209,7 +217,7 @@ const UpdateProfileScreen = ({ navigation, route }) => {
       const updateData = {}
       missingFields.forEach(field => {
         if (field === 'contact_number' || field === 'emergency_contact_number') {
-          updateData[field] = state.form[field] ? `+63${state.form[field]}` : null
+          updateData[field] = state.form[field] ? formatContactNumber(state.form[field]) : null
         } else if (field === 'first_name' || field === 'last_name' || field === 'emergency_contact_name') {
           updateData[field] = capitalizeName(state.form[field])
         } else {
@@ -252,10 +260,10 @@ const UpdateProfileScreen = ({ navigation, route }) => {
       const initialData = {
         first_name: data.first_name || '',
         last_name: data.last_name || '',
-        contact_number: data.contact_number?.replace('+63', '') || '',
+        contact_number: data.contact_number?.replace('+63', '').replace(/\s/g, '') || '',
         birth_date: data.birth_date ? new Date(data.birth_date) : null,
         emergency_contact_name: data.emergency_contact_name || '',
-        emergency_contact_number: data.emergency_contact_number?.replace('+63', '') || '',
+        emergency_contact_number: data.emergency_contact_number?.replace('+63', '').replace(/\s/g, '') || '',
       }
 
       updateState({

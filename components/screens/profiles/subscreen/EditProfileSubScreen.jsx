@@ -33,6 +33,14 @@ const EditProfileSubScreen = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   
+  // Add formatContactNumber function
+  const formatContactNumber = (contact) => {
+    if (contact.length === 10 && contact.startsWith('9')) {
+      return `+63 ${contact.slice(0, 3)} ${contact.slice(3, 6)} ${contact.slice(6)}`;
+    }
+    return `+63 ${contact}`
+  }
+  
   // Add error state
   const [errors, setErrors] = useState({
     first_name: '',
@@ -382,10 +390,10 @@ const EditProfileSubScreen = ({ navigation }) => {
           middle_initial: capitalizeName(state.form.middle_initial),
           last_name: capitalizeName(state.form.last_name),
           suffix: capitalizeName(state.form.suffix),
-          contact_number: state.form.contact_number ? `+63${state.form.contact_number}` : null,
+          contact_number: state.form.contact_number ? formatContactNumber(state.form.contact_number) : null,
           birth_date: state.form.birth_date,
           emergency_contact_name: capitalizeName(state.form.emergency_contact_name),
-          emergency_contact_number: state.form.emergency_contact_number ? `+63${state.form.emergency_contact_number}` : null,
+          emergency_contact_number: state.form.emergency_contact_number ? formatContactNumber(state.form.emergency_contact_number) : null,
           pfp_id: newPfpId,
           updated_at: new Date().toISOString(),
         })
@@ -422,10 +430,10 @@ const EditProfileSubScreen = ({ navigation }) => {
         middle_initial: data.middle_initial || '',
         last_name: data.last_name || '',
         suffix: data.suffix || '',
-        contact_number: data.contact_number?.replace('+63', '') || '',
+        contact_number: data.contact_number?.replace('+63', '').replace(/\s/g, '') || '',
         birth_date: data.birth_date ? new Date(data.birth_date) : null,
         emergency_contact_name: data.emergency_contact_name || '',
-        emergency_contact_number: data.emergency_contact_number?.replace('+63', '') || '',
+        emergency_contact_number: data.emergency_contact_number?.replace('+63', '').replace(/\s/g, '') || '',
         pfp_id: data.pfp_id || null,
       }
 
