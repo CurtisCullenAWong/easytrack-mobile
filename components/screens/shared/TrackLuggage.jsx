@@ -8,13 +8,13 @@ import {
     RefreshControl,
 } from 'react-native'
 import { Text, TextInput, Surface, useTheme, Card, Divider, IconButton, Avatar, ProgressBar } from 'react-native-paper'
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabase'
 import useSnackbar from '../../hooks/useSnackbar'
 import { useFocusEffect } from '@react-navigation/native'
-import MapViewDirections from "react-native-maps-directions"
 import { GOOGLE_MAPS_API_KEY } from '@env'
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
+import MapViewDirections from "react-native-maps-directions"
 
 const { width, height } = Dimensions.get('window')
 
@@ -64,7 +64,7 @@ const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors
       <MapView
         ref={mapRef}
         style={styles.map}
-        provider={PROVIDER_GOOGLE}
+        provider={PROVIDER_DEFAULT}
         initialRegion={initialRegion ? {
           ...initialRegion,
           latitudeDelta: 0.01,
@@ -118,7 +118,7 @@ const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors
             apikey={GOOGLE_MAPS_API_KEY}
             strokeWidth={4}
             strokeColor={colors.primary}
-            optimizeWaypoints
+            optimizeWaypoints={false}
             onError={(err) => {
               showSnackbar("Unable to fetch route from Google Maps API")
             }}

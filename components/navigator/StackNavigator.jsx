@@ -5,7 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 // Shared Screens
 import LoginScreen from '../screens/shared/LoginScreen'
 import ContractDetails from '../screens/shared/ContractDetails'
-import CheckLocation from '../screens/delivery/subscreen/CheckLocation'
+import CheckLocation from '../screens/shared/CheckLocation'
 import UserPerformanceStatistics from '../screens/shared/UserPerformanceStatistics'
 import BookingHistory from '../screens/shared/BookingHistory'
 import TermsAndConditions from '../screens/shared/TermsAndConditions'
@@ -31,7 +31,7 @@ import AddAccount from '../screens/admin/subscreen/AddAccount'
 import ViewAccountScreen from '../screens/admin/subscreen/ViewAccountScreen'
 import PerformanceStatistics from '../screens/admin/PerformanceStatistics'
 import SelectLocation from '../screens/airline/subscreen/SelectLocation'
-import AdminCheckLocation from '../screens/admin/subscreen/AdminCheckLocation'
+
 // Airline Screens
 import AirlineHome from '../screens/airline/AirlineHome'
 import AirlineBookingManagement from '../screens/airline/AirlineBookingManagement'
@@ -82,11 +82,11 @@ const AdminDrawer = () => (
     <Drawer.Screen name="SelectLocation" component={SelectLocation} />
     <Drawer.Screen name="AdminBookingHistory" component={AdminBookingHistory} />
     <Drawer.Screen name="TrackLuggage" component={TrackLuggage} />
-    <Drawer.Screen name="AdminCheckLocation" component={AdminCheckLocation} />
     <Drawer.Screen name="AddAccount" component={AddAccount} />
     <Drawer.Screen name="ViewAccount" component={ViewAccountScreen} />
 
     {/* SHARED */}
+    <Drawer.Screen name="CheckLocation" component={CheckLocation} />
     <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />
     <Drawer.Screen name="BookingHistory" component={BookingHistory} />
     <Drawer.Screen name="Profile" component={Profile} />
@@ -108,10 +108,10 @@ const AirlineDrawer = () => (
     <Drawer.Screen name="AirlineHome" component={AirlineHome} />
     <Drawer.Screen name="BookingManagement" component={AirlineBookingManagement} />
     <Drawer.Screen name="ContractDetails" component={ContractDetails} />
-    <Drawer.Screen name="CheckLocation" component={CheckLocation} />
     <Drawer.Screen name="SelectLocation" component={SelectLocation} />
 
     {/* SHARED */}
+    <Drawer.Screen name="CheckLocation" component={CheckLocation} />
     <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />
     <Drawer.Screen name="BookingHistory" component={BookingHistory} />
     <Drawer.Screen name="Profile" component={Profile} />
@@ -135,10 +135,10 @@ const DeliveryDrawer = () => (
     <Drawer.Screen name="DeliveryHome" component={DeliveryHome} />
     <Drawer.Screen name="BookingManagement" component={DeliveryBookingManagement} />
     <Drawer.Screen name="ContractDetails" component={ContractDetails} />
-    <Drawer.Screen name="CheckLocation" component={CheckLocation} />
     <Drawer.Screen name="DeliveryConfirmation" component={DeliveryConfirmation} />
 
     {/* SHARED */}
+    <Drawer.Screen name="CheckLocation" component={CheckLocation} />
     <Drawer.Screen name="PerformanceStatistics" component={PerformanceStatistics} />
     <Drawer.Screen name="BookingHistory" component={BookingHistory} />
     <Drawer.Screen name="Profile" component={Profile} />

@@ -33,6 +33,7 @@ const AdminBookingList = ({ navigation }) => {
       luggage_weight: contract.luggage_weight || 'N/A',
       flight_number: contract.flight_number || 'N/A',
       drop_off_location: contract.drop_off_location || 'N/A',
+      drop_off_location_geo: contract.drop_off_location_geo || 'N/A',
       airline_name: `${contract.airline?.first_name || ''} ${contract.airline?.middle_initial || ''} ${contract.airline?.last_name || ''} ${contract.airline?.suffix || ''}`.trim() || 'N/A',
       delivery_name: contract.delivery ? `${contract.delivery?.first_name || ''} ${contract.delivery?.middle_initial || ''} ${contract.delivery?.last_name || ''} ${contract.delivery?.suffix || ''}`.trim() : 'Not Assigned',
       corporation: contract.airline?.corporation?.corporation_name || 'N/A',
@@ -768,8 +769,9 @@ const AdminBookingList = ({ navigation }) => {
                               <Menu.Item
                                 onPress={() => {
                                   setActionMenuVisible(null)
-                                  navigation.navigate('AdminCheckLocation', {
-                                    id: contract.id
+                                  navigation.navigate('CheckLocation', { 
+                                    dropOffLocation: contract.drop_off_location,
+                                    dropOffLocationGeo: contract.drop_off_location_geo
                                   })
                                 }}
                                 title="Check Location"

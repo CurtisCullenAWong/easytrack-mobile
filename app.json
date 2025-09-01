@@ -29,7 +29,7 @@
       },
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyCvdV4apf5oct-tuyECe-RF6pr9pGlcCoI"
+          "apiKey": "$(GOOGLE_MAPS_API_KEY)"
         }
       },
       "permissions": [
@@ -54,13 +54,6 @@
         }
       ],
       [
-        "expo-maps",
-        {
-          "requestLocationPermission": true,
-          "locationPermission": "Allow $(PRODUCT_NAME) to use your location"
-        }
-      ],
-      [
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
@@ -69,7 +62,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "ba15ee61-089d-45f3-8429-1f1b1faff574"
+        "projectId": "c2b70a49-d1b1-4a04-b6bb-a69f728f91ad"
       }
     },
     "ios": {
