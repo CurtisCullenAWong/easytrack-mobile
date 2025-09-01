@@ -5,7 +5,7 @@ import { Text, Button, Appbar, Surface, useTheme, IconButton, Divider } from 're
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import * as Location from 'expo-location'
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
-import { GOOGLE_MAPS_PLACES_API_KEY } from '@env'
+import { GOOGLE_MAPS_API_KEY } from '@env'
 
 const { height: screenHeight } = Dimensions.get('window')
 
@@ -117,7 +117,7 @@ const SelectLocation = ({ navigation }) => {
         <GooglePlacesAutocomplete
           placeholder="Search for a location..."
           query={{
-            key: GOOGLE_MAPS_PLACES_API_KEY,
+            key: GOOGLE_MAPS_API_KEY,
             language: 'en',
             components: 'country:ph',
             type: ['establishment', 'geocoding']

@@ -3,7 +3,7 @@ import { View, StyleSheet, TouchableOpacity } from 'react-native'
 import { Text, useTheme, Appbar, IconButton, Button } from 'react-native-paper'
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import * as Location from 'expo-location'
-import { supabase } from '../../../../lib/supabaseAdmin' // Adjust path as needed
+import { supabase } from '../../../../lib/supabaseAdmin'
 
 const AdminCheckLocation = ({ route, navigation }) => {
   const { colors, fonts } = useTheme()
