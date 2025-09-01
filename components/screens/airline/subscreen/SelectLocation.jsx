@@ -1,6 +1,6 @@
 import 'react-native-get-random-values'
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { View, StyleSheet, ScrollView, Dimensions, ActivityIndicator, TouchableO, TouchableOpacity } from 'react-native'
+import { View, StyleSheet, ScrollView, Dimensions, ActivityIndicator, TouchableOpacity } from 'react-native'
 import { Text, Button, Appbar, Surface, useTheme, IconButton, Divider } from 'react-native-paper'
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import * as Location from 'expo-location'
@@ -26,7 +26,6 @@ const SelectLocation = ({ navigation }) => {
   const mapRef = useRef(null)
   const geocodeTimeoutRef = useRef(null)
 
-  // Check if any geocoding operation is in progress
   const isAnyGeocodingInProgress = isGeocodingInProgress
 
   useEffect(() => {
@@ -95,30 +94,6 @@ const SelectLocation = ({ navigation }) => {
     )
   }, [])
 
-  const handlePlaceSelect = useCallback((data, details = null) => {
-    if (details) {
-      const { lat, lng } = details.geometry.location
-      const location = data.description
-      
-      setSelectedLocation({
-        location,
-        lat,
-        lng,
-      })
-
-      // Animate map to selected location
-      mapRef.current?.animateToRegion(
-        { 
-          latitude: lat, 
-          longitude: lng, 
-          latitudeDelta: 0.01, 
-          longitudeDelta: 0.01 
-        },
-        1000
-      )
-    }
-  }, [])
-
   const handleConfirm = useCallback(() => {
     if (!selectedLocation || isAnyGeocodingInProgress) return
     navigation.navigate('BookingManagement', {
@@ -129,6 +104,7 @@ const SelectLocation = ({ navigation }) => {
       },
     })
   }, [selectedLocation, navigation, isAnyGeocodingInProgress])
+  const placesRef = useRef(null)
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -151,39 +127,30 @@ const SelectLocation = ({ navigation }) => {
           timeout={15000}
           fetchDetails={true}
           keepResultsAfterBlur={true}
-          listViewDisplayed="auto"
-          renderRow={(data, index) => (
-            <TouchableOpacity
-              style={styles.searchRow}
-              onPress={() => {
-                console.log("Selected index:", index)
-                console.log(data)
-              }}
-            >
-              {
-                <View>
-                {/* Main text (usually street, place name, etc.) */}
-                <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>
-                  {data.structured_formatting?.main_text}
-                </Text>
-          
-                {/* Secondary text (usually city, region, etc.) */}
-                {data.structured_formatting?.secondary_text ? (
-                  <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
-                    {data.structured_formatting.secondary_text}
-                  </Text>
-                ) : null}
-              </View>
+          ref={placesRef}
+          onPress={(data, details) => {
+            if (details) {
+              const { lat, lng } = details.geometry.location
+              const newLocation = {
+                location: data.description,
+                lat,
+                lng,
               }
-            </TouchableOpacity>
-          )}
-          listEmptyComponent={
-            <View style={styles.emptyListContainer}>
-              <Text style={[fonts.bodyMedium, { margin: 10, color: colors.onSurfaceVariant, textAlign: 'center' }]}>
-                Start typing to search for locations
-              </Text>
-            </View>
-          }
+              setSelectedLocation(newLocation)
+              mapRef.current?.animateToRegion(
+                {
+                  latitude: lat,
+                  longitude: lng,
+                  latitudeDelta: 0.005,
+                  longitudeDelta: 0.005,
+                },
+                1000
+              )
+            }
+            if (placesRef.current) {
+              placesRef.current.setAddressText('')
+            }
+          }}
           predefinedPlaces={[]}
           textInputProps={{}}
           styles={{
@@ -213,9 +180,7 @@ const SelectLocation = ({ navigation }) => {
         />
       </Surface>
 
-
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
-        {/* Map Section */}
         <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={2}>
           <View style={styles.sectionHeader}>
             <IconButton icon="map" size={20} iconColor={colors.primary} />
@@ -269,7 +234,6 @@ const SelectLocation = ({ navigation }) => {
           )}
         </Surface>
 
-        {/* Selected Location Section */}
         {selectedLocation && (
           <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={2}>
             <View style={styles.sectionHeader}>
@@ -299,12 +263,10 @@ const SelectLocation = ({ navigation }) => {
           </Surface>
         )}
 
-        {/* Confirm Button */}
         <View style={styles.buttonContainer}>
           <Button
             mode="contained"
             onPress={handleConfirm}
-            // Disable the button while any geocoding operation is in progress or if no location is selected
             disabled={!selectedLocation || isAnyGeocodingInProgress}
             style={[styles.confirmButton, { backgroundColor: selectedLocation && !isAnyGeocodingInProgress ? colors.primary : colors.surfaceVariant }]}
             labelStyle={[fonts.labelLarge, { color: selectedLocation && !isAnyGeocodingInProgress ? colors.onPrimary : colors.onSurfaceVariant }]}
@@ -369,7 +331,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     maxHeight: 80,
-    zIndex:999
+    zIndex: 999
   },
   emptyListContainer: {
     padding: 16,
