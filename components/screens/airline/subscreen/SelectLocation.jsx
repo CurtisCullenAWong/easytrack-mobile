@@ -1,6 +1,6 @@
 import 'react-native-get-random-values'
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { View, StyleSheet, ScrollView, Dimensions, ActivityIndicator } from 'react-native'
+import { View, StyleSheet, ScrollView, Dimensions, ActivityIndicator, TouchableO, TouchableOpacity } from 'react-native'
 import { Text, Button, Appbar, Surface, useTheme, IconButton, Divider } from 'react-native-paper'
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import * as Location from 'expo-location'
@@ -144,22 +144,38 @@ const SelectLocation = ({ navigation }) => {
             key: GOOGLE_MAPS_PLACES_API_KEY,
             language: 'en',
             components: 'country:ph',
+            type: ['establishment', 'geocoding']
           }}
           minLength={3}
           debounce={1500}
           timeout={15000}
           fetchDetails={true}
-          renderRow={(data) => (
-            <View style={styles.searchRow}>
-              <Text style={[fonts.bodyMedium, { color: colors.onSurface, flex: 1 }]}>
-                {data.structured_formatting?.main_text || data.description}
-              </Text>
-              {data.structured_formatting?.secondary_text && (
-                <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
-                  {data.structured_formatting.secondary_text}
+          keepResultsAfterBlur={true}
+          listViewDisplayed="auto"
+          renderRow={(data, index) => (
+            <TouchableOpacity
+              style={styles.searchRow}
+              onPress={() => {
+                console.log("Selected index:", index)
+                console.log(data)
+              }}
+            >
+              {
+                <View>
+                {/* Main text (usually street, place name, etc.) */}
+                <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>
+                  {data.structured_formatting?.main_text}
                 </Text>
-              )}
-            </View>
+          
+                {/* Secondary text (usually city, region, etc.) */}
+                {data.structured_formatting?.secondary_text ? (
+                  <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
+                    {data.structured_formatting.secondary_text}
+                  </Text>
+                ) : null}
+              </View>
+              }
+            </TouchableOpacity>
           )}
           listEmptyComponent={
             <View style={styles.emptyListContainer}>
@@ -196,6 +212,7 @@ const SelectLocation = ({ navigation }) => {
           }}
         />
       </Surface>
+
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
         {/* Map Section */}
@@ -351,7 +368,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
-    maxHeight: 100
+    maxHeight: 80,
+    zIndex:999
   },
   emptyListContainer: {
     padding: 16,
