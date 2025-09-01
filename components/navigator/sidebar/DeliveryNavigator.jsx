@@ -170,8 +170,8 @@ const DeliveryNavigator = ({ navigation }) => {
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       <Surface style={[styles.surface, { backgroundColor: colors.background }]}>
-        <Image source={require('../../../assets/images/icon-w_o-name.png')} style={styles.logo} />
-        <Text style={[styles.appName, { color: colors.primary, ...fonts.headlineLarge }]}>
+        <Image source={require('../../../assets/images/splash-icon.png')} style={styles.logo} />
+        <Text style={[styles.appName, { color: colors.primary, ...fonts.displayMedium, fontWeight:'bold' }]}>
           EasyTrack
         </Text>
       </Surface>
