@@ -192,6 +192,7 @@ const AdminNavigator = ({ navigation }) => {
       {SECTIONS.map(section => {
         const filtered = section.items.filter(item => {
           if (
+            item.screen === 'AdminHome' ||
             item.screen === 'Profile' ||
             item.screen === 'TermsAndConditions' ||
             item.actionKey === 'logout'

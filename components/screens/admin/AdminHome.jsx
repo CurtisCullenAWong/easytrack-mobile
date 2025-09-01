@@ -2,11 +2,14 @@ import React from 'react'
 import { ScrollView, View, Dimensions, FlatList, StyleSheet } from 'react-native'
 import { Text, Button, Surface, Card, useTheme, Divider } from 'react-native-paper'
 import Header from '../../customComponents/Header'
+import useVerificationStatus from '../../hooks/useVerificationStatus'
 
 const { width } = Dimensions.get('window')
 
 const AdminHome = ({ navigation }) => {
   const { colors, fonts } = useTheme()
+  const { isVerified } = useVerificationStatus()
+
   const images = [
     require('../../../assets/admin_home/admin1.png'),
     require('../../../assets/admin_home/admin2.png'),
@@ -60,8 +63,9 @@ const AdminHome = ({ navigation }) => {
             </Text>
           )}
         </Surface>
-
+        
         {/* Actions Section */}
+        {isVerified && (
         <Surface style={[styles.actionsSurface, { backgroundColor: colors.surface }]} elevation={1}>
           <Text style={[styles.sectionTitle, { color: colors.onSurface, ...fonts.titleLarge }]}>Quick Actions</Text>
           <View style={styles.buttonContainer}>
@@ -80,7 +84,7 @@ const AdminHome = ({ navigation }) => {
             ))}
           </View>
         </Surface>
-
+        )}
         {/* Quote Section */}
         <Surface style={[styles.quoteSurface, { backgroundColor: colors.surface }]} elevation={1}>
           <Text style={[styles.quoteText, { color: colors.onSurface, ...fonts.bodyMedium }]}>

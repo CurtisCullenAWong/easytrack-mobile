@@ -189,6 +189,7 @@ const DeliveryNavigator = ({ navigation }) => {
       {SECTIONS.map(section => {
         const filtered = section.items.filter(item => {
           if (
+            item.screen === 'AirlineHome' ||
             item.screen === 'Profile' ||
             item.screen === 'TermsAndConditions' ||
             item.actionKey === 'logout'
