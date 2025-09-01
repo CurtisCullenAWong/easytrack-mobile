@@ -99,8 +99,8 @@ const INPUT_LIMITS = {
   cityMunicipality: { maxLength: 50, minLength: 2 },
   barangay: { maxLength: 50, minLength: 2 },
   postalCode: { maxLength: 4, minLength: 4 },
-  street: { maxLength: 50, minLength: 5 },
-  villageBuilding: { maxLength: 50, minLength: 5 },
+  street: { maxLength: 50, minLength: 2 },
+  villageBuilding: { maxLength: 50, minLength: 2 },
   roomUnitNo: { maxLength: 50 },
   landmarkEntrance: { maxLength: 100 }
 }
@@ -111,12 +111,12 @@ const VALIDATION_PATTERNS = {
   flightNumber: /^[A-Z0-9]{3,6}$/, // Alphanumeric, 3-6 characters
   caseNumber: /^[A-Z0-9]{6,10}$/, // Alphanumeric, 6-10 characters
   postalCode: /^\d{4}$/, // Exactly 4 digits
-  weight: /^([1-9]|[1-5][0-9]|50)$/, // 1-50
+  weight: /^([1-9]|[1-5][0-9]|40)$/, // 1-50
   quantity: /^([1-9]|10)$/, // 1-10
   // Address validation patterns
   province: /^[A-Za-z\s\-\.]+$/, // Letters, spaces, hyphens, dots
   cityMunicipality: /^[A-Za-z\s\-\.]+$/, // Letters, spaces, hyphens, dots
-  barangay: /^[A-Za-z\s\-\.]+$/, // Letters, spaces, hyphens, dots
+  barangay: /^[A-Za-z0-9\s\-\.\,\#]+$/, // Letters, spaces, hyphens, dots
   street: /^[A-Za-z0-9\s\-\.\,\#]+$/, // Letters, numbers, spaces, hyphens, dots, commas, hash
   villageBuilding: /^[A-Za-z0-9\s\-\.\,\#]+$/, // Letters, numbers, spaces, hyphens, dots, commas, hash
   roomUnitNo: /^[A-Za-z0-9\s\-\.\,\#]*$/, // Optional: Letters, numbers, spaces, hyphens, dots, commas, hash
@@ -388,7 +388,7 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
             mode="outlined"
             style={{ marginBottom: 12 }}
             error={contract.errors?.street}
-            placeholder="e.g., Roxas Boulevard (5-50 characters)"
+            placeholder="e.g., Roxas Boulevard (2-50 characters)"
             maxLength={INPUT_LIMITS.street.maxLength}
             autoCapitalize="words"
             disabled={isDisabled}
@@ -400,7 +400,7 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
             mode="outlined"
             style={{ marginBottom: 12 }}
             error={contract.errors?.villageBuilding}
-            placeholder="e.g., SM Mall of Asia (5-50 characters)"
+            placeholder="e.g., SM Mall of Asia (2-50 characters)"
             maxLength={INPUT_LIMITS.villageBuilding.maxLength}
             autoCapitalize="words"
             disabled={isDisabled}
@@ -770,7 +770,7 @@ const MakeContracts = () => {
         // Format contact number to +63 9xx xxx xxxx
         const formatContactNumber = (contact) => {
           if (contact.length === 10 && contact.startsWith('9')) {
-            return `+63 ${contact.slice(0, 2)} ${contact.slice(2, 5)} ${contact.slice(5, 8)} ${contact.slice(8)}`
+            return `+63 ${contact.slice(0, 3)} ${contact.slice(3, 6)} ${contact.slice(6)}`;
           }
           return `+63 ${contact}`
         }

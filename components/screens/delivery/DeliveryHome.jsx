@@ -2,11 +2,13 @@ import React from 'react'
 import { ScrollView, Dimensions, FlatList, View, StyleSheet } from 'react-native'
 import { Text, Button, Surface, Card, useTheme, Divider } from 'react-native-paper'
 import Header from '../../customComponents/Header'
+import useVerificationStatus from '../../hooks/useVerificationStatus'
 
 const { width } = Dimensions.get('window')
 
 const DeliveryHome = ({ navigation }) => {
   const { colors, fonts } = useTheme()
+  const { isVerified } = useVerificationStatus()
 
   const images = [
     require('../../../assets/delivery_home/delivery1.png'),
@@ -71,6 +73,7 @@ const DeliveryHome = ({ navigation }) => {
         </Surface>
 
         {/* Actions Section */}
+        {isVerified && (
         <Surface style={[styles.actionsSurface, { backgroundColor: colors.surface }]} elevation={1}>
           <Text style={[styles.sectionTitle, { color: colors.onSurface, ...fonts.titleLarge }]}>Quick Actions</Text>
           <View style={styles.buttonContainer}>
@@ -89,7 +92,7 @@ const DeliveryHome = ({ navigation }) => {
             ))}
           </View>
         </Surface>
-
+        )}
         {/* Performance Carousel Section */}
         <Surface style={[styles.carouselSurface, { backgroundColor: colors.surface }]} elevation={1}>
           <Text style={[styles.sectionTitle, { color: colors.onSurface, ...fonts.titleLarge }]}>Performance Insights</Text>

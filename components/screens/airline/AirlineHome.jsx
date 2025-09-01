@@ -3,6 +3,7 @@ import { ScrollView, View, Dimensions, FlatList, StyleSheet } from 'react-native
 import { Text, Button, Surface, Card, useTheme, Divider } from 'react-native-paper'
 import { supabase } from '../../../lib/supabase'
 import Header from '../../customComponents/Header'
+import useVerificationStatus from '../../hooks/useVerificationStatus'
 
 const { width } = Dimensions.get('window')
 
@@ -11,6 +12,7 @@ const AirlineHome = ({ navigation }) => {
   const [images, setImages] = useState([])
   const [loading, setLoading] = useState(true)
   const [corporationName, setCorporationName] = useState('')
+  const { isVerified } = useVerificationStatus()
 
   useEffect(() => {
     const fetchCorporationImages = async () => {
@@ -126,24 +128,26 @@ const AirlineHome = ({ navigation }) => {
         </Surface>
 
         {/* Actions Section */}
-        <Surface style={[styles.actionsSurface, { backgroundColor: colors.surface }]} elevation={1}>
-          <Text style={[styles.sectionTitle, { color: colors.onSurface, ...fonts.titleLarge }]}>Quick Actions</Text>
-          <View style={styles.buttonContainer}>
-            {buttons.map(({ label, icon, screen }) => (
-              <Button
-                key={label}
-                icon={icon}
-                mode="contained"
-                style={[styles.button, { backgroundColor: colors.primary }]}
-                contentStyle={styles.buttonContent}
-                onPress={() => navigation.navigate(screen)}
-                labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
-              >
-                {label}
-              </Button>
-            ))}
-          </View>
-        </Surface>
+        {isVerified && (
+          <Surface style={[styles.actionsSurface, { backgroundColor: colors.surface }]} elevation={1}>
+            <Text style={[styles.sectionTitle, { color: colors.onSurface, ...fonts.titleLarge }]}>Quick Actions</Text>
+            <View style={styles.buttonContainer}>
+              {buttons.map(({ label, icon, screen }) => (
+                <Button
+                  key={label}
+                  icon={icon}
+                  mode="contained"
+                  style={[styles.button, { backgroundColor: colors.primary }]}
+                  contentStyle={styles.buttonContent}
+                  onPress={() => navigation.navigate(screen)}
+                  labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
+                >
+                  {label}
+                </Button>
+              ))}
+            </View>
+          </Surface>
+        )}
 
         {/* Quote Section */}
         <Surface style={[styles.quoteSurface, { backgroundColor: colors.surface }]} elevation={1}>

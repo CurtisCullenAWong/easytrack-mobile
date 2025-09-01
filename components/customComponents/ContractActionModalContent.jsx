@@ -204,8 +204,8 @@ console.log(currentLocation.latitude,
           dropOffCoords.longitude
         )
 
-        if (distance > 0.5) {
-          showSnackbar('You must be within 500m of the drop-off location to mark delivery status')
+        if (distance > 0.1) {
+          showSnackbar('You must be within 100m of the drop-off location to mark delivery status')
           return
         }
       } catch (error) {
