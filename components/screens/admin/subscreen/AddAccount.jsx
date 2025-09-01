@@ -107,6 +107,24 @@ const AddAccount = ({ navigation }) => {
       const selectedRole = roleOptions.find(role => role.role_name === value)
       setRole_id(selectedRole?.id || '')
       validateRole(value)
+      
+      // Clear corporation selection when role changes to prevent invalid combinations
+      if (selectedRole?.id && (selectedRole.id === 1 || selectedRole.id === 2)) {
+        // Role 1 or 2 - only allow corporation_id = 1
+        const corp1 = corporationOptions.find(c => c.id === 1)
+        if (corp1) {
+          setForm(prev => ({ ...prev, corporation: corp1.corporation_name }))
+          setCorporation_id(1)
+          validateCorporation(corp1.corporation_name)
+        }
+      } else if (selectedRole?.id) {
+        // Role not 1 or 2 - clear corporation if it was set to 1
+        if (corporation_id === 1) {
+          setForm(prev => ({ ...prev, corporation: '' }))
+          setCorporation_id('')
+          setErrors(prev => ({ ...prev, corporation: 'Please select a corporation' }))
+        }
+      }
     } else if (field === 'corporation') {
       const selectedCorporation = corporationOptions.find(c => c.corporation_name === value)
       setCorporation_id(selectedCorporation?.id || '')
@@ -136,6 +154,19 @@ const AddAccount = ({ navigation }) => {
         if (!role_id) setErrors(prev => ({ ...prev, role: 'Invalid role selected' }))
         if (!corporation_id) setErrors(prev => ({ ...prev, corporation: 'Invalid corporation selected' }))
         showSnackbar('Invalid role or corporation selected')
+        return
+      }
+
+      // Validate role-corporation combination
+      if ((role_id === 1 || role_id === 2) && corporation_id !== 1) {
+        setErrors(prev => ({ ...prev, corporation: 'Roles 1 and 2 can only be assigned to corporation 1' }))
+        showSnackbar('Invalid role-corporation combination')
+        return
+      }
+
+      if (role_id !== 1 && role_id !== 2 && corporation_id === 1) {
+        setErrors(prev => ({ ...prev, corporation: 'Corporation 1 can only be assigned to roles 1 and 2' }))
+        showSnackbar('Invalid role-corporation combination')
         return
       }
 
@@ -311,18 +342,35 @@ const AddAccount = ({ navigation }) => {
         <Dialog visible={showCorpMenu} onDismiss={() => setShowCorpMenu(false)} style={{ backgroundColor: colors.surface }}>
           <Dialog.Title>Select Corporation</Dialog.Title>
           <Dialog.Content>
-            {corporationOptions.map(corp => (
-              <Button
-                key={corp.id}
-                onPress={() => {
-                  handleChange('corporation', corp.corporation_name)
-                  setShowCorpMenu(false)
-                }}
-                textColor={form.corporation === corp.corporation_name ? colors.primary : colors.onSurface}
-              >
-                {corp.corporation_name}
-              </Button>
-            ))}
+            {corporationOptions.map(corp => {
+              // Disable corporation_id = 1 if role_id is not 1 or 2
+              const isDisabled = (role_id === 1 || role_id === 2) 
+                ? corp.id !== 1  // Only allow corp_id = 1 for roles 1 or 2
+                : corp.id === 1  // Disable corp_id = 1 for other roles
+              
+              return (
+                <Button
+                  key={corp.id}
+                  onPress={() => {
+                    if (!isDisabled) {
+                      handleChange('corporation', corp.corporation_name)
+                      setShowCorpMenu(false)
+                    }
+                  }}
+                  disabled={isDisabled}
+                  textColor={
+                    isDisabled 
+                      ? colors.disabled 
+                      : form.corporation === corp.corporation_name 
+                        ? colors.primary 
+                        : colors.onSurface
+                  }
+                >
+                  {corp.corporation_name}
+                  {isDisabled && ' (Not Available)'}
+                </Button>
+              )
+            })}
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setShowCorpMenu(false)} textColor={colors.error}>Cancel</Button>
