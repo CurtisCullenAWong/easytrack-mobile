@@ -8,7 +8,7 @@
     },
     "updates": {
       "enabled": true,
-      "url": "https://u.expo.dev/c0e32131-8ede-4a49-916f-50696bcbf7b1"
+      "url": "https://u.expo.dev/d7e43e51-1cb2-4398-abc1-c3e13c210175"
     },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -62,7 +62,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "c0e32131-8ede-4a49-916f-50696bcbf7b1"
+        "projectId": "d7e43e51-1cb2-4398-abc1-c3e13c210175"
       }
     },
     "ios": {
