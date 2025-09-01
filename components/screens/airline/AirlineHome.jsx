@@ -45,15 +45,15 @@ const AirlineHome = ({ navigation }) => {
         let imgs = []
         if (profile?.corporation_id === 2) {
           imgs = [
-            { uri: 'https://images.squarespace-cdn.com/content/v1/5a5dbe4632601eb31977f947/b32685fe-5c30-4913-92c5-804c36d2af28/IMG_0553+copy.jpg' },
-            { uri: 'https://images.squarespace-cdn.com/content/v1/5a5dbe4632601eb31977f947/ea9dcc62-3bb7-49ba-b46d-c63095257499/TAAA321Neo.jpg' },
-            { uri: 'https://images.squarespace-cdn.com/content/v1/5a5dbe4632601eb31977f947/1634724464683-TT8HW2IODV87O7L3KD05/226A4C84-BE86-4F88-8A98-5D97FCF2AD3D.jpeg' },
+            require('../../../assets/airline_home/airasia1.png'),
+            require('../../../assets/airline_home/airasia2.png'),
+            require('../../../assets/airline_home/airasia3.png'),
           ]
         } else if (profile?.corporation_id === 3) {
           imgs = [
-            { uri: 'https://cdn.media.amplience.net/i/cebupacificair/A%20NEO%20future%20awaits%20for%20everyJuan?w=1980&sm=c&scaleFit=poi&poi={$this.metadata.pointOfInterest.x},{$this.metadata.pointOfInterest.y},{$this.metadata.pointOfInterest.w},{$this.metadata.pointOfInterest.h}' },
-            { uri: 'https://aircraft.airbus.com/sites/g/files/jlcbta126/files/styles/w640h480/public/2024-10/Cebu%20Pacific%20A321neo.jpg?h=5983f417&itok=Wo4Y_1ET' },
-            { uri: 'https://www.jgsummit.com.ph/images/2021/12/15/0f999ad31e634dc5a90ad0d350cbe86ddfc4eca3.jpg' },
+            require('../../../assets/airline_home/cebupacific1.png'),
+            require('../../../assets/airline_home/cebupacific2.png'),
+            require('../../../assets/airline_home/cebupacific3.png'),
           ]
         } else {
           // fallback images

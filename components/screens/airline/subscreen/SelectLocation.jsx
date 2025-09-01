@@ -4,7 +4,7 @@ import { View, StyleSheet, ScrollView, Dimensions, ActivityIndicator } from 'rea
 import { Text, Button, Appbar, Surface, useTheme, IconButton, Divider } from 'react-native-paper'
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import * as Location from 'expo-location'
-import GooglePlacesTextInput from 'react-native-google-places-textinput'
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
 import { GOOGLE_MAPS_PLACES_API_KEY } from '@env'
 
 const { height: screenHeight } = Dimensions.get('window')
@@ -22,13 +22,12 @@ const SelectLocation = ({ navigation }) => {
     lng: INITIAL_CENTER.longitude,
   })
   const [isMapExpanded, setIsMapExpanded] = useState(true)
-  const [isFetchingLocation, setIsFetchingLocation] = useState(false)
   const [isGeocodingInProgress, setIsGeocodingInProgress] = useState(false)
   const mapRef = useRef(null)
   const geocodeTimeoutRef = useRef(null)
 
   // Check if any geocoding operation is in progress
-  const isAnyGeocodingInProgress = isFetchingLocation || isGeocodingInProgress
+  const isAnyGeocodingInProgress = isGeocodingInProgress
 
   useEffect(() => {
     (async () => {
@@ -44,42 +43,6 @@ const SelectLocation = ({ navigation }) => {
     })()
     return () => {
       geocodeTimeoutRef.current && clearTimeout(geocodeTimeoutRef.current)
-    }
-  }, [])
-
-  // Function to fetch place details (including lat/lng) using a placeId
-  const fetchPlaceDetails = useCallback(async (placeId) => {
-    setIsFetchingLocation(true)
-    try {
-      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${GOOGLE_MAPS_PLACES_API_KEY}`
-      const response = await fetch(url)
-      const data = await response.json()
-
-      if (data.status === 'OK' && data.result.geometry) {
-        const { lat, lng } = data.result.geometry.location
-        const newLocation = data.result.formatted_address || data.result.name
-        
-        // Update the state with the new location and coordinates
-        setSelectedLocation({ location: newLocation, lat, lng })
-        
-        // Animate the map to the new coordinates
-        mapRef.current?.animateToRegion(
-          {
-            latitude: lat,
-            longitude: lng,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          },
-          500
-        )
-      } else {
-        console.error('Error fetching place details:', data.status)
-        // You could show an alert or a message to the user here
-      }
-    } catch (error) {
-      console.error('Network or API error:', error)
-    } finally {
-      setIsFetchingLocation(false)
     }
   }, [])
 
@@ -132,6 +95,30 @@ const SelectLocation = ({ navigation }) => {
     )
   }, [])
 
+  const handlePlaceSelect = useCallback((data, details = null) => {
+    if (details) {
+      const { lat, lng } = details.geometry.location
+      const location = data.description
+      
+      setSelectedLocation({
+        location,
+        lat,
+        lng,
+      })
+
+      // Animate map to selected location
+      mapRef.current?.animateToRegion(
+        { 
+          latitude: lat, 
+          longitude: lng, 
+          latitudeDelta: 0.01, 
+          longitudeDelta: 0.01 
+        },
+        1000
+      )
+    }
+  }, [])
+
   const handleConfirm = useCallback(() => {
     if (!selectedLocation || isAnyGeocodingInProgress) return
     navigation.navigate('BookingManagement', {
@@ -149,20 +136,71 @@ const SelectLocation = ({ navigation }) => {
         <Appbar.BackAction onPress={() => navigation.navigate('BookingManagement', { screen: 'create' })} />
         <Appbar.Content title="Drop-Off Location" titleStyle={[fonts.titleLarge, { color: colors.onSurface }]} />
       </Appbar.Header>
-      <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={2}>
-        {/* <GooglePlacesTextInput
-          placeholder="Search for a location"
-          apiKey={GOOGLE_MAPS_PLACES_API_KEY}
-          language="en"
-          components="country:ph"
-          debounce={3000}
-          onPlaceSelect={(place) => {
-            if (place.placeId) {
-              fetchPlaceDetails(place.placeId)
-            }
+      
+      <Surface style={[styles.searchSurface, { backgroundColor: colors.surface }]} elevation={2}>
+        <GooglePlacesAutocomplete
+          placeholder="Search for a location..."
+          query={{
+            key: GOOGLE_MAPS_PLACES_API_KEY,
+            language: 'en',
+            components: 'country:ph',
+            types: ['establishment', 'geocode'],
           }}
-          placeHolderText='Search for a Location'
-        /> */}
+          onPress={(data, details = null) => {
+            console.log('Selected place:', data, details);
+          }}
+          renderRow={(data) => (
+            <View style={styles.searchRow}>
+              <Text style={[fonts.bodyMedium, { color: colors.onSurface, flex: 1 }]}>
+                {data.structured_formatting?.main_text || data.description}
+              </Text>
+              {data.structured_formatting?.secondary_text && (
+                <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
+                  {data.structured_formatting.secondary_text}
+                </Text>
+              )}
+            </View>
+          )}
+          styles={{
+            container: styles.autocompleteContainer,
+            textInputContainer: {
+              ...styles.textInputContainer,
+              borderColor: colors.outlineVariant,
+            },
+            textInput: {
+              ...styles.textInput,
+              color: colors.onSurface,
+            },
+            listView: {
+              ...styles.listView,
+              backgroundColor: colors.surface,
+            },
+            row: {
+              ...styles.row,
+              borderBottomColor: colors.outlineVariant,
+            },
+            separator: {
+              ...styles.separator,
+              backgroundColor: colors.outlineVariant,
+            },
+            description: { color: colors.onSurface },
+          }}
+          debounce={2000}
+          minLength={3}
+          enableHighAccuracyLocation={true}
+          timeout={15000}
+          fetchDetails={true}
+          enablePoweredByContainer={false}
+          listEmptyComponent={
+            <View style={styles.emptyListContainer}>
+              <Text style={[fonts.bodyMedium, { margin: 10, color: colors.onSurfaceVariant, textAlign: 'center' }]}>
+                Start typing to search for locations
+              </Text>
+            </View>
+          }
+          predefinedPlaces={[]}
+          textInputProps={{}}
+        />
       </Surface>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
@@ -233,8 +271,8 @@ const SelectLocation = ({ navigation }) => {
             <Divider style={[styles.divider, { backgroundColor: colors.outline }]} />
             <View style={styles.locationDetails}>
               <Text style={[fonts.bodyMedium, { color: colors.onSurface, lineHeight: 22 }]}>
-                {isAnyGeocodingInProgress 
-                  ? 'Getting address...' 
+                {isAnyGeocodingInProgress
+                  ? 'Getting address...'
                   : selectedLocation.location || 'No address found. Please drag the marker.'
                 }
               </Text>
@@ -277,20 +315,99 @@ const SelectLocation = ({ navigation }) => {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { elevation: 4 },
-  scrollView: { flex: 1 },
-  scrollContent: { padding: 12, paddingBottom: 80 },
-  surface: { borderRadius: 12, marginVertical: 10, marginHorizontal: 10 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', padding: 12 },
-  divider: { height: 1, opacity: 0.3 },
-  mapContainer: { padding: 12 },
-  mapWrapper: { borderRadius: 12, overflow: 'hidden', elevation: 3, marginTop: 12 },
-  map: { width: '100%', height: Math.min(screenHeight * 0.45, 320), borderRadius: 12 },
-  input: { borderColor: '#bbb', borderWidth: 1, borderRadius: 8, padding: 10, margin: 12 },
-  centerButton: { borderRadius: 8, borderWidth: 1.5, marginTop: 8 },
-  centerButtonContent: { height: 42 },
-  locationDetails: { padding: 16, paddingTop: 12 },
+  container: { 
+    flex: 1 
+  },
+  header: { 
+    elevation: 4 
+  },
+  searchSurface: {
+    margin: 12,
+    borderRadius: 12,
+    padding: 12,
+  },
+  autocompleteContainer: { 
+    flex: 0 
+  },
+  textInputContainer: {
+    borderRadius: 8,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: 6,
+  },
+  textInput: {
+    height: 48,
+    fontSize: 16,
+    paddingHorizontal: 12,
+  },
+  listView: {
+    borderRadius: 8,
+    marginTop: 4,
+    elevation: 4,
+  },
+  row: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  separator: {
+    height: StyleSheet.hairlineWidth,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  emptyListContainer: {
+    padding: 16,
+  },
+  scrollView: { 
+    flex: 1 
+  },
+  scrollContent: { 
+    padding: 12, 
+    paddingBottom: 80 
+  },
+  surface: { 
+    borderRadius: 12, 
+    marginVertical: 10, 
+    marginHorizontal: 10 
+  },
+  sectionHeader: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    padding: 12 
+  },
+  divider: { 
+    height: 1, 
+    opacity: 0.3 
+  },
+  mapContainer: { 
+    padding: 12 
+  },
+  mapWrapper: { 
+    borderRadius: 12, 
+    overflow: 'hidden', 
+    elevation: 3, 
+    marginTop: 12 
+  },
+  map: { 
+    width: '100%', 
+    height: Math.min(screenHeight * 0.45, 320), 
+    borderRadius: 12 
+  },
+  centerButton: { 
+    borderRadius: 8, 
+    borderWidth: 1.5, 
+    marginTop: 8 
+  },
+  centerButtonContent: { 
+    height: 42 
+  },
+  locationDetails: { 
+    padding: 16, 
+    paddingTop: 12 
+  },
   coordinatesContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -299,8 +416,17 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: '#ddd',
   },
-  confirmButton: { borderRadius: 12, elevation: 3 },
-  confirmButtonContent: { height: 54 },
+  buttonContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+  },
+  confirmButton: { 
+    borderRadius: 12, 
+    elevation: 3 
+  },
+  confirmButtonContent: { 
+    height: 54 
+  },
 })
 
 export default SelectLocation

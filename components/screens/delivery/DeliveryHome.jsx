@@ -93,9 +93,9 @@ const DeliveryHome = ({ navigation }) => {
           </View>
         </Surface>
         )}
-        {/* Performance Carousel Section */}
+        {/* EGC-GHE Delivery Services Carousel Section */}
         <Surface style={[styles.carouselSurface, { backgroundColor: colors.surface }]} elevation={1}>
-          <Text style={[styles.sectionTitle, { color: colors.onSurface, ...fonts.titleLarge }]}>Performance Insights</Text>
+          <Text style={[styles.sectionTitle, { color: colors.onSurface, ...fonts.titleLarge }]}>EGC-GHE Delivery Services</Text>
           {performanceImages.length ? (
             <FlatList
               data={performanceImages}
@@ -111,7 +111,7 @@ const DeliveryHome = ({ navigation }) => {
             />
           ) : (
             <Text style={[styles.noImages, { color: colors.error, ...fonts.bodyLarge }]}>
-              No performance data available.
+              No data available.
             </Text>
           )}
         </Surface>
