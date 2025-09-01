@@ -1,10 +1,21 @@
 import { GoogleGenAI } from "@google/genai"
 import { GEMINI_API_KEY } from '@env'
+
 // Initialize the Gemini API with your API key
 const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null
 
 export const analyzeDeliveryStats = async (stats) => {
   try {
+    // Check if API key is available
+    if (!GEMINI_API_KEY) {
+      throw new Error('API_KEY_MISSING')
+    }
+
+    // Check if AI instance is initialized
+    if (!ai) {
+      throw new Error('AI_NOT_INITIALIZED')
+    }
+
     const prompt = `
     Don't use ** or * for formatting.
     Analyze the following delivery statistics and provide insights:
@@ -32,6 +43,66 @@ export const analyzeDeliveryStats = async (stats) => {
     return response.text
   } catch (error) {
     console.error('Error analyzing statistics with Gemini:', error)
-    return null
+    
+    // Handle specific error cases
+    if (error.message === 'API_KEY_MISSING') {
+      throw new Error('API_KEY_MISSING')
+    }
+    
+    if (error.message === 'AI_NOT_INITIALIZED') {
+      throw new Error('AI_NOT_INITIALIZED')
+    }
+    
+    // Check for API key expiration
+    if (error.message?.includes('API key expired') || 
+        error.message?.includes('API_KEY_INVALID') ||
+        error.message?.includes('INVALID_ARGUMENT')) {
+      throw new Error('API_KEY_EXPIRED')
+    }
+    
+    // Check for rate limiting or service overload
+    if (error.message?.includes('overloaded') || 
+        error.message?.includes('quota') ||
+        error.message?.includes('rate limit')) {
+      throw new Error('SERVICE_OVERLOADED')
+    }
+    
+    // Generic error
+    throw new Error('GENERIC_ERROR')
   }
+}
+
+// Fallback insights generator when AI is not available
+export const generateFallbackInsights = (stats) => {
+  const successRate = (stats.successRate * 100).toFixed(1)
+  const totalRevenue = stats.totalRevenue.toLocaleString()
+  
+  let performanceSummary = ''
+  let recommendations = ''
+  
+  // Performance summary
+  if (stats.totalDeliveries === 0) {
+    performanceSummary = 'No delivery data available for analysis.'
+  } else if (successRate >= 90) {
+    performanceSummary = `Excellent performance! You've achieved a ${successRate}% success rate with ${stats.totalDeliveries} total deliveries.`
+  } else if (successRate >= 75) {
+    performanceSummary = `Good performance with a ${successRate}% success rate. There's room for improvement.`
+  } else {
+    performanceSummary = `Performance needs attention with a ${successRate}% success rate. Focus on improving delivery success.`
+  }
+  
+  // Recommendations
+  if (stats.failedDeliveries > 0) {
+    recommendations = `• Review failed delivery cases to identify common issues\n• Consider additional training for challenging scenarios\n• Implement better communication protocols with clients`
+  }
+  
+  if (stats.averageDeliveryTime > 120) { // More than 2 hours
+    recommendations += `\n• Optimize delivery routes to reduce average delivery time\n• Consider batch deliveries for efficiency`
+  }
+  
+  if (Object.keys(stats.deliveriesByRegion).length > 1) {
+    recommendations += `\n• Analyze regional performance variations\n• Share best practices across different regions`
+  }
+  
+  return `${performanceSummary}\n\nKey Insights:\n• Total Revenue: ₱${totalRevenue}\n• Average Delivery Time: ${stats.averageDeliveryTime} minutes\n• Successful Deliveries: ${stats.successfulDeliveries}\n\nRecommendations:\n${recommendations || '• Continue maintaining current performance standards\n• Monitor key metrics regularly'}`
 }
