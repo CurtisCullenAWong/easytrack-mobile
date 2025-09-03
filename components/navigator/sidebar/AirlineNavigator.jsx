@@ -103,7 +103,7 @@ const AirlineNavigator = ({ navigation }) => {
         ],
       },
       {
-        title: 'Transactions',
+        title: 'Management',
         key: 'transactions',
         icon: 'package',
         items: [

@@ -25,15 +25,12 @@ const ViewProfile = ({ navigation, route }) => {
   
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [currentUser, setCurrentUser] = useState(null)
   const [roleInfo, setRoleInfo] = useState(null)
   const [corporationInfo, setCorporationInfo] = useState(null)
   const [userStatusInfo, setUserStatusInfo] = useState(null)
   const [verifyStatusInfo, setVerifyStatusInfo] = useState(null)
-  const [govIdTypeInfo, setGovIdTypeInfo] = useState(null)
 
   useEffect(() => {
-    getCurrentUser()
     fetchProfile()
   }, [])
 
@@ -42,17 +39,6 @@ const ViewProfile = ({ navigation, route }) => {
       fetchRelatedData()
     }
   }, [profile])
-
-  const getCurrentUser = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setCurrentUser(user)
-      }
-    } catch (error) {
-      console.error('Error getting current user:', error)
-    }
-  }
 
   const fetchProfile = async () => {
     try {
@@ -111,14 +97,6 @@ const ViewProfile = ({ navigation, route }) => {
         setVerifyStatusInfo(verifyData)
       }
 
-      if (profile.gov_id_type) {
-        const { data: govIdData } = await supabase
-          .from('verify_info_type')
-          .select('*')
-          .eq('id', profile.gov_id_type)
-          .single()
-        setGovIdTypeInfo(govIdData)
-      }
     } catch (error) {
       console.error('Error fetching related data:', error)
     }
@@ -368,39 +346,6 @@ const ViewProfile = ({ navigation, route }) => {
                 </Text>
                 <Text selectable style={[styles.infoValue, { color: colors.onSurface, ...fonts.bodyMedium }]}>
                   {profile.vehicle_info}
-                </Text>
-              </View>
-            )}
-          </Card.Content>
-        </Card>
-      )}
-
-      {(profile.gov_id_type || profile.gov_id_number) && (
-        <Card style={[styles.infoCard, { backgroundColor: colors.surface }]}>
-          <Card.Content>
-            <Text style={[styles.sectionTitle, { color: colors.onSurface, ...fonts.titleMedium }]}>
-              Government ID
-            </Text>
-            <Divider style={[styles.divider, { backgroundColor: colors.outline }]} />
-            
-            {govIdTypeInfo && (
-              <View style={styles.infoRow}>
-                <Text style={[styles.infoLabel, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-                  ID Type:
-                </Text>
-                <Text selectable style={[styles.infoValue, { color: colors.onSurface, ...fonts.bodyMedium }]}>
-                  {govIdTypeInfo.type_name}
-                </Text>
-              </View>
-            )}
-            
-            {profile.gov_id_number && (
-              <View style={styles.infoRow}>
-                <Text style={[styles.infoLabel, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-                  ID Number:
-                </Text>
-                <Text selectable style={[styles.infoValue, { color: colors.onSurface, ...fonts.bodyMedium }]}>
-                  {profile.gov_id_number}
                 </Text>
               </View>
             )}

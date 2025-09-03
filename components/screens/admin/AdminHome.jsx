@@ -11,9 +11,9 @@ const AdminHome = ({ navigation }) => {
   const { isVerified } = useVerificationStatus()
 
   const images = [
-    require('../../../assets/admin_home/admin1.png'),
-    require('../../../assets/admin_home/admin2.png'),
-    require('../../../assets/admin_home/admin3.png'),
+    require('../../../assets/admin_home/admin1.jpg'),
+    require('../../../assets/admin_home/admin2.jpg'),
+    require('../../../assets/admin_home/admin3.jpg'),
   ]
 
   const renderItem = ({ item }) => (

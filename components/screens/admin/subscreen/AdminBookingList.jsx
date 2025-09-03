@@ -59,7 +59,7 @@ const AdminBookingList = ({ navigation }) => {
   const [selectedDeliveryPerson, setSelectedDeliveryPerson] = useState(null)
   const [actionMenuVisible, setActionMenuVisible] = useState(null)
   const [showDateMenu, setShowDateMenu] = useState(false)
-  const [dateFilter, setDateFilter] = useState('today')
+  const [dateFilter, setDateFilter] = useState('all')
   const [cancelDialogVisible, setCancelDialogVisible] = useState(false)
   const [contractToCancel, setContractToCancel] = useState(null)
   const [statusFilter, setStatusFilter] = useState('all')

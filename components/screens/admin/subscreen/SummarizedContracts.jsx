@@ -539,7 +539,7 @@ const SummarizedContracts = ({ navigation }) => {
                             <Menu.Item
                               onPress={() => {
                                 setActionMenuFor(null)
-                                navigation.navigate('CreateInvoice', { summary: { summary_id: transaction.summary_id } })
+                                navigation.navigate('ViewInvoice', { summary: { summary_id: transaction.summary_id } })
                               }}
                               title="View Invoice"
                               leadingIcon="file-document"
@@ -554,7 +554,7 @@ const SummarizedContracts = ({ navigation }) => {
                                   showSnackbar('Assign an Invoice ID before marking complete')
                                 }
                               }}
-                              title={transaction.summary_status_id === 2 ? 'Un-mark as Complete' : 'Complete'}
+                              title={transaction.summary_status_id === 2 ? 'Unfinished' : 'Finished'}
                               leadingIcon={transaction.summary_status_id === 2 ? 'undo' : 'check'}
                               titleStyle={[
                                 {

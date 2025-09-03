@@ -45,22 +45,22 @@ const AirlineHome = ({ navigation }) => {
         let imgs = []
         if (profile?.corporation_id === 2) {
           imgs = [
-            require('../../../assets/airline_home/airasia1.png'),
-            require('../../../assets/airline_home/airasia2.png'),
-            require('../../../assets/airline_home/airasia3.png'),
+            require('../../../assets/airline_home/airline (1).jpg'),
+            require('../../../assets/airline_home/airline (2).jpg'),
+            require('../../../assets/airline_home/airline (3).jpg'),
           ]
         } else if (profile?.corporation_id === 3) {
           imgs = [
-            require('../../../assets/airline_home/cebupacific1.png'),
-            require('../../../assets/airline_home/cebupacific2.png'),
-            require('../../../assets/airline_home/cebupacific3.png'),
+            require('../../../assets/airline_home/cebupacific (1).jpg'),
+            require('../../../assets/airline_home/cebupacific (2).jpg'),
+            require('../../../assets/airline_home/cebupacific (3).jpg'),
           ]
         } else {
           // fallback images
           imgs = [
-            require('../../../assets/airline_home/airline1.png'),
-            require('../../../assets/airline_home/airline2.png'),
-            require('../../../assets/airline_home/airline3.png'),
+            require('../../../assets/airline_home/airline (1).jpg'),
+            require('../../../assets/airline_home/airline (2).jpg'),
+            require('../../../assets/airline_home/airline (3).jpg'),
           ]
         }
         setImages(imgs)

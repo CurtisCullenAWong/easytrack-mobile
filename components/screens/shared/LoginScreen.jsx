@@ -76,7 +76,7 @@ const LoginScreen = ({ navigation }) => {
         EasyTrack
       </Text>
       <Text style={[styles.subtitle, { color: colors.onBackground, ...fonts.titleMedium }]}>
-        For your luggage contracting and tracking needs. Keep track of your luggage location in real-time.
+        For your luggage booking and tracking needs. Keep track of your luggage location in real-time.
       </Text>
 
       <Button

@@ -15,6 +15,7 @@ import {
 } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabaseAdmin'
+import useSnackbar from '../../hooks/useSnackbar'
 
 const COLUMN_WIDTH = 180
 const EMAIL_COLUMN_WIDTH = 200
@@ -23,6 +24,7 @@ const FULL_NAME_WIDTH = 200
 
 const UserManagement = ({ navigation }) => {
   const { colors, fonts } = useTheme()
+  const { showSnackbar, SnackbarElement } = useSnackbar()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchColumn, setSearchColumn] = useState('full_name')
@@ -160,6 +162,24 @@ const UserManagement = ({ navigation }) => {
 
   const handleArchiveAccount = async (userId) => {
     try {
+      // First check if the user can be archived
+      const { data: userData, error: fetchError } = await supabase
+        .from('profiles')
+        .select('user_status_id')
+        .eq('id', userId)
+        .single()
+
+      if (fetchError) {
+        showSnackbar('Error fetching user data. Please try again.', false)
+        return
+      }
+
+      // Check if user_status_id is not 1 (prevent archiving)
+      if (userData.user_status_id === 1 || userData.user_status_id === 4 ) {
+        showSnackbar('Cannot archive account due to the user\'s account status.')
+        return
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({ user_status_id: 3 })
@@ -167,11 +187,14 @@ const UserManagement = ({ navigation }) => {
 
       if (error) {
         console.error('Error archiving account:', error)
+        showSnackbar('Error archiving account. Please try again.', false)
       } else {
+        showSnackbar('Account archived successfully.', true)
         fetchUsers()
       }
     } catch (error) {
       console.error('Error archiving account:', error)
+      showSnackbar('An unexpected error occurred. Please try again.', false)
     }
   }
 
@@ -477,6 +500,7 @@ const UserManagement = ({ navigation }) => {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+      {SnackbarElement}
     </ScrollView>
   )
 }

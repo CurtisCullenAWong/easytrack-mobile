@@ -103,7 +103,7 @@ const DeliveryNavigator = ({ navigation }) => {
       ],
     },
     {
-      title: 'Transactions',
+      title: 'Management',
       key: 'transactions',
       icon: 'package',
       items: [
@@ -189,7 +189,7 @@ const DeliveryNavigator = ({ navigation }) => {
       {SECTIONS.map(section => {
         const filtered = section.items.filter(item => {
           if (
-            item.screen === 'AirlineHome' ||
+            item.screen === 'DeliveryHome' ||
             item.screen === 'Profile' ||
             item.screen === 'TermsAndConditions' ||
             item.actionKey === 'logout'

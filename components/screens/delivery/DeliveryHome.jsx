@@ -11,15 +11,15 @@ const DeliveryHome = ({ navigation }) => {
   const { isVerified } = useVerificationStatus()
 
   const images = [
-    require('../../../assets/delivery_home/delivery1.png'),
-    require('../../../assets/delivery_home/delivery2.png'),
-    require('../../../assets/delivery_home/delivery3.png'),
+    require('../../../assets/delivery_home/delivery1.jpg'),
+    require('../../../assets/delivery_home/delivery2.jpg'),
+    require('../../../assets/delivery_home/delivery3.jpg'),
   ]
 
   const performanceImages = [
-    require('../../../assets/delivery_home/delivery4.png'),
-    require('../../../assets/delivery_home/delivery5.png'),
-    require('../../../assets/delivery_home/delivery6.png'),
+    require('../../../assets/delivery_home/delivery4.jpg'),
+    require('../../../assets/delivery_home/delivery5.jpg'),
+    require('../../../assets/delivery_home/delivery6.jpg'),
   ]
 
   const renderItem = ({ item }) => (

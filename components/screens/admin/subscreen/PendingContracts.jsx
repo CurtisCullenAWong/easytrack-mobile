@@ -91,7 +91,6 @@ const FilterMenu = ({
   options, 
   selectedValue, 
   onSelect, 
-  placeholder = 'Select Option' 
 }) => {
   const { colors, fonts } = useTheme()
   
@@ -209,13 +208,43 @@ const SearchFilterSection = ({
               }
               options={[
                 { label: 'All Corporations', value: '' },
-                ...corporations.slice(0, 2).map(corp => ({
+                ...corporations.map(corp => ({
                   label: corp.corporation_name,
                   value: corp.corporation_name
                 }))
               ]}
               selectedValue={filters.selectedCorporation}
               onSelect={(value) => onFiltersChange({ selectedCorporation: value })}
+            />
+          </View>
+        </View>
+
+        {/* Date Range Filters */}
+        <View style={styles.dateFiltersRow}>
+          <View style={styles.dateFilterGroup}>
+            <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+              Start Date
+            </Text>
+            <Searchbar
+              placeholder="YYYY-MM-DD"
+              onChangeText={(date) => onFiltersChange({ startDate: date })}
+              value={filters.startDate}
+              style={[styles.dateInput, { backgroundColor: colors.surfaceVariant }]}
+              iconColor={colors.onSurfaceVariant}
+              inputStyle={[styles.dateInputText, { color: colors.onSurfaceVariant }]}
+            />
+          </View>
+          <View style={styles.dateFilterGroup}>
+            <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+              End Date
+            </Text>
+            <Searchbar
+              placeholder="YYYY-MM-DD"
+              onChangeText={(date) => onFiltersChange({ endDate: date })}
+              value={filters.endDate}
+              style={[styles.dateInput, { backgroundColor: colors.surfaceVariant }]}
+              iconColor={colors.onSurfaceVariant}
+              inputStyle={[styles.dateInputText, { color: colors.onSurfaceVariant }]}
             />
           </View>
         </View>
@@ -289,6 +318,11 @@ const SelectionSection = ({
       >
         Generate Summary ({selectedContracts.size})
       </Button>
+      <View style={styles.selectionRulesContainer}>
+        <Text style={[styles.selectionRulesText, { color: colors.onSurfaceVariant }, fonts.bodySmall]}>
+          Selection Rules: You can group select contracts from the same corporation, or contracts from EGC with any other corporation.
+        </Text>
+      </View>
     </Surface>
   )
 }
@@ -307,7 +341,9 @@ const PendingContracts = ({ navigation }) => {
   const [filters, setFilters] = useState({
     searchQuery: '',
     searchColumn: 'status',
-    selectedCorporation: ''
+    selectedCorporation: '',
+    startDate: '',
+    endDate: '',
   })
   
   // Sort state
@@ -337,7 +373,7 @@ const PendingContracts = ({ navigation }) => {
           middle_initial,
           last_name,
           suffix,
-          corporation:corporation_id (corporation_name)
+          corporation:corporation_id (id, corporation_name)
         ),
         delivery:delivery_id (
           first_name,
@@ -411,6 +447,7 @@ const PendingContracts = ({ navigation }) => {
         passenger_id: transaction.passenger_id || 'N/A',
         proof_of_delivery: transaction.proof_of_delivery || null,
         corporation: transaction.airline?.corporation?.corporation_name || 'N/A',
+        corporation_id: transaction.airline?.corporation?.id || null,
       }
     })
 
@@ -497,8 +534,25 @@ const PendingContracts = ({ navigation }) => {
     if (newSelected.has(contractId)) {
       newSelected.delete(contractId)
     } else {
-      newSelected.add(contractId)
+      // Check if we can select this contract based on corporation rules
+      if (canSelectContract(contractId, newSelected)) {
+        newSelected.add(contractId)
+      } else {
+        // Show error message for invalid selection
+        const contractToSelect = transactions.find(t => t.id === contractId)
+        const selectedContractsData = transactions.filter(t => newSelected.has(t.id))
+        
+        if (selectedContractsData.length > 0) {
+          const selectedCorporation = selectedContractsData[0]?.corporation
+          const targetCorporation = contractToSelect?.corporation || 'Unknown'
+          showSnackbar(`Cannot select contracts from different corporations. You have selected contracts from ${selectedCorporation} and are trying to select from ${targetCorporation}.`)
+        } else {
+          showSnackbar('Cannot select this contract due to corporation restrictions.')
+        }
+        return
+      }
     }
+    
     setSelectedContracts(newSelected)
     const allContractIds = new Set(paginatedTransactions.map(t => t.id))
     setSelectAll(newSelected.size === allContractIds.size && allContractIds.size > 0)
@@ -508,8 +562,24 @@ const PendingContracts = ({ navigation }) => {
     if (selectAll) {
       setSelectedContracts(new Set())
     } else {
-      const allContractIds = new Set(paginatedTransactions.map(t => t.id))
-      setSelectedContracts(allContractIds)
+      // Only select contracts that can be selected together based on corporation rules
+      const selectableContracts = new Set()
+      const allContracts = paginatedTransactions
+      
+      // Start with the first contract
+      if (allContracts.length > 0) {
+        selectableContracts.add(allContracts[0].id)
+        
+        // Add other contracts that can be selected with the first one
+        for (let i = 1; i < allContracts.length; i++) {
+          if (canSelectContract(allContracts[i].id, selectableContracts)) {
+            selectableContracts.add(allContracts[i].id)
+          }
+        }
+      }
+      
+      setSelectedContracts(selectableContracts)
+      setSelectAll(selectableContracts.size === allContracts.length)
     }
     setSelectAll(!selectAll)
   }
@@ -549,6 +619,42 @@ const PendingContracts = ({ navigation }) => {
   const resetSelection = () => {
     setSelectedContracts(new Set())
     setSelectAll(false)
+  }
+
+  // Helper function to check if a contract can be selected based on corporation rules
+  const canSelectContract = (contractId, currentSelection) => {
+    const contractToSelect = transactions.find(t => t.id === contractId)
+    if (!contractToSelect || !contractToSelect.corporation_id) return false
+    
+    // If no contracts are currently selected, any contract can be selected
+    if (currentSelection.size === 0) return true
+    
+    // Get all currently selected contracts
+    const selectedContractsData = transactions.filter(t => currentSelection.has(t.id))
+    
+    // Check if any selected contract has corporation_id = 1
+    const hasCorporationOne = selectedContractsData.some(t => t.corporation_id === 1)
+    
+    // Check if any selected contract has a different corporation_id (not 1 and not the same as the contract to select)
+    const hasDifferentCorporation = selectedContractsData.some(t => 
+      t.corporation_id !== 1 && 
+      t.corporation_id !== contractToSelect.corporation_id
+    )
+    
+    // If there's a different corporation selected (not 1), only allow same corporation
+    if (hasDifferentCorporation) {
+      return contractToSelect.corporation_id === 1 || 
+             selectedContractsData.some(t => t.corporation_id === contractToSelect.corporation_id)
+    }
+    
+    // If only corporation 1 is selected, allow any corporation
+    if (hasCorporationOne && selectedContractsData.every(t => t.corporation_id === 1)) {
+      return true
+    }
+    
+    // If only same corporation is selected, allow same corporation or corporation 1
+    const sameCorporation = selectedContractsData[0]?.corporation_id
+    return contractToSelect.corporation_id === 1 || contractToSelect.corporation_id === sameCorporation
   }
 
   const formatCurrency = (amount) => `₱${parseFloat(amount).toFixed(2)}`
@@ -648,6 +754,8 @@ const PendingContracts = ({ navigation }) => {
                             status={selectedContracts.has(transaction.id) ? 'checked' : 'unchecked'}
                             onPress={() => handleContractSelection(transaction.id)}
                             color={colors.primary}
+                            disabled={!canSelectContract(transaction.id, selectedContracts)}
+                            style={!canSelectContract(transaction.id, selectedContracts) ? { opacity: 0.5 } : {}}
                           />
                         </DataTable.Cell>
                         <DataTable.Cell style={[styles.actionColumn, { justifyContent: 'center' }]}>
@@ -667,7 +775,7 @@ const PendingContracts = ({ navigation }) => {
                             key={idx}
                             style={[styles.tableColumn, { width: width || COLUMN_WIDTH, justifyContent: 'center' }]}
                           >
-                            <Text style={[styles.cellText, { color: colors.onSurface }, fonts.bodyMedium]}>
+                            <Text style={[styles.cellText, { color: colors.onSurface }, fonts.bodyMedium]} selectable>
                               {['delivery_charge', 'delivery_surcharge', 'amount_per_passenger'].includes(key)
                                 ? formatCurrency(transaction[key])
                                 : key === 'delivery_discount'
@@ -755,6 +863,20 @@ const styles = StyleSheet.create({
   },
   filterGroup: {
     flex: 1,
+  },
+  dateFiltersRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 12,
+  },
+  dateFilterGroup: {
+    flex: 1,
+  },
+  dateInput: {
+    borderRadius: 8,
+  },
+  dateInputText: {
+    fontSize: 16,
   },
   clearFiltersContainer: {
     marginTop: 12,
@@ -884,6 +1006,15 @@ const styles = StyleSheet.create({
   },
   paginationLabel: {
     fontWeight: '500',
+  },
+  selectionRulesContainer: {
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  selectionRulesText: {
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 })
 

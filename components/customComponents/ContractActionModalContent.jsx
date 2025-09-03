@@ -193,21 +193,21 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
           showSnackbar('Drop-off location coordinates are missing')
           return
         }
-console.log(currentLocation.latitude,
-  currentLocation.longitude,
-  dropOffCoords.latitude,
-  dropOffCoords.longitude)
+        console.log(currentLocation.latitude,
+          currentLocation.longitude,
+          dropOffCoords.latitude,
+          dropOffCoords.longitude)
         const distance = calculateDistance(
           currentLocation.latitude,
           currentLocation.longitude,
           dropOffCoords.latitude,
           dropOffCoords.longitude
         )
-
-        if (distance > 0.1) {
-          showSnackbar('You must be within 100m of the drop-off location to mark delivery status')
-          return
-        }
+        // THIS IS WHERE THE DISTANCE LIMIT IS ADJUSTED
+        // if (distance > 0.1) {
+        //   showSnackbar('You must be within 100m of the drop-off location to mark delivery status')
+        //   return
+        // }
       } catch (error) {
         showSnackbar('Error checking location: ' + error.message)
         return

@@ -103,14 +103,14 @@ const AdminNavigator = ({ navigation }) => {
       ],
     },
     {
-      title: 'Transactions',
+      title: 'Management',
       key: 'transactions',
       icon: 'package',
       items: [
+        { icon: 'account-group-outline', label: 'User Management', screen: 'UserManagement' },
         { icon: 'map-marker-path', label: 'Booking Management', screen: 'BookingManagement' },
         { icon: 'map', label: 'Track Luggage', screen: 'TrackLuggage' },
         { icon: 'bank-transfer', label: 'Transaction Management', screen: 'TransactionManagement' },
-        { icon: 'account-group-outline', label: 'User Management', screen: 'UserManagement' },
       ],
     },
     {
