@@ -126,7 +126,7 @@ const ContractsInTransit = ({ navigation }) => {
 
       const { status } = await Location.requestForegroundPermissionsAsync()
       if (status !== 'granted') {
-        console.warn('Permission to access location was denied')
+        showSnackbar('Permission to access location was denied')
         return null
       }
 
@@ -263,13 +263,15 @@ const ContractsInTransit = ({ navigation }) => {
                   const isLocationEnabled = await Location.hasServicesEnabledAsync()
                   if (isLocationEnabled) {
                     const { status } = await Location.requestForegroundPermissionsAsync()
-                    if (status === 'granted') {
-                      const { coords } = await Location.getCurrentPositionAsync({})
+                    if (status !== 'granted') {
+                      showSnackbar('Permission to access location was denied')
+                      return
+                    }
+                    const { coords } = await Location.getCurrentPositionAsync({})
                       setUserLocation({
                         latitude: coords.latitude,
                         longitude: coords.longitude
-                      })
-                    }
+                    })
                   }
                 } catch (locationError) {
                   console.warn('Error getting location in realtime callback:', locationError.message)

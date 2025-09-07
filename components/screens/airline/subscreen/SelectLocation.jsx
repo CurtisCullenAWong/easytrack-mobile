@@ -6,6 +6,7 @@ import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import * as Location from 'expo-location'
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
 import { GOOGLE_MAPS_API_KEY } from '@env'
+import useSnackbar from '../../../hooks/useSnackbar'
 
 const { height: screenHeight } = Dimensions.get('window')
 
@@ -25,6 +26,7 @@ const SelectLocation = ({ navigation }) => {
   const [isGeocodingInProgress, setIsGeocodingInProgress] = useState(false)
   const mapRef = useRef(null)
   const geocodeTimeoutRef = useRef(null)
+  const { showSnackbar, SnackbarElement } = useSnackbar()
 
   const isAnyGeocodingInProgress = isGeocodingInProgress
 
@@ -32,7 +34,7 @@ const SelectLocation = ({ navigation }) => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync()
       if (status !== 'granted') {
-        console.error('Permission to access location was denied')
+        showSnackbar('Permission to access location was denied')
         return
       }
       mapRef.current?.animateToRegion(
@@ -112,7 +114,7 @@ const SelectLocation = ({ navigation }) => {
         <Appbar.BackAction onPress={() => navigation.navigate('BookingManagement', { screen: 'create' })} />
         <Appbar.Content title="Drop-Off Location" titleStyle={[fonts.titleLarge, { color: colors.onSurface }]} />
       </Appbar.Header>
-      
+      {SnackbarElement}
       <Surface style={[styles.searchSurface, { backgroundColor: colors.surface }]} elevation={2}>
         <GooglePlacesAutocomplete
           placeholder="Search for a location..."

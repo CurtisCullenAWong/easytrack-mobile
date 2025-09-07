@@ -3,18 +3,20 @@ import { View, StyleSheet, TouchableOpacity } from 'react-native'
 import { Text, useTheme, Appbar, IconButton } from 'react-native-paper'
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import * as Location from 'expo-location'
+import useSnackbar from '../../hooks/useSnackbar'
 
 const CheckLocation = ({ route, navigation }) => {
   const { colors, fonts } = useTheme()
   const { dropOffLocation, dropOffLocationGeo } = route.params
   const mapRef = useRef(null)
   const [currentLocation, setCurrentLocation] = useState(null)
+  const { showSnackbar, SnackbarElement } = useSnackbar()
 
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync()
       if (status !== 'granted') {
-        console.log('Permission to access location was denied')
+        showSnackbar('Permission to access location was denied')
         return
       }
 
@@ -95,7 +97,7 @@ const CheckLocation = ({ route, navigation }) => {
         <Appbar.BackAction onPress={() => navigation.navigate('BookingManagement')} />
         <Appbar.Content title="Drop-Off Location" />
       </Appbar.Header>
-
+      {SnackbarElement}
       <View style={styles.header}>
         <Text style={[fonts.bodyMedium, { color: colors.onSurfaceVariant }]}>
           {dropOffLocation || 'No address provided'}

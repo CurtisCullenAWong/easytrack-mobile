@@ -204,10 +204,10 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
           dropOffCoords.longitude
         )
         // THIS IS WHERE THE DISTANCE LIMIT IS ADJUSTED
-        // if (distance > 0.1) {
-        //   showSnackbar('You must be within 100m of the drop-off location to mark delivery status')
-        //   return
-        // }
+        if (distance > 0.1) {
+          showSnackbar('You must be within 100m of the drop-off location to mark delivery status')
+          return
+        }
       } catch (error) {
         showSnackbar('Error checking location: ' + error.message)
         return

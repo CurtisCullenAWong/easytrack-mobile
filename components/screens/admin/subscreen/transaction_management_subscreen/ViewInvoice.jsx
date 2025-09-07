@@ -29,15 +29,16 @@ const CreateInvoice = () => {
   const [certify, setCertify] = useState(false)
   
   // Data states
-  const [summaryStatusId, setSummaryStatusId] = useState(null)
   const [currentInvoiceId, setCurrentInvoiceId] = useState(null)
 
   const signatureRef = useRef(null)
 
   // Computed values for better UI state management
-  const hasInvoiceAssigned = useMemo(() => Boolean(currentInvoiceId), [currentInvoiceId])
-  const isReceipted = useMemo(() => summaryStatusId === 2, [summaryStatusId])
   const canEditSignatures = true
+  const hasExistingSignatures = useMemo(() => 
+    Boolean(preparedSignatureDataUrl || checkedSignatureDataUrl), 
+    [preparedSignatureDataUrl, checkedSignatureDataUrl]
+  )
 
   // Signature handling functions
   const handleSignatureSave = useCallback((signatureDataUrl, signerType) => {
@@ -93,14 +94,6 @@ const CreateInvoice = () => {
 
   const handlePrint = async () => {
     try {
-      if (!certify) {
-        showSnackbar('Please certify the information to proceed')
-        return
-      }
-      if (!hasInvoiceAssigned) {
-        showSnackbar('No Invoice ID available for this summary')
-        return
-      }
       await printPDF(
         buildTransactionsPayload(),
         null,
@@ -122,14 +115,6 @@ const CreateInvoice = () => {
 
   const handleShare = async () => {
     try {
-      if (!certify) {
-        showSnackbar('Please certify the information to proceed')
-        return
-      }
-      if (!hasInvoiceAssigned) {
-        showSnackbar('No Invoice ID available for this summary')
-        return
-      }
       await sharePDF(
         buildTransactionsPayload(),
         null,
@@ -233,7 +218,6 @@ const CreateInvoice = () => {
           .eq('id', summary.summary_id)
           .single()
         if (error) throw error
-        setSummaryStatusId(data?.summary_status_id ?? 1)
         setCurrentInvoiceId(data?.invoice_id ?? null)
       } catch (err) {
         console.error('Error fetching summary status:', err)
@@ -289,11 +273,6 @@ const CreateInvoice = () => {
             <Text style={[styles.value, { color: colors.primary }, fonts.titleMedium]}>
               {currentInvoiceId || 'Not assigned'}
             </Text>
-            {!hasInvoiceAssigned && (
-              <Text style={[styles.value, { color: colors.onSurfaceVariant, fontSize: 12 }, fonts.bodySmall]}>
-                (Invoice ID must be assigned during summary generation)
-              </Text>
-            )}
             <Divider style={[styles.divider, { backgroundColor: colors.outline }]} />
 
             {/* Signatures */}
@@ -305,18 +284,20 @@ const CreateInvoice = () => {
             {/* Checked by signature */}
             {renderSignatureSection('checked', checkedSignatureDataUrl, checkedSignatureSize, checkedSignatureRotation)}
 
-            {/* Certification - always available */}
-            <View style={styles.checkboxRow}>
-              <Checkbox
-                status={certify ? 'checked' : 'unchecked'}
-                onPress={() => setCertify(prev => !prev)}
-                color={colors.primary}
-                disabled={!canEditSignatures}
-              />
-              <Text style={[{ color: colors.onSurfaceVariant, flex: 1 }, fonts.bodySmall]}>
-                I certify that the above information is correct. My handwritten signature is valid for this invoice.
-              </Text>
-            </View>
+            {/* Certification - only visible when there are signatures */}
+            {hasExistingSignatures && (
+              <View style={styles.checkboxRow}>
+                <Checkbox
+                  status={certify ? 'checked' : 'unchecked'}
+                  onPress={() => setCertify(prev => !prev)}
+                  color={colors.primary}
+                  disabled={!canEditSignatures}
+                />
+                <Text style={[{ color: colors.onSurfaceVariant, flex: 1 }, fonts.bodySmall]}>
+                  I certify that the above information is correct. My handwritten signature is valid for this invoice.
+                </Text>
+              </View>
+            )}
 
             <View style={{ height: 8 }} />
 
@@ -325,7 +306,7 @@ const CreateInvoice = () => {
               mode="outlined"
               icon="printer"
               onPress={handlePrint}
-              disabled={!certify || !hasInvoiceAssigned}
+              disabled={(hasExistingSignatures && !certify)}
               style={{ marginTop: 4 }}
               contentStyle={{ height: 48 }}
             >
@@ -336,7 +317,7 @@ const CreateInvoice = () => {
               mode="outlined"
               icon="share"
               onPress={handleShare}
-              disabled={!certify || !hasInvoiceAssigned}
+              disabled={(hasExistingSignatures && !certify)}
               style={{ marginTop: 8 }}
               contentStyle={{ height: 48 }}
             >
