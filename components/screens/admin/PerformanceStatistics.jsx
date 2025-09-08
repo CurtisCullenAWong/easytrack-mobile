@@ -561,13 +561,13 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
                       return <Text key={index}>{line}{'\n'}</Text>;
                     })}
                   </Text>
-                  <Button 
+                  {/* <Button 
                     mode="outlined" 
                     onPress={generateInsights}
                     style={styles.refreshButton}
                   >
                     Refresh Insights
-                  </Button>
+                  </Button> */}
                 </View>
               ) : null}
             </Card.Content>
