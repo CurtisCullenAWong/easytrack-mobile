@@ -60,7 +60,11 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
             .from('contracts')
             .select(`
                 *,
-                contract_status:contract_status_id(*)
+                contract_status:contract_status_id(*),
+                summary:summary_id(
+                    id,
+                    invoice_id
+                )
             `)
             .eq('id', id)
             .single()
@@ -285,7 +289,8 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
                     </View>
                     <InfoRow label="Total Luggage:" value={contractData?.luggage_quantity} colors={colors} fonts={fonts}/>
                     <InfoRow label="Remarks:" value={contractData.remarks} colors={colors} fonts={fonts} />
-                    
+                    <InfoRow label="Summary ID:" value={contractData.summary_id || 'N/A'} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Invoice ID:" value={contractData.summary?.invoice_id || 'N/A'} colors={colors} fonts={fonts}/>
                     {contractData.contract_status_id === 4 && (
                         <>
                             <Text style={[fonts.titleMedium, { color: colors.primary, margin: 10 }]}>
