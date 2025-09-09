@@ -4,7 +4,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  View,
   TouchableOpacity
 } from 'react-native'
 import {
@@ -170,6 +169,13 @@ const AddAccount = ({ navigation }) => {
         return
       }
 
+      // Get current user's UID
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      if (!currentUser) {
+        showSnackbar('Unable to get current user information')
+        return
+      }
+
       const sanitizedEmail = sanitizeEmail(email)
       const encryptedValue = generateSecurePassword()
 
@@ -209,7 +215,8 @@ const AddAccount = ({ navigation }) => {
           email: sanitizedEmail,
           role_id: role_id,
           corporation_id: corporation_id,
-          user_status_id: 4
+          user_status_id: 4,
+          created_by: currentUser.id
         })
 
       if (profileError) {
@@ -218,6 +225,7 @@ const AddAccount = ({ navigation }) => {
       }
 
       showSnackbar('Account created! Check your email to verify.', true)
+      setShowDialogConfirm(false)
       navigation.navigate('UserManagement')
 
       setForm({ email: '', role: '', corporation: '' })
