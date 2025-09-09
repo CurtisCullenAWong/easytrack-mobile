@@ -46,7 +46,6 @@ const AddAccount = ({ navigation }) => {
   const [corporation_id, setCorporation_id] = useState('')
   const [form, setForm] = useState({ email: '', role: '', corporation: '' })
   const [loading, setLoading] = useState(false)
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [showDialogConfirm, setShowDialogConfirm] = useState(false)
   const [showRoleMenu, setShowRoleMenu] = useState(false)
   const [showCorpMenu, setShowCorpMenu] = useState(false)
@@ -136,6 +135,7 @@ const AddAccount = ({ navigation }) => {
   }
 
   const handleCreateAccount = async () => {
+    if (loading) return
     try {
       setLoading(true)
       const { email } = form
@@ -291,7 +291,7 @@ const AddAccount = ({ navigation }) => {
 
             <Button
               mode="contained"
-              onPress={() => setShowConfirmDialog(true)}
+              onPress={() => setShowDialogConfirm(true)}
               style={[styles.button, { backgroundColor: colors.primary }]}
               labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
               loading={loading}
@@ -378,29 +378,9 @@ const AddAccount = ({ navigation }) => {
         </Dialog>
       </Portal>
 
-      {/* Initial Confirm Dialog */}
-      <Portal>
-        <Dialog visible={showConfirmDialog} onDismiss={() => setShowConfirmDialog(false)} style={{ backgroundColor: colors.surface }}>
-          <Dialog.Title>Account Creation</Dialog.Title>
-          <Dialog.Content>
-            <Text>Email: {form.email}</Text>
-            <Text>Role: {form.role}</Text>
-            <Text>Corporation: {form.corporation}</Text>
-            <Text>Are you sure you want to proceed?</Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setShowConfirmDialog(false)}>Cancel</Button>
-            <Button onPress={() => {
-              setShowDialogConfirm(true)
-              setShowConfirmDialog(false)
-            }}>Create</Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-
       {/* Final Confirm Dialog */}
       <Portal>
-        <Dialog visible={showDialogConfirm} onDismiss={() => setShowDialogConfirm(false)} style={{ backgroundColor: colors.surface }}>
+        <Dialog visible={showDialogConfirm} onDismiss={() => setShowDialogConfirm(false)} dismissable={!loading} style={{ backgroundColor: colors.surface }}>
           <Dialog.Title>Confirm Creation</Dialog.Title>
           <Dialog.Content>
             <Text>Email: {form.email}</Text>
@@ -409,8 +389,8 @@ const AddAccount = ({ navigation }) => {
             <Text>This action will send a verification email to the user.</Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setShowDialogConfirm(false)}>Cancel</Button>
-            <Button style={{ backgroundColor: colors.primary }} onPress={handleCreateAccount}>
+            <Button onPress={() => setShowDialogConfirm(false)} disabled={loading}>Cancel</Button>
+            <Button mode="contained" style={{ backgroundColor: colors.primary }} onPress={handleCreateAccount} loading={loading} disabled={loading}>
               <Text style={[styles.buttonLabel, { color: colors.onPrimary }]}>Confirm Creation</Text>
             </Button>
           </Dialog.Actions>
