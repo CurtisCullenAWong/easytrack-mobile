@@ -54,6 +54,18 @@ const useFilteredTransactions = (transactions, filters, sortConfig) => {
         return false
       }
       
+      // Month/Year filter on raw completion date if available, otherwise created_at
+      if (filters.month || filters.year) {
+        const sourceDate = transaction._rawCompletionDate || transaction._rawCreatedAt
+        if (sourceDate) {
+          const d = new Date(sourceDate)
+          const month = String(d.getMonth() + 1) // 1-12
+          const year = String(d.getFullYear())
+          if (filters.month && filters.month !== month) return false
+          if (filters.year && filters.year !== year) return false
+        }
+      }
+      
       return true
     })
 
@@ -132,6 +144,8 @@ const SearchFilterSection = ({
   const { colors, fonts } = useTheme()
   const [filterMenuVisible, setFilterMenuVisible] = useState(false)
   const [corporationMenuVisible, setCorporationMenuVisible] = useState(false)
+  const [monthMenuVisible, setMonthMenuVisible] = useState(false)
+  const [yearMenuVisible, setYearMenuVisible] = useState(false)
 
   const handleClearFilters = () => {
     onFiltersChange({
@@ -140,7 +154,7 @@ const SearchFilterSection = ({
     })
   }
 
-  const hasActiveFilters = filters.searchQuery || filters.selectedCorporation
+  const hasActiveFilters = filters.searchQuery || filters.selectedCorporation || filters.month || filters.year
 
   return (
     <>
@@ -219,32 +233,91 @@ const SearchFilterSection = ({
           </View>
         </View>
 
-        {/* Date Range Filters */}
+        {/* Month/Year Filters */}
         <View style={styles.dateFiltersRow}>
           <View style={styles.dateFilterGroup}>
-            <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
-              Start Date
-            </Text>
-            <Searchbar
-              placeholder="YYYY-MM-DD"
-              onChangeText={(date) => onFiltersChange({ startDate: date })}
-              value={filters.startDate}
-              style={[styles.dateInput, { backgroundColor: colors.surfaceVariant }]}
-              iconColor={colors.onSurfaceVariant}
-              inputStyle={[styles.dateInputText, { color: colors.onSurfaceVariant }]}
+            <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Month</Text>
+            <FilterMenu
+              visible={monthMenuVisible}
+              onDismiss={() => setMonthMenuVisible(false)}
+              anchor={
+                <Button
+                  mode="outlined"
+                  icon="calendar-month"
+                  onPress={() => setMonthMenuVisible(true)}
+                  style={[styles.filterButton, { borderColor: colors.outline }]}
+                  contentStyle={styles.buttonContent}
+                  labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                >
+                  {(
+                    [
+                      { label: 'All Months', value: '' },
+                      { label: 'January', value: '1' },
+                      { label: 'February', value: '2' },
+                      { label: 'March', value: '3' },
+                      { label: 'April', value: '4' },
+                      { label: 'May', value: '5' },
+                      { label: 'June', value: '6' },
+                      { label: 'July', value: '7' },
+                      { label: 'August', value: '8' },
+                      { label: 'September', value: '9' },
+                      { label: 'October', value: '10' },
+                      { label: 'November', value: '11' },
+                      { label: 'December', value: '12' },
+                    ].find(opt => opt.value === String(filters.month))?.label || 'All Months'
+                  )}
+                </Button>
+              }
+              options={[
+                { label: 'All Months', value: '' },
+                { label: 'January', value: '1' },
+                { label: 'February', value: '2' },
+                { label: 'March', value: '3' },
+                { label: 'April', value: '4' },
+                { label: 'May', value: '5' },
+                { label: 'June', value: '6' },
+                { label: 'July', value: '7' },
+                { label: 'August', value: '8' },
+                { label: 'September', value: '9' },
+                { label: 'October', value: '10' },
+                { label: 'November', value: '11' },
+                { label: 'December', value: '12' },
+              ]}
+              selectedValue={String(filters.month || '')}
+              onSelect={(value) => onFiltersChange({ month: value })}
             />
           </View>
           <View style={styles.dateFilterGroup}>
-            <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
-              End Date
-            </Text>
-            <Searchbar
-              placeholder="YYYY-MM-DD"
-              onChangeText={(date) => onFiltersChange({ endDate: date })}
-              value={filters.endDate}
-              style={[styles.dateInput, { backgroundColor: colors.surfaceVariant }]}
-              iconColor={colors.onSurfaceVariant}
-              inputStyle={[styles.dateInputText, { color: colors.onSurfaceVariant }]}
+            <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Year</Text>
+            <FilterMenu
+              visible={yearMenuVisible}
+              onDismiss={() => setYearMenuVisible(false)}
+              anchor={
+                <Button
+                  mode="outlined"
+                  icon="calendar"
+                  onPress={() => setYearMenuVisible(true)}
+                  style={[styles.filterButton, { borderColor: colors.outline }]}
+                  contentStyle={styles.buttonContent}
+                  labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                >
+                  {(() => {
+                    const currentYear = new Date().getFullYear()
+                    const label = filters.year ? String(filters.year) : 'All Years'
+                    return label
+                  })()}
+                </Button>
+              }
+              options={(() => {
+                const currentYear = new Date().getFullYear()
+                const years = [{ label: 'All Years', value: '' }]
+                for (let y = currentYear; y >= currentYear - 10; y--) {
+                  years.push({ label: String(y), value: String(y) })
+                }
+                return years
+              })()}
+              selectedValue={String(filters.year || '')}
+              onSelect={(value) => onFiltersChange({ year: value })}
             />
           </View>
         </View>
@@ -340,10 +413,10 @@ const PendingContracts = ({ navigation }) => {
   // Filter state
   const [filters, setFilters] = useState({
     searchQuery: '',
-    searchColumn: 'status',
+    searchColumn: 'id',
     selectedCorporation: '',
-    startDate: '',
-    endDate: '',
+    month: '',
+    year: '',
   })
   
   // Sort state
@@ -394,7 +467,9 @@ const PendingContracts = ({ navigation }) => {
 
     const formatted = data.map(transaction => {
       let completionDate = 'N/A'
+      let rawCompletion = null
       if (transaction.delivered_at) {
+        rawCompletion = transaction.delivered_at
         completionDate = new Date(transaction.delivered_at).toLocaleString('en-US', {
           year: 'numeric',
           month: '2-digit',
@@ -404,6 +479,7 @@ const PendingContracts = ({ navigation }) => {
           hour12: true
         })
       } else if (transaction.cancelled_at) {
+        rawCompletion = transaction.cancelled_at
         completionDate = new Date(transaction.cancelled_at).toLocaleString('en-US', {
           year: 'numeric',
           month: '2-digit',
@@ -439,6 +515,8 @@ const PendingContracts = ({ navigation }) => {
         created_at: transaction.created_at
           ? new Date(transaction.created_at).toLocaleString()
           : 'N/A',
+        _rawCreatedAt: transaction.created_at || null,
+        _rawCompletionDate: rawCompletion,
         luggage_description: transaction.luggage_description || 'N/A',
         luggage_weight: transaction.luggage_weight || 'N/A',
         luggage_quantity: transaction.luggage_quantity || 'N/A',
@@ -692,7 +770,7 @@ const PendingContracts = ({ navigation }) => {
         <Surface style={[styles.resultsSurface, { backgroundColor: colors.surface }]} elevation={1}>
           <View style={styles.resultsHeader}>
             <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
-              Pending Transactions
+              Pending for Summary Receipts
             </Text>
             {!loading && (
               <Text style={[styles.resultsCount, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>

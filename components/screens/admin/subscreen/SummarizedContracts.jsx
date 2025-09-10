@@ -33,10 +33,12 @@ const SummarizedContracts = ({ navigation }) => {
   const [actionMenuFor, setActionMenuFor] = useState(null)
   
   // Date filtering states
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
+  const [month, setMonth] = useState('')
+  const [year, setYear] = useState('')
   const [dateFilterType, setDateFilterType] = useState('created_at')
   const [dateFilterMenuVisible, setDateFilterMenuVisible] = useState(false)
+  const [monthMenuVisible, setMonthMenuVisible] = useState(false)
+  const [yearMenuVisible, setYearMenuVisible] = useState(false)
 
   const filterOptions = [
     { label: 'Summary ID', value: 'summary_id' },
@@ -173,7 +175,7 @@ const SummarizedContracts = ({ navigation }) => {
   
   const getSortIcon = (column) => (sortColumn === column ? (sortDirection === 'ascending' ? '▲' : '▼') : '')
 
-  // Enhanced filtering function with date filtering
+  // Enhanced filtering function with date filtering (month/year)
   const filteredAndSortedTransactions = transactions
     .filter(transaction => {
       // Text search filtering
@@ -185,29 +187,15 @@ const SummarizedContracts = ({ navigation }) => {
         }
       }
 
-      // Date filtering
-      if (startDate || endDate) {
+      // Month/Year filtering
+      if (month || year) {
         const dateField = dateFilterType === 'created_at' ? 'created_at_raw' : 'due_date_raw'
-        const transactionDate = transaction[dateField]
-        
-        if (!transactionDate) {
-          return false // Exclude items without dates when date filter is active
-        }
-
-        if (startDate) {
-          const startDateTime = new Date(startDate)
-          if (transactionDate < startDateTime) {
-            return false
-          }
-        }
-
-        if (endDate) {
-          const endDateTime = new Date(endDate)
-          endDateTime.setHours(23, 59, 59, 999) // Set to end of day
-          if (transactionDate > endDateTime) {
-            return false
-          }
-        }
+        const d = transaction[dateField]
+        if (!d) return false
+        const txMonth = String(d.getMonth() + 1)
+        const txYear = String(d.getFullYear())
+        if (month && month !== txMonth) return false
+        if (year && year !== txYear) return false
       }
 
       return true
@@ -261,11 +249,11 @@ const SummarizedContracts = ({ navigation }) => {
   const formatCurrency = (amount) => `₱${parseFloat(amount).toFixed(2)}`
 
   const clearDateFilters = () => {
-    setStartDate('')
-    setEndDate('')
+    setMonth('')
+    setYear('')
   }
 
-  const hasActiveFilters = searchQuery || startDate || endDate
+  const hasActiveFilters = searchQuery || month || year
 
   return (
     <ScrollView 
@@ -380,33 +368,102 @@ const SummarizedContracts = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Date Range Filters */}
+          {/* Month/Year Filters */}
           <View style={styles.dateFiltersRow}>
             <View style={styles.dateFilterGroup}>
-              <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
-                Start Date
-              </Text>
-              <Searchbar
-                placeholder="YYYY-MM-DD"
-                onChangeText={setStartDate}
-                value={startDate}
-                style={[styles.dateInput, { backgroundColor: colors.surfaceVariant }]}
-                iconColor={colors.onSurfaceVariant}
-                inputStyle={[styles.dateInputText, { color: colors.onSurfaceVariant }]}
-              />
+              <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Month</Text>
+              <Menu
+                visible={monthMenuVisible}
+                onDismiss={() => setMonthMenuVisible(false)}
+                anchor={
+                  <Button
+                    mode="outlined"
+                    icon="calendar-month"
+                    onPress={() => setMonthMenuVisible(true)}
+                    style={[styles.filterButton, { borderColor: colors.outline }]}
+                    contentStyle={styles.buttonContent}
+                    labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                  >
+                    {[
+                      { label: 'All Months', value: '' },
+                      { label: 'January', value: '1' },
+                      { label: 'February', value: '2' },
+                      { label: 'March', value: '3' },
+                      { label: 'April', value: '4' },
+                      { label: 'May', value: '5' },
+                      { label: 'June', value: '6' },
+                      { label: 'July', value: '7' },
+                      { label: 'August', value: '8' },
+                      { label: 'September', value: '9' },
+                      { label: 'October', value: '10' },
+                      { label: 'November', value: '11' },
+                      { label: 'December', value: '12' },
+                    ].find(opt => opt.value === String(month))?.label || 'All Months'}
+                  </Button>
+                }
+                contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+              >
+                {[
+                  { label: 'All Months', value: '' },
+                  { label: 'January', value: '1' },
+                  { label: 'February', value: '2' },
+                  { label: 'March', value: '3' },
+                  { label: 'April', value: '4' },
+                  { label: 'May', value: '5' },
+                  { label: 'June', value: '6' },
+                  { label: 'July', value: '7' },
+                  { label: 'August', value: '8' },
+                  { label: 'September', value: '9' },
+                  { label: 'October', value: '10' },
+                  { label: 'November', value: '11' },
+                  { label: 'December', value: '12' },
+                ].map(option => (
+                  <Menu.Item
+                    key={option.value}
+                    onPress={() => { setMonth(option.value); setMonthMenuVisible(false) }}
+                    title={option.label}
+                    titleStyle={[{ color: month === option.value ? colors.primary : colors.onSurface }, fonts.bodyLarge]}
+                    leadingIcon={month === option.value ? 'check' : undefined}
+                  />
+                ))}
+              </Menu>
             </View>
             <View style={styles.dateFilterGroup}>
-              <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
-                End Date
-              </Text>
-              <Searchbar
-                placeholder="YYYY-MM-DD"
-                onChangeText={setEndDate}
-                value={endDate}
-                style={[styles.dateInput, { backgroundColor: colors.surfaceVariant }]}
-                iconColor={colors.onSurfaceVariant}
-                inputStyle={[styles.dateInputText, { color: colors.onSurfaceVariant }]}
-              />
+              <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Year</Text>
+              <Menu
+                visible={yearMenuVisible}
+                onDismiss={() => setYearMenuVisible(false)}
+                anchor={
+                  <Button
+                    mode="outlined"
+                    icon="calendar"
+                    onPress={() => setYearMenuVisible(true)}
+                    style={[styles.filterButton, { borderColor: colors.outline }]}
+                    contentStyle={styles.buttonContent}
+                    labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                  >
+                    {year ? String(year) : 'All Years'}
+                  </Button>
+                }
+                contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+              >
+                {(() => {
+                  const currentYear = new Date().getFullYear()
+                  const options = [{ label: 'All Years', value: '' }]
+                  for (let y = currentYear; y >= currentYear - 10; y--) {
+                    options.push({ label: String(y), value: String(y) })
+                  }
+                  return options
+                })().map(option => (
+                  <Menu.Item
+                    key={option.value}
+                    onPress={() => { setYear(option.value); setYearMenuVisible(false) }}
+                    title={option.label}
+                    titleStyle={[{ color: year === option.value ? colors.primary : colors.onSurface }, fonts.bodyLarge]}
+                    leadingIcon={year === option.value ? 'check' : undefined}
+                  />
+                ))}
+              </Menu>
             </View>
           </View>
 
@@ -427,24 +484,26 @@ const SummarizedContracts = ({ navigation }) => {
                     {filterOptions.find(opt => opt.value === searchColumn)?.label}: {searchQuery}
                   </Chip>
                 )}
-                {startDate && (
+                {month && (
                   <Chip
                     mode="outlined"
-                    onClose={() => setStartDate('')}
+                    onClose={() => setMonth('')}
                     style={[styles.filterChip, { borderColor: colors.outline }]}
                     textStyle={[styles.chipText, { color: colors.onSurface }]}
                   >
-                    From: {startDate}
+                    Month: {[
+                      '', 'January','February','March','April','May','June','July','August','September','October','November','December'
+                    ][parseInt(month, 10)]}
                   </Chip>
                 )}
-                {endDate && (
+                {year && (
                   <Chip
                     mode="outlined"
-                    onClose={() => setEndDate('')}
+                    onClose={() => setYear('')}
                     style={[styles.filterChip, { borderColor: colors.outline }]}
                     textStyle={[styles.chipText, { color: colors.onSurface }]}
                   >
-                    To: {endDate}
+                    Year: {year}
                   </Chip>
                 )}
                 <Button
@@ -464,7 +523,7 @@ const SummarizedContracts = ({ navigation }) => {
         <Surface style={[styles.resultsSurface, { backgroundColor: colors.surface }]} elevation={1}>
           <View style={styles.resultsHeader}>
             <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
-              Summarized Transactions
+              Summarized Receipts
             </Text>
             {!loading && (
               <Text style={[styles.resultsCount, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>

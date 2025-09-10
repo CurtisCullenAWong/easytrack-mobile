@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import { View, FlatList, StyleSheet, RefreshControl } from 'react-native'
-import { Text, Button, Card, Divider, IconButton, useTheme, Searchbar, Menu, Dialog, Portal, Surface } from 'react-native-paper'
+import { Text, Button, Card, Divider, IconButton, useTheme, Searchbar, Menu, Dialog, Portal, Surface, List } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 
@@ -255,6 +255,34 @@ const BookingList = ({ navigation }) => {
   }
 
   const ContractCard = ({ contract }) => {    
+    const [expanded, setExpanded] = useState({
+      info: true,
+      locations: false,
+      timeline: false,
+      price: false,
+      actions: false,
+    })
+
+    const toggle = (key) => setExpanded(prev => ({ ...prev, [key]: !prev[key] }))
+
+    const contractorName = [
+      contract.airline_profile?.first_name,
+      contract.airline_profile?.middle_initial,
+      contract.airline_profile?.last_name,
+      contract.airline_profile?.suffix
+    ].filter(Boolean).join(' ') || 'N/A'
+
+    const passengerName = [
+      contract?.owner_first_name,
+      contract?.owner_middle_initial,
+      contract?.owner_last_name,
+    ].filter(Boolean).join(' ') || 'N/A'
+
+    const deliveryCharge = Number(contract.delivery_charge || 0)
+    const deliverySurcharge = Number(contract.delivery_surcharge || 0)
+    const deliveryDiscount = Number(contract.delivery_discount || 0)
+    const totalPrice = deliveryCharge + deliverySurcharge - deliveryDiscount
+
     return (
       <Card style={[styles.contractCard, { backgroundColor: colors.surfaceVariant }]}>
         <Card.Content>
@@ -263,112 +291,132 @@ const BookingList = ({ navigation }) => {
             <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]} selectable>{contract.id || 'N/A'}</Text>
           </View>
           <View style={styles.contractCardHeader}>
-            <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>CONTRACTOR NAME</Text>
-            <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
-              {[
-                    contract.airline_profile?.first_name,
-                    contract.airline_profile?.middle_initial,
-                    contract.airline_profile?.last_name,
-                    contract.airline_profile?.suffix
-              ].filter(Boolean).join(' ') || 'N/A'}
-            </Text>
+            <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>AIRLINE CONTRACTOR</Text>
+            <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>{contractorName}</Text>
           </View>
           <Divider />
-          <View style={styles.passengerInfoContainer}>
-            <View>
-              <View style={{ flexDirection: 'row', gap: 5 }}>
-                <Text style={[fonts.labelMedium, { fontWeight: 'bold', color: colors.primary }]}>
-                Passenger Name:
-                </Text>
-                <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
-                  {[
-                    contract?.owner_first_name,
-                    contract?.owner_middle_initial,
-                    contract?.owner_last_name,
-                  ].filter(Boolean).join(' ') || 'N/A'}
-                </Text>
-              </View>
-              <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
-                Total Luggage Quantity: {contract.luggage_quantity || 0}
-              </Text>
-              <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>
-                Case Number: {contract.case_number || 'N/A'}
-              </Text>
-            </View>
-          </View>
-          <Divider />
-          <View style={styles.statusContainer}>
-            <Text style={[fonts.labelSmall, styles.statusLabel]}>STATUS:</Text>
-            <Text style={[fonts.bodySmall, styles.statusValue, { color: colors.primary }]}>
-              {contract.contract_status?.status_name || 'Unknown'}
-            </Text>
-          </View>
-          <Divider />
-          <View style={styles.locationContainer}>
-            {[
-              { location: contract.pickup_location, label: 'Pickup', color: colors.primary },
-              { location: contract.current_location, label: 'Current', color: colors.secondary },
-              { location: contract.drop_off_location, label: 'Drop-off', color: colors.error }
-            ].map((loc, idx) => (
-              <View key={idx} style={styles.locationRow}>
-                <IconButton icon="map-marker" size={20} iconColor={loc.color} />
-                <View style={styles.locationTextContainer}>
-                  <Text style={[fonts.labelSmall, { color: loc.color }]}>{loc.label}</Text>
-                  <Text style={[fonts.bodySmall, styles.locationText]}>{loc.location || 'Not set'}</Text>
+
+          <List.Section>
+            <List.Accordion
+              title="Basic Info"
+              expanded={expanded.info}
+              onPress={() => toggle('info')}
+              titleStyle={[fonts.labelMedium, { color: colors.onSurface }]}>
+              <View style={styles.passengerInfoContainer}>
+                <View>
+                  <View style={{ flexDirection: 'row', gap: 5 }}>
+                    <Text style={[fonts.labelMedium, { fontWeight: 'bold', color: colors.primary }]}>Passenger Name:</Text>
+                    <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>{passengerName}</Text>
+                  </View>
+                  <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Total Luggage Quantity: {contract.luggage_quantity || 0}</Text>
+                  <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Case Number: {contract.case_number || 'N/A'}</Text>
+                  <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Flight Number: {contract.flight_number || 'N/A'}</Text>
+                  <View style={[styles.statusContainer, { paddingVertical: 6 }]}>
+                    <Text style={[fonts.labelSmall, styles.statusLabel]}>STATUS:</Text>
+                    <Text style={[fonts.bodySmall, styles.statusValue, { color: colors.primary }]}>
+                      {contract.contract_status?.status_name || 'Unknown'}
+                    </Text>
+                  </View>
                 </View>
               </View>
-            ))}
-          </View>
-          <Divider />
-          <View style={styles.detailsContainer}>
-            <Text style={[fonts.labelLarge, styles.statusLabel]}>
-              Date Information:
-            </Text>
-            <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
-              Created: {formatDate(contract.created_at)}
-            </Text>
-            {contract.pickup_at && (
-              <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
-                Pickup: {formatDate(contract.pickup_at)}
-              </Text>
-            )}
-            {contract.delivered_at && (
-              <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>
-                Delivered: {formatDate(contract.delivered_at)}
-              </Text>
-            )}
-            {contract.cancelled_at && (
-              <Text style={[fonts.labelSmall, { color: colors.error }]}>
-                Cancelled: {formatDate(contract.cancelled_at)}
-              </Text>
-            )}
-          </View>
-          <Divider />
-          <Button 
-            mode="contained" 
-            onPress={() => navigation.navigate('TrackLuggage', { 
-              contractId: contract.id,
-            })} 
-            style={[styles.actionButton, { backgroundColor: colors.primary }]}
-          >
-            Track Delivery
-          </Button>
-          <Button 
-            mode="contained" 
-            onPress={() => handleShowDetails(contract)} 
-            style={[styles.actionButton, { backgroundColor: colors.primary }]}
-          >
-            Show Details
-          </Button>
-          {contract.contract_status_id === 1 && (
-            <Button 
-              mode="contained" 
-              onPress={() => handleCancelContract(contract)} 
-              style={[styles.actionButton, { backgroundColor: colors.error }]}
-            >
-              Cancel Contract
-            </Button>
-          )}
+            </List.Accordion>
+
+            <Divider />
+
+            <List.Accordion
+              title="Locations"
+              expanded={expanded.locations}
+              onPress={() => toggle('locations')}
+              titleStyle={[fonts.labelMedium, { color: colors.onSurface }]}>
+              <View style={styles.locationContainer}>
+                {[
+                  { location: contract.pickup_location, label: 'Pickup', color: colors.primary },
+                  { location: contract.current_location, label: 'Current', color: colors.secondary },
+                  { location: contract.drop_off_location, label: 'Drop-off', color: colors.error }
+                ].map((loc, idx) => (
+                  <View key={idx} style={styles.locationRow}>
+                    <IconButton icon="map-marker" size={20} iconColor={loc.color} />
+                    <View style={styles.locationTextContainer}>
+                      <Text style={[fonts.labelSmall, { color: loc.color }]}>{loc.label}</Text>
+                      <Text style={[fonts.bodySmall, styles.locationText]} numberOfLines={2} ellipsizeMode="tail">{loc.location || 'Not set'}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </List.Accordion>
+
+            <Divider />
+
+            <List.Accordion
+              title="Timeline"
+              expanded={expanded.timeline}
+              onPress={() => toggle('timeline')}
+              titleStyle={[fonts.labelMedium, { color: colors.onSurface }]}
+              style={styles.accordionSection}>
+              <View style={styles.detailsContainer}>
+                <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>Created: {formatDate(contract.created_at)}</Text>
+                {contract.pickup_at && (
+                  <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>Pickup: {formatDate(contract.pickup_at)}</Text>
+                )}
+                {contract.delivered_at && (
+                  <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>Delivered: {formatDate(contract.delivered_at)}</Text>
+                )}
+                {contract.cancelled_at && (
+                  <Text style={[fonts.labelSmall, { color: colors.error }]}>Cancelled: {formatDate(contract.cancelled_at)}</Text>
+                )}
+              </View>
+            </List.Accordion>
+
+            <Divider />
+
+            <List.Accordion
+              title={`Price: ₱${totalPrice.toFixed(2)}`}
+              expanded={expanded.price}
+              onPress={() => toggle('price')}
+              titleStyle={[fonts.labelMedium, { color: colors.onSurface }]}
+              style={styles.accordionSection}>
+              <View style={{ paddingVertical: 8 }}>
+                <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Delivery Charge: ₱{deliveryCharge.toFixed(2)}</Text>
+                <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Surcharge: ₱{deliverySurcharge.toFixed(2)}</Text>
+                <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Discount: ₱{deliveryDiscount.toFixed(2)}</Text>
+                <Divider style={{ marginVertical: 6 }} />
+                <Text style={[fonts.labelMedium, { color: colors.primary }]}>Total: ₱{totalPrice.toFixed(2)}</Text>
+              </View>
+            </List.Accordion>
+
+            <Divider />
+
+            <List.Accordion
+              title="Actions"
+              expanded={expanded.actions}
+              onPress={() => toggle('actions')}
+              titleStyle={[fonts.labelMedium, { color: colors.onSurface }]}
+              style={styles.accordionSection}>
+              <Button 
+                mode="contained" 
+                onPress={() => navigation.navigate('TrackLuggage', { contractId: contract.id })} 
+                style={[styles.actionButton, { backgroundColor: colors.primary }]}
+              >
+                Track Delivery
+              </Button>
+              <Button 
+                mode="contained" 
+                onPress={() => handleShowDetails(contract)} 
+                style={[styles.actionButton, { backgroundColor: colors.primary }]}
+              >
+                Show Details
+              </Button>
+              {contract.contract_status_id === 1 && (
+                <Button 
+                  mode="contained" 
+                  onPress={() => handleCancelContract(contract)} 
+                  style={[styles.actionButton, { backgroundColor: colors.error }]}
+                >
+                  Cancel Contract
+                </Button>
+              )}
+            </List.Accordion>
+          </List.Section>
         </Card.Content>
       </Card>
     )
@@ -377,11 +425,11 @@ const BookingList = ({ navigation }) => {
   const renderHeader = () => (
     <>
       {/* Time Display Section */}
-      <Surface style={[styles.timeSurface, { backgroundColor: colors.surface }]} elevation={1}>
+      {/* <Surface style={[styles.timeSurface, { backgroundColor: colors.surface }]} elevation={1}>
         <Text style={[styles.timeText, { color: colors.onSurface }, fonts.titleMedium]}>
           {currentTime}
         </Text>
-      </Surface>
+      </Surface> */}
 
       {/* Filters Section */}
       <Surface style={[styles.filtersSurface, { backgroundColor: colors.surface }]} elevation={1}>
@@ -680,11 +728,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 16,
     borderRadius: 12,
-    elevation: 2,
+    elevation: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.12)'
   },
   contractCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: 6,
   },
   passengerInfoContainer: {
     flexDirection: 'row',
@@ -720,12 +771,14 @@ const styles = StyleSheet.create({
   locationText: {
     marginRight:'20%',
     flex: 1,
-    numberOfLines: 2,
-    ellipsizeMode: 'tail',
   },
   detailsContainer: {
     marginTop: 10,
     marginBottom: 10,
+  },
+  accordionSection: {
+    borderRadius: 8,
+    marginVertical: 4,
   },
   actionButton: {
     borderRadius: 8,
