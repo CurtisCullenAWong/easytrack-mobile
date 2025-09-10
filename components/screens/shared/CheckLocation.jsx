@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import { View, StyleSheet, TouchableOpacity } from 'react-native'
 import { Text, useTheme, Appbar, IconButton } from 'react-native-paper'
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
+import MapViewDirections from 'react-native-maps-directions'
+import { GOOGLE_MAPS_API_KEY } from '@env'
 import * as Location from 'expo-location'
 import useSnackbar from '../../hooks/useSnackbar'
 
@@ -125,6 +127,19 @@ const CheckLocation = ({ route, navigation }) => {
               title="Drop-off Location"
               description={dropOffLocation}
               pinColor={colors.primary}
+            />
+          )}
+          {currentLocation && dropOffCoords && (
+            <MapViewDirections
+              origin={currentLocation}
+              destination={dropOffCoords}
+              apikey={GOOGLE_MAPS_API_KEY}
+              strokeWidth={4}
+              strokeColor={colors.primary}
+              optimizeWaypoints={false}
+              onError={() => {
+                showSnackbar('Unable to fetch route from Google Maps API')
+              }}
             />
           )}
         </MapView>
