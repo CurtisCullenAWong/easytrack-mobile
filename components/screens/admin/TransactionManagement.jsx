@@ -2,17 +2,17 @@ import React, { useEffect, useState } from 'react'
 import { View, StyleSheet } from 'react-native'
 import { useTheme, SegmentedButtons } from 'react-native-paper'
 import Header from '../../customComponents/Header'
-import PendingContracts from './subscreen/PendingContracts'
-import SummarizedContracts from './subscreen/SummarizedContracts'
-import DeliveryRates from './subscreen/transaction_management_subscreen/DeliveryRates'
+import Bookings from './subscreen/Bookings'
+import Invoices from './subscreen/Invoices'
+import Rate from './subscreen/transaction_management_subscreen/Rate'
 
 const TransactionManagement = ({ navigation, route }) => {
   const { colors } = useTheme()
-  const [activeSegment, setActiveSegment] = useState('pending')
+  const [activeSegment, setActiveSegment] = useState('bookings')
 
   useEffect(() => {
     const incomingSegment = route?.params?.segment
-    if (incomingSegment && (incomingSegment === 'pending' || incomingSegment === 'completed' || incomingSegment === 'rates')) {
+    if (incomingSegment && (incomingSegment === 'bookings' || incomingSegment === 'invoices' || incomingSegment === 'rate')) {
       setActiveSegment(incomingSegment)
     }
   }, [route?.params?.segment])
@@ -26,21 +26,21 @@ const TransactionManagement = ({ navigation, route }) => {
           value={activeSegment}
           onValueChange={setActiveSegment}
           buttons={[
-            { value: 'pending', label: 'Pending', icon: 'clock-outline' },
-            { value: 'completed', label: 'Summarized', icon: 'check-circle-outline' },
-            { value: 'rates', label: 'Rates', icon: 'currency-php' },
+            { value: 'bookings', label: 'Bookings', icon: 'book-outline' },
+            { value: 'invoices', label: 'Invoices', icon: 'file-document-outline' },
+            { value: 'rate', label: 'Rate', icon: 'currency-php' },
           ]}
           style={{ marginHorizontal: 16 }}
         />
       </View>
 
       <View style={styles.content}>
-        {activeSegment === 'pending' ? (
-          <PendingContracts navigation={navigation} />
-        ) : activeSegment === 'completed' ? (
-          <SummarizedContracts navigation={navigation} />
+        {activeSegment === 'bookings' ? (
+          <Bookings navigation={navigation} />
+        ) : activeSegment === 'invoices' ? (
+          <Invoices navigation={navigation} />
         ) : (
-          <DeliveryRates navigation={navigation} />
+          <Rate navigation={navigation} />
         )}
       </View>
     </View>

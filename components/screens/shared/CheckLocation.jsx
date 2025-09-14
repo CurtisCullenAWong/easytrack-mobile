@@ -129,7 +129,7 @@ const CheckLocation = ({ route, navigation }) => {
               pinColor={colors.primary}
             />
           )}
-          {currentLocation && dropOffCoords && (
+          {/* {currentLocation && dropOffCoords && (
             <MapViewDirections
               origin={currentLocation}
               destination={dropOffCoords}
@@ -141,7 +141,7 @@ const CheckLocation = ({ route, navigation }) => {
                 showSnackbar('Unable to fetch route from Google Maps API')
               }}
             />
-          )}
+          )} */}
         </MapView>
         <View style={styles.buttonContainer}>
           <TouchableOpacity 

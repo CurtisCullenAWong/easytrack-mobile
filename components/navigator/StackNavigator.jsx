@@ -22,7 +22,7 @@ import UpdateProfileScreen from '../screens/shared/UpdateProfileScreen'
 import AdminHome from '../screens/admin/AdminHome'
 import UserManagement from '../screens/admin/UserManagement'
 import TransactionManagement from '../screens/admin/TransactionManagement'
-import TransactionSummary from '../screens/admin/subscreen/transaction_management_subscreen/TransactionSummary'
+import GenerateInvoice from '../screens/admin/subscreen/transaction_management_subscreen/GenerateInvoice'
 import ViewInvoice from '../screens/admin/subscreen/transaction_management_subscreen/ViewInvoice'
 import ContractDetailsAdmin from '../screens/admin/subscreen/ContractDetailsAdmin'
 import AdminBookingManagement from '../screens/admin/AdminBookingManagement'
@@ -75,7 +75,7 @@ const AdminDrawer = () => (
     <Drawer.Screen name="AdminHome" component={AdminHome} />
     <Drawer.Screen name="UserManagement" component={UserManagement} />
     <Drawer.Screen name="TransactionManagement" component={TransactionManagement} />
-    <Drawer.Screen name="TransactionSummary" component={TransactionSummary} />
+    <Drawer.Screen name="GenerateInvoice" component={GenerateInvoice} />
     <Drawer.Screen name="ViewInvoice" component={ViewInvoice} />
     <Drawer.Screen name="ContractDetailsAdmin" component={ContractDetailsAdmin} />
     <Drawer.Screen name="BookingManagement" component={AdminBookingManagement} />

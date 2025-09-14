@@ -16,7 +16,7 @@ import useSnackbar from '../../../hooks/useSnackbar'
 
 const COLUMN_WIDTH = 180
 
-const SummarizedContracts = ({ navigation }) => {
+const Invoices = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
@@ -107,7 +107,7 @@ const SummarizedContracts = ({ navigation }) => {
 
         acc[summaryId] = {
           key: summaryId,
-          summary_id: summaryId,
+          summary_id: summaryId || 'N/A',
           invoice_id: transaction.summary?.invoice_id || 'N/A',
           summary_status: transaction.summary?.summary_status?.status_name || 'N/A',
           summary_status_id: transaction.summary?.summary_status?.id ?? null,
@@ -674,7 +674,6 @@ const SummarizedContracts = ({ navigation }) => {
           )}
         </Surface>
       </View>
-
     </ScrollView>
   )
 }
@@ -846,4 +845,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default SummarizedContracts
+export default Invoices

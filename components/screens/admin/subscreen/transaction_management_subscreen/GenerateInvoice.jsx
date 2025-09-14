@@ -5,7 +5,7 @@ import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/nativ
 import { supabase } from '../../../../../lib/supabaseAdmin'
 import useSnackbar from '../../../../hooks/useSnackbar'
 
-const TransactionSummary = () => {
+const GenerateInvoice = () => {
   const { colors, fonts } = useTheme()
   const navigation = useNavigation()
   const route = useRoute()
@@ -266,7 +266,7 @@ const TransactionSummary = () => {
           <Card style={[styles.actionsCard, { backgroundColor: colors.surface }]}>
             <Card.Content style={styles.cardContent}>
               <Text style={[styles.actionText, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>
-                Review the summary details above. Click "Generate Summary" to create the summary and tag the selected contracts.
+                Review the summary details above. Click "Generate Summary and Invoice" to create the summary and tag the selected contracts.
               </Text>
               
               {/* ID Preview Section */}
@@ -315,7 +315,7 @@ const TransactionSummary = () => {
                   labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
                   disabled={isProcessing}
                 >
-                  Generate Summary
+                  Generate Summary and Invoice
                 </Button>
               </View>
             </Card.Content>
@@ -401,7 +401,7 @@ const TransactionSummary = () => {
               loading={isProcessing}
               textColor={colors.primary}
             >
-              {isProcessing ? 'Generating...' : 'Generate Summary'}
+              {isProcessing ? 'Generating...' : 'Generate Summary and Invoice'}
             </Button>
           </Dialog.Actions>
         </Dialog>
@@ -612,4 +612,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default TransactionSummary 
+export default GenerateInvoice 

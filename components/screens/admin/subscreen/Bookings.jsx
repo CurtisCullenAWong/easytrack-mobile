@@ -17,17 +17,24 @@ import useSnackbar from '../../../hooks/useSnackbar'
 const COLUMN_WIDTH = 180
 const FULL_NAME_WIDTH = 200
 
-// Filter configuration
 const FILTER_OPTIONS = [
   { label: 'Status', value: 'status' },
   { label: 'Drop-off Location', value: 'drop_off_location' },
   { label: 'Luggage Owner', value: 'luggage_owner' },
   { label: 'Corporation', value: 'corporation' },
   { label: 'Contract ID', value: 'id' },
+  { label: 'Summary ID', value: 'summary_id' },
+]
+
+const INVOICE_FILTER_OPTIONS = [
+  { label: 'All Bookings', value: 'all' },
+  { label: 'With Summary', value: 'with_invoice' },
+  { label: 'Without Summary', value: 'without_summary' },
 ]
 
 const TABLE_COLUMNS = [
   { key: 'id', label: 'Contract ID', width: COLUMN_WIDTH },
+  { key: 'summary_id', label: 'Summary ID', width: COLUMN_WIDTH },
   { key: 'luggage_owner', label: 'Luggage Owner', width: FULL_NAME_WIDTH },
   { key: 'corporation', label: 'Corporation', width: COLUMN_WIDTH },
   { key: 'drop_off_location', label: 'Address', width: COLUMN_WIDTH },
@@ -38,28 +45,30 @@ const TABLE_COLUMNS = [
   { key: 'created_at', label: 'Created At', width: COLUMN_WIDTH },
 ]
 
-// Custom hook for filtering and sorting
 const useFilteredTransactions = (transactions, filters, sortConfig) => {
   return useMemo(() => {
-    let filtered = transactions.filter(transaction => {
-      // Search filter
+    let filtered = transactions.filter(contracts => {
       if (filters.searchQuery && filters.searchColumn) {
-        const searchValue = String(transaction[filters.searchColumn] || '').toLowerCase()
+        const searchValue = String(contracts[filters.searchColumn] || '').toLowerCase()
         const query = filters.searchQuery.toLowerCase()
         if (!searchValue.includes(query)) return false
       }
       
-      // Corporation filter
-      if (filters.selectedCorporation && transaction.corporation !== filters.selectedCorporation) {
+      if (filters.selectedCorporation && contracts.corporation !== filters.selectedCorporation) {
         return false
       }
       
-      // Month/Year filter on raw completion date if available, otherwise created_at
+      if (filters.invoiceFilter && filters.invoiceFilter !== 'all') {
+        const hasInvoice = contracts.summary_id !== 'N/A' && contracts.summary_id !== null && contracts.summary_id !== undefined
+        if (filters.invoiceFilter === 'with_summary' && !hasInvoice) return false
+        if (filters.invoiceFilter === 'without_summary' && hasInvoice) return false
+      }
+      
       if (filters.month || filters.year) {
-        const sourceDate = transaction._rawCompletionDate || transaction._rawCreatedAt
+        const sourceDate = contracts._rawCompletionDate || contracts._rawCreatedAt
         if (sourceDate) {
           const d = new Date(sourceDate)
-          const month = String(d.getMonth() + 1) // 1-12
+          const month = String(d.getMonth() + 1)
           const year = String(d.getFullYear())
           if (filters.month && filters.month !== month) return false
           if (filters.year && filters.year !== year) return false
@@ -69,13 +78,11 @@ const useFilteredTransactions = (transactions, filters, sortConfig) => {
       return true
     })
 
-    // Sorting
     if (sortConfig.column) {
       filtered.sort((a, b) => {
         const valA = a[sortConfig.column]
         const valB = b[sortConfig.column]
 
-        // Handle date sorting
         if (['created_at', 'updated_at', 'completion_date'].includes(sortConfig.column)) {
           if (valA === 'N/A') return sortConfig.direction === 'ascending' ? -1 : 1
           if (valB === 'N/A') return sortConfig.direction === 'ascending' ? 1 : -1
@@ -84,7 +91,6 @@ const useFilteredTransactions = (transactions, filters, sortConfig) => {
           return 0
         }
 
-        // Handle regular sorting
         if (valA < valB) return sortConfig.direction === 'ascending' ? -1 : 1
         if (valA > valB) return sortConfig.direction === 'ascending' ? 1 : -1
         return 0
@@ -95,7 +101,6 @@ const useFilteredTransactions = (transactions, filters, sortConfig) => {
   }, [transactions, filters, sortConfig])
 }
 
-// Reusable Filter Menu Component
 const FilterMenu = ({ 
   visible, 
   onDismiss, 
@@ -134,7 +139,6 @@ const FilterMenu = ({
   )
 }
 
-// Search and Filter Section Component
 const SearchFilterSection = ({ 
   filters, 
   onFiltersChange, 
@@ -144,21 +148,24 @@ const SearchFilterSection = ({
   const { colors, fonts } = useTheme()
   const [filterMenuVisible, setFilterMenuVisible] = useState(false)
   const [corporationMenuVisible, setCorporationMenuVisible] = useState(false)
+  const [invoiceMenuVisible, setInvoiceMenuVisible] = useState(false)
   const [monthMenuVisible, setMonthMenuVisible] = useState(false)
   const [yearMenuVisible, setYearMenuVisible] = useState(false)
 
   const handleClearFilters = () => {
     onFiltersChange({
       searchQuery: '',
-      selectedCorporation: ''
+      selectedCorporation: '',
+      invoiceFilter: 'all',
+      month: '',
+      year: ''
     })
   }
 
-  const hasActiveFilters = filters.searchQuery || filters.selectedCorporation || filters.month || filters.year
+  const hasActiveFilters = filters.searchQuery || filters.selectedCorporation || filters.invoiceFilter !== 'all' || filters.month || filters.year
 
   return (
     <>
-      {/* Search Section */}
       <Surface style={[styles.searchSurface, { backgroundColor: colors.surface }]} elevation={1}>
         <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
           Search & Filter
@@ -173,7 +180,33 @@ const SearchFilterSection = ({
         />
       </Surface>
 
-      {/* Filters Section */}
+      <View style={styles.filtersRow}>
+        <View style={styles.filterGroup}>
+          <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+            Invoice Status
+          </Text>
+          <FilterMenu
+            visible={invoiceMenuVisible}
+            onDismiss={() => setInvoiceMenuVisible(false)}
+            anchor={
+              <Button
+                mode="outlined"
+                icon="file-document"
+                onPress={() => setInvoiceMenuVisible(true)}
+                style={[styles.filterButton, { borderColor: colors.outline }]}
+                contentStyle={styles.buttonContent}
+                labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+              >
+                {INVOICE_FILTER_OPTIONS.find(opt => opt.value === filters.invoiceFilter)?.label || 'All Bookings'}
+              </Button>
+            }
+            options={INVOICE_FILTER_OPTIONS}
+            selectedValue={filters.invoiceFilter}
+            onSelect={(value) => onFiltersChange({ invoiceFilter: value })}
+          />
+        </View>
+      </View>
+
       <Surface style={[styles.filtersSurface, { backgroundColor: colors.surface }]} elevation={1}>
         <View style={styles.filtersRow}>
           <View style={styles.filterGroup}>
@@ -233,7 +266,6 @@ const SearchFilterSection = ({
           </View>
         </View>
 
-        {/* Month/Year Filters */}
         <View style={styles.dateFiltersRow}>
           <View style={styles.dateFilterGroup}>
             <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Month</Text>
@@ -341,16 +373,16 @@ const SearchFilterSection = ({
   )
 }
 
-// Selection Section Component
 const SelectionSection = ({ 
   selectedContracts, 
   selectAll, 
   onSelectAll, 
-  onContractSelection, 
   paginatedTransactions, 
   onGenerateSummary 
 }) => {
   const { colors, fonts } = useTheme()
+  
+  const selectableCount = paginatedTransactions.filter(t => t.summary_id === 'N/A').length
 
   return (
     <Surface style={[styles.selectionSurface, { backgroundColor: colors.surface }]} elevation={1}>
@@ -360,9 +392,17 @@ const SelectionSection = ({
             status={selectAll ? 'checked' : 'unchecked'}
             onPress={onSelectAll}
             color={colors.primary}
+            disabled={selectableCount === 0}
+            style={selectableCount === 0 ? { opacity: 0.5 } : {}}
           />
-          <Text style={[styles.selectAllText, { color: colors.onSurface }, fonts.bodyMedium]}>
-            Select All ({paginatedTransactions.length})
+          <Text style={[
+            styles.selectAllText, 
+            { 
+              color: selectableCount === 0 ? colors.onSurfaceDisabled : colors.onSurface 
+            }, 
+            fonts.bodyMedium
+          ]}>
+            Select All ({selectableCount})
           </Text>
         </View>
         <Text style={[styles.selectedCount, { color: colors.primary }, fonts.bodyMedium]}>
@@ -389,51 +429,41 @@ const SelectionSection = ({
         ]}
         disabled={selectedContracts.size === 0}
       >
-        Generate Summary ({selectedContracts.size})
+        Generate Summary and Invoice ({selectedContracts.size})
       </Button>
-      <View style={styles.selectionRulesContainer}>
-        <Text style={[styles.selectionRulesText, { color: colors.onSurfaceVariant }, fonts.bodySmall]}>
-          Selection Rules: You can group select contracts from the same corporation, or contracts from EGC with any other corporation.
-        </Text>
-      </View>
     </Surface>
   )
 }
 
-const PendingContracts = ({ navigation }) => {
+const Bookings = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
-  // State management
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [corporations, setCorporations] = useState([])
   
-  // Filter state
   const [filters, setFilters] = useState({
     searchQuery: '',
     searchColumn: 'id',
     selectedCorporation: '',
+    invoiceFilter: 'all',
     month: '',
     year: '',
   })
   
-  // Sort state
   const [sortConfig, setSortConfig] = useState({
     column: 'created_at',
     direction: 'descending'
   })
   
-  // Pagination state
   const [page, setPage] = useState(0)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   
-  // Selection state
   const [selectedContracts, setSelectedContracts] = useState(new Set())
   const [selectAll, setSelectAll] = useState(false)
 
-  // Data fetching
   const fetchTransactions = async () => {
     setLoading(true)
     const { data, error } = await supabase
@@ -456,7 +486,6 @@ const PendingContracts = ({ navigation }) => {
         )
       `)
       .in('contract_status_id', [5, 6]) // 5 for delivered, 6 for failed
-      .is('summary_id', null)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -465,12 +494,12 @@ const PendingContracts = ({ navigation }) => {
       return
     }
 
-    const formatted = data.map(transaction => {
+    const formatted = data.map(contracts => {
       let completionDate = 'N/A'
       let rawCompletion = null
-      if (transaction.delivered_at) {
-        rawCompletion = transaction.delivered_at
-        completionDate = new Date(transaction.delivered_at).toLocaleString('en-US', {
+      if (contracts.delivered_at) {
+        rawCompletion = contracts.delivered_at
+        completionDate = new Date(contracts.delivered_at).toLocaleString('en-US', {
           year: 'numeric',
           month: '2-digit',
           day: '2-digit',
@@ -478,9 +507,9 @@ const PendingContracts = ({ navigation }) => {
           minute: '2-digit',
           hour12: true
         })
-      } else if (transaction.cancelled_at) {
-        rawCompletion = transaction.cancelled_at
-        completionDate = new Date(transaction.cancelled_at).toLocaleString('en-US', {
+      } else if (contracts.cancelled_at) {
+        rawCompletion = contracts.cancelled_at
+        completionDate = new Date(contracts.cancelled_at).toLocaleString('en-US', {
           year: 'numeric',
           month: '2-digit',
           day: '2-digit',
@@ -491,41 +520,33 @@ const PendingContracts = ({ navigation }) => {
       }
 
       const ownerName = [
-        transaction.owner_first_name,
-        transaction.owner_middle_initial,
-        transaction.owner_last_name
+        contracts.owner_first_name,
+        contracts.owner_middle_initial,
+        contracts.owner_last_name
       ].filter(Boolean).join(' ') || 'N/A'
 
-      const amount = (transaction.delivery_charge || 0) + (transaction.delivery_surcharge || 0) - (transaction.delivery_discount || 0)
+      const amount = (contracts.delivery_charge || 0) + (contracts.delivery_surcharge || 0) - (contracts.delivery_discount || 0)
 
       return {
-        key: transaction.id,
-        id: transaction.id,
-        status: transaction.contract_status?.status_name || 'N/A',
-        drop_off_location: transaction.drop_off_location || transaction.delivery_address || 'N/A',
+        key: contracts.id,
+        id: contracts.id,
+        status: contracts.contract_status?.status_name || 'N/A',
+        drop_off_location: contracts.drop_off_location || contracts.delivery_address || 'N/A',
         completion_date: completionDate,
-        delivery_charge: transaction.delivery_charge || 0,
-        delivery_surcharge: transaction.delivery_surcharge || 0,
-        delivery_discount: transaction.delivery_discount || 0,
+        delivery_charge: contracts.delivery_charge || 0,
+        delivery_surcharge: contracts.delivery_surcharge || 0,
+        delivery_discount: contracts.delivery_discount || 0,
         luggage_owner: ownerName,
         amount_per_passenger: amount,
-        remarks: transaction.remarks || 'N/A',
-        flight_number: transaction.flight_number || 'N/A',
-        passenger_form: transaction.passenger_form || null,
-        created_at: transaction.created_at
-          ? new Date(transaction.created_at).toLocaleString()
+        remarks: contracts.remarks || 'N/A',
+        created_at: contracts.created_at
+          ? new Date(contracts.created_at).toLocaleString()
           : 'N/A',
-        _rawCreatedAt: transaction.created_at || null,
+        _rawCreatedAt: contracts.created_at || 'N/A',
         _rawCompletionDate: rawCompletion,
-        luggage_description: transaction.luggage_description || 'N/A',
-        luggage_weight: transaction.luggage_weight || 'N/A',
-        luggage_quantity: transaction.luggage_quantity || 'N/A',
-        case_number: transaction.case_number || 'N/A',
-        owner_contact: transaction.owner_contact || 'N/A',
-        passenger_id: transaction.passenger_id || 'N/A',
-        proof_of_delivery: transaction.proof_of_delivery || null,
-        corporation: transaction.airline?.corporation?.corporation_name || 'N/A',
-        corporation_id: transaction.airline?.corporation?.id || null,
+        corporation: contracts.airline?.corporation?.corporation_name || 'N/A',
+        corporation_id: contracts.airline?.corporation?.id || 'N/A',
+        summary_id: contracts.summary_id || 'N/A',
       }
     })
 
@@ -547,7 +568,6 @@ const PendingContracts = ({ navigation }) => {
     setCorporations(data || [])
   }
 
-  // Effects
   useFocusEffect(
     useCallback(() => {
       fetchTransactions()
@@ -556,7 +576,6 @@ const PendingContracts = ({ navigation }) => {
     }, [])
   )
 
-  // Realtime: subscribe while screen is focused
   const subscriptionRef = useRef(null)
   useFocusEffect(
     useCallback(() => {
@@ -565,9 +584,7 @@ const PendingContracts = ({ navigation }) => {
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'contracts' },
-          () => {
-            fetchTransactions()
-          }
+          fetchTransactions
         )
         .subscribe()
 
@@ -579,15 +596,10 @@ const PendingContracts = ({ navigation }) => {
     }, [])
   )
 
-  // Filtered and sorted transactions
   const filteredAndSortedTransactions = useFilteredTransactions(transactions, filters, sortConfig)
-
-  // Pagination
   const from = page * itemsPerPage
   const to = Math.min((page + 1) * itemsPerPage, filteredAndSortedTransactions.length)
   const paginatedTransactions = filteredAndSortedTransactions.slice(from, to)
-
-  // Handlers
   const handleSort = (column) => {
     setSortConfig(prev => ({
       column,
@@ -603,21 +615,25 @@ const PendingContracts = ({ navigation }) => {
     fetchTransactions().finally(() => setRefreshing(false))
   }, [])
 
-  const handleViewDetails = (transaction) => {
-    navigation.navigate('ContractDetailsAdmin', { id: transaction.id })
+  const handleViewDetails = (contracts) => {
+    navigation.navigate('ContractDetailsAdmin', { id: contracts.id })
   }
 
   const handleContractSelection = (contractId) => {
+    const contractToSelect = transactions.find(t => t.id === contractId)
+    
+    if (contractToSelect?.summary_id && contractToSelect.summary_id !== 'N/A') {
+      showSnackbar('Cannot select bookings that already have a summary. Only bookings without summaries can be selected.')
+      return
+    }
+    
     const newSelected = new Set(selectedContracts)
     if (newSelected.has(contractId)) {
       newSelected.delete(contractId)
     } else {
-      // Check if we can select this contract based on corporation rules
       if (canSelectContract(contractId, newSelected)) {
         newSelected.add(contractId)
       } else {
-        // Show error message for invalid selection
-        const contractToSelect = transactions.find(t => t.id === contractId)
         const selectedContractsData = transactions.filter(t => newSelected.has(t.id))
         
         if (selectedContractsData.length > 0) {
@@ -632,23 +648,20 @@ const PendingContracts = ({ navigation }) => {
     }
     
     setSelectedContracts(newSelected)
-    const allContractIds = new Set(paginatedTransactions.map(t => t.id))
-    setSelectAll(newSelected.size === allContractIds.size && allContractIds.size > 0)
+    const selectableContractIds = new Set(paginatedTransactions.filter(t => t.summary_id === 'N/A').map(t => t.id))
+    setSelectAll(newSelected.size === selectableContractIds.size && selectableContractIds.size > 0)
   }
 
   const handleSelectAll = () => {
     if (selectAll) {
       setSelectedContracts(new Set())
     } else {
-      // Only select contracts that can be selected together based on corporation rules
       const selectableContracts = new Set()
-      const allContracts = paginatedTransactions
+      const allContracts = paginatedTransactions.filter(contract => contract.summary_id === 'N/A')
       
-      // Start with the first contract
       if (allContracts.length > 0) {
         selectableContracts.add(allContracts[0].id)
         
-        // Add other contracts that can be selected with the first one
         for (let i = 1; i < allContracts.length; i++) {
           if (canSelectContract(allContracts[i].id, selectableContracts)) {
             selectableContracts.add(allContracts[i].id)
@@ -669,17 +682,14 @@ const PendingContracts = ({ navigation }) => {
     }
 
     const selectedTransactions = transactions.filter(t => selectedContracts.has(t.id))
-
-    const totalAmount = selectedTransactions.reduce((sum, t) => {
-      return sum + (t.delivery_charge || 0)
-    }, 0)
-
+    const totalAmount = selectedTransactions.reduce((sum, t) => sum + (t.delivery_charge || 0), 0)
     const totalDiscount = selectedTransactions.reduce((sum, t) => sum + (t.delivery_discount || 0), 0)
+    
     const summary = {
       totalTransactions: selectedTransactions.length,
-      totalAmount: totalAmount,
+      totalAmount,
       totalSurcharge: selectedTransactions.reduce((sum, t) => sum + (t.delivery_surcharge || 0), 0),
-      totalDiscount: totalDiscount,
+      totalDiscount,
       statusCounts: selectedTransactions.reduce((acc, t) => {
         acc[t.status] = (acc[t.status] || 0) + 1
         return acc
@@ -687,7 +697,7 @@ const PendingContracts = ({ navigation }) => {
       selectedContracts: Array.from(selectedContracts)
     }
 
-    navigation.navigate('TransactionSummary', {
+    navigation.navigate('GenerateInvoice', {
       summaryData: summary,
       transactions: selectedTransactions,
       pendingContracts: Array.from(selectedContracts)
@@ -699,44 +709,32 @@ const PendingContracts = ({ navigation }) => {
     setSelectAll(false)
   }
 
-  // Helper function to check if a contract can be selected based on corporation rules
   const canSelectContract = (contractId, currentSelection) => {
     const contractToSelect = transactions.find(t => t.id === contractId)
-    if (!contractToSelect || !contractToSelect.corporation_id) return false
+    if (!contractToSelect || contractToSelect.corporation_id === 'N/A' || (contractToSelect.summary_id && contractToSelect.summary_id !== 'N/A')) return false
     
-    // If no contracts are currently selected, any contract can be selected
     if (currentSelection.size === 0) return true
     
-    // Get all currently selected contracts
     const selectedContractsData = transactions.filter(t => currentSelection.has(t.id))
-    
-    // Check if any selected contract has corporation_id = 1
     const hasCorporationOne = selectedContractsData.some(t => t.corporation_id === 1)
-    
-    // Check if any selected contract has a different corporation_id (not 1 and not the same as the contract to select)
     const hasDifferentCorporation = selectedContractsData.some(t => 
-      t.corporation_id !== 1 && 
-      t.corporation_id !== contractToSelect.corporation_id
+      t.corporation_id !== 1 && t.corporation_id !== 'N/A' && t.corporation_id !== contractToSelect.corporation_id
     )
     
-    // If there's a different corporation selected (not 1), only allow same corporation
     if (hasDifferentCorporation) {
       return contractToSelect.corporation_id === 1 || 
              selectedContractsData.some(t => t.corporation_id === contractToSelect.corporation_id)
     }
     
-    // If only corporation 1 is selected, allow any corporation
     if (hasCorporationOne && selectedContractsData.every(t => t.corporation_id === 1)) {
       return true
     }
     
-    // If only same corporation is selected, allow same corporation or corporation 1
     const sameCorporation = selectedContractsData[0]?.corporation_id
     return contractToSelect.corporation_id === 1 || contractToSelect.corporation_id === sameCorporation
   }
 
   const formatCurrency = (amount) => `₱${parseFloat(amount).toFixed(2)}`
-  const formatPercentage = (amount) => `${parseFloat(amount).toFixed(2)}%`
 
   return (
     <ScrollView 
@@ -766,15 +764,14 @@ const PendingContracts = ({ navigation }) => {
           onGenerateSummary={handleGenerateSummary}
         />
 
-        {/* Results Section */}
         <Surface style={[styles.resultsSurface, { backgroundColor: colors.surface }]} elevation={1}>
           <View style={styles.resultsHeader}>
             <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
-              Pending for Summary Receipts
+              Completed Bookings
             </Text>
             {!loading && (
               <Text style={[styles.resultsCount, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>
-                {filteredAndSortedTransactions.length} transaction{filteredAndSortedTransactions.length !== 1 ? 's' : ''} found
+                {filteredAndSortedTransactions.length} contract{filteredAndSortedTransactions.length !== 1 ? 's' : ''} found
               </Text>
             )}
           </View>
@@ -814,14 +811,14 @@ const PendingContracts = ({ navigation }) => {
                     <DataTable.Row>
                       <DataTable.Cell style={styles.noDataCell}>
                         <Text style={[styles.noDataText, { color: colors.onSurfaceVariant }, fonts.bodyLarge]}>
-                          No transactions found matching your criteria
+                          No contracts found matching your criteria
                         </Text>
                       </DataTable.Cell>
                     </DataTable.Row>
                   ) : (
-                    paginatedTransactions.map((transaction, index) => (
+                    paginatedTransactions.map((contracts, index) => (
                       <DataTable.Row 
-                        key={transaction.key}
+                        key={contracts.key}
                         style={[
                           styles.tableRow,
                           index % 2 === 0 && { backgroundColor: colors.surfaceVariant + '20' }
@@ -829,23 +826,23 @@ const PendingContracts = ({ navigation }) => {
                       >
                         <DataTable.Cell style={[styles.selectColumn, { justifyContent: 'center' }]}>
                           <Checkbox
-                            status={selectedContracts.has(transaction.id) ? 'checked' : 'unchecked'}
-                            onPress={() => handleContractSelection(transaction.id)}
+                            status={selectedContracts.has(contracts.id) ? 'checked' : 'unchecked'}
+                            onPress={() => handleContractSelection(contracts.id)}
                             color={colors.primary}
-                            disabled={!canSelectContract(transaction.id, selectedContracts)}
-                            style={!canSelectContract(transaction.id, selectedContracts) ? { opacity: 0.5 } : {}}
+                            disabled={!canSelectContract(contracts.id, selectedContracts)}
+                            style={!canSelectContract(contracts.id, selectedContracts) ? { opacity: 0.5 } : {}}
                           />
                         </DataTable.Cell>
                         <DataTable.Cell style={[styles.actionColumn, { justifyContent: 'center' }]}>
                           <Button
                             mode="outlined"
                             icon="eye"
-                            onPress={() => handleViewDetails(transaction)}
+                            onPress={() => handleViewDetails(contracts)}
                             style={[styles.actionButton, { borderColor: colors.primary }]}
                             contentStyle={styles.buttonContent}
                             labelStyle={[styles.buttonLabel, { color: colors.primary }]}
                           >
-                            View Details
+                            Details
                           </Button>
                         </DataTable.Cell>
                         {TABLE_COLUMNS.map(({ key, width }, idx) => (
@@ -855,10 +852,10 @@ const PendingContracts = ({ navigation }) => {
                           >
                             <Text style={[styles.cellText, { color: colors.onSurface }, fonts.bodyMedium]} selectable>
                               {['delivery_charge', 'delivery_surcharge', 'amount_per_passenger'].includes(key)
-                                ? formatCurrency(transaction[key])
+                                ? formatCurrency(contracts[key])
                                 : key === 'delivery_discount'
-                                ? formatPercentage(transaction[key])
-                                : transaction[key]}
+                                ? formatPercentage(contracts[key])
+                                : contracts[key]}
                             </Text>
                           </DataTable.Cell>
                         ))}
@@ -868,7 +865,6 @@ const PendingContracts = ({ navigation }) => {
                 </DataTable>
               </ScrollView>
 
-              {/* Pagination */}
               {filteredAndSortedTransactions.length > 0 && (
                 <View style={[styles.paginationContainer, { backgroundColor: colors.surfaceVariant }]}>
                   <DataTable.Pagination
@@ -914,61 +910,62 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
-    padding: 16,
-    gap: 16,
+    padding: 12,
+    gap: 12,
   },
   searchSurface: {
-    padding: 16,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 8,
   },
   sectionTitle: {
-    marginBottom: 12,
+    marginBottom: 8,
     fontWeight: '600',
   },
   searchbar: {
-    borderRadius: 8,
+    borderRadius: 6,
   },
   searchInput: {
-    fontSize: 16,
+    fontSize: 14,
   },
   filtersSurface: {
-    padding: 16,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 8,
   },
   filtersRow: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 12,
   },
   filterGroup: {
     flex: 1,
   },
   dateFiltersRow: {
     flexDirection: 'row',
-    gap: 16,
-    marginTop: 12,
+    gap: 12,
+    marginTop: 8,
   },
   dateFilterGroup: {
     flex: 1,
   },
   dateInput: {
-    borderRadius: 8,
+    borderRadius: 6,
   },
   dateInputText: {
-    fontSize: 16,
+    fontSize: 14,
   },
   clearFiltersContainer: {
-    marginTop: 12,
+    marginTop: 8,
     alignItems: 'flex-start',
   },
   clearFiltersButton: {
     paddingHorizontal: 0,
   },
   filterLabel: {
-    marginBottom: 8,
+    marginBottom: 6,
     fontWeight: '500',
+    fontSize: 13,
   },
   filterButton: {
-    borderRadius: 8,
+    borderRadius: 6,
   },
   menuContent: {
     width: '100%',
@@ -976,53 +973,57 @@ const styles = StyleSheet.create({
     right: 0,
   },
   buttonContent: {
-    height: 40,
+    height: 42,
   },
   buttonLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
   selectionSurface: {
-    padding: 16,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 8,
   },
   selectionContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   selectAllContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   selectAllText: {
-    marginLeft: 8,
+    marginLeft: 6,
+    fontSize: 13,
   },
   selectedCount: {
     fontWeight: 'bold',
+    fontSize: 13,
   },
   generateButton: {
-    borderRadius: 8,
+    borderRadius: 6,
   },
   resultsSurface: {
-    borderRadius: 12,
+    borderRadius: 8,
     overflow: 'hidden',
   },
   resultsHeader: {
-    padding: 16,
+    padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.12)',
   },
   resultsCount: {
-    marginTop: 4,
+    marginTop: 2,
+    fontSize: 13,
   },
   loadingContainer: {
-    padding: 32,
+    padding: 24,
     alignItems: 'center',
   },
   loadingText: {
     textAlign: 'center',
+    fontSize: 14,
   },
   tableContainer: {
     flex: 1,
@@ -1039,41 +1040,44 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(0, 0, 0, 0.08)',
   },
   actionColumn: {
-    width: 140,
-    paddingVertical: 12,
+    width: 120,
+    paddingVertical: 8,
   },
   selectColumn: {
-    width: 80,
-    paddingVertical: 12,
+    width: 70,
+    paddingVertical: 8,
   },
   tableColumn: {
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   sortableHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
   },
   sortIcon: {
-    fontSize: 12,
+    fontSize: 10,
   },
   headerText: {
     fontWeight: '600',
+    fontSize: 12,
   },
   cellText: {
     textAlign: 'center',
+    fontSize: 12,
   },
   actionButton: {
-    borderRadius: 8,
+    borderRadius: 6,
   },
   noDataCell: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingVertical: 24,
     flex: 1,
   },
   noDataText: {
     textAlign: 'center',
+    fontSize: 13,
   },
   paginationContainer: {
     borderTopWidth: 1,
@@ -1084,18 +1088,10 @@ const styles = StyleSheet.create({
   },
   paginationLabel: {
     fontWeight: '500',
-  },
-  selectionRulesContainer: {
-    marginTop: 12,
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-  },
-  selectionRulesText: {
-    textAlign: 'center',
-    fontStyle: 'italic',
+    fontSize: 12,
   },
 })
 
-export default PendingContracts
+export default Bookings
 
 
