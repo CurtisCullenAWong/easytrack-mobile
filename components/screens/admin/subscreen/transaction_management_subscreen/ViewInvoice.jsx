@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, View, StyleSheet, Image } from 'react-native'
-import { useTheme, Appbar, Card, Text, Button, Divider, Checkbox, Portal, Modal } from 'react-native-paper'
+import { useTheme, Appbar, Card, Text, Button, Divider, Checkbox, Portal, Modal, Dialog, TextInput } from 'react-native-paper'
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../../../../../lib/supabaseAdmin'
-import { printPDF, sharePDF } from '../../../../../utils/pdfUtils'
+import { printPDF, sharePDF, createPDFFile } from '../../../../../utils/pdfUtils'
+import * as FileSystem from 'expo-file-system'
+import { RESEND_API_KEY } from '@env'
 import useSnackbar from '../../../../hooks/useSnackbar'
 import Signature from 'react-native-signature-canvas'
 
@@ -27,6 +29,9 @@ const CreateInvoice = () => {
   const [signatureVisible, setSignatureVisible] = useState(false)
   const [activeSigner, setActiveSigner] = useState(null)
   const [certify, setCertify] = useState(false)
+  const [emailDialogVisible, setEmailDialogVisible] = useState(false)
+  const [emailInput, setEmailInput] = useState('')
+  const [isSendingEmail, setIsSendingEmail] = useState(false)
   
   // Data states
   const [currentInvoiceId, setCurrentInvoiceId] = useState(null)
@@ -130,6 +135,96 @@ const CreateInvoice = () => {
     } catch (error) {
       console.error('Error sharing PDF:', error)
       showSnackbar(`Failed to share PDF: ${error.message}`)
+    }
+  }
+
+  const handleOpenEmailDialog = () => {
+    setEmailInput('')
+    setEmailDialogVisible(true)
+  }
+
+  const handleSendEmail = async () => {
+    try {
+      const email = (emailInput || '').trim()
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(email)) {
+        showSnackbar('Please enter a valid email address')
+        return
+      }
+
+      if (!RESEND_API_KEY) {
+        showSnackbar('Missing Resend API key. Please set RESEND_API_KEY in app config.')
+        return
+      }
+
+      setIsSendingEmail(true)
+
+      const pdfData = await createPDFFile(
+        buildTransactionsPayload(),
+        null,
+        {
+          prepared: preparedSignatureDataUrl,
+          checked: checkedSignatureDataUrl,
+          preparedRotation: preparedSignatureRotation,
+          checkedRotation: checkedSignatureRotation,
+        },
+        { signatureOnFirstPage: true },
+        buildInvoiceData()
+      )
+
+      const base64 = await FileSystem.readAsStringAsync(pdfData.path, { encoding: FileSystem.EncodingType.Base64 })
+
+      const summaryId = summary?.summary_id || 'SUMMARY'
+      const subject = `Invoice ${currentInvoiceId || ''} / SOA ${summaryId}`.trim()
+
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'EasyTrack <onboarding@resend.dev>',
+          to: [email],
+          subject,
+          html: `<p>Please find the attached invoice and summary report.</p><p>SOA: ${summaryId}</p>`,
+          attachments: [
+            {
+              filename: pdfData.filename,
+              content: base64,
+            },
+          ],
+        }),
+      })
+
+      if (!response.ok) {
+        const errText = await response.text()
+        throw new Error(errText || `HTTP ${response.status}`)
+      }
+
+      showSnackbar('Email sent successfully', true)
+      
+      // Update summary status to 2 after successful email send
+      try {
+        if (summary?.summary_id) {
+          const { error: statusUpdateError } = await supabase
+            .from('summary')
+            .update({ summary_status_id: 2 })
+            .eq('id', summary.summary_id)
+          if (statusUpdateError) {
+            console.error('Error updating summary_status_id:', statusUpdateError)
+          }
+        }
+      } catch (e) {
+        console.error('Unexpected error updating summary_status_id:', e)
+      }
+
+      setEmailDialogVisible(false)
+    } catch (error) {
+      console.error('Error sending email via Resend:', error)
+      showSnackbar(`Failed to send email: ${error.message}`)
+    } finally {
+      setIsSendingEmail(false)
     }
   }
 
@@ -323,6 +418,17 @@ const CreateInvoice = () => {
             >
               Share
             </Button>
+
+            <Button
+              mode="contained"
+              icon="email"
+              onPress={handleOpenEmailDialog}
+              disabled={(hasExistingSignatures && !certify)}
+              style={{ marginTop: 8 }}
+              contentStyle={{ height: 48 }}
+            >
+              Send Email
+            </Button>
           </Card.Content>
         </Card>
       </View>
@@ -356,6 +462,33 @@ const CreateInvoice = () => {
               <Button mode="text" onPress={() => setSignatureVisible(false)} style={{ marginTop: 8, paddingHorizontal: 16, paddingBottom: 16 }}>Close</Button>
             </View>
           </Modal>
+          <Dialog
+            visible={emailDialogVisible}
+            onDismiss={() => setEmailDialogVisible(false)}
+            style={[styles.emailDialog, { backgroundColor: colors.surface }]}
+          >
+            <Dialog.Title style={[styles.emailDialogTitle, { color: colors.onSurface }]}>Send to email</Dialog.Title>
+            <Dialog.Content style={styles.emailDialogContent}>
+              <TextInput
+                mode="outlined"
+                label="Recipient email"
+                placeholder="name@example.com"
+                value={emailInput}
+                onChangeText={setEmailInput}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoCorrect={false}
+                style={styles.emailDialogInput}
+                disabled={isSendingEmail}
+              />
+            </Dialog.Content>
+            <Dialog.Actions style={styles.emailDialogActions}>
+              <Button onPress={() => setEmailDialogVisible(false)} disabled={isSendingEmail} textColor={colors.primary}>Cancel</Button>
+              <Button onPress={handleSendEmail} loading={isSendingEmail} disabled={isSendingEmail} textColor={colors.primary}>
+                {isSendingEmail ? 'Sending...' : 'Send'}
+              </Button>
+            </Dialog.Actions>
+          </Dialog>
       </Portal>
     </ScrollView>
   )
@@ -373,6 +506,11 @@ const styles = StyleSheet.create({
   fullscreenModal: { flex: 1, margin: 0, borderRadius: 0, paddingTop: 16 },
   signatureModalContent: { flex: 1 },
   fullscreenSignaturePad: { flex: 1, minHeight: '75%' },
+  emailDialog: { borderRadius: 12 },
+  emailDialogTitle: { fontWeight: 'bold' },
+  emailDialogContent: { paddingTop: 8 },
+  emailDialogInput: { marginTop: 4 },
+  emailDialogActions: { paddingHorizontal: 16, paddingBottom: 8 },
 })
 
 export default CreateInvoice

@@ -73,7 +73,7 @@ const LoginScreen = ({ navigation }) => {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Image source={require('../../../assets/banner.png')} style={styles.bannerImage} />
       <Text style={[styles.title, { color: colors.primary, ...fonts.displayLarge }]}>
-        EasyTrack
+        EasyTrack 1.0
       </Text>
       <Text style={[styles.subtitle, { color: colors.onBackground, ...fonts.titleMedium }]}>
         For your luggage booking and tracking needs. Keep track of your luggage location in real-time.

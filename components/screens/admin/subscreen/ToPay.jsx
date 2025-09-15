@@ -28,8 +28,8 @@ const FILTER_OPTIONS = [
 
 const INVOICE_FILTER_OPTIONS = [
   { label: 'All Bookings', value: 'all' },
-  { label: 'With Summary', value: 'with_invoice' },
-  { label: 'Without Summary', value: 'without_summary' },
+  { label: 'With Invoice', value: 'with_invoice' },
+  { label: 'Without Invoice', value: 'without_invoice' },
 ]
 
 const TABLE_COLUMNS = [
@@ -60,8 +60,8 @@ const useFilteredTransactions = (transactions, filters, sortConfig) => {
       
       if (filters.invoiceFilter && filters.invoiceFilter !== 'all') {
         const hasInvoice = contracts.summary_id !== 'N/A' && contracts.summary_id !== null && contracts.summary_id !== undefined
-        if (filters.invoiceFilter === 'with_summary' && !hasInvoice) return false
-        if (filters.invoiceFilter === 'without_summary' && hasInvoice) return false
+        if (filters.invoiceFilter === 'with_invoice' && !hasInvoice) return false
+        if (filters.invoiceFilter === 'without_invoice' && hasInvoice) return false
       }
       
       if (filters.month || filters.year) {
@@ -180,34 +180,33 @@ const SearchFilterSection = ({
         />
       </Surface>
 
-      <View style={styles.filtersRow}>
-        <View style={styles.filterGroup}>
-          <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
-            Invoice Status
-          </Text>
-          <FilterMenu
-            visible={invoiceMenuVisible}
-            onDismiss={() => setInvoiceMenuVisible(false)}
-            anchor={
-              <Button
-                mode="outlined"
-                icon="file-document"
-                onPress={() => setInvoiceMenuVisible(true)}
-                style={[styles.filterButton, { borderColor: colors.outline }]}
-                contentStyle={styles.buttonContent}
-                labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
-              >
-                {INVOICE_FILTER_OPTIONS.find(opt => opt.value === filters.invoiceFilter)?.label || 'All Bookings'}
-              </Button>
-            }
-            options={INVOICE_FILTER_OPTIONS}
-            selectedValue={filters.invoiceFilter}
-            onSelect={(value) => onFiltersChange({ invoiceFilter: value })}
-          />
-        </View>
-      </View>
-
       <Surface style={[styles.filtersSurface, { backgroundColor: colors.surface }]} elevation={1}>
+        <View style={styles.filtersRow}>
+          <View style={styles.filterGroup}>
+            <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+              Invoice Status
+            </Text>
+            <FilterMenu
+              visible={invoiceMenuVisible}
+              onDismiss={() => setInvoiceMenuVisible(false)}
+              anchor={
+                <Button
+                  mode="outlined"
+                  icon="file-document"
+                  onPress={() => setInvoiceMenuVisible(true)}
+                  style={[styles.filterButton, { borderColor: colors.outline }]}
+                  contentStyle={styles.buttonContent}
+                  labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                >
+                  {INVOICE_FILTER_OPTIONS.find(opt => opt.value === filters.invoiceFilter)?.label || 'All Bookings'}
+                </Button>
+              }
+              options={INVOICE_FILTER_OPTIONS}
+              selectedValue={filters.invoiceFilter}
+              onSelect={(value) => onFiltersChange({ invoiceFilter: value })}
+            />
+          </View>
+        </View>
         <View style={styles.filtersRow}>
           <View style={styles.filterGroup}>
             <Text style={[styles.filterLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
@@ -654,25 +653,41 @@ const Bookings = ({ navigation }) => {
 
   const handleSelectAll = () => {
     if (selectAll) {
+      // Unchecking Select All clears selection
       setSelectedContracts(new Set())
-    } else {
-      const selectableContracts = new Set()
-      const allContracts = paginatedTransactions.filter(contract => contract.summary_id === 'N/A')
-      
-      if (allContracts.length > 0) {
-        selectableContracts.add(allContracts[0].id)
-        
-        for (let i = 1; i < allContracts.length; i++) {
-          if (canSelectContract(allContracts[i].id, selectableContracts)) {
-            selectableContracts.add(allContracts[i].id)
-          }
+      setSelectAll(false)
+      return
+    }
+
+    // We are checking Select All
+    const allSelectableOnPage = paginatedTransactions.filter(contract => contract.summary_id === 'N/A')
+
+    // If there is an existing selection, select all on page with the same corporation_id
+    if (selectedContracts.size > 0) {
+      const firstSelected = transactions.find(t => selectedContracts.has(t.id))
+      const targetCorporationId = firstSelected?.corporation_id
+
+      const sameCorpOnPage = allSelectableOnPage.filter(c => c.corporation_id === targetCorporationId)
+      const newSelection = new Set(sameCorpOnPage.map(c => c.id))
+
+      setSelectedContracts(newSelection)
+      setSelectAll(newSelection.size > 0 && newSelection.size === sameCorpOnPage.length)
+      return
+    }
+
+    // No existing selection: fall back to selecting all allowed on the page respecting rules
+    const selectableContracts = new Set()
+    if (allSelectableOnPage.length > 0) {
+      selectableContracts.add(allSelectableOnPage[0].id)
+      for (let i = 1; i < allSelectableOnPage.length; i++) {
+        if (canSelectContract(allSelectableOnPage[i].id, selectableContracts)) {
+          selectableContracts.add(allSelectableOnPage[i].id)
         }
       }
-      
-      setSelectedContracts(selectableContracts)
-      setSelectAll(selectableContracts.size === allContracts.length)
     }
-    setSelectAll(!selectAll)
+
+    setSelectedContracts(selectableContracts)
+    setSelectAll(selectableContracts.size > 0 && selectableContracts.size === allSelectableOnPage.length)
   }
 
   const handleGenerateSummary = async () => {
@@ -749,7 +764,9 @@ const Bookings = ({ navigation }) => {
         {/* Search and Filter Section */}
         <SearchFilterSection
           filters={filters}
-          onFiltersChange={setFilters}
+          onFiltersChange={(partial) =>
+            setFilters((prev) => ({ ...prev, ...partial }))
+          }
           filterOptions={FILTER_OPTIONS}
           corporations={corporations}
         />

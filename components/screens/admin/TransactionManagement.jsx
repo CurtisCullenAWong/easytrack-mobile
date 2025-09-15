@@ -2,17 +2,17 @@ import React, { useEffect, useState } from 'react'
 import { View, StyleSheet } from 'react-native'
 import { useTheme, SegmentedButtons } from 'react-native-paper'
 import Header from '../../customComponents/Header'
-import Bookings from './subscreen/Bookings'
+import Bookings from './subscreen/ToPay'
 import Invoices from './subscreen/Invoices'
 import Rate from './subscreen/transaction_management_subscreen/Rate'
 
 const TransactionManagement = ({ navigation, route }) => {
   const { colors } = useTheme()
-  const [activeSegment, setActiveSegment] = useState('bookings')
+  const [activeSegment, setActiveSegment] = useState('to_pay')
 
   useEffect(() => {
     const incomingSegment = route?.params?.segment
-    if (incomingSegment && (incomingSegment === 'bookings' || incomingSegment === 'invoices' || incomingSegment === 'rate')) {
+    if (incomingSegment && (incomingSegment === 'to_pay' || incomingSegment === 'invoices' || incomingSegment === 'rate')) {
       setActiveSegment(incomingSegment)
     }
   }, [route?.params?.segment])
@@ -26,7 +26,7 @@ const TransactionManagement = ({ navigation, route }) => {
           value={activeSegment}
           onValueChange={setActiveSegment}
           buttons={[
-            { value: 'bookings', label: 'To Pay', icon: 'book-outline' },
+            { value: 'to_pay', label: 'To Pay', icon: 'book-outline' },
             { value: 'invoices', label: 'Invoices', icon: 'file-document-outline' },
             { value: 'rate', label: 'Rate', icon: 'currency-php' },
           ]}
@@ -35,7 +35,7 @@ const TransactionManagement = ({ navigation, route }) => {
       </View>
 
       <View style={styles.content}>
-        {activeSegment === 'bookings' ? (
+        {activeSegment === 'to_pay' ? (
           <Bookings navigation={navigation} />
         ) : activeSegment === 'invoices' ? (
           <Invoices navigation={navigation} />

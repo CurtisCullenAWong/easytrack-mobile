@@ -1039,3 +1039,39 @@ export const sharePDF = async (
     throw new Error(`Failed to share PDF: ${error.message}`)
   }
 }
+
+// Create the PDF file and return its path and filename without sharing/printing
+export const createPDFFile = async (
+  transactions,
+  invoiceImageUrl = null,
+  signatureImageUrl = null,
+  options = {},
+  invoiceData = null
+) => {
+  try {
+    if (!transactions || (Array.isArray(transactions) && transactions.length === 0)) {
+      throw new Error('Transactions are required')
+    }
+
+    const html = await generateTransactionReportHTML(
+      transactions,
+      invoiceImageUrl,
+      signatureImageUrl,
+      options,
+      invoiceData
+    )
+
+    const summaryId = transactions[0]?.summary_id || 'SUMMARY'
+    const filename = `${summaryId}.pdf`
+
+    const { uri } = await Print.printToFileAsync({ html })
+
+    const newPath = `${FileSystem.documentDirectory}${filename}`
+    await FileSystem.moveAsync({ from: uri, to: newPath })
+
+    return { path: newPath, filename }
+  } catch (error) {
+    console.error('Error creating PDF file:', error)
+    throw new Error(`Failed to create PDF file: ${error.message}`)
+  }
+}
