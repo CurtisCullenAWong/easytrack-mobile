@@ -26,7 +26,7 @@ const TransactionManagement = ({ navigation, route }) => {
           value={activeSegment}
           onValueChange={setActiveSegment}
           buttons={[
-            { value: 'bookings', label: 'Bookings', icon: 'book-outline' },
+            { value: 'bookings', label: 'To Pay', icon: 'book-outline' },
             { value: 'invoices', label: 'Invoices', icon: 'file-document-outline' },
             { value: 'rate', label: 'Rate', icon: 'currency-php' },
           ]}

@@ -12,13 +12,11 @@ import {
   Chip,
 } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabaseAdmin'
-import useSnackbar from '../../../hooks/useSnackbar'
 
 const COLUMN_WIDTH = 180
 
 const Invoices = ({ navigation }) => {
   const { colors, fonts } = useTheme()
-  const { showSnackbar, SnackbarElement } = useSnackbar()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchColumn, setSearchColumn] = useState('summary_id')
@@ -143,30 +141,30 @@ const Invoices = ({ navigation }) => {
     fetchTransactions().finally(() => setRefreshing(false))
   }, [])
 
-  const toggleSummaryCompletion = async (summaryId, isCurrentlyCompleted) => {
-    try {
-      // Guard: prevent marking/unmarking complete without an assigned invoice
-      const target = transactions.find(t => t.summary_id === summaryId)
-      if (!target || !target.invoice_id || target.invoice_id === 'N/A') {
-        showSnackbar('Cannot change completion: missing Invoice ID')
-        return
-      }
+  // const toggleSummaryCompletion = async (summaryId, isCurrentlyCompleted) => {
+  //   try {
+  //     // Guard: prevent marking/unmarking complete without an assigned invoice
+  //     const target = transactions.find(t => t.summary_id === summaryId)
+  //     if (!target || !target.invoice_id || target.invoice_id === 'N/A') {
+  //       showSnackbar('Cannot change completion: missing Invoice ID')
+  //       return
+  //     }
 
-      const newStatusId = isCurrentlyCompleted ? 1 : 2
-      const { error } = await supabase
-        .from('summary')
-        .update({ summary_status_id: newStatusId })
-        .eq('id', summaryId)
+  //     const newStatusId = isCurrentlyCompleted ? 1 : 2
+  //     const { error } = await supabase
+  //       .from('summary')
+  //       .update({ summary_status_id: newStatusId })
+  //       .eq('id', summaryId)
 
-      if (error) throw error
+  //     if (error) throw error
 
-      showSnackbar(isCurrentlyCompleted ? 'Summary unmarked as complete' : 'Summary marked as complete', true)
-      await fetchTransactions()
-    } catch (err) {
-      console.error('Error updating summary status:', err)
-      showSnackbar('Failed to update summary status')
-    }
-  }
+  //     showSnackbar(isCurrentlyCompleted ? 'Summary unmarked as complete' : 'Summary marked as complete', true)
+  //     await fetchTransactions()
+  //   } catch (err) {
+  //     console.error('Error updating summary status:', err)
+  //     showSnackbar('Failed to update summary status')
+  //   }
+  // }
 
   const handleSort = (column) => {
     setSortDirection(prev => (sortColumn === column && prev === 'ascending' ? 'descending' : 'ascending'))
@@ -260,8 +258,6 @@ const Invoices = ({ navigation }) => {
       style={[styles.scrollView, { backgroundColor: colors.background }]}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}
     >
-      {SnackbarElement}
-
       <View style={styles.container}>
         {/* Search Section */}
         <Surface style={[styles.searchSurface, { backgroundColor: colors.surface }]} elevation={1}>
@@ -523,7 +519,7 @@ const Invoices = ({ navigation }) => {
         <Surface style={[styles.resultsSurface, { backgroundColor: colors.surface }]} elevation={1}>
           <View style={styles.resultsHeader}>
             <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
-              Summarized Receipts
+              Invoices
             </Text>
             {!loading && (
               <Text style={[styles.resultsCount, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>
@@ -578,57 +574,16 @@ const Invoices = ({ navigation }) => {
                         ]}
                       >
                         <DataTable.Cell style={[styles.actionColumn, { justifyContent: 'center' }]}>
-                          <Menu
-                            visible={actionMenuFor === transaction.summary_id}
-                            onDismiss={() => setActionMenuFor(null)}
-                            anchor={
-                              <Button
-                                mode="outlined"
-                                icon="dots-vertical"
-                                onPress={() => setActionMenuFor(transaction.summary_id)}
-                                style={[styles.actionButton, { borderColor: colors.outline }]}
-                                contentStyle={styles.buttonContent}
-                                labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
-                              >
-                                Actions
-                              </Button>
-                            }
-                            contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
-                          >
-                            <Menu.Item
-                              onPress={() => {
-                                setActionMenuFor(null)
-                                navigation.navigate('ViewInvoice', { summary: { summary_id: transaction.summary_id } })
-                              }}
-                              title="View Invoice"
-                              leadingIcon="file-document"
-                              titleStyle={[{ color: colors.onSurface }, fonts.bodyLarge]}
-                            />
-                            <Menu.Item
-                              onPress={() => {
-                                setActionMenuFor(null)
-                                if (transaction.invoice_id && transaction.invoice_id !== 'N/A') {
-                                  toggleSummaryCompletion(transaction.summary_id, transaction.summary_status_id === 2)
-                                } else {
-                                  showSnackbar('Assign an Invoice ID before marking complete')
-                                }
-                              }}
-                              title={transaction.summary_status_id === 2 ? 'Unfinished' : 'Finished'}
-                              leadingIcon={transaction.summary_status_id === 2 ? 'undo' : 'check'}
-                              titleStyle={[
-                                {
-                                  color:
-                                    !transaction.invoice_id || transaction.invoice_id === 'N/A'
-                                      ? colors.onSurfaceDisabled
-                                      : transaction.summary_status_id === 2
-                                      ? colors.error
-                                      : colors.primary,
-                                },
-                                fonts.bodyLarge,
-                              ]}
-                              disabled={!transaction.invoice_id || transaction.invoice_id === 'N/A'}
-                            />
-                          </Menu>
+                        <Button
+                          mode="outlined"
+                          icon="file-document"
+                          onPress={() => navigation.navigate('ViewInvoice', { summary: { summary_id: transaction.summary_id } })}
+                          style={[styles.actionButton, { borderColor: colors.outline }]}
+                          contentStyle={styles.buttonContent}
+                          labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                        >
+                          View Invoice
+                        </Button>
                         </DataTable.Cell>
                         {columns.map(({ key, width }, idx) => (
                           <DataTable.Cell 

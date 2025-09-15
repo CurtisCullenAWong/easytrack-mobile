@@ -767,7 +767,7 @@ const Bookings = ({ navigation }) => {
         <Surface style={[styles.resultsSurface, { backgroundColor: colors.surface }]} elevation={1}>
           <View style={styles.resultsHeader}>
             <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
-              Completed Bookings
+              To Pay
             </Text>
             {!loading && (
               <Text style={[styles.resultsCount, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>
@@ -851,10 +851,8 @@ const Bookings = ({ navigation }) => {
                             style={[styles.tableColumn, { width: width || COLUMN_WIDTH, justifyContent: 'center' }]}
                           >
                             <Text style={[styles.cellText, { color: colors.onSurface }, fonts.bodyMedium]} selectable>
-                              {['delivery_charge', 'delivery_surcharge', 'amount_per_passenger'].includes(key)
+                              {['delivery_charge', 'delivery_surcharge', 'delivery_discount', 'amount_per_passenger'].includes(key)
                                 ? formatCurrency(contracts[key])
-                                : key === 'delivery_discount'
-                                ? formatPercentage(contracts[key])
                                 : contracts[key]}
                             </Text>
                           </DataTable.Cell>
