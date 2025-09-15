@@ -37,15 +37,15 @@ export const installUpdateSilently = async () => {
   }
 
   try {
-    const update = await Updates.checkForUpdateAsync()
-    
-    if (update.isAvailable) {
-      await Updates.fetchUpdateAsync()
-      await Updates.reloadAsync()
-      return { success: true }
-    } else {
+    const { isAvailable } = await Updates.checkForUpdateAsync()
+    if (!isAvailable) {
       return { success: false, reason: 'No updates available' }
     }
+
+    const { isNew } = await Updates.fetchUpdateAsync()
+    // Whether or not isNew is true, reload to apply the newest available update
+    await Updates.reloadAsync()
+    return { success: true }
   } catch (error) {
     console.error('Silent update failed:', error)
     return { success: false, reason: error.message }
@@ -79,7 +79,6 @@ export const showUpdatePrompt = (onInstall, onCancel) => {
 export const getUpdateStatus = () => {
   return {
     isEnabled: Updates.isEnabled,
-    isUpdateAvailable: Updates.isUpdateAvailable,
     updateId: Updates.updateId,
     channel: Updates.channel,
     runtimeVersion: Updates.runtimeVersion
@@ -113,7 +112,9 @@ export const handleUpdateError = (error, showSnackbar) => {
  * Check if app needs to be restarted for updates
  */
 export const needsRestart = () => {
-  return Updates.isUpdateAvailable && Updates.isUpdateAvailable()
+  // Expo SDK does not expose a persistent "update downloaded" flag here.
+  // Consumers should trigger reload immediately after fetch.
+  return false
 }
 
 /**
@@ -124,7 +125,6 @@ export const restartApp = async () => {
     await Updates.reloadAsync()
   } catch (error) {
     console.error('Failed to restart app:', error)
-    // Fallback: reload the app
-    window.location.reload()
+    // No safe fallback in React Native environment
   }
 }

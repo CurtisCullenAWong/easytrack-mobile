@@ -55,9 +55,8 @@ const useAppUpdate = () => {
       const hasUpdate = await isUpdateAvailable()
       
       if (hasUpdate) {
-        setUpdateStatus('Update found. Downloading...')
-        
         if (showPrompt) {
+          setUpdateStatus('Update available')
           showUpdatePrompt(
             async () => {
               try {
@@ -82,7 +81,7 @@ const useAppUpdate = () => {
           )
         } else {
           setIsUpdating(true)
-          setUpdateStatus('Installing update...')
+          setUpdateStatus('Downloading and installing update...')
           const result = await installUpdateSilently()
           
           if (!result.success) {
