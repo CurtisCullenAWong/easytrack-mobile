@@ -49,6 +49,7 @@ const INITIAL_CONTRACT = {
   contact: "",
   flightNumber: "",
   itemDescription: "",
+  itemDescriptions: [],
   weight: "",
   quantity: "",
   deliveryAddress: "",
@@ -238,44 +239,7 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
         style={{ padding: 0, marginBottom: 8 }}
       >
         <View style={styles.sectionContent}>
-          <TextInput
-            label="Luggage Description*"
-            value={contract.itemDescription}
-            onChangeText={(text) => onInputChange(index, "itemDescription", filterSpecialCharacters(text, 'itemDescription'))}
-            mode="outlined"
-            style={{ marginBottom: 12 }}
-            error={contract.errors?.itemDescription}
-            placeholder="Describe the luggage contents (6-200 characters)"
-            multiline
-            numberOfLines={2}
-            maxLength={INPUT_LIMITS.itemDescription.maxLength}
-            disabled={isDisabled}
-          />
-          <TextInput
-            label="Weight (kg)*"
-            value={contract.weight}
-            onChangeText={(text) => onInputChange(index, "weight", filterSpecialCharacters(text, 'weight'))}
-            inputMode="numeric"
-            mode="outlined"
-            style={{ marginBottom: 12 }}
-            error={contract.errors?.weight}
-            maxLength={INPUT_LIMITS.weight.maxLength}
-            placeholder="1-50 kg"
-            disabled={isDisabled}
-          />
-          <TextInput
-            label="Quantity*"
-            value={contract.quantity}
-            onChangeText={(text) => onInputChange(index, "quantity", filterSpecialCharacters(text, 'quantity'))}
-            inputMode="numeric"
-            mode="outlined"
-            style={{ marginBottom: 12 }}
-            error={contract.errors?.quantity}
-            maxLength={INPUT_LIMITS.quantity.maxLength}
-            placeholder="1-10 pieces"
-            disabled={isDisabled}
-          />
-          <TextInput
+        <TextInput
             label="Flight Number*"
             value={contract.flightNumber}
             onChangeText={(text) => onInputChange(index, "flightNumber", filterSpecialCharacters(text, 'flightNumber').toUpperCase())}
@@ -296,6 +260,57 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
             maxLength={INPUT_LIMITS.caseNumber.maxLength}
             inputMode="text"
             placeholder='XXXXXXXX (6-10 characters)'
+            disabled={isDisabled}
+          />
+          <TextInput
+            label="Luggage Quantity*"
+            value={contract.quantity}
+            onChangeText={(text) => onInputChange(index, "quantity", filterSpecialCharacters(text, 'quantity'))}
+            inputMode="numeric"
+            mode="outlined"
+            style={{ marginBottom: 12 }}
+            error={contract.errors?.quantity}
+            maxLength={INPUT_LIMITS.quantity.maxLength}
+            placeholder="1-10 pieces"
+            disabled={isDisabled}
+          />
+          {(() => {
+            const qty = Math.max(0, Math.min(10, parseInt(contract.quantity || '0')))
+            const items = Array.from({ length: qty }, (_, i) => i)
+            return (
+              <View>
+                {items.map((i) => (
+                  <TextInput
+                    key={`desc-${index}-${i}`}
+                    label={`Luggage Description ${i + 1}*`}
+                    value={contract.itemDescriptions?.[i] ?? ''}
+                    onChangeText={(text) => {
+                      const sanitized = filterSpecialCharacters(text, 'itemDescription')
+                      const next = [...(contract.itemDescriptions || [])]
+                      next[i] = sanitized
+                      onInputChange(index, 'itemDescriptions', next)
+                    }}
+                    mode="outlined"
+                    style={{ marginBottom: 12 }}
+                    placeholder="Describe the luggage"
+                    multiline
+                    numberOfLines={2}
+                    disabled={isDisabled}
+                  />
+                ))}
+              </View>
+            )
+          })()}
+          <TextInput
+            label="Overall Weight (kg)*"
+            value={contract.weight}
+            onChangeText={(text) => onInputChange(index, "weight", filterSpecialCharacters(text, 'weight'))}
+            inputMode="numeric"
+            mode="outlined"
+            style={{ marginBottom: 12 }}
+            error={contract.errors?.weight}
+            maxLength={INPUT_LIMITS.weight.maxLength}
+            placeholder="1-50 kg"
             disabled={isDisabled}
           />
         </View>
@@ -463,21 +478,14 @@ const MakeContracts = () => {
     lat: null,
     lng: null
   })
+  const [lastAddressDetails, setLastAddressDetails] = useState(null)
   const [pickupLocation, setPickupLocation] = useState('')
   const [showPickupMenu, setShowPickupMenu] = useState(false)
   const [contracts, setContracts] = useState([INITIAL_CONTRACT])
   const [loading, setLoading] = useState(false)
   const [pickupError, setPickupError] = useState(false)
-  const [dropOffError, setDropOffError] = useState(false)
   const [deliveryFee, setDeliveryFee] = useState(0)
   const [showConfirmationModal, setShowConfirmationModal] = useState(false)
-
-  // Reset form when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      setContracts([{ ...INITIAL_CONTRACT }])
-    }, [])
-  )
 
   // Calculate total delivery fee based on number of contracts
   const totalDeliveryFee = useMemo(() => {
@@ -488,7 +496,7 @@ const MakeContracts = () => {
   useFocusEffect(
     useCallback(() => {
       if (route.params?.locationData) {
-        const { drop_off_location, drop_off_location_geo, city } = route.params.locationData
+        const { drop_off_location, drop_off_location_geo, address_details } = route.params.locationData
         // Extract coordinates from POINT format
         const match = drop_off_location_geo.match(/POINT\(([\d.-]+) ([\d.-]+)\)/)
         if (match) {
@@ -498,6 +506,25 @@ const MakeContracts = () => {
             lat: parseFloat(lat),
             lng: parseFloat(lng)
           })
+          setLastAddressDetails(address_details || null)
+          // Overwrite autofilled address fields on ALL existing contracts with the new selection
+          if (address_details) {
+            const province = address_details.region || ''
+            const cityMunicipality = address_details.city || ''
+            const barangay = address_details.district || ''
+            const postalCode = (address_details.postalCode || '').replace(/[^0-9]/g, '').slice(0, INPUT_LIMITS.postalCode.maxLength)
+            const street = address_details.street || ''
+            const villageBuilding = address_details.name || ''
+            setContracts(prev => prev.map(c => ({
+              ...c,
+              province,
+              cityMunicipality,
+              barangay,
+              postalCode,
+              street,
+              villageBuilding,
+            })))
+          }
           // Extract city from drop-off location and fetch price
           fetchDeliveryPrice(route.params?.locationData.drop_off_location)
         }
@@ -522,6 +549,18 @@ const MakeContracts = () => {
       const updated = [...prev]
       
       updated[index][field] = value
+      // Sync per-item descriptions with quantity and compose preview
+      const syncDescriptions = () => {
+        const qty = Math.max(0, Math.min(10, parseInt(updated[index].quantity || '0')))
+        let arr = Array.isArray(updated[index].itemDescriptions) ? [...updated[index].itemDescriptions] : []
+        if (arr.length > qty) arr = arr.slice(0, qty)
+        if (arr.length < qty) arr = [...arr, ...Array.from({ length: qty - arr.length }, () => '')]
+        updated[index].itemDescriptions = arr
+        updated[index].itemDescription = arr.map((d, i) => `${i + 1}. ${String(d || '').trim()}\n`).join('')
+      }
+      if (field === 'quantity' || field === 'itemDescriptions') {
+        syncDescriptions()
+      }
       if (updated[index].errors) {
         updated[index].errors[field] = false
       }
@@ -540,6 +579,7 @@ const MakeContracts = () => {
         contact: "",
         flightNumber: "",
         itemDescription: "",
+        itemDescriptions: [],
         weight: "",
         quantity: "",
         deliveryAddress: "",
@@ -586,7 +626,7 @@ const MakeContracts = () => {
   }, [contracts.length, showSnackbar])
 
   const addContract = useCallback(() => {
-    setContracts(prev => [...prev, {
+    const base = {
       caseNumber: "",
       firstName: "",
       middleInitial: "",
@@ -594,6 +634,7 @@ const MakeContracts = () => {
       contact: "",
       flightNumber: "",
       itemDescription: "",
+      itemDescriptions: [],
       weight: "",
       quantity: "",
       deliveryAddress: "",
@@ -625,8 +666,27 @@ const MakeContracts = () => {
         street: false,
         villageBuilding: false
       }
-    }])
-  }, [])
+    }
+
+    // Prefill from the last selected address, if available
+    let prefilled = { ...base }
+    if (lastAddressDetails) {
+      const province = lastAddressDetails.region || ''
+      const cityMunicipality = lastAddressDetails.city || ''
+      const barangay = lastAddressDetails.district || ''
+      const postalCode = (lastAddressDetails.postalCode || '').replace(/[^0-9]/g, '').slice(0, INPUT_LIMITS.postalCode.maxLength)
+      const street = lastAddressDetails.street || ''
+      const villageBuilding = lastAddressDetails.name || ''
+      if (province) prefilled.province = province
+      if (cityMunicipality) prefilled.cityMunicipality = cityMunicipality
+      if (barangay) prefilled.barangay = barangay
+      if (postalCode) prefilled.postalCode = postalCode
+      if (street) prefilled.street = street
+      if (villageBuilding) prefilled.villageBuilding = villageBuilding
+    }
+
+    setContracts(prev => [...prev, prefilled])
+  }, [lastAddressDetails])
 
   const validateContract = useCallback((contract) => {
     return {
@@ -644,9 +704,13 @@ const MakeContracts = () => {
       flightNumber: !contract.flightNumber.trim() || 
                     contract.flightNumber.length < INPUT_LIMITS.flightNumber.minLength ||
                     !VALIDATION_PATTERNS.flightNumber.test(contract.flightNumber),
-      itemDescription: !contract.itemDescription.trim() || 
-                       contract.itemDescription.length < INPUT_LIMITS.itemDescription.minLength ||
-                       contract.itemDescription.length > INPUT_LIMITS.itemDescription.maxLength,
+      itemDescription: (() => {
+                       const qty = parseInt(contract.quantity || '0') || 0
+                       const descs = Array.isArray(contract.itemDescriptions) ? contract.itemDescriptions.slice(0, qty) : []
+                       const hasEmpty = qty > 0 && descs.some(d => !String(d || '').trim())
+                       const joined = descs.map((d, i) => `${i + 1}. ${String(d || '').trim()}\n`).join('')
+                       return qty <= 0 || hasEmpty || joined.length < INPUT_LIMITS.itemDescription.minLength || joined.length > INPUT_LIMITS.itemDescription.maxLength
+                       })(),
       weight: !contract.weight.trim() || 
               !VALIDATION_PATTERNS.weight.test(contract.weight),
       quantity: !contract.quantity.trim() || 
@@ -693,11 +757,9 @@ const MakeContracts = () => {
     setPickupError(false)
     
     if (!dropOffLocation.location || deliveryFee <= 0) {
-      setDropOffError(true)
       showSnackbar('Please select a drop-off location')
       return false
     }
-    setDropOffError(false)
 
     // Validate contracts
     const updatedContracts = [...contracts]

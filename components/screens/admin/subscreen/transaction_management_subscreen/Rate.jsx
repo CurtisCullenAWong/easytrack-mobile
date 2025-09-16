@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useRef } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import { ScrollView, StyleSheet, View, RefreshControl } from 'react-native'
 import {
@@ -129,6 +129,17 @@ const DeliveryRates = ({ navigation }) => {
   useFocusEffect(
     useCallback(() => {
       fetchRates()
+      // Realtime subscription for pricing updates
+      const channelRef = { current: null }
+      channelRef.current = supabase
+        .channel('pricing_admin')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'pricing' }, fetchRates)
+        .subscribe()
+      return () => {
+        if (channelRef.current) {
+          channelRef.current.unsubscribe()
+        }
+      }
     }, [])
   )
 

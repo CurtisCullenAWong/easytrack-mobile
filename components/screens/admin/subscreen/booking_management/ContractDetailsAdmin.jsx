@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { View, ScrollView, StyleSheet, RefreshControl, Image, Dimensions } from 'react-native'
-import { Text, Card, Divider, useTheme, Appbar, Button, ProgressBar } from 'react-native-paper'
+import { Text, Card, Divider, useTheme, Appbar, Button, TextInput, Portal, Dialog } from 'react-native-paper'
 import { useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../../../../../lib/supabaseAdmin'
 import useSnackbar from '../../../../hooks/useSnackbar'
@@ -28,6 +28,9 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
     const [surchargeAmount, setSurchargeAmount] = useState('')
     const [discountAmount, setDiscountAmount] = useState('')
     const [loadingAdjust, setLoadingAdjust] = useState(false)
+    const [showEditRemarks, setShowEditRemarks] = useState(false)
+    const [remarksInput, setRemarksInput] = useState('')
+    const [updatingRemarks, setUpdatingRemarks] = useState(false)
     const subscriptionRef = useRef(null)
     const { showSnackbar, SnackbarElement } = useSnackbar()
 
@@ -217,6 +220,26 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
         }
     }
 
+    const handleUpdateRemarks = async () => {
+        if (!id) return
+        setUpdatingRemarks(true)
+        try {
+            const { error } = await supabase
+                .from('contracts')
+                .update({ remarks: (remarksInput || '').trim() || null })
+                .eq('id', id)
+            if (error) throw error
+            setShowEditRemarks(false)
+            await fetchContract()
+            showSnackbar('Remarks updated successfully!', true)
+        } catch (error) {
+            console.error('Error updating remarks:', error)
+            showSnackbar('Error updating remarks.', false)
+        } finally {
+            setUpdatingRemarks(false)
+        }
+    }
+
 
     // Set up real-time subscription only while screen is focused
     useFocusEffect(
@@ -291,6 +314,19 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
                     <InfoRow label="Remarks:" value={contractData.remarks} colors={colors} fonts={fonts} />
                     <InfoRow label="Summary ID:" value={contractData.summary_id || 'N/A'} colors={colors} fonts={fonts}/>
                     <InfoRow label="Invoice ID:" value={contractData.summary?.invoice_id || 'N/A'} colors={colors} fonts={fonts}/>
+                    <Button
+                        mode="outlined"
+                        icon="note-edit"
+                        onPress={() => {
+                            setRemarksInput(contractData.remarks || '')
+                            setShowEditRemarks(true)
+                        }}
+                        style={[styles.actionButton, { borderColor: colors.primary }]}
+                        contentStyle={styles.buttonContent}
+                        labelStyle={[styles.buttonLabel, { color: colors.primary }]}
+                    >
+                        Edit Remarks
+                    </Button>
                     {contractData.contract_status_id === 4 && (
                         <>
                             <Text style={[fonts.titleMedium, { color: colors.primary, margin: 10 }]}>
@@ -510,6 +546,48 @@ const ContractDetailsAdmin = ({ navigation, route }) => {
                 onConfirm={handleAdjustAmounts}
                 currencySymbol="₱"
             />
+
+            <Portal>
+                <Dialog 
+                    visible={showEditRemarks} 
+                    onDismiss={() => setShowEditRemarks(false)}
+                    style={{ 
+                        backgroundColor: colors.surface, 
+                        borderRadius: 12, 
+                        alignSelf: 'center', 
+                        width: '94%',
+                        marginHorizontal: 12
+                    }}
+                >
+                    <Dialog.Title style={[fonts.titleMedium, { color: colors.onSurface }]}>Edit Remarks</Dialog.Title>
+                    <Dialog.Content style={{ paddingTop: 0 }}>
+                        <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant, marginBottom: 8 }]}>Optional notes visible to airline and delivery.</Text>
+                        <TextInput
+                            label="Remarks"
+                            value={remarksInput}
+                            onChangeText={setRemarksInput}
+                            mode="outlined"
+                            multiline
+                            numberOfLines={5}
+                            placeholder="Enter remarks..."
+                            style={{ minHeight: 120 }}
+                            autoCapitalize="sentences"
+                            autoCorrect
+                            maxLength={500}
+                            disabled={updatingRemarks}
+                        />
+                        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 6 }}>
+                            <Text style={[fonts.labelSmall, { color: colors.onSurfaceVariant }]}>{(remarksInput || '').length}/500</Text>
+                        </View>
+                    </Dialog.Content>
+                    <Dialog.Actions>
+                        <Button onPress={() => setShowEditRemarks(false)} disabled={updatingRemarks}>Cancel</Button>
+                        <Button onPress={handleUpdateRemarks} loading={updatingRemarks}>
+                            Save
+                        </Button>
+                    </Dialog.Actions>
+                </Dialog>
+            </Portal>
 
 
             {SnackbarElement}

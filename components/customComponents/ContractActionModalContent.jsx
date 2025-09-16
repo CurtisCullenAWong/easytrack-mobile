@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ScrollView, StyleSheet, View, Image } from 'react-native'
 import { TextInput, Button, useTheme, Text, Portal, Dialog } from 'react-native-paper'
 import useSnackbar from '../hooks/useSnackbar'
@@ -51,6 +51,7 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
   const { showSnackbar, SnackbarElement } = useSnackbar()
   const [remarks, setRemarks] = useState('')
   const [checkingVicinity, setCheckingVicinity] = useState(false)
+  const [withinVicinity, setWithinVicinity] = useState(true)
   const [proofOfDeliveryImage, setProofOfDeliveryImage] = useState(null)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [showImageSourceDialog, setShowImageSourceDialog] = useState(false)
@@ -76,6 +77,41 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
     }
     return 'Are you sure you want to mark this contract as failed?'
   }
+
+  // Pre-check vicinity for pickup, delivery, and failed to enable/disable Confirm button
+  useEffect(() => {
+    const checkVicinity = async () => {
+      if (!isPickupAction && !isDeliverAction && dialogType !== 'failed') return
+      try {
+        setCheckingVicinity(true)
+        const { status } = await Location.requestForegroundPermissionsAsync()
+        if (status !== 'granted') {
+          setWithinVicinity(false)
+          return
+        }
+        const { coords: currentLocation } = await Location.getCurrentPositionAsync({})
+        const targetGeo = isPickupAction ? contract.pickup_location_geo : contract.drop_off_location_geo
+        const targetCoords = parseGeometry(targetGeo)
+        if (!targetCoords) {
+          setWithinVicinity(false)
+          return
+        }
+        const distance = calculateDistance(
+          currentLocation.latitude,
+          currentLocation.longitude,
+          targetCoords.latitude,
+          targetCoords.longitude
+        )
+        setWithinVicinity(distance <= 0.05)
+      } catch (error) {
+        setWithinVicinity(false)
+      } finally {
+        setCheckingVicinity(false)
+      }
+    }
+    checkVicinity()
+    // Re-evaluate when dialog type or contract changes
+  }, [dialogType, contract?.pickup_location_geo, contract?.drop_off_location_geo])
 
   const handleImageSource = async (source) => {
     setShowImageSourceDialog(false)
@@ -185,44 +221,7 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
       return
     }
 
-    if (isDeliverAction || dialogType === 'failed') {
-      try {
-        setCheckingVicinity(true)
-        const { status } = await Location.requestForegroundPermissionsAsync()
-        if (status !== 'granted') {
-          showSnackbar('Location permission is required to mark delivery status')
-          return
-        }
-
-        const { coords: currentLocation } = await Location.getCurrentPositionAsync({})
-        const dropOffCoords = parseGeometry(contract.drop_off_location_geo)
-
-        if (!dropOffCoords) {
-          showSnackbar('Drop-off location coordinates are missing')
-          return
-        }
-        console.log(currentLocation.latitude,
-          currentLocation.longitude,
-          dropOffCoords.latitude,
-          dropOffCoords.longitude)
-        const distance = calculateDistance(
-          currentLocation.latitude,
-          currentLocation.longitude,
-          dropOffCoords.latitude,
-          dropOffCoords.longitude
-        )
-        // THIS IS WHERE THE DISTANCE LIMIT IS ADJUSTED
-        if (distance > 0.05) {
-          showSnackbar('You must be within 50m of the drop-off location to mark delivery status')
-          return
-        }
-      } catch (error) {
-        showSnackbar('Error checking location: ' + error.message)
-        return
-      } finally {
-        setCheckingVicinity(false)
-      }
-    }
+    // Distance is pre-validated via useEffect; no blocking here
 
     const imageUrl = proofOfDeliveryImage ? await uploadImage(proofOfDeliveryImage) : null
     if (!imageUrl && !isCancelAction && !isDeliverAction && !isPickupAction) {
@@ -336,8 +335,18 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
             mode="contained"
             onPress={handleConfirm}
             style={[styles.button, { backgroundColor: getButtonColor() }]}
-            loading={loading || checkingVicinity || uploadingImage}
-            disabled={loading || checkingVicinity || uploadingImage}
+            loading={loading || uploadingImage
+              // 
+              || checkingVicinity
+              // 
+            }
+            disabled={
+              loading || uploadingImage
+              // 
+              || checkingVicinity ||
+              ((isPickupAction || isDeliverAction || dialogType === 'failed') && !withinVicinity)
+              // 
+            }
           >
             {getButtonText()}
           </Button>

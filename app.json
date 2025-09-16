@@ -9,7 +9,7 @@
     "updates": {
       "enabled": true,
       "fallbackToCacheTimeout": 2000,
-      "url": "https://u.expo.dev/c4cbe851-0469-4f48-9764-0bc80688459c"
+      "url": "https://u.expo.dev/b3cce495-8d3b-4b81-87ff-87bfaad80836"
     },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -43,8 +43,7 @@
         "FOREGROUND_SERVICE",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_BACKGROUND_LOCATION",
-        "android.permission.FOREGROUND_SERVICE"
+        "android.permission.ACCESS_BACKGROUND_LOCATION"
       ]
     },
     "plugins": [
@@ -71,7 +70,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "c4cbe851-0469-4f48-9764-0bc80688459c"
+        "projectId": "b3cce495-8d3b-4b81-87ff-87bfaad80836"
       }
     },
     "ios": {
@@ -80,7 +79,12 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "Your location is used to show your position and update deliveries.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Background location allows EasyTrack to keep delivery progress updated even when the app isn't open.",
-        "UIBackgroundModes": ["location", "processing"]
+        "UIBackgroundModes": [
+          "location",
+          "processing",
+          "location",
+          "processing"
+        ]
       }
     }
   }

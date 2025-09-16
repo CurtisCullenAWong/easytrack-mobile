@@ -27,6 +27,7 @@ const SelectLocation = ({ navigation }) => {
   const mapRef = useRef(null)
   const geocodeTimeoutRef = useRef(null)
   const { showSnackbar, SnackbarElement } = useSnackbar()
+  const [addressDetails, setAddressDetails] = useState(null)
 
   const isAnyGeocodingInProgress = isGeocodingInProgress
 
@@ -58,9 +59,11 @@ const SelectLocation = ({ navigation }) => {
             .join(', ')
         : null
       setSelectedLocation({ location: formatted, lat: latitude, lng: longitude })
+      setAddressDetails(address || null)
     } catch (error) {
       console.error('Error in reverse geocoding:', error)
       setSelectedLocation({ location: null, lat: latitude, lng: longitude })
+      setAddressDetails(null)
     } finally {
       setIsGeocodingInProgress(false)
     }
@@ -80,9 +83,12 @@ const SelectLocation = ({ navigation }) => {
               .join(', ')
           : null
         setSelectedLocation((prev) => ({ ...prev, location: formatted }))
+        setAddressDetails(address || null)
+        console.log(address)
       } catch (error) {
         console.error('Error in reverse geocoding:', error)
         setSelectedLocation((prev) => ({ ...prev, location: null }))
+        setAddressDetails(null)
       } finally {
         setIsGeocodingInProgress(false)
       }
@@ -103,9 +109,10 @@ const SelectLocation = ({ navigation }) => {
       locationData: {
         drop_off_location: selectedLocation.location,
         drop_off_location_geo: `POINT(${selectedLocation.lng} ${selectedLocation.lat})`,
+        address_details: addressDetails,
       },
     })
-  }, [selectedLocation, navigation, isAnyGeocodingInProgress])
+  }, [selectedLocation, navigation, isAnyGeocodingInProgress, addressDetails])
   const placesRef = useRef(null)
 
   return (

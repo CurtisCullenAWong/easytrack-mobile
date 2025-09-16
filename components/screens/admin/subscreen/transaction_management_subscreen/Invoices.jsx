@@ -133,6 +133,19 @@ const Invoices = ({ navigation }) => {
   useFocusEffect(
     useCallback(() => {
       fetchTransactions()
+      // Realtime updates for invoices-related changes
+      const channelRef = { current: null }
+      channelRef.current = supabase
+        .channel('invoices_admin')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'contracts' }, fetchTransactions)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'summary' }, fetchTransactions)
+        .subscribe()
+
+      return () => {
+        if (channelRef.current) {
+          channelRef.current.unsubscribe()
+        }
+      }
     }, [])
   )
 
