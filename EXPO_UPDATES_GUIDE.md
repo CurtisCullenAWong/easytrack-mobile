@@ -58,117 +58,18 @@ eas build --profile production --platform ios
 
 ### Development Channel
 ```bash
-eas update --branch development --message "Development update"
+eas update --channel development --platform android --message "Development update"
 ```
 
 ### Preview Channel
 ```bash
-eas update --branch preview --message "Preview update"
+eas update --channel preview --platform android --message "Preview update"
 ```
 
 ### Production Channel
 ```bash
-eas update --branch production --message "Production update"
+eas update --channel production --platform android --message "Production update"
 ```
-
-## Update Components
-
-### useAppUpdate Hook
-Located in `components/hooks/useAppUpdate.jsx`
-
-**Features:**
-- Automatic update checking
-- User prompts for update installation
-- Progress indicators
-- Error handling
-
-**Usage:**
-```javascript
-const { 
-  isUpdating, 
-  updateStatus, 
-  handleAppUpdate, 
-  checkForUpdates,
-  getUpdateInfo,
-  UpdateModal 
-} = useAppUpdate()
-
-// Check for updates
-await handleAppUpdate(true) // true = show prompt
-
-// Check without prompt
-await handleAppUpdate(false)
-
-// Get update info
-const info = getUpdateInfo()
-```
-
-### Update Utilities
-Located in `utils/updateUtils.jsx`
-
-**Available Functions:**
-- `isUpdateAvailable()`: Check if updates are available
-- `installUpdateSilently()`: Install update without user prompt
-- `showUpdatePrompt()`: Show update dialog to user
-- `handleUpdateError()`: Handle update errors gracefully
-- `getUpdateStatus()`: Get current update status
-- `needsRestart()`: Check if app needs restart
-- `restartApp()`: Force restart the app
-
-## Error Handling
-
-The update system includes comprehensive error handling for:
-- Network errors
-- Storage issues
-- Timeout errors
-- General update failures
-
-## Best Practices
-
-1. **Test Updates**: Always test updates in development/preview channels before production
-2. **Version Management**: Use semantic versioning for your app
-3. **Rollback Plan**: Keep previous versions available for rollback if needed
-4. **User Communication**: Inform users about updates and their benefits
-5. **Monitoring**: Monitor update success rates and user feedback
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Updates not working in development**
-   - Updates are disabled in development mode (`__DEV__`)
-   - This is normal behavior
-
-2. **Update fails to install**
-   - Check network connectivity
-   - Ensure sufficient storage space
-   - Verify update channel configuration
-
-3. **App crashes after update**
-   - Check for breaking changes in your code
-   - Test updates thoroughly before publishing
-   - Consider implementing a rollback mechanism
-
-### Debug Information
-
-To get debug information about updates:
-```javascript
-import * as Updates from 'expo-updates'
-
-console.log('Update Status:', {
-  isEnabled: Updates.isEnabled,
-  updateId: Updates.updateId,
-  channel: Updates.channel,
-  runtimeVersion: Updates.runtimeVersion
-})
-```
-
-## Security Considerations
-
-1. **Code Signing**: Updates are automatically code-signed by Expo
-2. **Channel Isolation**: Different channels are isolated from each other
-3. **Version Control**: Updates respect runtime version constraints
-4. **Rollback Protection**: Previous versions are preserved for rollback
 
 ## Support
 

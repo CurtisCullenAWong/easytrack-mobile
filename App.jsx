@@ -7,7 +7,6 @@ import lightTheme from './components/themes/lightTheme'
 import darkTheme from './components/themes/darkTheme'
 import { ThemeContext } from './components/themes/themeContext'
 import { ActivityIndicator, View, Text } from 'react-native'
-import useAuth from './components/hooks/useAuth'
 const THEME_KEY = 'appTheme'
 
 const App = () => {
@@ -15,7 +14,6 @@ const App = () => {
   const [fontsLoaded, setFontsLoaded] = useState(false)
   const [themeLoaded, setThemeLoaded] = useState(false)
   const [error, setError] = useState(null)
-  const { checkSession } = useAuth()
 
   const loadFonts = async () => {
     try {
@@ -56,17 +54,13 @@ const App = () => {
     const initializeApp = async () => {
       try {
         await Promise.all([loadFonts(), loadTheme()])
-        
-        if (fontsLoaded && themeLoaded) {
-          await checkSession()
-        }
       } catch (error) {
         console.error('Error initializing app:', error)
         setError('Failed to initialize app. Please restart the app.')
       }
     }
     initializeApp()
-  }, [fontsLoaded, themeLoaded])
+  }, [])
 
   if (error) {
     return (

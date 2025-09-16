@@ -11,7 +11,6 @@ const LoginScreen = ({ navigation }) => {
   const [modalVisible, setModalVisible] = useState(false)
   const [isResetPasswordModal, setIsResetPasswordModal] = useState(false)
   const [isOtpLoginModal, setIsOtpLoginModal] = useState(false)
-  const [showLoginUI, setShowLoginUI] = useState(false)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
   const { checkSession } = useAuth(navigation)
 
@@ -21,32 +20,16 @@ const LoginScreen = ({ navigation }) => {
         setIsCheckingSession(true)
         const rememberMe = await AsyncStorage.getItem('rememberMe')
         if (rememberMe === 'true') {
-          const hasSession = await checkSession()
-          setShowLoginUI(!hasSession)
-        } else {
-          setShowLoginUI(true)
+          await checkSession()
         }
       } catch (error) {
         console.warn('Session check failed:', error)
-        setShowLoginUI(true)
       } finally {
         setIsCheckingSession(false)
       }
     }
     checkAuth()
   }, [])
-
-  // Show loading state while checking session
-  if (isCheckingSession) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.subtitle, { color: colors.onBackground, ...fonts.titleMedium, marginTop: 16 }]}>
-          Checking session...
-        </Text>
-      </View>
-    )
-  }
 
   const showModal = () => setModalVisible(true)
   const hideModal = () => setModalVisible(false)
@@ -71,9 +54,17 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {isCheckingSession && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="small" color={colors.primary} />
+          <Text style={[styles.subtitle, { color: colors.onBackground, ...fonts.titleMedium }]}>Checking session...</Text>
+        </View>
+      )}
+      {!isCheckingSession && (
+      <>
       <Image source={require('../../../assets/banner.png')} style={styles.bannerImage} />
       <Text style={[styles.title, { color: colors.primary, ...fonts.displayLarge }]}>
-        EasyTrack 1.0
+        EasyTrack
       </Text>
       <Text style={[styles.subtitle, { color: colors.onBackground, ...fonts.titleMedium }]}>
         For your luggage booking and tracking needs. Keep track of your luggage location in real-time.
@@ -114,6 +105,8 @@ const LoginScreen = ({ navigation }) => {
           navigation={navigation}
         />
       </BottomModal>
+      </>
+      )}
     </View>
   )
 }
