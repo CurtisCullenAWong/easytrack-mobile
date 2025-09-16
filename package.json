@@ -7,13 +7,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "update:dev": "eas update --branch development",
-    "update:preview": "eas update --branch preview",
-    "update:prod": "eas update --branch production",
     "build:dev": "eas build --profile development",
     "build:preview": "eas build --profile preview",
-    "build:prod": "eas build --profile production",
-    "update:status": "eas update:view"
+    "build:prod": "eas build --profile production"
   },
   "dependencies": {
     "@google/genai": "^1.3.0",

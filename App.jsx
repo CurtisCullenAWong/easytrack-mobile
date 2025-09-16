@@ -8,7 +8,6 @@ import darkTheme from './components/themes/darkTheme'
 import { ThemeContext } from './components/themes/themeContext'
 import { ActivityIndicator, View, Text } from 'react-native'
 import useAuth from './components/hooks/useAuth'
-import useAppUpdate from './components/hooks/useAppUpdate'
 const THEME_KEY = 'appTheme'
 
 const App = () => {
@@ -17,7 +16,6 @@ const App = () => {
   const [themeLoaded, setThemeLoaded] = useState(false)
   const [error, setError] = useState(null)
   const { checkSession } = useAuth()
-  const { isUpdating, updateStatus, handleAppUpdate, UpdateModal } = useAppUpdate()
 
   const loadFonts = async () => {
     try {
@@ -61,7 +59,6 @@ const App = () => {
         
         if (fontsLoaded && themeLoaded) {
           await checkSession()
-          await handleAppUpdate(true)
         }
       } catch (error) {
         console.error('Error initializing app:', error)
@@ -93,7 +90,6 @@ const App = () => {
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
         <PaperProvider theme={theme}>
           <StackNavigator />
-          <UpdateModal visible={isUpdating} status={updateStatus} theme={theme} />
         </PaperProvider>
     </ThemeContext.Provider>
   )

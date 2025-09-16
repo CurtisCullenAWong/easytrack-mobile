@@ -8,6 +8,7 @@
     },
     "updates": {
       "enabled": true,
+      "fallbackToCacheTimeout": 0,
       "url": "https://u.expo.dev/4b985056-d859-4816-8cf5-b8a3bab4b7a4"
     },
     "orientation": "portrait",
@@ -23,6 +24,9 @@
     },
     "android": {
       "package": "com.thewalkingdev_numoa.EasyTrack",
+      "runtimeVersion": {
+        "policy": "appVersion"
+      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#F3F8F2"
