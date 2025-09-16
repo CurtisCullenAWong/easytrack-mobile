@@ -338,6 +338,18 @@ const ContractDetails = ({ navigation, route }) => {
                         )}
                     </View>
                     <View style={styles.infoRow}>
+                        <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Proof of Pickup:</Text>
+                        {contractData.proof_of_pickup ? (
+                            <Image
+                                source={{ uri: contractData.proof_of_pickup }}
+                                style={styles.portraitImage}
+                                resizeMode="contain"
+                            />
+                        ) : (
+                            <Text style={[fonts.bodyMedium, { color: colors.onSurface }]}>Not set</Text>
+                        )}
+                    </View>
+                    <View style={styles.infoRow}>
                         <Text style={[fonts.labelMedium, { color: colors.onSurfaceVariant }]}>Proof of Delivery:</Text>
                         {contractData.proof_of_delivery ? (
                             <Image

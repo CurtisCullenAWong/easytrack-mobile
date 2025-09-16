@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import * as Location from 'expo-location'
 import { supabase } from '../../lib/supabase'
+import { TASK_NAME } from './backgroundLocationTask'
 
 export function useLocation() {
   const locationSubscription = useRef(null)
@@ -83,6 +84,12 @@ export function useLocation() {
       return
     }
 
+    // Request background permissions as well for updates when app is minimized
+    const bg = await Location.requestBackgroundPermissionsAsync()
+    if (bg.status !== 'granted') {
+      console.warn('Background location permission was denied')
+    }
+
     if (!locationSubscription.current) {
       locationSubscription.current = await Location.watchPositionAsync(
         {
@@ -92,7 +99,25 @@ export function useLocation() {
         },
         handleLocation
       )
-      console.log('Started location tracking')
+      console.log('Started foreground location tracking')
+
+      // Start background updates if not already started
+      const hasStarted = await Location.hasStartedLocationUpdatesAsync(TASK_NAME)
+      if (!hasStarted) {
+        await Location.startLocationUpdatesAsync(TASK_NAME, {
+          accuracy: Location.Accuracy.Balanced,
+          timeInterval: 15000,
+          distanceInterval: 25,
+          showsBackgroundLocationIndicator: true,
+          foregroundService: {
+            notificationTitle: 'EasyTrack is updating your location',
+            notificationBody: 'Background location is active to keep deliveries updated.',
+            notificationColor: '#2196F3'
+          },
+          pausesUpdatesAutomatically: false,
+        })
+        console.log('Started background location updates')
+      }
     }
   }
 
@@ -100,7 +125,13 @@ export function useLocation() {
     if (locationSubscription.current) {
       locationSubscription.current.remove()
       locationSubscription.current = null
-      console.log('Stopped location tracking')
+      console.log('Stopped foreground location tracking')
+    }
+
+    const hasStarted = await Location.hasStartedLocationUpdatesAsync(TASK_NAME)
+    if (hasStarted) {
+      await Location.stopLocationUpdatesAsync(TASK_NAME)
+      console.log('Stopped background location updates')
     }
   }
 

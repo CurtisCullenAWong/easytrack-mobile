@@ -8,8 +8,8 @@
     },
     "updates": {
       "enabled": true,
-      "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/e3a40ea3-add7-4b25-8b6e-3787d0e076f2"
+      "fallbackToCacheTimeout": 2000,
+      "url": "https://u.expo.dev/c4cbe851-0469-4f48-9764-0bc80688459c"
     },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -39,8 +39,12 @@
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE"
       ]
     },
     "plugins": [
@@ -60,19 +64,23 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location in the background to keep deliveries updated.",
+          "isAndroidForegroundServiceEnabled": true
         }
       ]
     ],
     "extra": {
       "eas": {
-        "projectId": "e3a40ea3-add7-4b25-8b6e-3787d0e076f2"
+        "projectId": "c4cbe851-0469-4f48-9764-0bc80688459c"
       }
     },
     "ios": {
       "bundleIdentifier": "EasyTrack",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "Your location is used to show your position and update deliveries.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Background location allows EasyTrack to keep delivery progress updated even when the app isn't open.",
+        "UIBackgroundModes": ["location", "processing"]
       }
     }
   }

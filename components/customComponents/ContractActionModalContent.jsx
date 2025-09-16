@@ -57,15 +57,18 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
 
   const isDeliverAction = dialogType === 'deliver'
   const isCancelAction = dialogType === 'cancel'
+  const isPickupAction = dialogType === 'pickup'
   
   const getTitle = () => {
     if (isDeliverAction) return 'Mark as Delivered'
+    if (isPickupAction) return 'Pickup Luggage'
     if (isCancelAction) return showCancelConfirmation ? 'Confirm Cancellation' : 'Cancel Contract'
     return 'Mark as Failed'
   }
 
   const getDescription = () => {
     if (isDeliverAction) return 'Are you sure you want to mark this contract as delivered?'
+    if (isPickupAction) return 'Are you sure you want to mark this luggage as picked up? This will update the contract status.'
     if (isCancelAction) {
       return showCancelConfirmation 
         ? 'WARNING: This action will cancel the contract and the airline will NOT be charged. This action cannot be undone. Are you absolutely sure you want to proceed?'
@@ -127,7 +130,7 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
       }
 
       const bucket = 'passenger-files'
-      const folder = 'proof_of_delivery'
+      const folder = isPickupAction ? 'proof_of_pickup' : 'proof_of_delivery'
       const fileName = `${contract.tracking_id || contract.id}.png`
       const filePath = `${folder}/${fileName}`
 
@@ -167,13 +170,18 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
   }
 
   const handleConfirm = async () => {
-    if (!remarks.trim() && !isDeliverAction) {
+    if (!remarks.trim() && !isDeliverAction && !isPickupAction) {
       showSnackbar('Please provide remarks for marking the contract as failed or cancelled')
       return
     }
 
-    if (!proofOfDeliveryImage && !isCancelAction && !isDeliverAction) {
+    if (!proofOfDeliveryImage && !isCancelAction && !isDeliverAction && !isPickupAction) {
       showSnackbar('Please upload proof of delivery image')
+      return
+    }
+
+    if (isPickupAction && !proofOfDeliveryImage) {
+      showSnackbar('Please upload proof of pickup image')
       return
     }
 
@@ -217,8 +225,13 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
     }
 
     const imageUrl = proofOfDeliveryImage ? await uploadImage(proofOfDeliveryImage) : null
-    if (!imageUrl && !isCancelAction && !isDeliverAction) {
+    if (!imageUrl && !isCancelAction && !isDeliverAction && !isPickupAction) {
       showSnackbar('Failed to upload proof of delivery image')
+      return
+    }
+
+    if (isPickupAction && !imageUrl) {
+      showSnackbar('Failed to upload proof of pickup image')
       return
     }
 
@@ -226,11 +239,12 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
   }
 
   const getButtonColor = () => {
-    if (isDeliverAction) return colors.primary
+    if (isDeliverAction || isPickupAction) return colors.primary
     return showCancelConfirmation ? colors.error : colors.error
   }
 
   const getButtonText = () => {
+    if (isPickupAction) return 'Pickup'
     if (isCancelAction && showCancelConfirmation) return 'Yes'
     if (isCancelAction && !showCancelConfirmation) return 'Confirm'
     return 'Confirm'
@@ -246,7 +260,7 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
         <Text style={[fonts.bodyMedium, styles.descriptionText]}>
           {getDescription()}
         </Text>
-        {!isDeliverAction && (
+        {!isDeliverAction && !isPickupAction && (
           <TextInput
             label="Remarks"
             value={remarks}
@@ -262,10 +276,33 @@ const ContractActionModalContent = ({ dialogType, onClose, onConfirm, loading, c
             disabled={loading}
           />
         )}
-        {!isCancelAction && !isDeliverAction && (
+        {!isCancelAction && !isDeliverAction && !isPickupAction && (
           <View style={styles.imageSection}>
             <Text style={[fonts.titleSmall, styles.imageLabel]}>
               Proof of Delivery Image
+            </Text>
+            {proofOfDeliveryImage && (
+              <Image
+                source={{ uri: proofOfDeliveryImage }}
+                style={styles.imagePreview}
+                resizeMode="contain"
+              />
+            )}
+            <Button
+              mode="outlined"
+              onPress={() => setShowImageSourceDialog(true)}
+              style={styles.imageButton}
+              textColor={colors.primary}
+              disabled={loading || uploadingImage}
+            >
+              {proofOfDeliveryImage ? 'Change Image' : 'Upload Image'}
+            </Button>
+          </View>
+        )}
+        {isPickupAction && (
+          <View style={styles.imageSection}>
+            <Text style={[fonts.titleSmall, styles.imageLabel]}>
+              Proof of Pickup Image
             </Text>
             {proofOfDeliveryImage && (
               <Image

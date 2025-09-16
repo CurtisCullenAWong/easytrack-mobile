@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native'
 import { Text, Button, Card, Divider, IconButton, useTheme, Searchbar, Menu, Surface, List } from 'react-native-paper'
@@ -113,6 +113,47 @@ const ContractsInTransit = ({ navigation }) => {
   const [actionLoading, setActionLoading] = useState(false)
   const [userLocation, setUserLocation] = useState(null)
   const [isLocationTrackingActive, setIsLocationTrackingActive] = useState(false)
+  const [expandedById, setExpandedById] = useState({})
+
+  const getDefaultExpanded = useCallback(() => ({
+    info: true,
+    locations: false,
+    timeline: false,
+    price: false,
+    actions: false,
+  }), [])
+
+  const getExpandedState = useCallback((id) => {
+    return expandedById[id] ?? getDefaultExpanded()
+  }, [expandedById, getDefaultExpanded])
+
+  const handleToggleSection = useCallback((id, sectionKey) => {
+    setExpandedById(prev => {
+      const current = prev[id] ?? getDefaultExpanded()
+      return {
+        ...prev,
+        [id]: { ...current, [sectionKey]: !current[sectionKey] }
+      }
+    })
+  }, [getDefaultExpanded])
+
+  // Optional: prune expansion state for contracts that no longer exist
+  useEffect(() => {
+    if (!contracts || contracts.length === 0) return
+    setExpandedById(prev => {
+      const validIds = new Set(contracts.map(c => c.id))
+      let changed = false
+      const next = {}
+      for (const key in prev) {
+        if (validIds.has(Number(key)) || validIds.has(key)) {
+          next[key] = prev[key]
+        } else {
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [contracts])
 
   // Get current user location
   const getUserLocation = useCallback(async () => {
@@ -530,17 +571,10 @@ const ContractsInTransit = ({ navigation }) => {
     }
   }
 
-  const ContractCard = ({ contract }) => {
+  const ContractCard = memo(({ contract, expanded, onToggle }) => {
     // Memoize formatted dates for this contract
     const formattedDates = useMemo(() => getFormattedDates(contract), [contract]) // Removed getFormattedDates dependency
-    const [expanded, setExpanded] = useState({
-      info: true,
-      locations: false,
-      timeline: false,
-      price: false,
-      actions: false,
-    })
-    const toggle = (k) => setExpanded(prev => ({ ...prev, [k]: !prev[k] }))
+    const toggle = (k) => onToggle(contract.id, k)
 
     const contractorName = [
       contract.airline_profile?.first_name,
@@ -671,7 +705,7 @@ const ContractsInTransit = ({ navigation }) => {
         </Card.Content>
       </Card>
     )
-  }
+  })
 
   const renderHeader = () => (
     <View>
@@ -836,7 +870,13 @@ const ContractsInTransit = ({ navigation }) => {
       <FlatList
         data={filteredAndSortedContracts}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <ContractCard contract={item} />}
+        renderItem={({ item }) => (
+          <ContractCard 
+            contract={item} 
+            expanded={getExpandedState(item.id)} 
+            onToggle={handleToggleSection}
+          />
+        )}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmptyComponent}
         contentContainerStyle={styles.flatListContent}

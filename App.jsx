@@ -7,6 +7,8 @@ import lightTheme from './components/themes/lightTheme'
 import darkTheme from './components/themes/darkTheme'
 import { ThemeContext } from './components/themes/themeContext'
 import { ActivityIndicator, View, Text } from 'react-native'
+import UpdatePrompt from './components/customComponents/UpdatePrompt'
+import './components/hooks/backgroundLocationTask'
 const THEME_KEY = 'appTheme'
 
 const App = () => {
@@ -84,6 +86,7 @@ const App = () => {
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
         <PaperProvider theme={theme}>
           <StackNavigator />
+          <UpdatePrompt />
         </PaperProvider>
     </ThemeContext.Provider>
   )

@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, memo } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native'
 import { Text, Button, Card, Divider, IconButton, useTheme, Searchbar, Menu, Portal, Dialog, Surface, List } from 'react-native-paper'
+import ContractActionModalContent from '../../../customComponents/ContractActionModalContent'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 
@@ -60,6 +61,46 @@ const PickupLuggage = ({ navigation }) => {
   const [pickupDialogVisible, setPickupDialogVisible] = useState(false)
   const [selectedContract, setSelectedContract] = useState(null)
   const [pickingup, setPickingup] = useState(false)
+  const [expandedById, setExpandedById] = useState({})
+
+  const getDefaultExpanded = useCallback(() => ({
+    info: true,
+    locations: false,
+    timeline: false,
+    price: false,
+    actions: false,
+  }), [])
+
+  const getExpandedState = useCallback((id) => {
+    return expandedById[id] ?? getDefaultExpanded()
+  }, [expandedById, getDefaultExpanded])
+
+  const handleToggleSection = useCallback((id, sectionKey) => {
+    setExpandedById(prev => {
+      const current = prev[id] ?? getDefaultExpanded()
+      return {
+        ...prev,
+        [id]: { ...current, [sectionKey]: !current[sectionKey] }
+      }
+    })
+  }, [getDefaultExpanded])
+
+  useEffect(() => {
+    if (!contracts || contracts.length === 0) return
+    setExpandedById(prev => {
+      const validIds = new Set(contracts.map(c => c.id))
+      let changed = false
+      const next = {}
+      for (const key in prev) {
+        if (validIds.has(Number(key)) || validIds.has(key)) {
+          next[key] = prev[key]
+        } else {
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [contracts])
 
   const filterOptions = [
     { label: 'Contract ID', value: 'id' },
@@ -351,24 +392,44 @@ const PickupLuggage = ({ navigation }) => {
     setPickupDialogVisible(true)
   }
   
-  const confirmPickupLuggage = async () => {
+  const confirmPickupLuggage = async (remarks, imageUrl) => {
     if (!selectedContract) return
     setPickingup(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
-      const { error } = await supabase
-        .from('contracts')
-        .update({
-          contract_status_id: 4, // In Transit
-          pickup_at: new Date().toISOString(),
-        })
-        .eq('id', selectedContract.id)
-      if (error) throw error
+      const baseUpdate = {
+        contract_status_id: 4, // In Transit
+        pickup_at: new Date().toISOString(),
+      }
 
-      // Start location tracking after successful pickup
-      
+      // Try saving proof of pickup URL if provided, with graceful fallback on unknown column
+      let updateError
+      if (imageUrl) {
+        const withPickupProof = { ...baseUpdate, proof_of_pickup: imageUrl }
+        const { error: e1 } = await supabase
+          .from('contracts')
+          .update(withPickupProof)
+          .eq('id', selectedContract.id)
+        updateError = e1
+      } else {
+        const { error: e } = await supabase
+          .from('contracts')
+          .update(baseUpdate)
+          .eq('id', selectedContract.id)
+        updateError = e
+      }
+
+      if (updateError) {
+        // Final fallback: update without proof field
+        const { error: e3 } = await supabase
+          .from('contracts')
+          .update(baseUpdate)
+          .eq('id', selectedContract.id)
+        if (e3) throw e3
+      }
+
       showSnackbar('Luggage picked up successfully', true)
       fetchContracts()
     } catch (error) {
@@ -380,15 +441,8 @@ const PickupLuggage = ({ navigation }) => {
     }
   }
 
-  const ContractCard = ({ contract }) => {    
-    const [expanded, setExpanded] = useState({
-      info: true,
-      locations: false,
-      timeline: false,
-      price: false,
-      actions: false,
-    })
-    const toggle = (k) => setExpanded(prev => ({ ...prev, [k]: !prev[k] }))
+  const ContractCard = memo(({ contract, expanded, onToggle }) => {    
+    const toggle = (k) => onToggle(contract.id, k)
 
     const contractorName = [
       contract.airline_profile?.first_name,
@@ -539,7 +593,7 @@ const PickupLuggage = ({ navigation }) => {
         </Card.Content>
       </Card>
     )
-  }
+  })
 
   const renderHeader = () => (
     <>
@@ -641,19 +695,6 @@ const PickupLuggage = ({ navigation }) => {
         </View>
       </Surface>
 
-      {/* Results Header */}
-      <Surface style={[styles.resultsSurface, { backgroundColor: colors.surface }]} elevation={1}>
-        <View style={styles.resultsHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.onSurface }, fonts.titleMedium]}>
-            Pickup Results
-          </Text>
-          {!loading && (
-            <Text style={[styles.resultsCount, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>
-              {filteredAndSortedContracts.length} contract{filteredAndSortedContracts.length !== 1 ? 's' : ''} found
-            </Text>
-          )}
-        </View>
-      </Surface>
     </>
   )
 
@@ -691,7 +732,13 @@ const PickupLuggage = ({ navigation }) => {
       <FlatList
         data={filteredAndSortedContracts}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <ContractCard contract={item} />}
+        renderItem={({ item }) => (
+          <ContractCard 
+            contract={item}
+            expanded={getExpandedState(item.id)}
+            onToggle={handleToggleSection}
+          />
+        )}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmptyComponent}
         contentContainerStyle={styles.flatListContent}
@@ -712,46 +759,15 @@ const PickupLuggage = ({ navigation }) => {
           onDismiss={() => setPickupDialogVisible(false)}
           style={{backgroundColor: colors.surface}}
         >
-          <Dialog.Title style={{ color: colors.onSurface, ...fonts.titleLarge }}>
-            Pickup Luggage
-          </Dialog.Title>
           <Dialog.Content>
-            <Text style={{ color: colors.onSurface, ...fonts.bodyMedium }}>
-              Are you sure you want to mark this luggage as picked up? This will update the contract status.
-            </Text>
-            {selectedContract && (
-              <View style={styles.dialogContractInfo}>
-                <Text style={{ color: colors.onSurfaceVariant, ...fonts.labelMedium, marginTop: 8 }}>
-                  Contract ID: {selectedContract.id}
-                </Text>
-                <Text style={{ color: colors.onSurfaceVariant, ...fonts.labelMedium }}>
-                  Passenger: {[
-                    selectedContract.owner_first_name,
-                    selectedContract.owner_middle_initial,
-                    selectedContract.owner_last_name,
-                  ].filter(Boolean).join(' ') || 'N/A'}
-                </Text>
-                <Text style={{ color: colors.onSurfaceVariant, ...fonts.labelMedium }}>
-                  Case Number: {selectedContract.case_number || 'N/A'}
-                </Text>
-              </View>
-            )}
+            <ContractActionModalContent
+              dialogType="pickup"
+              onClose={() => setPickupDialogVisible(false)}
+              onConfirm={(remarks, imageUrl) => confirmPickupLuggage(remarks, imageUrl)}
+              loading={pickingup}
+              contract={selectedContract}
+            />
           </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setPickupDialogVisible(false)} disabled={pickingup} textColor={colors.error}>
-              Cancel
-            </Button>
-            <Button 
-              onPress={confirmPickupLuggage} 
-              loading={pickingup} 
-              disabled={pickingup}
-              textColor={colors.onError}
-              mode="contained"
-              buttonColor={colors.primary}
-            >
-              Pickup
-            </Button>
-          </Dialog.Actions>
         </Dialog>
       </Portal>
     </View>
