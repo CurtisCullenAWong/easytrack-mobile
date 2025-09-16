@@ -14,7 +14,7 @@ import {
   Portal,
   Dialog,
 } from 'react-native-paper'
-import { supabase } from '../../../../lib/supabaseAdmin'
+import { supabase } from '../../../../../lib/supabaseAdmin'
 import { useFocusEffect } from '@react-navigation/native'
 
 // Constants

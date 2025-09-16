@@ -17,8 +17,8 @@ import {
   Surface,
   Divider
 } from 'react-native-paper'
-import useSnackbar from '../../../../components/hooks/useSnackbar'
-import { supabase } from '../../../../lib/supabaseAdmin'
+import useSnackbar from '../../../../hooks/useSnackbar'
+import { supabase } from '../../../../../lib/supabaseAdmin'
 import { useFocusEffect } from '@react-navigation/native'
 import { makeRedirectUri } from 'expo-auth-session'
 import * as Crypto from 'expo-crypto'

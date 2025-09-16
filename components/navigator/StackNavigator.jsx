@@ -22,15 +22,16 @@ import UpdateProfileScreen from '../screens/shared/UpdateProfileScreen'
 import AdminHome from '../screens/admin/AdminHome'
 import UserManagement from '../screens/admin/UserManagement'
 import TransactionManagement from '../screens/admin/TransactionManagement'
-import GenerateInvoice from '../screens/admin/subscreen/transaction_management_subscreen/GenerateInvoice'
+import GenerateInvoice from '../screens/admin/subscreen/transaction_management_subscreen/ToPay_GenerateInvoice'
 import ViewInvoice from '../screens/admin/subscreen/transaction_management_subscreen/ViewInvoice'
-import ContractDetailsAdmin from '../screens/admin/subscreen/ContractDetailsAdmin'
+import ContractDetailsAdmin from '../screens/admin/subscreen/booking_management/ContractDetailsAdmin'
 import AdminBookingManagement from '../screens/admin/AdminBookingManagement'
 import AdminBookingHistory from '../screens/admin/AdminBookingHistory'
-import AddAccount from '../screens/admin/subscreen/AddAccount'
-import ViewAccountScreen from '../screens/admin/subscreen/ViewAccountScreen'
+import AddAccount from '../screens/admin/subscreen/user_management_subscreen/AddAccount'
+import ViewAccountScreen from '../screens/admin/subscreen/user_management_subscreen/ViewAccountScreen'
 import PerformanceStatistics from '../screens/admin/PerformanceStatistics'
 import SelectLocation from '../screens/airline/subscreen/SelectLocation'
+import AdminAuditLogs from '../screens/admin/AdminAuditLogs'
 
 // Airline Screens
 import AirlineHome from '../screens/airline/AirlineHome'
@@ -84,6 +85,7 @@ const AdminDrawer = () => (
     <Drawer.Screen name="TrackLuggage" component={TrackLuggage} />
     <Drawer.Screen name="AddAccount" component={AddAccount} />
     <Drawer.Screen name="ViewAccount" component={ViewAccountScreen} />
+    <Drawer.Screen name="AdminAuditLogs" component={AdminAuditLogs} />
 
     {/* SHARED */}
     <Drawer.Screen name="CheckLocation" component={CheckLocation} />

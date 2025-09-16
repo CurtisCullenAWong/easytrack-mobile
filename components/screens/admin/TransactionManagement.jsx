@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { View, StyleSheet } from 'react-native'
 import { useTheme, SegmentedButtons } from 'react-native-paper'
 import Header from '../../customComponents/Header'
-import Bookings from './subscreen/ToPay'
-import Invoices from './subscreen/Invoices'
+import Bookings from './subscreen/transaction_management_subscreen/ToPay'
+import Invoices from './subscreen/transaction_management_subscreen/Invoices'
 import Rate from './subscreen/transaction_management_subscreen/Rate'
 
 const TransactionManagement = ({ navigation, route }) => {

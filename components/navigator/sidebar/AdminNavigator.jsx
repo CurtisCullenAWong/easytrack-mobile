@@ -120,6 +120,7 @@ const AdminNavigator = ({ navigation }) => {
       items: [
         { icon: 'history', label: 'Booking History', screen: 'AdminBookingHistory' },
         { icon: 'chart-line', label: 'Performance Statistics', screen: 'PerformanceStatistics' },
+        { icon: 'file-document-outline', label: 'Audit Logs', screen: 'AdminAuditLogs' },
       ],
     },
     {
@@ -195,6 +196,7 @@ const AdminNavigator = ({ navigation }) => {
             item.screen === 'AdminHome' ||
             item.screen === 'Profile' ||
             item.screen === 'TermsAndConditions' ||
+            item.screen === 'AdminAuditLogs' ||
             item.actionKey === 'logout'
           ) {
             return true

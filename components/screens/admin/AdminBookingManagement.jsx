@@ -3,7 +3,7 @@ import { View, StyleSheet } from 'react-native'
 import { SegmentedButtons, useTheme } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 import Booking from '../airline/subscreen/Booking'
-import BookingList from './subscreen/AdminBookingList'
+import BookingList from './subscreen/booking_management/AdminBookingList'
 const AdminBookingManagement = ({ navigation }) => {
   const { colors } = useTheme()
   const [mode, setMode] = useState('made')
