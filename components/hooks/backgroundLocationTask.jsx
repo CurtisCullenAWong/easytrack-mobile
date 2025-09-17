@@ -50,7 +50,15 @@ TaskManager.defineTask(TASK_NAME, async ({ data, error }) => {
     const { data: authData } = await supabase.auth.getUser()
     const user = authData?.user
     if (!user) {
-      console.warn('Background task: no authenticated user; skipping location update')
+      console.warn('Background task: no authenticated user; stopping background updates')
+      try {
+        const hasStarted = await Location.hasStartedLocationUpdatesAsync(TASK_NAME)
+        if (hasStarted) {
+          await Location.stopLocationUpdatesAsync(TASK_NAME)
+        }
+      } catch (stopErr) {
+        // ignore
+      }
       return
     }
 

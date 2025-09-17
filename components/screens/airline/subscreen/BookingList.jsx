@@ -20,6 +20,18 @@ const BookingList = ({ navigation }) => {
   const [sortDirection, setSortDirection] = useState('descending')
   const [cancelDialogVisible, setCancelDialogVisible] = useState(false)
   const [contractToCancel, setContractToCancel] = useState(null)
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(3)
+  const [pageSizeMenuVisible, setPageSizeMenuVisible] = useState(false)
+
+  const PAGE_SIZE_OPTIONS = [
+    { label: '3 per page', value: 3 },
+    { label: '5 per page', value: 5 },
+    { label: '10 per page', value: 10 },
+    { label: '20 per page', value: 20 },
+    { label: '30 per page', value: 30 },
+  ]
 
   const filterOptions = [
     { label: 'Contract ID', value: 'id' },
@@ -199,6 +211,17 @@ const BookingList = ({ navigation }) => {
       if (valA > valB) return sortDirection === 'ascending' ? 1 : -1
       return 0
     })
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredAndSortedContracts.length / pageSize) || 1
+  const startIndex = (currentPage - 1) * pageSize
+  const endIndex = startIndex + pageSize
+  const paginatedContracts = filteredAndSortedContracts.slice(startIndex, endIndex)
+
+  // Reset to first page when filters or page size change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, searchColumn, sortColumn, sortDirection, pageSize])
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Not set'
@@ -570,11 +593,80 @@ const BookingList = ({ navigation }) => {
         />
       </Surface>
       <FlatList
-        data={filteredAndSortedContracts}
+        data={paginatedContracts}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => <ContractCard contract={item} />}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmptyComponent}
+        ListFooterComponent={() => (
+          <View style={styles.paginationContainer}>
+            <Surface style={[styles.paginationSurface, { backgroundColor: colors.surface }]} elevation={1}>
+              <View style={styles.paginationRow}>
+                <View style={styles.pageSizeContainer}>
+                  <Text style={[styles.paginationLabel, { color: colors.onSurface }, fonts.bodyMedium]}>Show:</Text>
+                  <Menu
+                    visible={pageSizeMenuVisible}
+                    onDismiss={() => setPageSizeMenuVisible(false)}
+                    anchor={
+                      <Button
+                        mode="outlined"
+                        onPress={() => setPageSizeMenuVisible(true)}
+                        style={[styles.pageSizeButton, { borderColor: colors.outline }]}
+                        contentStyle={styles.buttonContent}
+                        labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                      >
+                        {PAGE_SIZE_OPTIONS.find(opt => opt.value === pageSize)?.label || '3 per page'}
+                      </Button>
+                    }
+                    contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+                  >
+                    {PAGE_SIZE_OPTIONS.map(option => (
+                      <Menu.Item
+                        key={option.value}
+                        onPress={() => { setPageSize(option.value); setPageSizeMenuVisible(false) }}
+                        title={option.label}
+                        titleStyle={[
+                          { color: pageSize === option.value ? colors.primary : colors.onSurface },
+                          fonts.bodyLarge,
+                        ]}
+                        leadingIcon={pageSize === option.value ? 'check' : undefined}
+                      />
+                    ))}
+                  </Menu>
+                </View>
+
+                <View style={styles.pageInfoContainer}>
+                  <Text style={[styles.pageInfo, { color: colors.onSurfaceVariant }, fonts.bodySmall]}>
+                    Page {currentPage} of {totalPages}
+                  </Text>
+                </View>
+
+                <View style={styles.pageControlsContainer}>
+                  <Button
+                    mode="outlined"
+                    onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    style={[styles.pageButton, { borderColor: colors.outline }]}
+                    contentStyle={styles.buttonContent}
+                    labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    mode="outlined"
+                    onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    style={[styles.pageButton, { borderColor: colors.outline }]}
+                    contentStyle={styles.buttonContent}
+                    labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                  >
+                    Next
+                  </Button>
+                </View>
+              </View>
+            </Surface>
+          </View>
+        )}
         contentContainerStyle={styles.flatListContent}
         refreshControl={
           <RefreshControl
@@ -702,6 +794,50 @@ const styles = StyleSheet.create({
   buttonLabel: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  paginationContainer: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  paginationSurface: {
+    padding: 16,
+    borderRadius: 12,
+  },
+  paginationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  pageSizeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  paginationLabel: {
+    fontWeight: '500',
+  },
+  pageSizeButton: {
+    borderRadius: 8,
+    minWidth: '60%',
+  },
+  pageInfoContainer: {
+    alignItems: 'center',
+  },
+  pageInfo: {
+    fontWeight: '500',
+  },
+  pageControlsContainer: {
+    display: 'flex',
+    minWidth: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  pageButton: {
+    borderRadius: 8,
+    minWidth: 80,
   },
   resultsSurface: {
     marginHorizontal: 16,

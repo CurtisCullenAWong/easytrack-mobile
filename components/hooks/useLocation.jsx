@@ -3,6 +3,17 @@ import * as Location from 'expo-location'
 import { supabase } from '../../lib/supabase'
 import { TASK_NAME } from './backgroundLocationTask'
 
+export async function stopBackgroundTracking() {
+  try {
+    const hasStarted = await Location.hasStartedLocationUpdatesAsync(TASK_NAME)
+    if (hasStarted) {
+      await Location.stopLocationUpdatesAsync(TASK_NAME)
+    }
+  } catch (_e) {
+    // ignore
+  }
+}
+
 export function useLocation() {
   const locationSubscription = useRef(null)
 
@@ -128,11 +139,8 @@ export function useLocation() {
       console.log('Stopped foreground location tracking')
     }
 
-    const hasStarted = await Location.hasStartedLocationUpdatesAsync(TASK_NAME)
-    if (hasStarted) {
-      await Location.stopLocationUpdatesAsync(TASK_NAME)
-      console.log('Stopped background location updates')
-    }
+    await stopBackgroundTracking()
+    console.log('Stopped background location updates')
   }
 
   useEffect(() => {

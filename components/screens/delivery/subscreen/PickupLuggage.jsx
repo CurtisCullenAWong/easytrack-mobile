@@ -27,8 +27,12 @@ const PickupLuggage = ({ navigation }) => {
   const [selectedContract, setSelectedContract] = useState(null)
   const [pickingup, setPickingup] = useState(false)
   const [expandedById, setExpandedById] = useState({})
-  
   const [deviceGeoPoint, setDeviceGeoPoint] = useState(null)
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(3)
+  const [pageSizeMenuVisible, setPageSizeMenuVisible] = useState(false)
   // Get device location once per focus, used for pickup vicinity check before in-transit
   useFocusEffect(
     useCallback(() => {
@@ -110,6 +114,14 @@ const PickupLuggage = ({ navigation }) => {
     { label: 'Owner Name', value: 'owner_name' },
     { label: 'Created Date', value: 'created_at' },
     { label: 'Luggage Quantity', value: 'luggage_quantity' },
+  ]
+
+  const PAGE_SIZE_OPTIONS = [
+    { label: '3 per page', value: 3 },
+    { label: '5 per page', value: 5 },
+    { label: '10 per page', value: 10 },
+    { label: '20 per page', value: 20 },
+    { label: '30 per page', value: 30 },
   ]
 
   // Calculate route distance (pickup->dropoff) and pickup vicinity (device->pickup)
@@ -362,6 +374,17 @@ const PickupLuggage = ({ navigation }) => {
           : valA < valB ? 1 : -1;
       });
   }, [contractsWithDistance, searchQuery, searchColumn, sortColumn, sortDirection]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredAndSortedContracts.length / pageSize)
+  const startIndex = (currentPage - 1) * pageSize
+  const endIndex = startIndex + pageSize
+  const paginatedContracts = filteredAndSortedContracts.slice(startIndex, endIndex)
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, searchColumn, sortColumn, sortDirection, pageSize])
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Not set'
@@ -677,17 +700,95 @@ const PickupLuggage = ({ navigation }) => {
         />
       </Surface>
       <FlatList
-        data={filteredAndSortedContracts}
+        data={paginatedContracts}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <ContractCard 
-            contract={item}
-            expanded={getExpandedState(item.id)}
+            contract={item} 
+            expanded={getExpandedState(item.id)} 
             onToggle={handleToggleSection}
           />
         )}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmptyComponent}
+        ListFooterComponent={() => (
+          <View style={styles.paginationContainer}>
+            <Surface style={[styles.paginationSurface, { backgroundColor: colors.surface }]} elevation={1}>
+              <View style={styles.paginationRow}>
+                <View style={styles.pageSizeContainer}>
+                  <Text style={[styles.paginationLabel, { color: colors.onSurface }, fonts.bodyMedium]}>
+                    Show:
+                  </Text>
+                  <Menu
+                    visible={pageSizeMenuVisible}
+                    onDismiss={() => setPageSizeMenuVisible(false)}
+                    anchor={
+                      <Button
+                        mode="outlined"
+                        onPress={() => setPageSizeMenuVisible(true)}
+                        style={[styles.pageSizeButton, { borderColor: colors.outline }]}
+                        contentStyle={styles.buttonContent}
+                        labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                      >
+                        {PAGE_SIZE_OPTIONS.find(opt => opt.value === pageSize)?.label || '3 per page'}
+                      </Button>
+                    }
+                    contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}
+                  >
+                    {PAGE_SIZE_OPTIONS.map(option => (
+                      <Menu.Item
+                        key={option.value}
+                        onPress={() => {
+                          setPageSize(option.value)
+                          setPageSizeMenuVisible(false)
+                        }}
+                        title={option.label}
+                        titleStyle={[
+                          {
+                            color: pageSize === option.value
+                              ? colors.primary
+                              : colors.onSurface,
+                          },
+                          fonts.bodyLarge,
+                        ]}
+                        leadingIcon={pageSize === option.value ? 'check' : undefined}
+                      />
+                    ))}
+                  </Menu>
+                </View>
+                
+                <View style={styles.pageInfoContainer}>
+                  <Text style={[styles.pageInfo, { color: colors.onSurfaceVariant }, fonts.bodySmall]}>
+                    Page {currentPage} of {totalPages}
+                  </Text>
+                </View>
+                
+                <View style={styles.pageControlsContainer}>
+                  <Button
+                    mode="outlined"
+                    onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    style={[styles.pageButton, { borderColor: colors.outline }]}
+                    contentStyle={styles.buttonContent}
+                    labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    mode="outlined"
+                    onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    style={[styles.pageButton, { borderColor: colors.outline }]}
+                    contentStyle={styles.buttonContent}
+                    labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
+                  >
+                    Next
+                  </Button>
+                </View>
+              </View>
+            </Surface>
+          </View>
+        )}
         contentContainerStyle={styles.flatListContent}
         refreshControl={
           <RefreshControl
@@ -862,6 +963,50 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
     borderRadius: 8,
+  },
+  paginationContainer: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  paginationSurface: {
+    padding: 16,
+    borderRadius: 12,
+  },
+  paginationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  pageSizeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  paginationLabel: {
+    fontWeight: '500',
+  },
+  pageSizeButton: {
+    borderRadius: 8,
+    minWidth: '60%',
+  },
+  pageInfoContainer: {
+    alignItems: 'center',
+  },
+  pageInfo: {
+    fontWeight: '500',
+  },
+  pageControlsContainer: {
+    display:'flex',
+    minWidth:'100%',
+    flexDirection: 'row',
+    justifyContent:'space-between',
+    gap: 8,
+  },
+  pageButton: {
+    borderRadius: 8,
+    minWidth: 80,
   },
 })
 
