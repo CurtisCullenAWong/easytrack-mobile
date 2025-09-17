@@ -41,7 +41,7 @@ const Invoices = ({ navigation }) => {
   const filterOptions = [
     { label: 'Summary ID', value: 'summary_id' },
     { label: 'Invoice ID', value: 'invoice_id' },
-    { label: 'Summary Status', value: 'summary_status' },
+    { label: 'Status', value: 'summary_status' },
     { label: 'Total Amount', value: 'total' },
   ]
 
@@ -53,7 +53,8 @@ const Invoices = ({ navigation }) => {
   const columns = [
     { key: 'summary_id', label: 'Summary ID', width: COLUMN_WIDTH },
     { key: 'invoice_id', label: 'Invoice ID', width: COLUMN_WIDTH },
-    { key: 'summary_status', label: 'Summary Status', width: COLUMN_WIDTH },
+    { key: 'summary_status', label: 'Status', width: COLUMN_WIDTH },
+    { key: 'date_range', label: 'Date Range', width: COLUMN_WIDTH },
     { key: 'total', label: 'Total', width: COLUMN_WIDTH },
     { key: 'created_at', label: 'Created At', width: COLUMN_WIDTH },
     { key: 'due_date', label: 'Due Date', width: COLUMN_WIDTH },
@@ -116,6 +117,10 @@ const Invoices = ({ navigation }) => {
           // Store raw dates for filtering
           created_at_raw: transaction.summary?.created_at ? new Date(transaction.summary.created_at) : null,
           due_date_raw: transaction.summary?.due_date ? new Date(transaction.summary.due_date) : null,
+          // For Date Range column
+          date_range_start_raw: null,
+          date_range_end_raw: null,
+          date_range: 'N/A',
           total: 0
         }
       }
@@ -123,10 +128,37 @@ const Invoices = ({ navigation }) => {
       // Add to total for this summary
       acc[summaryId].total += (transaction.delivery_charge || 0) + (transaction.delivery_surcharge || 0) - (transaction.delivery_discount || 0)
 
+      // Track earliest and latest among delivered_at or cancelled_at
+      const candidateDates = [transaction.delivered_at, transaction.cancelled_at]
+        .filter(Boolean)
+        .map(d => new Date(d))
+      candidateDates.forEach(d => {
+        if (!acc[summaryId].date_range_start_raw || d < acc[summaryId].date_range_start_raw) {
+          acc[summaryId].date_range_start_raw = d
+        }
+        if (!acc[summaryId].date_range_end_raw || d > acc[summaryId].date_range_end_raw) {
+          acc[summaryId].date_range_end_raw = d
+        }
+      })
+
       return acc
     }, {})
 
-    setTransactions(Object.values(groupedTransactions))
+    const results = Object.values(groupedTransactions).map(group => {
+      const fmt = (d) => new Date(d).toLocaleString('en-US', {
+        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true
+      })
+      let dateRange = 'N/A'
+      if (group.date_range_start_raw && group.date_range_end_raw) {
+        dateRange = `${fmt(group.date_range_start_raw)} - ${fmt(group.date_range_end_raw)}`
+      } else if (group.date_range_start_raw || group.date_range_end_raw) {
+        const only = group.date_range_start_raw || group.date_range_end_raw
+        dateRange = fmt(only)
+      }
+      return { ...group, date_range: dateRange }
+    })
+
+    setTransactions(results)
     setLoading(false)
   }
 
@@ -153,31 +185,6 @@ const Invoices = ({ navigation }) => {
     setRefreshing(true)
     fetchTransactions().finally(() => setRefreshing(false))
   }, [])
-
-  // const toggleSummaryCompletion = async (summaryId, isCurrentlyCompleted) => {
-  //   try {
-  //     // Guard: prevent marking/unmarking complete without an assigned invoice
-  //     const target = transactions.find(t => t.summary_id === summaryId)
-  //     if (!target || !target.invoice_id || target.invoice_id === 'N/A') {
-  //       showSnackbar('Cannot change completion: missing Invoice ID')
-  //       return
-  //     }
-
-  //     const newStatusId = isCurrentlyCompleted ? 1 : 2
-  //     const { error } = await supabase
-  //       .from('summary')
-  //       .update({ summary_status_id: newStatusId })
-  //       .eq('id', summaryId)
-
-  //     if (error) throw error
-
-  //     showSnackbar(isCurrentlyCompleted ? 'Summary unmarked as complete' : 'Summary marked as complete', true)
-  //     await fetchTransactions()
-  //   } catch (err) {
-  //     console.error('Error updating summary status:', err)
-  //     showSnackbar('Failed to update summary status')
-  //   }
-  // }
 
   const handleSort = (column) => {
     setSortDirection(prev => (sortColumn === column && prev === 'ascending' ? 'descending' : 'ascending'))
@@ -244,6 +251,18 @@ const Invoices = ({ navigation }) => {
         const numB = parseFloat(valB) || 0
         if (numA < numB) return sortDirection === 'ascending' ? -1 : 1
         if (numA > numB) return sortDirection === 'ascending' ? 1 : -1
+        return 0
+      }
+
+      // Sort by date_range using start_raw
+      if (sortColumn === 'date_range') {
+        const dateA = a.date_range_start_raw
+        const dateB = b.date_range_start_raw
+        if (!dateA && !dateB) return 0
+        if (!dateA) return sortDirection === 'ascending' ? -1 : 1
+        if (!dateB) return sortDirection === 'ascending' ? 1 : -1
+        if (dateA < dateB) return sortDirection === 'ascending' ? -1 : 1
+        if (dateA > dateB) return sortDirection === 'ascending' ? 1 : -1
         return 0
       }
 

@@ -17,6 +17,20 @@ import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import MapViewDirections from "react-native-maps-directions"
 
 const { width, height } = Dimensions.get('window')
+const toRadians = (degrees) => (degrees * Math.PI) / 180
+const haversineDistanceMeters = (a, b) => {
+    if (!a || !b) return Infinity
+    const R = 6371000
+    const dLat = toRadians(b.latitude - a.latitude)
+    const dLon = toRadians(b.longitude - a.longitude)
+    const lat1 = toRadians(a.latitude)
+    const lat2 = toRadians(b.latitude)
+    const sinDLat = Math.sin(dLat / 2)
+    const sinDLon = Math.sin(dLon / 2)
+    const h = sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLon * sinDLon
+    const c = 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h))
+    return R * c
+}
 
 // Geometry parser
 const parseGeometry = (geoString) => {
@@ -43,6 +57,10 @@ const parseGeometry = (geoString) => {
 // Map Component
 const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors, contractStatusId, showSnackbar }) => {
   const mapRef = useRef(null)
+  const lastRequestedOriginRef = useRef(null)
+  const lastRequestTimeRef = useRef(0)
+  const [throttledOrigin, setThrottledOrigin] = useState(null)
+  const [refreshTick, setRefreshTick] = useState(0)
 
   const centerOnLocation = (coords) => {
     if (coords && mapRef.current) {
@@ -56,6 +74,38 @@ const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors
 
   const currentLocationCoords = parseGeometry(currentLocation)
   const dropOffCoords = parseGeometry(dropOffLocation)
+
+  // Initialize throttled origin when coords first arrive or change beyond threshold
+  useEffect(() => {
+    const now = Date.now()
+    const THROTTLE_DISTANCE_METERS = 50
+    const shouldForceByTime = now - lastRequestTimeRef.current >= 60000
+
+    if (!currentLocationCoords) return
+
+    if (!lastRequestedOriginRef.current) {
+      lastRequestedOriginRef.current = currentLocationCoords
+      lastRequestTimeRef.current = now
+      setThrottledOrigin(currentLocationCoords)
+      return
+    }
+
+    const movedMeters = haversineDistanceMeters(lastRequestedOriginRef.current, currentLocationCoords)
+    if (movedMeters >= THROTTLE_DISTANCE_METERS || shouldForceByTime) {
+      lastRequestedOriginRef.current = currentLocationCoords
+      lastRequestTimeRef.current = now
+      setThrottledOrigin(currentLocationCoords)
+    }
+  }, [currentLocationCoords])
+
+  // 60s refresh to force a new directions request even without significant movement
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRefreshTick((t) => t + 1)
+      lastRequestTimeRef.current = Date.now()
+    }, 60000)
+    return () => clearInterval(interval)
+  }, [])
 
   const initialRegion = currentLocationCoords || dropOffCoords
 
@@ -111,9 +161,10 @@ const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors
             pinColor={colors.error}
           />
         )}
-        {contractStatusId === 4 && currentLocationCoords && dropOffCoords && (
-        <MapViewDirections
-            origin={currentLocationCoords}
+        {contractStatusId === 4 && throttledOrigin && dropOffCoords && (
+          <MapViewDirections
+            key={`${throttledOrigin.latitude},${throttledOrigin.longitude}-${dropOffCoords.latitude},${dropOffCoords.longitude}-${refreshTick}`}
+            origin={throttledOrigin}
             destination={dropOffCoords}
             apikey={GOOGLE_MAPS_API_KEY}
             strokeWidth={4}
@@ -122,7 +173,7 @@ const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors
             onError={(err) => {
               showSnackbar("Unable to fetch route from Google Maps API")
             }}
-        />
+          />
         )}
       </MapView>
 
@@ -167,10 +218,45 @@ const ProgressMeter = ({ colors, contractData, showSnackbar }) => {
   const [etaRemaining, setEtaRemaining] = useState(null)
   const [totalDistance, setTotalDistance] = useState(null)
   const [progress, setProgress] = useState(0)
+  const [refreshTick, setRefreshTick] = useState(0)
+  const lastRequestedOriginRef = useRef(null)
+  const lastRequestTimeRef = useRef(0)
 
   const pickupCoords = parseGeometry(contractData?.pickup_location_geo)
   const currentCoords = parseGeometry(contractData?.current_location_geo)
   const dropOffCoords = parseGeometry(contractData?.drop_off_location_geo)
+  const [throttledCurrent, setThrottledCurrent] = useState(null)
+
+  // Throttle remaining route requests based on distance or 60s
+  useEffect(() => {
+    const now = Date.now()
+    const THROTTLE_DISTANCE_METERS = 50
+    const shouldForceByTime = now - lastRequestTimeRef.current >= 60000
+    if (!currentCoords) return
+
+    if (!lastRequestedOriginRef.current) {
+      lastRequestedOriginRef.current = currentCoords
+      lastRequestTimeRef.current = now
+      setThrottledCurrent(currentCoords)
+      return
+    }
+
+    const movedMeters = haversineDistanceMeters(lastRequestedOriginRef.current, currentCoords)
+    if (movedMeters >= THROTTLE_DISTANCE_METERS || shouldForceByTime) {
+      lastRequestedOriginRef.current = currentCoords
+      lastRequestTimeRef.current = now
+      setThrottledCurrent(currentCoords)
+    }
+  }, [currentCoords])
+
+  // 60s refresh tick
+  useEffect(() => {
+    const i = setInterval(() => {
+      setRefreshTick((t) => t + 1)
+      lastRequestTimeRef.current = Date.now()
+    }, 60000)
+    return () => clearInterval(i)
+  }, [])
 
   if (contractData?.contract_status_id !== 4) return null
 
@@ -191,9 +277,10 @@ const ProgressMeter = ({ colors, contractData, showSnackbar }) => {
       )}
 
       {/* Current → Dropoff (remaining) */}
-      {currentCoords && dropOffCoords && (
+      {throttledCurrent && dropOffCoords && (
         <MapViewDirections
-          origin={currentCoords}
+          key={`${throttledCurrent.latitude},${throttledCurrent.longitude}-${dropOffCoords.latitude},${dropOffCoords.longitude}-${refreshTick}`}
+          origin={throttledCurrent}
           destination={dropOffCoords}
           apikey={GOOGLE_MAPS_API_KEY}
           strokeWidth={0}
