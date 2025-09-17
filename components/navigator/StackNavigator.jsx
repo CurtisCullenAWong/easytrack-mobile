@@ -6,7 +6,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import LoginScreen from '../screens/shared/LoginScreen'
 import ContractDetails from '../screens/shared/ContractDetails'
 import CheckLocation from '../screens/shared/CheckLocation'
-import UserPerformanceStatistics from '../screens/shared/UserPerformanceStatistics'
 import BookingHistory from '../screens/shared/BookingHistory'
 import TermsAndConditions from '../screens/shared/TermsAndConditions'
 
@@ -122,7 +121,6 @@ const AirlineDrawer = () => (
     <Drawer.Screen name="ProfileCompletionCheck" component={ProfileCompletionCheck} />
     <Drawer.Screen name="Verification" component={Verification} />
     <Drawer.Screen name="TrackLuggage" component={TrackLuggage} />
-    <Drawer.Screen name="UserPerformanceStatistics" component={UserPerformanceStatistics} />
     <Drawer.Screen name="Messages" component={MessagingNavigator} />
     <Drawer.Screen name="TermsAndConditions" component={TermsAndConditions} />
   </Drawer.Navigator>
@@ -148,7 +146,6 @@ const DeliveryDrawer = () => (
     <Drawer.Screen name="UpdateProfile" component={UpdateProfileScreen} />
     <Drawer.Screen name="ProfileCompletionCheck" component={ProfileCompletionCheck} />
     <Drawer.Screen name="Verification" component={Verification} />
-    <Drawer.Screen name="UserPerformanceStatistics" component={UserPerformanceStatistics} />
     <Drawer.Screen name="Messages" component={MessagingNavigator} />
     <Drawer.Screen name="TermsAndConditions" component={TermsAndConditions} />
   </Drawer.Navigator>

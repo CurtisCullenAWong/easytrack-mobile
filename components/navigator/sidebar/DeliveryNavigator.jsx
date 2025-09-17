@@ -116,7 +116,6 @@ const DeliveryNavigator = ({ navigation }) => {
       icon: 'chart-bar',
       items: [
         { icon: 'history', label: 'Booking History', screen: 'BookingHistory' },
-        { icon: 'chart-line', label: 'Performance Statistics', screen: 'UserPerformanceStatistics' },
       ],
     },
     {

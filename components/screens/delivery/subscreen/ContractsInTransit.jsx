@@ -4,16 +4,16 @@ import { View, StyleSheet, FlatList, RefreshControl } from 'react-native'
 import { Text, Button, Card, Divider, IconButton, useTheme, Searchbar, Menu, Surface, List } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import { useLocation } from '../../../hooks/useLocation'
+import { compareGeometriesVicinity, parseGeometry } from '../../../../utils/vicinityUtils'
 import BottomModal from '../../../customComponents/BottomModal'
-import ContractActionModalContent from '../../../customComponents/ContractActionModalContent'
+import ContractActionModalContent from './ContractActionModalContent'
 import useSnackbar from '../../../hooks/useSnackbar'
-import * as Location from 'expo-location'
+const VICINITY_FEATURE_ENABLED = true // Set to false to disable vicinity gating easily
 
 // Constants
 const FILTER_OPTIONS = [
   { label: 'Contract ID', value: 'id' },
   { label: 'Owner Name', value: 'owner_name' },
-  { label: 'Case Number', value: 'case_number' },
   { label: 'Pickup Location', value: 'pickup_location' },
   { label: 'Current Location', value: 'current_location' },
   { label: 'Drop-off Location', value: 'drop_off_location' },
@@ -23,49 +23,22 @@ const SORT_OPTIONS = [
   { label: 'Distance', value: 'distance' },
   { label: 'Contract ID', value: 'id' },
   { label: 'Owner Name', value: 'owner_name' },
-  { label: 'Case Number', value: 'case_number' },
   { label: 'Created Date', value: 'created_at' },
   { label: 'Pickup Date', value: 'pickup_at' },
   { label: 'Luggage Quantity', value: 'luggage_quantity' },
 ]
 
-// Utility functions
+// Utility functions moved to utils/vicinityUtils
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371 // Radius of the earth in km
-  const dLat = deg2rad(lat2 - lat1)
-  const dLon = deg2rad(lon2 - lon1)
+  const dLat = (lat2 - lat1) * (Math.PI / 180)
+  const dLon = (lon2 - lon1) * (Math.PI / 180)
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2)
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   return R * c // Distance in km
-}
-
-const deg2rad = (deg) => deg * (Math.PI / 180)
-
-const parseGeometry = (geoString) => {
-  if (!geoString) return null
-  
-  try {
-    if (typeof geoString === 'string') {
-      const coords = geoString.replace(/[POINT()]/g, '').split(' ')
-      return {
-        longitude: parseFloat(coords[0]),
-        latitude: parseFloat(coords[1]),
-      }
-    } 
-    
-    if (geoString?.coordinates?.length >= 2) {
-      return {
-        longitude: parseFloat(geoString.coordinates[0]),
-        latitude: parseFloat(geoString.coordinates[1]),
-      }
-    }
-  } catch (error) {
-    console.error('Error parsing geometry:', error)
-  }
-  return null
 }
 
 const formatDate = (dateString) => {
@@ -81,12 +54,12 @@ const formatDate = (dateString) => {
   })
 }
 
-const getSortIcon = (column, sortColumn, sortDirection) => 
-  sortColumn === column ? (sortDirection === 'ascending' ? '▲' : '▼') : ''
+const getSortIcon = (column, currentSortColumn, currentSortDirection) => 
+  currentSortColumn === column ? (currentSortDirection === 'ascending' ? '▲' : '▼') : ''
 
-const getSortLabel = (sortColumn, sortOptions, getSortIcon) => {
-  const option = sortOptions.find(opt => opt.value === sortColumn)
-  return `${option?.label || 'Sort By'} ${getSortIcon(sortColumn)}`
+const getSortLabel = (currentSortColumn, currentSortDirection, sortOptions) => {
+  const option = sortOptions.find(opt => opt.value === currentSortColumn)
+  return `${option?.label || 'Sort By'} ${getSortIcon(currentSortColumn, currentSortColumn, currentSortDirection)}`
 }
 
 // Main Component
@@ -111,7 +84,6 @@ const ContractsInTransit = ({ navigation }) => {
   const [selectedContract, setSelectedContract] = useState(null)
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
-  const [userLocation, setUserLocation] = useState(null)
   const [isLocationTrackingActive, setIsLocationTrackingActive] = useState(false)
   const [expandedById, setExpandedById] = useState({})
 
@@ -155,56 +127,36 @@ const ContractsInTransit = ({ navigation }) => {
     })
   }, [contracts])
 
-  // Get current user location
-  const getUserLocation = useCallback(async () => {
-    try {
-      // Check if location services are enabled
-      const isEnabled = await Location.hasServicesEnabledAsync()
-      if (!isEnabled) {
-        console.warn('Location services are disabled')
-        return null
-      }
 
-      const { status } = await Location.requestForegroundPermissionsAsync()
-      if (status !== 'granted') {
-        showSnackbar('Permission to access location was denied')
-        return null
-      }
+// Calculate distances: current_location_geo -> drop_off_location_geo for vicinity and sorting
+const contractsWithDistance = useMemo(() => {
+  return contracts.map(contract => {
+    const dropOffCoords = parseGeometry(contract.drop_off_location_geo)
+    const currentCoords = parseGeometry(contract.current_location_geo)
+    let distance = null
 
-      const { coords } = await Location.getCurrentPositionAsync({})
-      return {
-        latitude: coords.latitude,
-        longitude: coords.longitude
-      }
-    } catch (error) {
-      console.warn('Error getting location:', error.message)
-      return null
+    if (currentCoords && dropOffCoords) {
+      distance = calculateDistance(
+        currentCoords.latitude,
+        currentCoords.longitude,
+        dropOffCoords.latitude,
+        dropOffCoords.longitude
+      )
     }
-  }, [])
+    const { distanceKm: vicinityKm, withinMeters: withinDropoffVicinity } = compareGeometriesVicinity(
+      contract.current_location_geo,
+      contract.drop_off_location_geo,
+      50
+    )
 
-  // Calculate distances for contracts
-  const contractsWithDistance = useMemo(() => {
-    if (!userLocation) return contracts
-
-    return contracts.map(contract => {
-      const dropOffCoords = parseGeometry(contract.drop_off_location_geo)
-      let distance = null
-
-      if (dropOffCoords) {
-        distance = calculateDistance(
-          userLocation.latitude,
-          userLocation.longitude,
-          dropOffCoords.latitude,
-          dropOffCoords.longitude
-        )
-      }
-
-      return {
-        ...contract,
-        distance
-      }
-    })
-  }, [contracts, userLocation?.latitude, userLocation?.longitude]) // More specific dependencies
+    return {
+      ...contract,
+      distance,
+      vicinityKm,
+      withinDropoffVicinity
+    }
+  })
+}, [contracts])
 
   // Memoized date formatter
   const getFormattedDates = useCallback((contract) => {
@@ -235,27 +187,13 @@ const ContractsInTransit = ({ navigation }) => {
       if (!loading) {
         await fetchContracts()
         await checkContractsAndManageTracking()
-        
-        // Only get location update if location services are enabled
-        try {
-          const isLocationEnabled = await Location.hasServicesEnabledAsync()
-          if (isLocationEnabled) {
-            const newLocation = await getUserLocation()
-            setUserLocation(newLocation)
-          }
-        } catch (error) {
-          console.warn('Location services not available during refresh:', error.message)
-        }
+      
       }
     }, 10000) // 10 seconds for more frequent updates
 
     return () => clearInterval(refreshInterval)
-  }, [loading, contracts.length, isLocationTrackingActive, fetchContracts, checkContractsAndManageTracking, getUserLocation])
+  }, [loading, contracts.length, isLocationTrackingActive, fetchContracts, checkContractsAndManageTracking])
 
-  // Get user location on component mount
-  useEffect(() => {
-    getUserLocation().then(setUserLocation)
-  }, [getUserLocation])
 
   // Fetch on focus to avoid stale data on revisit
   useFocusEffect(
@@ -264,11 +202,10 @@ const ContractsInTransit = ({ navigation }) => {
       Promise.all([
         fetchContracts(),
         checkContractsAndManageTracking(),
-        getUserLocation().then(setUserLocation)
       ]).finally(() => {
         setLoading(false)
       })
-    }, [fetchContracts, checkContractsAndManageTracking, getUserLocation])
+    }, [fetchContracts, checkContractsAndManageTracking])
   )
 
   // Real-time subscription for contracts
@@ -300,23 +237,6 @@ const ContractsInTransit = ({ navigation }) => {
               if (payload.eventType === 'UPDATE' && 
                   (payload.new?.current_location !== payload.old?.current_location ||
                    payload.new?.current_location_geo !== payload.old?.current_location_geo)) {
-                try {
-                  const isLocationEnabled = await Location.hasServicesEnabledAsync()
-                  if (isLocationEnabled) {
-                    const { status } = await Location.requestForegroundPermissionsAsync()
-                    if (status !== 'granted') {
-                      showSnackbar('Permission to access location was denied')
-                      return
-                    }
-                    const { coords } = await Location.getCurrentPositionAsync({})
-                      setUserLocation({
-                        latitude: coords.latitude,
-                        longitude: coords.longitude
-                    })
-                  }
-                } catch (locationError) {
-                  console.warn('Error getting location in realtime callback:', locationError.message)
-                }
               }
             }
           )
@@ -347,9 +267,7 @@ const ContractsInTransit = ({ navigation }) => {
       if (countError) throw countError
       
       // Check if location services are available before starting tracking
-      const isLocationEnabled = await Location.hasServicesEnabledAsync()
-      
-      if (count > 0 && isLocationEnabled) {
+      if (count > 0) {
         await startTracking()
         setIsLocationTrackingActive(true)
       } else {
@@ -402,14 +320,12 @@ const ContractsInTransit = ({ navigation }) => {
     try {
       await fetchContracts()
       await checkContractsAndManageTracking()
-      const newLocation = await getUserLocation()
-      setUserLocation(newLocation)
     } catch (error) {
       showSnackbar('Error refreshing contracts: ' + error.message)
     } finally {
       setRefreshing(false)
     }
-  }, [fetchContracts, checkContractsAndManageTracking, getUserLocation, showSnackbar])
+  }, [fetchContracts, checkContractsAndManageTracking, showSnackbar])
 
   // Sorting and filtering functions
   const handleSort = useCallback((column) => {
@@ -440,8 +356,6 @@ const ContractsInTransit = ({ navigation }) => {
           case 'pickup_location':
           case 'current_location':
           case 'drop_off_location':
-          case 'case_number':
-            fieldValue = contract[searchColumn] || '';
             break;
           default:
             fieldValue = contract[searchColumn] || '';
@@ -511,58 +425,25 @@ const ContractsInTransit = ({ navigation }) => {
   }, [contractsWithDistance, searchQuery, searchColumn, sortColumn, sortDirection]);
 
   // Dialog action handlers
-  const handleDialogAction = async (remarks, proofOfDeliveryImageUrl) => {
+  const handleDialogAction = async () => {
     if (!selectedContract) return
 
     try {
       setActionLoading(true)
       if (dialogType === 'deliver') {
-        navigation.navigate('DeliveryConfirmation', { 
-          contract: selectedContract,
-          proofOfDeliveryImageUrl 
-        })
+        navigation.navigate('DeliveryConfirmation', { contract: selectedContract, action: 'deliver' })
         setModalVisible(false)
         setSelectedContract(null)
       }
       else if (dialogType === 'failed') {
-        const { error } = await supabase
-          .from('contracts')
-          .update({
-            cancelled_at: new Date().toISOString(),
-            contract_status_id: 6,
-            remarks: remarks,
-            proof_of_delivery: proofOfDeliveryImageUrl
-          })
-          .eq('id', selectedContract.id)
-        if (error) throw error
-
-        // Don't call fetchContracts here as the subscription will handle the update
+        navigation.navigate('DeliveryConfirmation', { contract: selectedContract, action: 'failed' })
         setModalVisible(false)
         setSelectedContract(null)
-        showSnackbar('Contract marked as failed successfully', true)
       }
       else if (dialogType === 'cancel') {
-        if (!showCancelConfirmation) {
-          setShowCancelConfirmation(true)
-          setActionLoading(false)
-          return
-        }
-        
-        const { error } = await supabase
-          .from('contracts')
-          .update({
-            cancelled_at: new Date().toISOString(),
-            contract_status_id: 2,
-            remarks: remarks,
-          })
-          .eq('id', selectedContract.id)
-        if (error) throw error
-
-        // Don't call fetchContracts here as the subscription will handle the update
+        navigation.navigate('DeliveryConfirmation', { contract: selectedContract, action: 'cancel' })
         setModalVisible(false)
         setSelectedContract(null)
-        setShowCancelConfirmation(false)
-        showSnackbar('Contract cancelled successfully', true)
       }
     } catch (error) {
       showSnackbar('Error updating contract: ' + error.message)
@@ -589,11 +470,6 @@ const ContractsInTransit = ({ navigation }) => {
       contract.owner_last_name
     ].filter(Boolean).join(' ') || 'N/A'
 
-    const deliveryCharge = Number(contract.delivery_charge || 0)
-    const deliverySurcharge = Number(contract.delivery_surcharge || 0)
-    const deliveryDiscount = Number(contract.delivery_discount || 0)
-    const totalPrice = deliveryCharge + deliverySurcharge - deliveryDiscount
-    
     return (
       <Card style={[styles.contractCard, { backgroundColor: colors.surfaceVariant }]}>
         <Card.Content>
@@ -609,7 +485,6 @@ const ContractsInTransit = ({ navigation }) => {
           </View>
           <Divider />
           <List.Section>
-            <List.Accordion title="Basic Info" expanded={expanded.info} onPress={() => toggle('info')} titleStyle={[fonts.labelMedium, { color: colors.onSurface }]}>
               <View style={styles.passengerInfoContainer}>
                 <View>
                   <View style={{ flexDirection: 'row', gap: 5 }}>
@@ -617,7 +492,6 @@ const ContractsInTransit = ({ navigation }) => {
                     <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>{passengerName}</Text>
                   </View>
                   <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Total Luggage Quantity: {contract.luggage_quantity || 0}</Text>
-                  <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Case Number: {contract.case_number || 'N/A'}</Text>
                   <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Flight Number: {contract.flight_number || 'N/A'}</Text>
                   <View style={[styles.statusContainer, { paddingVertical: 6 }]}>
                     <Text style={[fonts.labelSmall, styles.statusLabel]}>STATUS:</Text>
@@ -625,7 +499,6 @@ const ContractsInTransit = ({ navigation }) => {
                   </View>
                 </View>
               </View>
-            </List.Accordion>
 
             <Divider />
 
@@ -646,15 +519,15 @@ const ContractsInTransit = ({ navigation }) => {
                 ))}
                 <View style={styles.locationRow}>
                   <IconButton 
-                    icon={userLocation === null ? "map-marker-question" : "map-marker-distance"} 
+                    icon={contract.distance === null ? "map-marker-question" : "map-marker-distance"} 
                     size={20} 
-                    iconColor={userLocation === null ? colors.outline : colors.tertiary} 
+                    iconColor={contract.distance === null ? colors.outline : colors.tertiary} 
                   />
                   <View style={styles.locationTextContainer}>
-                    <Text style={[fonts.labelSmall, { color: userLocation === null ? colors.outline : colors.tertiary }]}>Distance</Text>
+                    <Text style={[fonts.labelSmall, { color: contract.distance === null ? colors.outline : colors.tertiary }]}>Distance</Text>
                     <Text style={[fonts.bodySmall, styles.locationText]}>
-                      {userLocation === null 
-                        ? 'Getting location...'
+                      {contract.distance === null 
+                        ? 'Calculating distance...'
                         : contract.distance !== null
                         ? contract.distance < 1 
                           ? `${(contract.distance * 1000).toFixed(0)} m` 
@@ -680,25 +553,19 @@ const ContractsInTransit = ({ navigation }) => {
 
             <Divider />
 
-            <List.Accordion title={`Price: ₱${totalPrice.toFixed(2)}`} expanded={expanded.price} onPress={() => toggle('price')} titleStyle={[fonts.labelMedium, { color: colors.onSurface }]}>
-              <View style={{ paddingVertical: 8 }}>
-                <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Delivery Charge: ₱{deliveryCharge.toFixed(2)}</Text>
-                <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Surcharge: ₱{deliverySurcharge.toFixed(2)}</Text>
-                <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Discount: ₱{deliveryDiscount.toFixed(2)}</Text>
-                <Divider style={{ marginVertical: 6 }} />
-                <Text style={[fonts.labelMedium, { color: colors.primary }]}>Total: ₱{totalPrice.toFixed(2)}</Text>
-              </View>
-            </List.Accordion>
-
-            <Divider />
-
             <List.Accordion title="Actions" expanded={expanded.actions} onPress={() => toggle('actions')} titleStyle={[fonts.labelMedium, { color: colors.onSurface }]}>
               <Button mode="contained" onPress={() => navigation.navigate('ContractDetails', { id: contract.id})} style={[styles.actionButton, { backgroundColor: colors.primary }]}>Show Details</Button>
               {contract.drop_off_location && (
                 <Button mode="contained" onPress={() => navigation.navigate('CheckLocation', { dropOffLocation: contract.drop_off_location, dropOffLocationGeo: contract.drop_off_location_geo })} style={[styles.actionButton, { backgroundColor: colors.primary }]}>Check Location</Button>
               )}
-              <Button mode="contained" onPress={() => { setSelectedContract(contract); setDialogType('deliver'); setModalVisible(true) }} style={[styles.actionButton, { backgroundColor: colors.primary }]} disabled={contract.contract_status_id === 5 || contract.contract_status_id === 6}>Mark as Delivered</Button>
-              <Button mode="contained" onPress={() => { setSelectedContract(contract); setDialogType('failed'); setShowCancelConfirmation(false); setModalVisible(true) }} style={[styles.actionButton, { backgroundColor: colors.error }]} disabled={contract.contract_status_id === 6 || contract.contract_status_id === 5}>Mark as Failed</Button>
+              <Button mode="contained" onPress={() => { setSelectedContract(contract); setDialogType('deliver'); setModalVisible(true) }} style={[styles.actionButton, { backgroundColor: colors.primary }]} disabled={
+                contract.contract_status_id === 5 || contract.contract_status_id === 6 ||
+                (VICINITY_FEATURE_ENABLED && (contract.vicinityKm === null || contract.vicinityKm > 0.05))
+              }>Mark as Delivered</Button>
+              <Button mode="contained" onPress={() => { setSelectedContract(contract); setDialogType('failed'); setShowCancelConfirmation(false); setModalVisible(true) }} style={[styles.actionButton, { backgroundColor: colors.error }]} disabled={
+                contract.contract_status_id === 6 || contract.contract_status_id === 5 ||
+                (VICINITY_FEATURE_ENABLED && (contract.vicinityKm === null || contract.vicinityKm > 0.05))
+              }>Mark as Failed</Button>
               <Button mode="contained" onPress={() => { setSelectedContract(contract); setDialogType('cancel'); setShowCancelConfirmation(false); setModalVisible(true) }} style={[styles.actionButton, { backgroundColor: colors.error }]} disabled={contract.contract_status_id === 6 || contract.contract_status_id === 5 || contract.contract_status_id === 2}>Cancel Contract</Button>
             </List.Accordion>
           </List.Section>
@@ -805,7 +672,7 @@ const ContractsInTransit = ({ navigation }) => {
                   contentStyle={styles.buttonContent}
                   labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
                 >
-                  {getSortLabel(sortColumn, SORT_OPTIONS, getSortIcon)}
+                  {getSortLabel(sortColumn, sortDirection, SORT_OPTIONS)}
                 </Button>
               }
               contentStyle={[styles.menuContent, { backgroundColor: colors.surface }]}

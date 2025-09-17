@@ -1,49 +1,14 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native'
-import { Text, Button, Card, Divider, IconButton, useTheme, Searchbar, Menu, Portal, Dialog, Surface, List } from 'react-native-paper'
-import ContractActionModalContent from '../../../customComponents/ContractActionModalContent'
+import { Text, Button, Card, Divider, IconButton, useTheme, Searchbar, Menu, Surface, List } from 'react-native-paper'
+import BottomModal from '../../../customComponents/BottomModal'
+import ContractActionModalContent from './ContractActionModalContent'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
-
-// Utility functions
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371 // Radius of the earth in km
-  const dLat = deg2rad(lat2 - lat1)
-  const dLon = deg2rad(lon2 - lon1)
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  return R * c // Distance in km
-}
-
-const deg2rad = (deg) => deg * (Math.PI / 180)
-
-const parseGeometry = (geoString) => {
-  if (!geoString) return null
-  
-  try {
-    if (typeof geoString === 'string') {
-      const coords = geoString.replace(/[POINT()]/g, '').split(' ')
-      return {
-        longitude: parseFloat(coords[0]),
-        latitude: parseFloat(coords[1]),
-      }
-    } 
-    
-    if (geoString?.coordinates?.length >= 2) {
-      return {
-        longitude: parseFloat(geoString.coordinates[0]),
-        latitude: parseFloat(geoString.coordinates[1]),
-      }
-    }
-  } catch (error) {
-    console.error('Error parsing geometry:', error)
-  }
-  return null
-}
+import { parseGeometry, calculateDistanceKm, compareGeometriesVicinity } from '../../../../utils/vicinityUtils'
+import * as Location from 'expo-location'
+const VICINITY_FEATURE_ENABLED = true
 
 const PickupLuggage = ({ navigation }) => {
   const { colors, fonts } = useTheme()
@@ -62,6 +27,34 @@ const PickupLuggage = ({ navigation }) => {
   const [selectedContract, setSelectedContract] = useState(null)
   const [pickingup, setPickingup] = useState(false)
   const [expandedById, setExpandedById] = useState({})
+  
+  const [deviceGeoPoint, setDeviceGeoPoint] = useState(null)
+  // Get device location once per focus, used for pickup vicinity check before in-transit
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true
+      const getDeviceLocation = async () => {
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync()
+          if (status !== 'granted') {
+            if (isActive) setDeviceGeoPoint(null)
+            return
+          }
+          const { coords } = await Location.getCurrentPositionAsync({})
+          if (!coords) {
+            if (isActive) setDeviceGeoPoint(null)
+            return
+          }
+          const point = `SRID=4326;POINT(${coords.longitude} ${coords.latitude})`
+          if (isActive) setDeviceGeoPoint(point)
+        } catch (e) {
+          if (isActive) setDeviceGeoPoint(null)
+        }
+      }
+      getDeviceLocation()
+      return () => { isActive = false }
+    }, [])
+  )
 
   const getDefaultExpanded = useCallback(() => ({
     info: true,
@@ -106,7 +99,6 @@ const PickupLuggage = ({ navigation }) => {
     { label: 'Contract ID', value: 'id' },
     { label: 'Airline Name', value: 'airline_name' },
     { label: 'Owner Name', value: 'owner_name' },
-    { label: 'Case Number', value: 'case_number' },
     { label: 'Pickup Location', value: 'pickup_location' },
     { label: 'Drop-off Location', value: 'drop_off_location' },
   ]
@@ -116,33 +108,38 @@ const PickupLuggage = ({ navigation }) => {
     { label: 'Contract ID', value: 'id' },
     { label: 'Airline Name', value: 'airline_name' },
     { label: 'Owner Name', value: 'owner_name' },
-    { label: 'Case Number', value: 'case_number' },
     { label: 'Created Date', value: 'created_at' },
     { label: 'Luggage Quantity', value: 'luggage_quantity' },
   ]
 
-  // Calculate distances for contracts
+  // Calculate route distance (pickup->dropoff) and pickup vicinity (device->pickup)
   const contractsWithDistance = useMemo(() => {
     return contracts.map(contract => {
       const pickupCoords = parseGeometry(contract.pickup_location_geo)
       const dropOffCoords = parseGeometry(contract.drop_off_location_geo)
-      let distance = null
+      const { distanceKm: pickupVicinityKm, withinMeters: withinPickupVicinity } = compareGeometriesVicinity(
+        deviceGeoPoint,
+        contract.pickup_location_geo,
+        50
+      )
 
+      let distance = null // route distance in km
       if (pickupCoords && dropOffCoords) {
-        distance = calculateDistance(
+        distance = calculateDistanceKm(
           pickupCoords.latitude,
           pickupCoords.longitude,
           dropOffCoords.latitude,
           dropOffCoords.longitude
         )
       }
-
       return {
         ...contract,
-        distance
+        distance,
+        pickupVicinityKm,
+        withinPickupVicinity,
       }
     })
-  }, [contracts])
+  }, [contracts, deviceGeoPoint])
 
   useEffect(() => {
     const updateTime = () =>
@@ -288,9 +285,6 @@ const PickupLuggage = ({ navigation }) => {
             break;
           case 'pickup_location':
           case 'drop_off_location':
-          case 'case_number':
-            fieldValue = contract[searchColumn] || '';
-            break;
           default:
             fieldValue = contract[searchColumn] || '';
         }
@@ -391,53 +385,24 @@ const PickupLuggage = ({ navigation }) => {
     setSelectedContract(contract)
     setPickupDialogVisible(true)
   }
-  
+
   const confirmPickupLuggage = async (remarks, imageUrl) => {
     if (!selectedContract) return
     setPickingup(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('User not authenticated')
-
-      const baseUpdate = {
-        contract_status_id: 4, // In Transit
-        pickup_at: new Date().toISOString(),
-      }
-
-      // Try saving proof of pickup URL if provided, with graceful fallback on unknown column
-      let updateError
-      if (imageUrl) {
-        const withPickupProof = { ...baseUpdate, proof_of_pickup: imageUrl }
-        const { error: e1 } = await supabase
-          .from('contracts')
-          .update(withPickupProof)
-          .eq('id', selectedContract.id)
-        updateError = e1
-      } else {
-        const { error: e } = await supabase
-          .from('contracts')
-          .update(baseUpdate)
-          .eq('id', selectedContract.id)
-        updateError = e
-      }
-
-      if (updateError) {
-        // Final fallback: update without proof field
-        const { error: e3 } = await supabase
-          .from('contracts')
-          .update(baseUpdate)
-          .eq('id', selectedContract.id)
-        if (e3) throw e3
-      }
-
-      showSnackbar('Luggage picked up successfully', true)
-      fetchContracts()
-    } catch (error) {
-      showSnackbar('Error accepting contract: ' + error.message)
-    } finally {
-      setPickingup(false)
+      // Navigate to DeliveryConfirmation with pickup action
+      navigation.navigate('DeliveryConfirmation', { 
+        contract: selectedContract, 
+        action: 'pickup',
+        remarks: remarks,
+        imageUrl: imageUrl
+      })
       setPickupDialogVisible(false)
       setSelectedContract(null)
+    } catch (error) {
+      showSnackbar('Error processing pickup: ' + error.message)
+    } finally {
+      setPickingup(false)
     }
   }
 
@@ -457,11 +422,6 @@ const PickupLuggage = ({ navigation }) => {
       contract?.owner_last_name,
     ].filter(Boolean).join(' ') || 'N/A'
 
-    const deliveryCharge = Number(contract.delivery_charge || 0)
-    const deliverySurcharge = Number(contract.delivery_surcharge || 0)
-    const deliveryDiscount = Number(contract.delivery_discount || 0)
-    const totalPrice = deliveryCharge + deliverySurcharge - deliveryDiscount
-
     return (
       <Card style={[styles.contractCard, { backgroundColor: colors.surfaceVariant }]}>
         <Card.Content>
@@ -476,7 +436,6 @@ const PickupLuggage = ({ navigation }) => {
           <Divider />
 
           <List.Section>
-            <List.Accordion title="Basic Info" expanded={expanded.info} onPress={() => toggle('info')} titleStyle={[fonts.labelMedium, { color: colors.onSurface }]}>
               <View style={styles.passengerInfoContainer}>
                 <View>
                   <View style={{ flexDirection: 'row', gap: 5 }}>
@@ -484,7 +443,6 @@ const PickupLuggage = ({ navigation }) => {
                     <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>{passengerName}</Text>
                   </View>
                   <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Total Luggage Quantity: {contract.luggage_quantity || 0}</Text>
-                  <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Case Number: {contract.case_number || 'N/A'}</Text>
                   <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Flight Number: {contract.flight_number || 'N/A'}</Text>
                   <View style={[styles.statusContainer, { paddingVertical: 6 }]}>
                     <Text style={[fonts.labelSmall, styles.statusLabel]}>STATUS:</Text>
@@ -492,15 +450,12 @@ const PickupLuggage = ({ navigation }) => {
                   </View>
                 </View>
               </View>
-            </List.Accordion>
-
             <Divider />
 
             <List.Accordion title="Locations" expanded={expanded.locations} onPress={() => toggle('locations')} titleStyle={[fonts.labelMedium, { color: colors.onSurface }]}>
               <View style={styles.locationContainer}>
                 {[
                   { location: contract.pickup_location, label: 'Pickup', color: colors.primary },
-                  { location: contract.current_location, label: 'Current', color: colors.secondary },
                   { location: contract.drop_off_location, label: 'Drop-off', color: colors.error }
                 ].map((loc, idx) => (
                   <View key={idx} style={styles.locationRow}>
@@ -518,7 +473,7 @@ const PickupLuggage = ({ navigation }) => {
                     iconColor={contract.distance !== null ? colors.tertiary : colors.outline} 
                   />
                   <View style={styles.locationTextContainer}>
-                    <Text style={[fonts.labelSmall, { color: contract.distance !== null ? colors.tertiary : colors.outline }]}>Route Distance</Text>
+                    <Text style={[fonts.labelSmall, { color: contract.distance !== null ? colors.tertiary : colors.outline }]}>Distance</Text>
                     <Text style={[fonts.bodySmall, styles.locationText]}>
                       {contract.distance !== null
                         ? contract.distance < 1 
@@ -545,18 +500,6 @@ const PickupLuggage = ({ navigation }) => {
 
             <Divider />
 
-            <List.Accordion title={`Price: ₱${totalPrice.toFixed(2)}`} expanded={expanded.price} onPress={() => toggle('price')} titleStyle={[fonts.labelMedium, { color: colors.onSurface }]}>
-              <View style={{ paddingVertical: 8 }}>
-                <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Delivery Charge: ₱{deliveryCharge.toFixed(2)}</Text>
-                <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Surcharge: ₱{deliverySurcharge.toFixed(2)}</Text>
-                <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Discount: ₱{deliveryDiscount.toFixed(2)}</Text>
-                <Divider style={{ marginVertical: 6 }} />
-                <Text style={[fonts.labelMedium, { color: colors.primary }]}>Total: ₱{totalPrice.toFixed(2)}</Text>
-              </View>
-            </List.Accordion>
-
-            <Divider />
-
             <List.Accordion title="Actions" expanded={expanded.actions} onPress={() => toggle('actions')} titleStyle={[fonts.labelMedium, { color: colors.onSurface }]}>
               <Button 
                 mode="contained" 
@@ -571,7 +514,11 @@ const PickupLuggage = ({ navigation }) => {
                   onPress={() => handlePickupLuggage(contract)} 
                   style={[styles.actionButton, { backgroundColor: colors.primary }]}
                   loading={pickingup && selectedContract?.id === contract.id}
-                  disabled={pickingup}
+                  disabled={
+                    VICINITY_FEATURE_ENABLED && (
+                      contract.pickupVicinityKm === null || contract.pickupVicinityKm > 0.05
+                    )
+                  }
                 >
                   Pickup Luggage
                 </Button>
@@ -753,23 +700,15 @@ const PickupLuggage = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
       />
       
-      <Portal>
-        <Dialog
-          visible={pickupDialogVisible}
-          onDismiss={() => setPickupDialogVisible(false)}
-          style={{backgroundColor: colors.surface}}
-        >
-          <Dialog.Content>
-            <ContractActionModalContent
-              dialogType="pickup"
-              onClose={() => setPickupDialogVisible(false)}
-              onConfirm={(remarks, imageUrl) => confirmPickupLuggage(remarks, imageUrl)}
-              loading={pickingup}
-              contract={selectedContract}
-            />
-          </Dialog.Content>
-        </Dialog>
-      </Portal>
+      <BottomModal visible={pickupDialogVisible} onDismiss={() => setPickupDialogVisible(false)}>
+        <ContractActionModalContent
+          dialogType="pickup"
+          onClose={() => setPickupDialogVisible(false)}
+          onConfirm={confirmPickupLuggage}
+          loading={pickingup}
+          contract={selectedContract}
+        />
+      </BottomModal>
     </View>
   )
 }

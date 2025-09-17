@@ -9,12 +9,12 @@
     "updates": {
       "enabled": true,
       "fallbackToCacheTimeout": 2000,
-      "url": "https://u.expo.dev/b3cce495-8d3b-4b81-87ff-87bfaad80836"
+      "url": "https://u.expo.dev/3fe4a775-d252-440b-83a3-1fb6b571ed6f"
     },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "easytrack",
-    "owner": "thewalkingdev_numoa",
+    "owner": "thewalkingdevnumoa",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -43,7 +43,18 @@
         "FOREGROUND_SERVICE",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_BACKGROUND_LOCATION"
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ]
     },
     "plugins": [
@@ -70,7 +81,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "b3cce495-8d3b-4b81-87ff-87bfaad80836"
+        "projectId": "3fe4a775-d252-440b-83a3-1fb6b571ed6f"
       }
     },
     "ios": {
@@ -80,6 +91,10 @@
         "NSLocationWhenInUseUsageDescription": "Your location is used to show your position and update deliveries.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Background location allows EasyTrack to keep delivery progress updated even when the app isn't open.",
         "UIBackgroundModes": [
+          "location",
+          "processing",
+          "location",
+          "processing",
           "location",
           "processing",
           "location",
