@@ -9,6 +9,8 @@ import { ThemeContext } from './components/themes/themeContext'
 import { ActivityIndicator, View, Text } from 'react-native'
 import UpdatePrompt from './components/customComponents/UpdatePrompt'
 import './components/hooks/backgroundLocationTask'
+import { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, GOOGLE_MAPS_API_KEY, GEMINI_API_KEY } from '@env'
+
 const THEME_KEY = 'appTheme'
 
 const App = () => {
@@ -52,13 +54,43 @@ const App = () => {
     }
   }
   
+  // Validate environment variables before app initialization
+  const validateEnvironmentVariables = () => {
+    const requiredEnvVars = {
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY,
+      SUPABASE_SERVICE_ROLE_KEY,
+      GOOGLE_MAPS_API_KEY,
+      GEMINI_API_KEY
+    }
+
+    const missingVars = Object.entries(requiredEnvVars)
+      .filter(([key, value]) => !value || value === 'your_' + key.toLowerCase() + '_here')
+      .map(([key]) => key)
+
+    if (missingVars.length > 0) {
+      throw new Error(`Missing or invalid environment variables: ${missingVars.join(', ')}. Please check your .env.local file.`)
+    }
+
+    console.log('Environment variables loaded successfully:')
+    console.log('SUPABASE_URL:', SUPABASE_URL ? '✓' : '✗')
+    console.log('SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? '✓' : '✗')
+    console.log('SUPABASE_SERVICE_ROLE_KEY:', SUPABASE_SERVICE_ROLE_KEY ? '✓' : '✗')
+    console.log('GOOGLE_MAPS_API_KEY:', GOOGLE_MAPS_API_KEY ? '✓' : '✗')
+    console.log('GEMINI_API_KEY:', GEMINI_API_KEY ? '✓' : '✗')
+  }
+
   useEffect(() => {
     const initializeApp = async () => {
       try {
+        // Validate environment variables first
+        validateEnvironmentVariables()
+        
+        // Then load fonts and theme
         await Promise.all([loadFonts(), loadTheme()])
       } catch (error) {
         console.error('Error initializing app:', error)
-        setError('Failed to initialize app. Please restart the app.')
+        setError(error.message || 'Failed to initialize app. Please restart the app.')
       }
     }
     initializeApp()
