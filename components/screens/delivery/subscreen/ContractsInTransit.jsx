@@ -6,7 +6,7 @@ import { supabase } from '../../../../lib/supabase'
 import { useLocation } from '../../../hooks/useLocation'
 import { compareGeometriesVicinity, parseGeometry } from '../../../../utils/vicinityUtils'
 import BottomModal from '../../../customComponents/BottomModal'
-import ContractActionModalContent from './ContractActionModalContent'
+import ContractActionModalContent from '../../../customComponents/ContractActionModalContent'
 import useSnackbar from '../../../hooks/useSnackbar'
 const VICINITY_FEATURE_ENABLED = true
 

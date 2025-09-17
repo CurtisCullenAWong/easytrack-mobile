@@ -152,23 +152,6 @@ const ViewProfile = ({ navigation, route }) => {
     })
   }
 
-  if (loading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={{ color: colors.onBackground, marginTop: 16 }}>Loading profile...</Text>
-      </View>
-    )
-  }
-
-  if (!profile) {
-    return (
-      <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.onBackground }}>Profile not found</Text>
-      </View>
-    )
-  }
-
   return (
     <ScrollView 
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -178,6 +161,18 @@ const ViewProfile = ({ navigation, route }) => {
         <Appbar.BackAction color={colors.primary} onPress={() => navigation.goBack()} />
         <Appbar.Content title="Profile" titleStyle={{ ...fonts.titleLarge, color: colors.onBackground, fontWeight: 'bold' }} />
       </Appbar.Header>
+      
+      {loading ? (
+        <View style={styles.loadingContent}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={{ color: colors.onBackground, marginTop: 16 }}>Loading profile...</Text>
+        </View>
+      ) : !profile ? (
+        <View style={styles.errorContent}>
+          <Text style={{ color: colors.onBackground }}>Profile not found</Text>
+        </View>
+      ) : (
+        <>
       
       <Card style={[styles.profileCard, { backgroundColor: colors.surface }]}>
         <Card.Content style={styles.profileHeader}>
@@ -411,6 +406,8 @@ const ViewProfile = ({ navigation, route }) => {
           )}
         </Card.Content>
       </Card>
+        </>
+      )}
     </ScrollView>
   )
 }
@@ -427,10 +424,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  errorContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
   },
   profileCard: {
     marginHorizontal: 10,

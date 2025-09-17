@@ -10,7 +10,7 @@ const LOCATION_COLUMN_WIDTH = 200
 const TIMELINE_COLUMN_WIDTH = 300
 const STATUS_COLUMN_WIDTH = 150
 
-const AdminBookingHistory = ({ navigation }) => {
+const AdminBookingHistory = ({ navigation, route }) => {
   const { colors, fonts } = useTheme()
   const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -33,6 +33,15 @@ const AdminBookingHistory = ({ navigation }) => {
     fetchStatusOptions()
     fetchCorporations()
   }, [])
+
+  // Initialize status filter from navigation params if provided
+  useEffect(() => {
+    if (route?.params?.status && typeof route.params.status === 'string') {
+      setStatusFilter(route.params.status)
+    } else if (route?.params?.status && typeof route.params.status === 'number') {
+      setStatusFilter(String(route.params.status))
+    }
+  }, [route?.params?.status])
 
   useEffect(() => {
     fetchContracts()

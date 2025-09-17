@@ -36,7 +36,6 @@ const BookingList = ({ navigation }) => {
   const filterOptions = [
     { label: 'Contract ID', value: 'id' },
     { label: 'Luggage Owner', value: 'owner_first_name' },
-    { label: 'Case Number', value: 'case_number' },
     { label: 'Status', value: 'status' },
     { label: 'Pickup Location', value: 'pickup_location' },
     { label: 'Current Location', value: 'current_location' },
@@ -46,7 +45,6 @@ const BookingList = ({ navigation }) => {
   const sortOptions = [
     { label: 'Contract ID', value: 'id' },
     { label: 'Luggage Owner', value: 'owner_first_name' },
-    { label: 'Case Number', value: 'case_number' },
     { label: 'Status', value: 'contract_status.status_name' },
     { label: 'Created Date', value: 'created_at' },
     { label: 'Pickup Date', value: 'pickup_at' },
@@ -186,7 +184,7 @@ const BookingList = ({ navigation }) => {
     .sort((a, b) => {
       let valA, valB
 
-      if (sortColumn === 'owner_first_name' || sortColumn === 'case_number') {
+      if (sortColumn === 'owner_first_name') {
         valA = a[sortColumn] || ''
         valB = b[sortColumn] || ''
       } else if (sortColumn === 'contract_status.status_name') {
@@ -332,7 +330,6 @@ const BookingList = ({ navigation }) => {
                     <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>{passengerName}</Text>
                   </View>
                   <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Total Luggage Quantity: {contract.luggage_quantity || 0}</Text>
-                  <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Case Number: {contract.case_number || 'N/A'}</Text>
                   <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant }]}>Flight Number: {contract.flight_number || 'N/A'}</Text>
                   <View style={[styles.statusContainer, { paddingVertical: 6 }]}>
                     <Text style={[fonts.labelSmall, styles.statusLabel]}>STATUS:</Text>
@@ -702,9 +699,6 @@ const BookingList = ({ navigation }) => {
                     contractToCancel.owner_middle_initial,
                     contractToCancel.owner_last_name,
                   ].filter(Boolean).join(' ') || 'N/A'}
-                </Text>
-                <Text style={{ color: colors.onSurfaceVariant, ...fonts.labelMedium }}>
-                  Case Number: {contractToCancel.case_number || 'N/A'}
                 </Text>
               </View>
             )}

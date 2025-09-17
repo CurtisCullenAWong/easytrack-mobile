@@ -416,19 +416,6 @@ const ViewMessage = ({ navigation, route }) => {
     )
   }
 
-  if (loading) {
-    return (
-      <View
-        style={[styles.loadingContainer, { backgroundColor: colors.background }]}
-      >
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={{ color: colors.onBackground, marginTop: 16 }}>
-          Loading messages...
-        </Text>
-      </View>
-    )
-  }
-
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -467,19 +454,28 @@ const ViewMessage = ({ navigation, route }) => {
         </TouchableOpacity>
       </Appbar.Header>
 
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        renderItem={renderMessage}
-        keyExtractor={(item) => item.id}
-        style={styles.messagesList}
-        contentContainerStyle={styles.messagesContent}
-        onContentSizeChange={() =>
-          flatListRef.current?.scrollToEnd({ animated: true })
-        }
-        onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        showsVerticalScrollIndicator={false}
-      />
+      {loading ? (
+        <View style={styles.loadingContent}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={{ color: colors.onBackground, marginTop: 16 }}>
+            Loading messages...
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={(item) => item.id}
+          style={styles.messagesList}
+          contentContainerStyle={styles.messagesContent}
+          onContentSizeChange={() =>
+            flatListRef.current?.scrollToEnd({ animated: true })
+          }
+          onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
 
       <Divider style={[styles.divider, { backgroundColor: colors.outline }]} />
 
@@ -527,6 +523,7 @@ const ViewMessage = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  loadingContent: { flex: 1, justifyContent: "center", alignItems: "center" },
 
   messagesList: { flex: 1 },
   messagesContent: { paddingVertical: 16, paddingHorizontal: 16 },

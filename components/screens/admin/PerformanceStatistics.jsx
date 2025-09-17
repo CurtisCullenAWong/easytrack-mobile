@@ -28,6 +28,7 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
     totalEarnings: 0,
     averageDeliveryTime: 0,
     deliveriesByRegion: [],
+    countsByStatus: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
   })
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -151,25 +152,23 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
           contract_status:contract_status_id (status_name)
         `)
 
-      // Apply date filter if selected
+      // Apply date filter (to created_at for overall status counts)
       const dateRange = getDateRange()
       if (dateRange) {
-        console.log('Applying date filter:', dateFilter, dateRange)
-        query = query.or(`and(contract_status_id.eq.5,delivered_at.gte.${dateRange.start},delivered_at.lte.${dateRange.end}),and(contract_status_id.eq.6,cancelled_at.gte.${dateRange.start},cancelled_at.lte.${dateRange.end})`)
+        console.log('Applying date filter (created_at):', dateFilter, dateRange)
+        query = query.gte('created_at', dateRange.start).lte('created_at', dateRange.end)
       } else {
-        // If no date filter, just filter by status
         console.log('No date filter applied, showing all time data')
-        query = query.in('contract_status_id', [5, 6]) // 5 = delivered, 6 = failed
       }
 
-      const { data: deliveries, error: deliveriesError } = await query
-      if (deliveriesError) {
-        console.error('Error fetching deliveries:', deliveriesError)
+      const { data: contracts, error: contractsError } = await query
+      if (contractsError) {
+        console.error('Error fetching contracts:', contractsError)
         setLoading(false)
         return
       }
 
-      console.log('Fetched deliveries:', deliveries?.length || 0)
+      console.log('Fetched contracts:', contracts?.length || 0)
 
       // Fetch region names
       const { data: regionData, error: regionError } = await supabase
@@ -205,18 +204,30 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
         return acc
       }, {})
 
-      // Calculate basic statistics
-      const totalDeliveries = deliveries.length
+      // Calculate counts by status (1-6)
+      const countsByStatus = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 }
+      contracts.forEach(c => {
+        const statusId = c.contract_status_id
+        if (countsByStatus[statusId] !== undefined) {
+          countsByStatus[statusId] = (countsByStatus[statusId] || 0) + 1
+        }
+      })
+
+      // Subset for delivery performance (delivered/failed only)
+      const deliveries = contracts.filter(d => [5, 6].includes(d.contract_status_id))
+
+      // Calculate basic statistics from deliveries
+      const totalDeliveries = contracts.length
       const successfulDeliveries = deliveries.filter(d => d.contract_status_id === 5).length
       const failedDeliveries = deliveries.filter(d => d.contract_status_id === 6).length
-      const successRate = totalDeliveries > 0 ? successfulDeliveries / totalDeliveries : 0
+      const successRate = (successfulDeliveries + failedDeliveries) > 0 ? successfulDeliveries / (successfulDeliveries + failedDeliveries) : 0
 
-      // Calculate average delivery time in hours
-      const validDeliveryTimes = deliveries
-        .filter(d => d.pickup_at && d.delivered_at)
-        .map(d => {
-          const pickup = new Date(d.pickup_at)
-          const delivered = new Date(d.delivered_at)
+      // Calculate average delivery time in hours (use all contracts that have both timestamps)
+      const validDeliveryTimes = contracts
+        .filter(c => c.pickup_at && c.delivered_at)
+        .map(c => {
+          const pickup = new Date(c.pickup_at)
+          const delivered = new Date(c.delivered_at)
           return (delivered - pickup) / (1000 * 60 * 60) // Convert to hours
         })
 
@@ -225,12 +236,12 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
           ? Math.round((validDeliveryTimes.reduce((a, b) => a + b, 0) / validDeliveryTimes.length) * 10) / 10 // Round to 1 decimal place
           : 0
 
-      // Calculate total earnings
-      const totalEarnings = deliveries.reduce((sum, delivery) => {
+      // Calculate total earnings across all contracts
+      const totalEarnings = contracts.reduce((sum, contract) => {
         const amount =
-          (delivery.delivery_charge || 0) +
-          (delivery.delivery_surcharge || 0) -
-          (delivery.delivery_discount || 0)
+          (contract.delivery_charge || 0) +
+          (contract.delivery_surcharge || 0) -
+          (contract.delivery_discount || 0)
         return sum + amount
       }, 0)
 
@@ -267,6 +278,7 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
         totalEarnings,
         averageDeliveryTime,
         deliveriesByRegion,
+        countsByStatus,
       })
     } catch (error) {
       console.error('Error in fetchStatistics:', error)
@@ -338,6 +350,22 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
       return `${hours} hour${hours !== 1 ? 's' : ''}`
     }
     return `${hours} hour${hours !== 1 ? 's' : ''} ${minutes} minute${minutes !== 1 ? 's' : ''}`
+  }
+
+  const getStatusLabel = (statusId) => {
+    const labels = {
+      1: 'Available for Pickup',
+      2: 'Cancelled',
+      3: 'Accepted - Awaiting Pickup',
+      4: 'In Transit',
+      5: 'Delivered',
+      6: 'Delivery Failed',
+    }
+    return labels[statusId] || `Status ${statusId}`
+  }
+
+  const navigateToStatus = (statusId) => {
+    navigation.navigate('AdminBookingHistory', { status: String(statusId) })
   }
 
   return (
@@ -417,6 +445,38 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
               <Text variant="bodyLarge" style={[styles.summaryText, { color: colors.onSurface }]}>
                 Overview of delivery performance and statistics for the selected time period.
               </Text>
+            </Card.Content>
+          </Card>
+
+          {/* Contracts By Status */}
+          <Card style={[styles.statCard, { backgroundColor: colors.surface }]}>
+            <Card.Content>
+              <Text variant="titleMedium" style={{ color: colors.primary }}>
+                Contracts by Status
+              </Text>
+              <View style={styles.statusList}>
+                {[1,2,3,4,5,6].map((id) => (
+                  <View key={id} style={styles.statusRow}>
+                    <Text style={[styles.statusLabel, { color: colors.onSurface }]}>
+                      {getStatusLabel(id)}
+                    </Text>
+                    <View style={styles.statusActions}>
+                      <Text style={[styles.statusCount, { color: colors.onSurface }]}>
+                        {stats.countsByStatus[id] || 0}
+                      </Text>
+                      <Button
+                        mode="contained"
+                        onPress={() => navigateToStatus(id)}
+                        style={styles.viewButton}
+                        contentStyle={styles.buttonContent}
+                        labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
+                      >
+                        View
+                      </Button>
+                    </View>
+                  </View>
+                ))}
+              </View>
             </Card.Content>
           </Card>
 
@@ -561,13 +621,13 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
                       return <Text key={index}>{line}{'\n'}</Text>;
                     })}
                   </Text>
-                  {/* <Button 
+                  <Button 
                     mode="outlined" 
                     onPress={generateInsights}
                     style={styles.refreshButton}
                   >
                     Refresh Insights
-                  </Button> */}
+                  </Button>
                 </View>
               ) : null}
             </Card.Content>
@@ -634,6 +694,32 @@ const styles = StyleSheet.create({
   insightsText: {
     lineHeight: 24,
     marginBottom: 16,
+  },
+  statusList: {
+    marginTop: 8,
+    gap: 8,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  statusLabel: {
+    flex: 1,
+    fontWeight: '600',
+  },
+  statusActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  statusCount: {
+    fontWeight: '700',
+    marginRight: 8,
+  },
+  viewButton: {
+    borderRadius: 8,
   },
   refreshButton: {
     marginTop: 8,

@@ -21,6 +21,7 @@ const ContractDetails = ({ navigation, route }) => {
     const [contractor, setContractor] = useState(null)
     const [subcontractor, setSubcontractor] = useState(null)
     const [refreshing, setRefreshing] = useState(false)
+    const [userRoleId, setUserRoleId] = useState(null)
     const subscriptionRef = useRef(null)
 
     const getStatusColor = (statusId) => {
@@ -63,6 +64,26 @@ const ContractDetails = ({ navigation, route }) => {
         setContractData(contract)
     }
 
+    // Fetch current user's role_id
+    const fetchUserRole = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return
+
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('role_id')
+                .eq('id', user.id)
+                .single()
+
+            if (!error) {
+                setUserRoleId(typeof data?.role_id === 'object' ? data?.role_id?.id ?? null : data?.role_id ?? null)
+            }
+        } catch (_) {
+            // ignore
+        }
+    }
+
     // Fetch profiles for contractor and subcontractor
     const fetchProfiles = async (contract) => {
         if (contract?.airline_id) {
@@ -90,6 +111,7 @@ const ContractDetails = ({ navigation, route }) => {
     useFocusEffect(
         useCallback(() => {
             fetchContract()
+            fetchUserRole()
         }, [id])
     )
 
@@ -198,35 +220,17 @@ const ContractDetails = ({ navigation, route }) => {
                     <InfoRow label="Remarks:" value={contractData.remarks} colors={colors} fonts={fonts} />
                     <InfoRow label="Summary ID:" value={contractData.summary_id || 'N/A'} colors={colors} fonts={fonts}/>
                     <InfoRow label="Invoice ID:" value={contractData.summary?.invoice_id || 'N/A'} colors={colors} fonts={fonts}/>
-                    {contractData.contract_status_id === 4 && (
-                        <>
-                            <Text style={[fonts.titleMedium, { color: colors.primary, margin: 10 }]}>
-                                Location Tracking
-                            </Text>
-                            <Divider style={{ marginBottom: 10 }} />
-                            <InfoRow 
-                                label="Pickup Location:" 
-                                value={contractData.pickup_location} 
-                                colors={colors} 
-                                fonts={fonts}
-                                style={{ marginHorizontal: '2%' }}
-                            />
-                            <InfoRow 
-                                label="Recent Location:" 
-                                value={contractData.current_location} 
-                                colors={colors} 
-                                fonts={fonts}
-                                style={{ marginHorizontal: '2%' }}
-                            />
-                            <InfoRow 
-                                label="Drop-Off Location:" 
-                                value={contractData.drop_off_location} 
-                                colors={colors} 
-                                fonts={fonts}
-                                style={{ marginHorizontal: '2%' }}
-                            />
-                        </>
-                    )}
+                    <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
+                        Delivery Information
+                    </Text>
+                    <Divider style={{ marginBottom: 10 }} />
+
+                    <InfoRow label="Delivery Address:" value={contractData.delivery_address} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Address Line 1:" value={contractData.address_line_1} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Address Line 2:" value={contractData.address_line_2} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Pickup Location:" value={contractData.pickup_location} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Current Location:" value={contractData.current_location} colors={colors} fonts={fonts}/>
+                    <InfoRow label="Drop-off Location:" value={contractData.drop_off_location} colors={colors} fonts={fonts}/>
                     <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
                         Contractor Information
                     </Text>
@@ -260,26 +264,18 @@ const ContractDetails = ({ navigation, route }) => {
                     <InfoRow label="Luggage Description:" value={contractData.luggage_description} colors={colors} fonts={fonts}/>
                     <InfoRow label="Luggage Quantity:" value={contractData.luggage_quantity} colors={colors} fonts={fonts}/>
 
-                    <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
-                        Delivery Information
-                    </Text>
-                    <Divider style={{ marginBottom: 10 }} />
+                    {userRoleId !== 2 && (
+                        <>
+                            <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
+                                Payment Information
+                            </Text>
+                            <Divider style={{ marginBottom: 10 }} />
 
-                    <InfoRow label="Delivery Address:" value={contractData.delivery_address} colors={colors} fonts={fonts}/>
-                    <InfoRow label="Address Line 1:" value={contractData.address_line_1} colors={colors} fonts={fonts}/>
-                    <InfoRow label="Address Line 2:" value={contractData.address_line_2} colors={colors} fonts={fonts}/>
-                    <InfoRow label="Pickup Location:" value={contractData.pickup_location} colors={colors} fonts={fonts}/>
-                    <InfoRow label="Current Location:" value={contractData.current_location} colors={colors} fonts={fonts}/>
-                    <InfoRow label="Drop-off Location:" value={contractData.drop_off_location} colors={colors} fonts={fonts}/>
-
-                    <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
-                        Payment Information
-                    </Text>
-                    <Divider style={{ marginBottom: 10 }} />
-
-                    <InfoRow label="Delivery Charge:" value={contractData.delivery_charge ? `₱${contractData.delivery_charge}` : 'N/A'} colors={colors} fonts={fonts}/>
-                    <InfoRow label="Delivery Surcharge:" value={contractData.delivery_surcharge ? `₱${contractData.delivery_surcharge}` : 'N/A'} colors={colors} fonts={fonts}/>
-                    <InfoRow label="Delivery Discount:" value={contractData.delivery_discount ? `₱${contractData.delivery_discount}` : 'N/A'} colors={colors} fonts={fonts}/>
+                            <InfoRow label="Delivery Charge:" value={contractData.delivery_charge ? `₱${contractData.delivery_charge}` : 'N/A'} colors={colors} fonts={fonts}/>
+                            <InfoRow label="Delivery Surcharge:" value={contractData.delivery_surcharge ? `₱${contractData.delivery_surcharge}` : 'N/A'} colors={colors} fonts={fonts}/>
+                            <InfoRow label="Delivery Discount:" value={contractData.delivery_discount ? `₱${contractData.delivery_discount}` : 'N/A'} colors={colors} fonts={fonts}/>
+                        </>
+                    )}
 
                     <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
                         Timeline

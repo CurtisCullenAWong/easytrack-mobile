@@ -18,13 +18,9 @@ const filterSpecialCharacters = (text, fieldType) => {
     case 'flightNumber':
       // Allow only letters and numbers for flight numbers
       return text.replace(/[^A-Za-z0-9]/g, '')
-    case 'caseNumber':
-      // Allow only letters and numbers for case numbers
-      return text.replace(/[^A-Za-z0-9]/g, '')
     case 'postalCode':
       // Allow only digits for postal codes
       return text.replace(/[^0-9]/g, '')
-    case 'weight':
     case 'quantity':
       // Allow only digits for weight and quantity
       return text.replace(/[^0-9]/g, '')
@@ -42,7 +38,6 @@ const filterSpecialCharacters = (text, fieldType) => {
 
 // Constants
 const INITIAL_CONTRACT = {
-  caseNumber: "",
   firstName: "",
   middleInitial: "",
   lastName: "",
@@ -50,7 +45,6 @@ const INITIAL_CONTRACT = {
   flightNumber: "",
   itemDescription: "",
   itemDescriptions: [],
-  weight: "",
   quantity: "",
   deliveryAddress: "",
   addressLine1: "",
@@ -65,13 +59,11 @@ const INITIAL_CONTRACT = {
   roomUnitNo: "",
   landmarkEntrance: "",
   errors: {
-    caseNumber: false,
     firstName: false,
     lastName: false,
     contact: false,
     flightNumber: false,
     itemDescription: false,
-    weight: false,
     quantity: false,
     addressLine1: false,
     // Error fields for separate address components
@@ -91,11 +83,9 @@ const INPUT_LIMITS = {
   middleInitial: { maxLength: 1 },
   lastName: { maxLength: 50, minLength: 2 },
   contact: { maxLength: 10, minLength: 10 },
-  flightNumber: { maxLength: 6, minLength: 3 },
+  flightNumber: { maxLength: 8, minLength: 3 },
   itemDescription: { maxLength: 200, minLength: 6 },
-  weight: { maxLength: 2, minLength: 1 },
-  quantity: { maxLength: 2, minLength: 1 },
-  caseNumber: { maxLength: 10, minLength: 6 },
+  quantity: { maxLength: 1, minLength: 1 },
   province: { maxLength: 50, minLength: 2 },
   cityMunicipality: { maxLength: 50, minLength: 2 },
   barangay: { maxLength: 50, minLength: 2 },
@@ -109,11 +99,9 @@ const INPUT_LIMITS = {
 // Validation patterns
 const VALIDATION_PATTERNS = {
   contact: /^9\d{9}$/, // Must start with 9 and be exactly 10 digits
-  flightNumber: /^[A-Z0-9]{3,6}$/, // Alphanumeric, 3-6 characters
-  caseNumber: /^[A-Z0-9]{6,10}$/, // Alphanumeric, 6-10 characters
+  flightNumber: /^[A-Z0-9]{3,8}$/, // Alphanumeric, 3-8 characters
   postalCode: /^\d{4}$/, // Exactly 4 digits
-  weight: /^([1-9]|[1-4][0-9]|50)$/, // 1-50
-  quantity: /^([1-9]|10)$/, // 1-10
+  quantity: /^([1-3])$/, // 1-3
   // Address validation patterns
   province: /^[A-Za-z\s\-\.]+$/, // Letters, spaces, hyphens, dots
   cityMunicipality: /^[A-Za-z\s\-\.]+$/, // Letters, spaces, hyphens, dots
@@ -124,8 +112,8 @@ const VALIDATION_PATTERNS = {
   landmarkEntrance: /^[A-Za-z0-9\s\-\.\,\#]*$/ // Optional: Letters, numbers, spaces, hyphens, dots, commas, hash
 }
 
-  // Memoized Contract Form Component
-const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDelete, isLastContract, isDisabled }) => {
+// Memoized Contract Form Component
+const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDelete, onDuplicate, isLastContract, isDisabled }) => {
   const { colors, fonts } = useTheme()
   const [expandedSections, setExpandedSections] = useState({
     personalInfo: false,
@@ -143,7 +131,7 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
 
   // Check if sections have errors and expand them
   const hasPersonalInfoErrors = contract.errors?.firstName || contract.errors?.lastName || contract.errors?.contact
-  const hasLuggageInfoErrors = contract.errors?.itemDescription || contract.errors?.weight || contract.errors?.quantity || contract.errors?.flightNumber || contract.errors?.caseNumber
+  const hasLuggageInfoErrors = contract.errors?.itemDescription || contract.errors?.quantity || contract.errors?.flightNumber
   const hasDeliveryAddressErrors = contract.errors?.province || contract.errors?.cityMunicipality || contract.errors?.barangay || contract.errors?.postalCode
   const hasAddressDetailsErrors = contract.errors?.street || contract.errors?.villageBuilding
 
@@ -251,31 +239,25 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
             disabled={isDisabled}
           />
           <TextInput
-            label="Case Number*"
-            value={contract.caseNumber}
-            onChangeText={(text) => onInputChange(index, "caseNumber", filterSpecialCharacters(text, 'caseNumber').toUpperCase())}
-            mode="outlined"
-            style={{ marginBottom: 12 }}
-            error={contract.errors?.caseNumber}
-            maxLength={INPUT_LIMITS.caseNumber.maxLength}
-            inputMode="text"
-            placeholder='XXXXXXXX (6-10 characters)'
-            disabled={isDisabled}
-          />
-          <TextInput
             label="Luggage Quantity*"
             value={contract.quantity}
-            onChangeText={(text) => onInputChange(index, "quantity", filterSpecialCharacters(text, 'quantity'))}
+            onChangeText={(text) => {
+              const filtered = filterSpecialCharacters(text, 'quantity')
+              // Only allow 1, 2, or 3
+              if (filtered === '' || (filtered >= '1' && filtered <= '3')) {
+                onInputChange(index, "quantity", filtered)
+              }
+            }}
             inputMode="numeric"
             mode="outlined"
             style={{ marginBottom: 12 }}
             error={contract.errors?.quantity}
             maxLength={INPUT_LIMITS.quantity.maxLength}
-            placeholder="1-10 pieces"
+            placeholder="1-3 pieces"
             disabled={isDisabled}
           />
           {(() => {
-            const qty = Math.max(0, Math.min(10, parseInt(contract.quantity || '0')))
+            const qty = Math.max(0, Math.min(3, parseInt(contract.quantity || '0')))
             const items = Array.from({ length: qty }, (_, i) => i)
             return (
               <View>
@@ -301,18 +283,6 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
               </View>
             )
           })()}
-          <TextInput
-            label="Overall Weight (kg)*"
-            value={contract.weight}
-            onChangeText={(text) => onInputChange(index, "weight", filterSpecialCharacters(text, 'weight'))}
-            inputMode="numeric"
-            mode="outlined"
-            style={{ marginBottom: 12 }}
-            error={contract.errors?.weight}
-            maxLength={INPUT_LIMITS.weight.maxLength}
-            placeholder="1-50 kg"
-            disabled={isDisabled}
-          />
         </View>
       </List.Accordion>
       <List.Accordion
@@ -462,6 +432,15 @@ const ContractForm = React.memo(({ contract, index, onInputChange, onClear, onDe
        >
          Clear Form
        </Button>
+      <Button
+        mode="outlined"
+        onPress={() => onDuplicate(index)}
+        style={{ marginTop: 8 }}
+        icon="content-copy"
+        disabled={isDisabled}
+      >
+        Duplicate Form
+      </Button>
      </View>
   )
 })
@@ -551,7 +530,7 @@ const MakeContracts = () => {
       updated[index][field] = value
       // Sync per-item descriptions with quantity and compose preview
       const syncDescriptions = () => {
-        const qty = Math.max(0, Math.min(10, parseInt(updated[index].quantity || '0')))
+        const qty = Math.max(0, Math.min(3, parseInt(updated[index].quantity || '0')))
         let arr = Array.isArray(updated[index].itemDescriptions) ? [...updated[index].itemDescriptions] : []
         if (arr.length > qty) arr = arr.slice(0, qty)
         if (arr.length < qty) arr = [...arr, ...Array.from({ length: qty - arr.length }, () => '')]
@@ -568,11 +547,36 @@ const MakeContracts = () => {
     })
   }, [])
 
+  const duplicateContract = useCallback((index) => {
+    setContracts(prev => {
+      if (prev.length >= 15) return prev
+      const original = prev[index]
+      const cloned = {
+        ...original,
+        // Reset luggage-specific fields
+        itemDescription: "",
+        itemDescriptions: [],
+        quantity: "",
+        // Ensure errors reset
+        errors: {
+          ...original.errors,
+          itemDescription: false,
+          quantity: false,
+        }
+      }
+      const updated = [...prev]
+      updated.splice(index + 1, 0, cloned)
+      return updated
+    })
+    if (contracts.length >= 15) {
+      showSnackbar('Maximum of 15 passenger forms reached')
+    }
+  }, [contracts.length, showSnackbar])
+
   const clearSingleContract = useCallback((index) => {
     setContracts(prev => {
       const updated = [...prev]
       updated[index] = {
-        caseNumber: "",
         firstName: "",
         middleInitial: "",
         lastName: "",
@@ -580,7 +584,6 @@ const MakeContracts = () => {
         flightNumber: "",
         itemDescription: "",
         itemDescriptions: [],
-        weight: "",
         quantity: "",
         deliveryAddress: "",
         addressLine1: "",
@@ -595,13 +598,11 @@ const MakeContracts = () => {
         roomUnitNo: "",
         landmarkEntrance: "",
         errors: {
-          caseNumber: false,
           firstName: false,
           lastName: false,
           contact: false,
           flightNumber: false,
           itemDescription: false,
-          weight: false,
           quantity: false,
           addressLine1: false,
           // Error fields for separate address components
@@ -626,8 +627,11 @@ const MakeContracts = () => {
   }, [contracts.length, showSnackbar])
 
   const addContract = useCallback(() => {
+    if (contracts.length >= 15) {
+      showSnackbar('Maximum of 15 passenger forms reached')
+      return
+    }
     const base = {
-      caseNumber: "",
       firstName: "",
       middleInitial: "",
       lastName: "",
@@ -635,7 +639,6 @@ const MakeContracts = () => {
       flightNumber: "",
       itemDescription: "",
       itemDescriptions: [],
-      weight: "",
       quantity: "",
       deliveryAddress: "",
       addressLine1: "",
@@ -649,13 +652,11 @@ const MakeContracts = () => {
       villageBuilding: "",
       roomUnitNo: "",
       errors: {
-        caseNumber: false,
         firstName: false,
         lastName: false,
         contact: false,
         flightNumber: false,
         itemDescription: false,
-        weight: false,
         quantity: false,
         addressLine1: false,
         // Error fields for separate address components
@@ -686,13 +687,10 @@ const MakeContracts = () => {
     }
 
     setContracts(prev => [...prev, prefilled])
-  }, [lastAddressDetails])
+  }, [contracts.length, lastAddressDetails, showSnackbar])
 
   const validateContract = useCallback((contract) => {
     return {
-      caseNumber: !contract.caseNumber.trim() || 
-                  contract.caseNumber.length < INPUT_LIMITS.caseNumber.minLength ||
-                  !VALIDATION_PATTERNS.caseNumber.test(contract.caseNumber),
       firstName: !contract.firstName.trim() || 
                  contract.firstName.length < INPUT_LIMITS.firstName.minLength ||
                  contract.firstName.length > INPUT_LIMITS.firstName.maxLength,
@@ -711,8 +709,6 @@ const MakeContracts = () => {
                        const joined = descs.map((d, i) => `${i + 1}. ${String(d || '').trim()}\n`).join('')
                        return qty <= 0 || hasEmpty || joined.length < INPUT_LIMITS.itemDescription.minLength || joined.length > INPUT_LIMITS.itemDescription.maxLength
                        })(),
-      weight: !contract.weight.trim() || 
-              !VALIDATION_PATTERNS.weight.test(contract.weight),
       quantity: !contract.quantity.trim() || 
                 !VALIDATION_PATTERNS.quantity.test(contract.quantity),
       // Validation for separate address components
@@ -843,7 +839,7 @@ const MakeContracts = () => {
         // Combine room/unit and landmark into address_line_2
         const combinedAddressLine2 = `${contract.roomUnitNo}, ${contract.landmarkEntrance}`.trim()
 
-        // Insert contract with all luggage information directly into contracts table
+      // Insert contract with luggage information directly into contracts table
         const contractData = {
           id: trackingID,
           airline_id: user.id,
@@ -852,10 +848,8 @@ const MakeContracts = () => {
           owner_last_name: contract.lastName,
           owner_contact: formatContactNumber(contract.contact),
           luggage_description: contract.itemDescription,
-          luggage_weight: contract.weight,
           luggage_quantity: contract.quantity,
           flight_number: contract.flightNumber,
-          case_number: contract.caseNumber,
           delivery_address: combinedDeliveryAddress,
           address_line_1: combinedAddressLine1,
           address_line_2: combinedAddressLine2,
@@ -1060,6 +1054,7 @@ const MakeContracts = () => {
             onInputChange={handleInputChange}
             onClear={clearSingleContract}
             onDelete={deleteContract}
+            onDuplicate={duplicateContract}
             isLastContract={contracts.length === 1}
             isDisabled={!dropOffLocation.location || deliveryFee <= 0}
           />
@@ -1070,7 +1065,7 @@ const MakeContracts = () => {
             mode="outlined"
             onPress={addContract}
             icon="plus"
-            disabled={!dropOffLocation.location || deliveryFee <= 0}
+            disabled={!dropOffLocation.location || deliveryFee <= 0 || contracts.length >= 15}
           >
             Add Passenger
           </Button>

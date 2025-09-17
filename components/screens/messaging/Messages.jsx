@@ -427,19 +427,6 @@ const Messages = ({ navigation }) => {
   })
 
   // --- Render ---
-  if (loading || !statusMapLoaded) {
-    return (
-      <View
-        style={[styles.loadingContainer, { backgroundColor: colors.background }]}
-      >
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={{ color: colors.onBackground, marginTop: 16 }}>
-          {!statusMapLoaded ? "Loading status data..." : "Loading conversations..."}
-        </Text>
-      </View>
-    )
-  }
-
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Header navigation={navigation} title="Messages" />
@@ -456,38 +443,47 @@ const Messages = ({ navigation }) => {
       </View>
 
       {/* Conversations */}
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={{ paddingBottom: 88 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        showsVerticalScrollIndicator={false}
-      >
-        {filtered.length === 0 ? (
-          <EmptyState
-            title={conversations.length === 0 ? "No conversations yet" : "No matches"}
-            subtitle={
-              conversations.length === 0
-                ? "Start a conversation by messaging someone"
-                : "Try a different search"
-            }
-            colors={colors}
-          />
-        ) : (
-          filtered.map((c, i) => (
-            <ConversationCard
-              key={c.id}
-              conversation={c}
-              navigation={navigation}
+      {loading || !statusMapLoaded ? (
+        <View style={styles.loadingContent}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={{ color: colors.onBackground, marginTop: 16 }}>
+            {!statusMapLoaded ? "Loading status data..." : "Loading conversations..."}
+          </Text>
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={{ paddingBottom: 88 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          showsVerticalScrollIndicator={false}
+        >
+          {filtered.length === 0 ? (
+            <EmptyState
+              title={conversations.length === 0 ? "No conversations yet" : "No matches"}
+              subtitle={
+                conversations.length === 0
+                  ? "Start a conversation by messaging someone"
+                  : "Try a different search"
+              }
               colors={colors}
-              fonts={fonts}
-              index={i}
-              total={filtered.length}
             />
-          ))
-        )}
-      </ScrollView>
+          ) : (
+            filtered.map((c, i) => (
+              <ConversationCard
+                key={c.id}
+                conversation={c}
+                navigation={navigation}
+                colors={colors}
+                fonts={fonts}
+                index={i}
+                total={filtered.length}
+              />
+            ))
+          )}
+        </ScrollView>
+      )}
 
       <FAB
         icon="message-plus"
@@ -504,6 +500,7 @@ const styles = StyleSheet.create({
   searchWrap: { paddingHorizontal: 12, paddingVertical: 8 },
   search: { borderRadius: 10 },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  loadingContent: { flex: 1, justifyContent: "center", alignItems: "center" },
   emptyContainer: { alignItems: "center", paddingVertical: 60 },
   emptyText: { fontSize: 18, fontWeight: "bold", marginBottom: 8 },
   emptySubtext: { fontSize: 14, textAlign: "center" },

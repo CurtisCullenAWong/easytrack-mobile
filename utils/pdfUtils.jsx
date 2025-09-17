@@ -80,8 +80,9 @@ const generateTransactionReportHTML = async (
         delivery_discount,
         remarks,
         passenger_form,
-        drop_off_location,
         delivery_address,
+        address_line_1,
+        address_line_2,
         delivered_at,
         cancelled_at,
         owner_first_name,
@@ -89,10 +90,8 @@ const generateTransactionReportHTML = async (
         owner_last_name,
         owner_contact,
         luggage_description,
-        luggage_weight,
         luggage_quantity,
         flight_number,
-        case_number,
         passenger_id,
         proof_of_delivery
       `)
@@ -157,7 +156,12 @@ const generateTransactionReportHTML = async (
           <td>${contract.id}</td>
           <td>${ownerName}</td>
           <td>${contract.flight_number || 'N/A'}</td>
-          <td>${contract.drop_off_location || contract.delivery_address || 'N/A'}</td>
+          <td>${(() => {
+            const parts = [contract.delivery_address, contract.address_line_1, contract.address_line_2]
+              .map(v => (v || '').toString().trim())
+              .filter(Boolean)
+            return parts.length ? parts.join(', ') : 'N/A'
+          })()}</td>
           <td>${formatDate(contract.delivered_at || contract.cancelled_at)}</td>
           <td>${contract.contract_status?.status_name || 'N/A'}</td>
           <td class="amount">₱${formatPHP(amount)}</td>

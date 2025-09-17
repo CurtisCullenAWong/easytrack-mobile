@@ -16,6 +16,8 @@ import {
 } from 'react-native-paper'
 import { supabase } from '../../../../../lib/supabaseAdmin'
 import { useFocusEffect } from '@react-navigation/native'
+import BottomModal from '../../../../customComponents/BottomModal'
+import useSnackbar from '../../../../hooks/useSnackbar'
 
 // Constants
 const PROFILE_SECTIONS = {
@@ -323,6 +325,10 @@ const ViewProfileScreen = ({ route, navigation }) => {
   const [saving, setSaving] = useState(false)
   const [statuses, setStatuses] = useState([])
   const [verifyStatuses, setVerifyStatuses] = useState([])
+  const { showSnackbar, SnackbarElement } = useSnackbar()
+  const [showChangePw, setShowChangePw] = useState(false)
+  const [pwVisibility, setPwVisibility] = useState({ pw: false, confirm: false })
+  const [passwords, setPasswords] = useState({ pw: '', confirm: '' })
 
   const fetchStatuses = async () => {
     try {
@@ -478,6 +484,41 @@ const ViewProfileScreen = ({ route, navigation }) => {
     'Last Updated': formatDateTime(user?.updated_at),
   }), [user?.last_sign_in_at, user?.updated_at, formatDateTime])
 
+  const validatePassword = (password) => {
+    if (!password || password.length < 8) return 'Password must be at least 8 characters long'
+    if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter'
+    if (!/[a-z]/.test(password)) return 'Password must contain at least one lowercase letter'
+    if (!/[0-9]/.test(password)) return 'Password must contain at least one number'
+    return null
+  }
+
+  const adminChangePassword = async () => {
+    try {
+      if (!passwords.pw || !passwords.confirm) {
+        return showSnackbar('Please fill in all fields')
+      }
+      if (passwords.pw !== passwords.confirm) {
+        return showSnackbar('Passwords do not match')
+      }
+      const pwError = validatePassword(passwords.pw)
+      if (pwError) return showSnackbar(pwError)
+
+      setSaving(true)
+      const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {
+        password: passwords.pw,
+      })
+      if (updateError) throw updateError
+      showSnackbar('Password updated successfully', true)
+      setShowChangePw(false)
+      setPasswords({ pw: '', confirm: '' })
+    } catch (err) {
+      console.error('Admin password change error:', err)
+      showSnackbar(err.message || 'Failed to update password')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
@@ -542,11 +583,50 @@ const ViewProfileScreen = ({ route, navigation }) => {
         statuses={statuses}
         verifyStatuses={verifyStatuses}
       />
+      <View style={{ marginHorizontal: 16 }}>
+        <Button
+          mode='contained-tonal'
+          onPress={() => setShowChangePw(true)}
+          icon='lock-reset'
+          style={{ marginBottom: 8 }}
+        >
+          Change Password
+        </Button>
+      </View>
       <InfoCard title={PROFILE_SECTIONS.PERSONAL} data={personalInfo} colors={colors} fonts={fonts} />
       <InfoCard title={PROFILE_SECTIONS.ACCOUNT} data={accountInfo} colors={colors} fonts={fonts} />
       <InfoCard title={PROFILE_SECTIONS.ACTIVITY} data={recentActivity} colors={colors} fonts={fonts} />
       <VerificationCard user={user} colors={colors} fonts={fonts} />
       <VehicleCard user={user} colors={colors} fonts={fonts} />
+
+      <BottomModal visible={showChangePw} onDismiss={() => setShowChangePw(false)}>
+        <View style={{ paddingTop: 8 }}>
+          <Text style={[fonts.titleLarge, { color: colors.primary, textAlign: 'center', marginBottom: 12 }]}>Change Password</Text>
+          <TextInput
+            label='New Password'
+            value={passwords.pw}
+            onChangeText={(v) => setPasswords(prev => ({ ...prev, pw: v }))}
+            secureTextEntry={!pwVisibility.pw}
+            right={<TextInput.Icon icon={pwVisibility.pw ? 'eye-off' : 'eye'} onPress={() => setPwVisibility(prev => ({ ...prev, pw: !prev.pw }))} />}
+            mode='outlined'
+            style={styles.input}
+          />
+          <TextInput
+            label='Confirm Password'
+            value={passwords.confirm}
+            onChangeText={(v) => setPasswords(prev => ({ ...prev, confirm: v }))}
+            secureTextEntry={!pwVisibility.confirm}
+            right={<TextInput.Icon icon={pwVisibility.confirm ? 'eye-off' : 'eye'} onPress={() => setPwVisibility(prev => ({ ...prev, confirm: !prev.confirm }))} />}
+            mode='outlined'
+            style={styles.input}
+          />
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 }}>
+            <Button onPress={() => setShowChangePw(false)} style={{ marginRight: 8 }}>Cancel</Button>
+            <Button mode='contained' onPress={adminChangePassword} loading={saving} disabled={saving}>Update</Button>
+          </View>
+        </View>
+      </BottomModal>
+      {SnackbarElement}
     </ScrollView>
   )
 }

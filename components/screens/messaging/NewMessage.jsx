@@ -109,15 +109,6 @@ const NewMessage = ({ navigation }) => {
     </View>
   )
 
-  if (loading) {
-    return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
-        <Text style={{ marginTop: 8, color: colors.onBackground }}>Loading users...</Text>
-      </View>
-    )
-  }
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Appbar.Header style={{ backgroundColor: colors.background }}>
@@ -134,12 +125,20 @@ const NewMessage = ({ navigation }) => {
           style={[styles.search, { backgroundColor: colors.surface, color: colors.onSurface }]}
         />
       </View>
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={{ paddingVertical: 8 }}
-      />
+      
+      {loading ? (
+        <View style={styles.loadingContent}>
+          <ActivityIndicator color={colors.primary} />
+          <Text style={{ marginTop: 8, color: colors.onBackground }}>Loading users...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingVertical: 8 }}
+        />
+      )}
     </View>
   )
 }
@@ -147,6 +146,7 @@ const NewMessage = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingContent: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   searchWrap: { paddingHorizontal: 12, paddingVertical: 10 },
   search: { borderRadius: 10 },
   row: { flexDirection: 'row', alignItems: 'center' },
