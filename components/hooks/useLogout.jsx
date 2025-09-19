@@ -4,6 +4,7 @@ import { Portal, Dialog, Button, Text, ActivityIndicator, useTheme } from 'react
 import { supabase } from '../../lib/supabase'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { stopBackgroundTracking } from './useLocation'
+import { unregisterPushToken } from '../../utils/registerForPushNotifications'
 const useLogout = () => {
   const navigation = useNavigation()
   const [isDialogVisible, setIsDialogVisible] = useState(false)
@@ -24,6 +25,13 @@ const useLogout = () => {
           .from('profiles')
           .update({ user_status_id: 2 })
           .eq('id', user.id)
+      }
+
+      // Attempt to remove push token row for this device/user before sign out
+      try {
+        if (user) await unregisterPushToken(user.id)
+      } catch (e) {
+        console.warn('Failed to unregister push token during logout', e)
       }
 
       // Disable autologin

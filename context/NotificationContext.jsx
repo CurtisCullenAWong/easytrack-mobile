@@ -154,7 +154,7 @@ export const NotificationProvider = ({ children }) => {
           }
         }
       } catch (err) {
-        console.error("Notification setup failed:", err)
+        console.warn("Notification setup failed:", err)
         if (isMounted) setError(err)
       }
     }

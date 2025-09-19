@@ -196,3 +196,21 @@ export async function registerPushToken(userId, token) {
     console.log("Push token registered successfully for user:", userId)
   }
 }
+
+export async function unregisterPushToken(userId) {
+  try {
+    const deviceId = Device.osBuildId ?? "unknown-device"
+    const { error } = await supabase
+      .from('expo_push_tokens')
+      .delete()
+      .match({ user_id: userId, device_id: deviceId })
+
+    if (error) {
+      console.error('Error deleting push token:', error)
+    } else {
+      console.log('Push token unregistered for user:', userId)
+    }
+  } catch (e) {
+    console.error('unregisterPushToken failed:', e)
+  }
+}
