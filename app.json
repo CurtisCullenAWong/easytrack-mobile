@@ -73,19 +73,18 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/icon.png",
-          "color": "#F3F8F2",
-          "defaultChannel": "default",
-          "mode": "production",
-          "sounds": []
+          "icon": "./assets/images/splash-icon.png",
+          "color": "#0C5B47",
+          "sounds": [],
+          "mode": "production"
         }
       ]
     ],
     "notification": {
-      "icon": "./assets/images/icon.png",
+      "icon": "./assets/images/splash-icon.png",  
       "color": "#0C5B47",
-      "androidMode": "default",
-      "androidCollapsedTitle": "New notifications"
+      "iosDisplayInForeground": true,
+      "androidShowBadge": true
     },
     "extra": {
       "eas": {

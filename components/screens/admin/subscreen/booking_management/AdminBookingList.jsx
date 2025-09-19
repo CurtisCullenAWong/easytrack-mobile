@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import { ScrollView, StyleSheet, View, RefreshControl } from 'react-native'
 import {
@@ -15,6 +15,7 @@ import {
 } from 'react-native-paper'
 import { supabase } from '../../../../../lib/supabaseAdmin'
 import useSnackbar from '../../../../hooks/useSnackbar'
+import { sendNotificationToUsers } from '../../../../../utils/registerForPushNotifications'
 
 const COLUMN_WIDTH = 180
 const FULL_NAME_WIDTH = 200
@@ -377,7 +378,6 @@ const AdminBookingList = ({ navigation }) => {
     { key: 'id', label: 'Contract ID', width: COLUMN_WIDTH },
     { key: 'status', label: 'Status', width: COLUMN_WIDTH },
     { key: 'luggage_quantity', label: 'Luggage Qty', width: 120 },
-    { key: 'luggage_weight', label: 'Weight', width: 100 },
     { key: 'flight_number', label: 'Flight #', width: 120 },
     { key: 'airline_name', label: 'Airline Personnel', width: FULL_NAME_WIDTH },
     { key: 'corporation', label: 'Corporation', width: COLUMN_WIDTH },
@@ -395,19 +395,39 @@ const AdminBookingList = ({ navigation }) => {
       showSnackbar('Please select a delivery personnel')
       return
     }
-
+  
     try {
-      const { error } = await supabase
+      // Update the contract
+      const { error, data: updatedContract } = await supabase
         .from('contracts')
         .update({ 
           delivery_id: selectedDeliveryPerson.id,
-          contract_status_id: 3, // Update status to assigned
+          contract_status_id: 3,
           accepted_at: new Date().toISOString()
         })
         .eq('id', selectedContract.id)
-
+        .select() // get the updated contract back
+        .single()
+  
       if (error) throw error
-
+  
+      // Send notifications to airline and delivery person
+      if (updatedContract.airline_id) {
+        await sendNotificationToUsers(
+          updatedContract.airline_id,
+          'Delivery Assigned',
+          `Your delivery has been assigned to ${selectedDeliveryPerson?.first_name + " " + selectedDeliveryPerson?.last_name }.`
+        )
+      }
+  
+      if (selectedDeliveryPerson.id) {
+        await sendNotificationToUsers(
+          selectedDeliveryPerson.id,
+          'New Delivery Assigned',
+          `You have been assigned a delivery for contract #${updatedContract.id}.`
+        )
+      }
+  
       showSnackbar('Successfully assigned delivery personnel', true)
       setShowAssignDialog(false)
       setSelectedDeliveryPerson(null)
@@ -417,6 +437,7 @@ const AdminBookingList = ({ navigation }) => {
       showSnackbar('Failed to assign delivery personnel')
     }
   }
+  
 
   const handleCancelContract = (contract) => {
     if (contract.contract_status_id !== 1) {
@@ -430,16 +451,24 @@ const AdminBookingList = ({ navigation }) => {
   const confirmCancelContract = async () => {
     if (!contractToCancel) return
     try {
-      const { error } = await supabase
+      const { error, data: contract } = await supabase
         .from('contracts')
         .update({
           contract_status_id: 2,
           cancelled_at: new Date().toISOString(),
         })
         .eq('id', contractToCancel.id)
+        .select()
+        .single()
 
       if (error) throw error
-
+      if (contract.airline_id) {
+        await sendNotificationToUsers(
+          contract.airline_id,
+          `Delivery Cancelled: #${contract.id}`,
+          `Your delivery has been cancelled.`
+        )
+      }
       showSnackbar('Contract cancelled successfully', true)
       fetchContracts()
     } catch (error) {

@@ -5,6 +5,7 @@ import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'
 import BottomModal from '../../../customComponents/BottomModal'
+import { sendNotificationAdmin } from '../../../../utils/registerForPushNotifications'
 
 // Utility function to filter special characters based on field type
 const filterSpecialCharacters = (text, fieldType) => {
@@ -778,6 +779,62 @@ const MakeContracts = () => {
     return true
   }, [contracts, dropOffLocation, pickupLocation, deliveryFee, showSnackbar, validateContract])
 
+  // Function to notify administrators about new booking
+  const notifyAdministrators = useCallback(async (createdContracts, user) => {
+    try {
+      // Get user profile information
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, corporation_id')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError) {
+        console.error('Error fetching user profile:', profileError)
+        return
+      }
+
+      // Get corporation name if available
+      let corporationName = 'Unknown Corporation'
+      if (profile?.corporation_id) {
+        const { data: corporationData, error: corporationError } = await supabase
+          .from('profiles_corporation')
+          .select('corporation_name')
+          .eq('id', profile.corporation_id)
+          .single()
+
+        if (!corporationError && corporationData) {
+          corporationName = corporationData.corporation_name
+        }
+      }
+
+      // Create notification for each contract
+      for (const contract of createdContracts) {
+        const notificationTitle = `New Booking Created - ${contract.id}`
+        const notificationBody = `Booking created by ${profile?.first_name || 'Unknown'} ${profile?.last_name || 'User'} from ${corporationName}. Delivery to: ${contract.delivery_address}`
+        
+        const notificationData = {
+          contractId: contract.id,
+          userId: user.id,
+          userName: `${profile?.first_name || 'Unknown'} ${profile?.last_name || 'User'}`,
+          corporationName: corporationName,
+          deliveryAddress: contract.delivery_address,
+          addressLine1: contract.address_line_1,
+          addressLine2: contract.address_line_2,
+          ownerName: `${contract.owner_first_name} ${contract.owner_middle_initial} ${contract.owner_last_name}`.trim(),
+          ownerContact: contract.owner_contact,
+          flightNumber: contract.flight_number,
+          luggageQuantity: contract.luggage_quantity,
+          deliveryCharge: contract.delivery_charge
+        }
+
+        await sendNotificationAdmin(notificationTitle, notificationBody, notificationData)
+      }
+    } catch (error) {
+      console.error('Failed to send notifications to administrators:', error)
+    }
+  }, [])
+
   const handleConfirmSubmit = useCallback(async () => {
     try {
       setLoading(true)
@@ -871,7 +928,10 @@ const MakeContracts = () => {
       })
 
       // Wait for all contracts to be created
-      await Promise.all(contractPromises)
+      const createdContracts = await Promise.all(contractPromises)
+
+      // Notify administrators about the new bookings
+      await notifyAdministrators(createdContracts, user)
 
       showSnackbar('Contracts created successfully', true)
 
@@ -887,7 +947,7 @@ const MakeContracts = () => {
     } finally {
       setLoading(false)
     }
-  }, [contracts, dropOffLocation, pickupLocation, deliveryFee, showSnackbar, totalLuggageQuantity, validateContract, navigation])
+  }, [contracts, dropOffLocation, pickupLocation, deliveryFee, showSnackbar, totalLuggageQuantity, validateContract, navigation, notifyAdministrators])
 
   // Function to fetch delivery price based on city
   const fetchDeliveryPrice = async (address) => {

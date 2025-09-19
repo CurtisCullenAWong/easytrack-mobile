@@ -85,7 +85,7 @@ const App = () => {
     const initializeApp = async () => {
       try {
         // Validate environment variables first
-        validateEnvironmentVariables()
+        // validateEnvironmentVariables()
         
         // Then load fonts and theme
         await Promise.all([loadFonts(), loadTheme()])

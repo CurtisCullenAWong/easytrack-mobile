@@ -1,45 +1,55 @@
 import React, { useState } from 'react'
 import { CommonActions, useNavigation } from '@react-navigation/native'
-import { Portal, Dialog, Button, Text, useTheme } from 'react-native-paper'
+import { Portal, Dialog, Button, Text, ActivityIndicator, useTheme } from 'react-native-paper'
 import { supabase } from '../../lib/supabase'
-import AsyncStorage from '@react-native-async-storage/async-storage' // Add this import
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { stopBackgroundTracking } from './useLocation'
 const useLogout = () => {
   const navigation = useNavigation()
   const [isDialogVisible, setIsDialogVisible] = useState(false)
+  const [isLoading, setIsLoading] = useState(false) // <-- Loading state
   const { colors, fonts } = useTheme()
 
   const handleLogout = () => setIsDialogVisible(true)
 
   const confirmLogout = async () => {
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (user) {
-      // Update user status to offline
-      await supabase
-        .from('profiles')
-        .update({ user_status_id: 2 })
-        .eq('id', user.id)
-    }
+    setIsLoading(true) // <-- Start loading
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        // Update user status to offline
+        await supabase
+          .from('profiles')
+          .update({ user_status_id: 2 })
+          .eq('id', user.id)
+      }
 
-    // Disable autologin by clearing rememberMe
-    await AsyncStorage.setItem('rememberMe', 'false') // <-- Add this line
+      // Disable autologin
+      await AsyncStorage.setItem('rememberMe', 'false')
 
-    const { error } = await supabase.auth.signOut()
-    if (error) {
-      console.error('Logout error:', error.message)
-      return
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error('Logout error:', error.message)
+        setIsLoading(false)
+        return
+      }
+
+      setIsDialogVisible(false)
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Login' }],
+        })
+      )
+
+      stopBackgroundTracking()
+    } catch (err) {
+      console.error('Logout failed:', err)
+    } finally {
+      setIsLoading(false)
     }
-    setIsDialogVisible(false)
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
-      })
-    )
-    // Ensure background task is stopped to prevent warning spam
-    stopBackgroundTracking()
   }
 
   const cancelLogout = () => setIsDialogVisible(false)
@@ -56,11 +66,11 @@ const useLogout = () => {
           </Text>
         </Dialog.Content>
         <Dialog.Actions>
-          <Button onPress={cancelLogout} labelStyle={{ color: colors.primary }}>
+          <Button onPress={cancelLogout} labelStyle={{ color: colors.primary }} disabled={isLoading}>
             Cancel
           </Button>
-          <Button onPress={confirmLogout} labelStyle={{ color: colors.primary }}>
-            OK
+          <Button onPress={confirmLogout} labelStyle={{ color: colors.primary }} disabled={isLoading}>
+            {isLoading ? <ActivityIndicator color={colors.primary} /> : 'OK'}
           </Button>
         </Dialog.Actions>
       </Dialog>

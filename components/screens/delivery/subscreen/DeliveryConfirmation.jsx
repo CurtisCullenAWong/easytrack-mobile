@@ -7,6 +7,7 @@ import * as FileSystem from 'expo-file-system'
 import { decode } from 'base64-arraybuffer'
 import useSnackbar from '../../../hooks/useSnackbar'
 import { useFocusEffect } from '@react-navigation/native'
+import { sendNotificationToUsers } from '../../../../utils/registerForPushNotifications'
 
 const DeliveryConfirmation = ({ navigation, route }) => {
   const { contract, action = 'deliver' } = route.params || {}
@@ -85,16 +86,11 @@ const DeliveryConfirmation = ({ navigation, route }) => {
   }
 
   const uploadImage = async (imageUri, type) => {
-    if (!imageUri?.startsWith('file://')) {
-      return null
-    }
-  
+    if (!imageUri?.startsWith('file://')) return null
+
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        throw new Error('User not authenticated')
-      }
+      if (!user) throw new Error('User not authenticated')
 
       const bucket = 'passenger-files'
       const folder = type === 'proof_of_delivery' 
@@ -104,41 +100,35 @@ const DeliveryConfirmation = ({ navigation, route }) => {
         : type === 'passenger_form'
         ? 'passenger_form'
         : 'proof_of_pickup'
-      const fileName = `${contract.id}.png`
 
+      const fileName = `${contract.id}.png`
       const filePath = `${folder}/${fileName}`
+
+      // Remove existing file if exists
       const { error: deleteError } = await supabase.storage
         .from(bucket)
         .remove([filePath])
-
       if (deleteError && !deleteError.message.includes('not found')) {
         console.error('Error deleting existing file:', deleteError)
       }
 
-      const base64 = await FileSystem.readAsStringAsync(imageUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      })
+      // Read the file as a Blob directly
+      const fileBlob = await (await fetch(imageUri)).blob()
 
-      const contentType = 'image/png'
-      
       const { error: uploadError } = await supabase.storage
         .from(bucket)
-        .upload(filePath, decode(base64), { 
-          contentType,
-          upsert: true
+        .upload(filePath, fileBlob, {
+          contentType: fileBlob.type || 'image/png',
+          upsert: true,
         })
-    
-      if (uploadError) {
-        throw uploadError
-      }
+
+      if (uploadError) throw uploadError
 
       const { data, error: signedUrlError } = await supabase.storage
         .from(bucket)
-        .createSignedUrl(filePath, 31536000)
+        .createSignedUrl(filePath, 31536000) // 1 year
 
-      if (signedUrlError) {
-        throw signedUrlError
-      }
+      if (signedUrlError) throw signedUrlError
 
       return data.signedUrl
     } catch (error) {
@@ -147,6 +137,7 @@ const DeliveryConfirmation = ({ navigation, route }) => {
       return null
     }
   }
+
 
   const handleConfirm = async () => {
     try {
@@ -173,6 +164,16 @@ const DeliveryConfirmation = ({ navigation, route }) => {
           })
           .eq('id', contract.id)
         if (error) throw error
+        // Notify airline about pickup/in-transit status
+        try {
+          await sendNotificationToUsers(
+            contract.airline_id,
+            'Luggage Picked Up',
+            `Luggage for booking #${contract.id} has been picked up and is now in transit.`
+          )
+        } catch (notifyError) {
+          console.error('Notification error (pickup):', notifyError)
+        }
         showSnackbar('Luggage picked up successfully', true)
         navigation.navigate('ContractsInTransit')
         return
@@ -204,6 +205,16 @@ const DeliveryConfirmation = ({ navigation, route }) => {
           })
           .eq('id', contract.id)
         if (error) throw error
+        // Notify airline about delivery
+        try {
+          await sendNotificationToUsers(
+            contract.airline_id,
+            'Delivery Confirmed',
+            `Delivery for booking #${contract.id} has been completed.`
+          )
+        } catch (notifyError) {
+          console.error('Notification error (deliver):', notifyError)
+        }
         showSnackbar('Delivery confirmed successfully', true)
         navigation.navigate('BookingHistory')
         return
@@ -233,6 +244,16 @@ const DeliveryConfirmation = ({ navigation, route }) => {
           })
           .eq('id', contract.id)
         if (error) throw error
+        // Notify airline about failed delivery
+        try {
+          await sendNotificationToUsers(
+            contract.airline_id,
+            'Delivery Failed',
+            `Delivery for booking #${contract.id} failed. Remarks: ${state.remarks}`
+          )
+        } catch (notifyError) {
+          console.error('Notification error (failed):', notifyError)
+        }
         showSnackbar('Contract marked as failed successfully', true)
         navigation.navigate('BookingHistory')
         return
@@ -252,6 +273,16 @@ const DeliveryConfirmation = ({ navigation, route }) => {
           })
           .eq('id', contract.id)
         if (error) throw error
+        // Notify airline about cancellation
+        try {
+          await sendNotificationToUsers(
+            contract.airline_id,
+            'Contract Cancelled',
+            `Booking #${contract.id} was cancelled. Remarks: ${state.remarks}`
+          )
+        } catch (notifyError) {
+          console.error('Notification error (cancel):', notifyError)
+        }
         showSnackbar('Contract cancelled successfully', true)
         navigation.goBack()
         return
