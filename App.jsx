@@ -10,6 +10,17 @@ import { ActivityIndicator, View, Text } from 'react-native'
 import UpdatePrompt from './components/customComponents/UpdatePrompt'
 import './components/hooks/backgroundLocationTask'
 import { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, GOOGLE_MAPS_API_KEY, GEMINI_API_KEY } from '@env'
+import { NotificationProvider } from './context/NotificationContext'
+import * as Notifications from 'expo-notifications'
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+})
 
 const THEME_KEY = 'appTheme'
 
@@ -115,12 +126,14 @@ const App = () => {
   }
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
-        <PaperProvider theme={theme}>
-          <StackNavigator />
-          <UpdatePrompt />
-        </PaperProvider>
-    </ThemeContext.Provider>
+      <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
+          <PaperProvider theme={theme}>
+            <NotificationProvider>
+              <StackNavigator />
+              <UpdatePrompt />
+            </NotificationProvider>
+          </PaperProvider>
+      </ThemeContext.Provider>
   )
 }
 

@@ -9,7 +9,7 @@
     "updates": {
       "enabled": true,
       "fallbackToCacheTimeout": 2000,
-      "url": "https://u.expo.dev/3fe4a775-d252-440b-83a3-1fb6b571ed6f"
+      "url": "https://u.expo.dev/a5192bb8-e028-41c6-b7f3-7bc1c100f880"
     },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -24,6 +24,7 @@
     },
     "android": {
       "package": "com.thewalkingdev_numoa.EasyTrack",
+      "googleServicesFile": "./google-services.json",
       "runtimeVersion": {
         "policy": "appVersion"
       },
@@ -68,11 +69,27 @@
           "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location in the background to keep deliveries updated.",
           "isAndroidForegroundServiceEnabled": true
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#F3F8F2",
+          "defaultChannel": "default",
+          "mode": "production",
+          "sounds": []
+        }
       ]
     ],
+    "notification": {
+      "icon": "./assets/images/icon.png",
+      "color": "#0C5B47",
+      "androidMode": "default",
+      "androidCollapsedTitle": "New notifications"
+    },
     "extra": {
       "eas": {
-        "projectId": "3fe4a775-d252-440b-83a3-1fb6b571ed6f"
+        "projectId": "a5192bb8-e028-41c6-b7f3-7bc1c100f880"
       }
     },
     "ios": {
