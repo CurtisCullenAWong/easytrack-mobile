@@ -83,8 +83,7 @@
     "notification": {
       "icon": "./assets/images/splash-icon.png",  
       "color": "#0C5B47",
-      "iosDisplayInForeground": true,
-      "androidShowBadge": true
+      "iosDisplayInForeground": true
     },
     "extra": {
       "eas": {
