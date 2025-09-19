@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react"
-import { Text, View, Button, Platform } from "react-native"
+import { Platform } from "react-native"
 import * as Device from "expo-device"
 import * as Notifications from "expo-notifications"
 import Constants from "expo-constants"
@@ -35,7 +34,7 @@ export async function sendNotificationToUser(userId, title, body, data = {}) {
   }
 }
 
-async function registerForPushNotificationsAsync() {
+export async function registerForPushNotificationsAsync() {
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("default", {
       name: "default",
@@ -67,7 +66,7 @@ async function registerForPushNotificationsAsync() {
   }
 }
 
-async function registerPushToken(userId, token) {
+export async function registerPushToken(userId, token) {
   const { error } = await supabase.from("expo_push_tokens").upsert({
     user_id: userId,
     device_id: Device.osBuildId ?? "unknown-device",
@@ -75,52 +74,4 @@ async function registerPushToken(userId, token) {
   })
 
   if (error) console.error("Error saving token:", error)
-}
-
-export default function PushNotificationsDemo() {
-  const [expoPushToken, setExpoPushToken] = useState("")
-  const [notification, setNotification] = useState(undefined)
-
-  useEffect(() => {
-    const setup = async () => {
-      try {
-        const token = await registerForPushNotificationsAsync()
-        if (token) {
-          setExpoPushToken(token)
-          const { data: { user } } = await supabase.auth.getUser()
-          if (user) {
-            await registerPushToken(user.id, token)
-          }
-        }
-      } catch (err) {
-        console.error("Push registration error:", err)
-      }
-    }
-
-    setup()
-
-    const notificationListener = Notifications.addNotificationReceivedListener((notification) => {
-      setNotification(notification)
-    })
-
-    const responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
-      console.log("Notification response:", response)
-    })
-
-    return () => {
-      notificationListener.remove()
-      responseListener.remove()
-    }
-  }, [])
-
-  return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "space-around" }}>
-      <Text>Your Expo push token: {expoPushToken}</Text>
-      <View style={{ alignItems: "center", justifyContent: "center" }}>
-        <Text>Title: {notification && notification.request.content.title} </Text>
-        <Text>Body: {notification && notification.request.content.body}</Text>
-        <Text>Data: {notification && JSON.stringify(notification.request.content.data)}</Text>
-      </View>
-    </View>
-  )
 }

@@ -6,7 +6,11 @@ import React, {
   useRef,
 } from "react"
 import * as Notifications from "expo-notifications"
-import { registerForPushNotificationsAsync } from "../utils/registerForPushNotifications"
+import { supabase } from "../lib/supabase"
+import {
+  registerForPushNotificationsAsync,
+  registerPushToken,
+} from "../utils/registerForPushNotifications"
 
 const NotificationContext = createContext(undefined)
 
@@ -27,27 +31,53 @@ export const NotificationProvider = ({ children }) => {
   const responseListener = useRef()
 
   useEffect(() => {
-    registerForPushNotificationsAsync().then(
-      (token) => setExpoPushToken(token),
-      (error) => setError(error)
-    )
+    let isMounted = true
 
-    notificationListener.current =
-      Notifications.addNotificationReceivedListener((notification) => {
-        console.log("Notification Received:", notification)
-        setNotification(notification)
-      })
+    const setup = async () => {
+      try {
+        const token = await registerForPushNotificationsAsync()
+        if (!isMounted) return
+        setExpoPushToken(token)
 
-    responseListener.current =
-      Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log(
-          "Notification Response:",
-          JSON.stringify(response, null, 2),
-          JSON.stringify(response.notification.request.content.data, null, 2)
-        )
-      })
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser()
+
+        if (userError) throw userError
+        if (user && token) {
+          await registerPushToken(user.id, token)
+        }
+
+        // listen for notifications
+        notificationListener.current =
+          Notifications.addNotificationReceivedListener((notification) => {
+            console.log("Notification Received:", notification)
+            setNotification(notification)
+          })
+
+        responseListener.current =
+          Notifications.addNotificationResponseReceivedListener((response) => {
+            console.log(
+              "Notification Response:",
+              JSON.stringify(response, null, 2),
+              JSON.stringify(
+                response.notification.request.content.data,
+                null,
+                2
+              )
+            )
+          })
+      } catch (err) {
+        console.error("Notification setup failed:", err)
+        if (isMounted) setError(err)
+      }
+    }
+
+    setup()
 
     return () => {
+      isMounted = false
       if (notificationListener.current) {
         notificationListener.current.remove()
       }
