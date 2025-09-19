@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
-import { Text, View, Button, Platform } from 'react-native'
-import * as Device from 'expo-device'
-import * as Notifications from 'expo-notifications'
-import Constants from 'expo-constants'
+import { useState, useEffect } from "react"
+import { Text, View, Button, Platform } from "react-native"
+import * as Device from "expo-device"
+import * as Notifications from "expo-notifications"
+import Constants from "expo-constants"
+import { supabase } from "../lib/supabase"
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -13,88 +14,97 @@ Notifications.setNotificationHandler({
   }),
 })
 
-export async function sendPushNotification(expoPushToken) {
-  const message = {
-    to: expoPushToken,
-    sound: 'default',
-    title: 'Original Title',
-    body: 'And here is the body!',
-    data: { someData: 'goes here' },
+export async function sendNotificationToUser(userId, title, body, data = {}) {
+  const { data: tokens, error } = await supabase
+    .from("expo_push_tokens")
+    .select("token")
+    .eq("user_id", userId)
+
+  if (error) {
+    console.error("Error fetching tokens:", error)
+    return
   }
 
-  await fetch('https://exp.host/--/api/v2/push/send', {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Accept-encoding': 'gzip, deflate',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(message),
-  })
+  if (!tokens || tokens.length === 0) {
+    console.log("No push tokens found for user:", userId)
+    return
+  }
+
+  for (let t of tokens) {
+    await sendPushNotification(t.token, title, body, data)
+  }
 }
 
-function handleRegistrationError(errorMessage) {
-  alert(errorMessage)
-  throw new Error(errorMessage)
-}
-
-export async function registerForPushNotificationsAsync() {
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
+async function registerForPushNotificationsAsync() {
+  if (Platform.OS === "android") {
+    await Notifications.setNotificationChannelAsync("default", {
+      name: "default",
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
+      lightColor: "#FF231F7C",
     })
   }
 
   if (Device.isDevice) {
     const { status: existingStatus } = await Notifications.getPermissionsAsync()
     let finalStatus = existingStatus
-    if (existingStatus !== 'granted') {
+    if (existingStatus !== "granted") {
       const { status } = await Notifications.requestPermissionsAsync()
       finalStatus = status
     }
-    if (finalStatus !== 'granted') {
-      handleRegistrationError('Permission not granted to get push token for push notification!')
-      return
+    if (finalStatus !== "granted") {
+      throw new Error("Permission not granted for push notifications")
     }
+
     const projectId =
       Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId
-    if (!projectId) {
-      handleRegistrationError('Project ID not found')
-    }
-    try {
-      const pushTokenString = (
-        await Notifications.getExpoPushTokenAsync({
-          projectId,
-        })
-      ).data
-      // console.log(pushTokenString)
-      return pushTokenString
-    } catch (e) {
-      handleRegistrationError(`${e}`)
-    }
+    if (!projectId) throw new Error("Project ID not found")
+
+    const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data
+    return token
   } else {
-    handleRegistrationError('Must use physical device for push notifications')
+    throw new Error("Must use physical device for push notifications")
   }
 }
 
-export default function App() {
-  const [expoPushToken, setExpoPushToken] = useState('')
+async function registerPushToken(userId, token) {
+  const { error } = await supabase.from("expo_push_tokens").upsert({
+    user_id: userId,
+    device_id: Device.osBuildId ?? "unknown-device",
+    token,
+  })
+
+  if (error) console.error("Error saving token:", error)
+}
+
+export default function PushNotificationsDemo() {
+  const [expoPushToken, setExpoPushToken] = useState("")
   const [notification, setNotification] = useState(undefined)
 
   useEffect(() => {
-    registerForPushNotificationsAsync()
-      .then(token => setExpoPushToken(token ?? ''))
-      .catch(error => setExpoPushToken(`${error}`))
+    const setup = async () => {
+      try {
+        const token = await registerForPushNotificationsAsync()
+        if (token) {
+          setExpoPushToken(token)
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            await registerPushToken(user.id, token)
+          }
+        }
+      } catch (err) {
+        console.error("Push registration error:", err)
+      }
+    }
 
-    const notificationListener = Notifications.addNotificationReceivedListener(notification => {
+    setup()
+
+    const notificationListener = Notifications.addNotificationReceivedListener((notification) => {
       setNotification(notification)
     })
 
-    const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log(response)
+    const responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
+      console.log("Notification response:", response)
     })
 
     return () => {
@@ -104,19 +114,13 @@ export default function App() {
   }, [])
 
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'space-around' }}>
+    <View style={{ flex: 1, alignItems: "center", justifyContent: "space-around" }}>
       <Text>Your Expo push token: {expoPushToken}</Text>
-      <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ alignItems: "center", justifyContent: "center" }}>
         <Text>Title: {notification && notification.request.content.title} </Text>
         <Text>Body: {notification && notification.request.content.body}</Text>
         <Text>Data: {notification && JSON.stringify(notification.request.content.data)}</Text>
       </View>
-      <Button
-        title="Press to Send Notification"
-        onPress={async () => {
-          await sendPushNotification(expoPushToken)
-        }}
-      />
     </View>
   )
 }
