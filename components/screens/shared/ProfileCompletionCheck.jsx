@@ -126,7 +126,8 @@ const ProfileCompletionCheck = ({ navigation, route }) => {
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut()
+  // Only sign out this local session to avoid logging out other devices
+  const { error } = await supabase.auth.signOut({ scope: 'local' })
       if (error) {
         showSnackbar('Error logging out: ' + error.message)
       } else {

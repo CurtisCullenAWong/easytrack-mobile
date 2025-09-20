@@ -8,7 +8,7 @@ import { compareGeometriesVicinity, parseGeometry } from '../../../../utils/vici
 import BottomModal from '../../../customComponents/BottomModal'
 import ContractActionModalContent from '../../../customComponents/ContractActionModalContent'
 import useSnackbar from '../../../hooks/useSnackbar'
-const VICINITY_FEATURE_ENABLED = true
+const VICINITY_FEATURE_ENABLED = false
 
 // Constants
 const FILTER_OPTIONS = [
@@ -590,7 +590,8 @@ const contractsWithDistance = useMemo(() => {
                 contract.contract_status_id === 6 || contract.contract_status_id === 5 ||
                 (VICINITY_FEATURE_ENABLED && (contract.vicinityKm === null || contract.vicinityKm > 0.05))
               }>Mark as Failed</Button>
-              <Button mode="contained" onPress={() => { setSelectedContract(contract); setDialogType('cancel'); setShowCancelConfirmation(false); setModalVisible(true) }} style={[styles.actionButton, { backgroundColor: colors.error }]} disabled={contract.contract_status_id === 6 || contract.contract_status_id === 5 || contract.contract_status_id === 2}>Cancel Contract</Button>
+              <Button mode="contained" onPress={() => { setSelectedContract(contract); setDialogType('cancel'); setShowCancelConfirmation(false); setModalVisible(true) }} style={[styles.actionButton, { backgroundColor: colors.error }]} disabled={contract.contract_status_id === 6 || contract.contract_status_id === 5 || contract.contract_status_id === 2
+              }>Cancel Contract</Button>
             </List.Accordion>
           </List.Section>
         </Card.Content>

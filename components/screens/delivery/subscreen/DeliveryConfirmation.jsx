@@ -3,8 +3,7 @@ import { View, StyleSheet, Image, ScrollView } from 'react-native'
 import { Text, Card, Button, useTheme, Portal, Dialog, Appbar, TextInput } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import * as ImagePicker from 'expo-image-picker'
-import * as FileSystem from 'expo-file-system'
-import { decode } from 'base64-arraybuffer'
+import * as FileSystem from 'expo-file-system/legacy'
 import useSnackbar from '../../../hooks/useSnackbar'
 import { useFocusEffect } from '@react-navigation/native'
 import { sendNotificationToUsers } from '../../../../utils/registerForPushNotifications'
@@ -89,17 +88,15 @@ const DeliveryConfirmation = ({ navigation, route }) => {
     if (!imageUri?.startsWith('file://')) return null
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('User not authenticated')
-
       const bucket = 'passenger-files'
-      const folder = type === 'proof_of_delivery' 
-        ? 'proof_of_delivery' 
-        : type === 'passenger_id' 
-        ? 'passenger_id' 
-        : type === 'passenger_form'
-        ? 'passenger_form'
-        : 'proof_of_pickup'
+      const folder =
+        type === 'proof_of_delivery'
+          ? 'proof_of_delivery'
+          : type === 'passenger_id'
+          ? 'passenger_id'
+          : type === 'passenger_form'
+          ? 'passenger_form'
+          : 'proof_of_pickup'
 
       const fileName = `${contract.id}.png`
       const filePath = `${folder}/${fileName}`
@@ -112,22 +109,39 @@ const DeliveryConfirmation = ({ navigation, route }) => {
         console.error('Error deleting existing file:', deleteError)
       }
 
-      // Read the file as a Blob directly
-      const fileBlob = await (await fetch(imageUri)).blob()
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+      const accessToken = session?.access_token
 
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, fileBlob, {
-          contentType: fileBlob.type || 'image/png',
-          upsert: true,
-        })
+      if (!accessToken) throw new Error('No access token found')
 
-      if (uploadError) throw uploadError
+      // Upload file directly using Expo FileSystem
+      const uploadResult = await FileSystem.uploadAsync(
+        `${supabase.storageUrl}/object/${bucket}/${filePath}`,
+        imageUri,
+        {
+          httpMethod: 'PUT',
+          uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+          fieldName: 'file',
+          mimeType: 'image/png',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'x-upsert': 'true', // overwrite if exists
+          },
+        }
+      )
 
+      if (uploadResult.status >= 400) {
+        throw new Error(`Upload failed with status ${uploadResult.status}`)
+      }
+
+      // Create signed URL for the uploaded file
       const { data, error: signedUrlError } = await supabase.storage
         .from(bucket)
         .createSignedUrl(filePath, 31536000) // 1 year
-
       if (signedUrlError) throw signedUrlError
 
       return data.signedUrl
@@ -175,7 +189,7 @@ const DeliveryConfirmation = ({ navigation, route }) => {
           console.error('Notification error (pickup):', notifyError)
         }
         showSnackbar('Luggage picked up successfully', true)
-        navigation.navigate('ContractsInTransit')
+        navigation.navigate('BookingManagement')
         return
       }
 

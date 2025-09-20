@@ -37,7 +37,8 @@ const useLogout = () => {
       // Disable autologin
       await AsyncStorage.setItem('rememberMe', 'false')
 
-      const { error } = await supabase.auth.signOut()
+  // Use local scope to only sign out this session/device and avoid revoking other devices' sessions
+  const { error } = await supabase.auth.signOut({ scope: 'local' })
       if (error) {
         console.error('Logout error:', error.message)
         setIsLoading(false)

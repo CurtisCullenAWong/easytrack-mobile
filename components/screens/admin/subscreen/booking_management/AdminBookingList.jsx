@@ -276,28 +276,36 @@ const AdminBookingList = ({ navigation }) => {
 
   // Set up realtime subscription only while screen is focused
   useFocusEffect(
-    useCallback(() => {
-      const channel = supabase
-        .channel('contracts_changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'contracts' },
-          async (payload) => {
-            const newStatus = payload.new?.contract_status_id
-            const oldStatus = payload.old?.contract_status_id
-
-            if ([1, 3, 4].includes(newStatus) || [1, 3, 4].includes(oldStatus)) {
-              if (payload.eventType === 'INSERT') {
-              } 
-              else if (payload.eventType === 'UPDATE') {
-              } 
-              else if (payload.eventType === 'DELETE') {
-              }
-              await fetchContracts()
-            }
-          }
-        )
-        .subscribe()
+  useCallback(() => {
+    const channel = supabase
+      .channel('contracts_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'contracts',
+          filter: 'contract_status_id=eq.1,3,4'
+        },
+        async (payload) => {
+          console.log('Contract inserted:', payload.new)
+          await fetchContracts()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'contracts',
+          filter: 'contract_status_id=eq.1,3,4'
+        },
+        async (payload) => {
+          console.log('Contract updated:', payload.new)
+          await fetchContracts()
+        }
+      )
+      .subscribe()
 
       return () => {
         supabase.removeChannel(channel)

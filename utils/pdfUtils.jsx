@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system'
+import * as FileSystem from 'expo-file-system/legacy'
 import * as Print from 'expo-print'
 import * as Sharing from 'expo-sharing'
 import { supabase } from '../lib/supabaseAdmin'
@@ -1004,8 +1004,8 @@ export const sharePDF = async (
   invoiceData = null
 ) => {
   try {
-    if (!transactions || (Array.isArray(transactions) && transactions.length === 0)) {
-      throw new Error('Transactions are required')
+    if (!transactions || transactions.length === 0) {
+      throw new Error('Transactions are required');
     }
 
     const html = await generateTransactionReportHTML(
@@ -1014,37 +1014,30 @@ export const sharePDF = async (
       signatureImageUrl,
       options,
       invoiceData
-    )
+    );
 
-    // Use summary_id for filename (take from first transaction)
-    const summaryId = transactions[0]?.summary_id || 'SUMMARY'
-    const filename = `${summaryId}.pdf`
+    const { uri } = await Print.printToFileAsync({ html });
 
-    // 1. Generate PDF
-    const { uri } = await Print.printToFileAsync({ html })
+    const summaryId = transactions[0]?.summary_id || 'SUMMARY';
+    const filename = `${summaryId}.pdf`;
+    const newPath = `${FileSystem.documentDirectory}${filename}`;
 
-    // 2. Build new path in document directory
-    const newPath = `${FileSystem.documentDirectory}${filename}`
-
-    // 3. Move/overwrite file
     await FileSystem.moveAsync({
       from: uri,
       to: newPath,
-    })
+    });
 
-    // 4. Share the renamed file
     await Sharing.shareAsync(newPath, {
       mimeType: 'application/pdf',
       dialogTitle: 'Share Transaction Report',
       UTI: 'com.adobe.pdf',
-    })
+    });
   } catch (error) {
-    console.error('Error sharing PDF:', error)
-    throw new Error(`Failed to share PDF: ${error.message}`)
+    console.error('Error sharing PDF:', error);
+    throw new Error(`Failed to share PDF: ${error.message}`);
   }
 }
 
-// Create the PDF file and return its path and filename without sharing/printing
 export const createPDFFile = async (
   transactions,
   invoiceImageUrl = null,

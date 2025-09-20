@@ -8,7 +8,7 @@ import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 import { parseGeometry, calculateDistanceKm, compareGeometriesVicinity } from '../../../../utils/vicinityUtils'
 import * as Location from 'expo-location'
-const VICINITY_FEATURE_ENABLED = true
+const VICINITY_FEATURE_ENABLED = false
 
 const PickupLuggage = ({ navigation }) => {
   const { colors, fonts } = useTheme()

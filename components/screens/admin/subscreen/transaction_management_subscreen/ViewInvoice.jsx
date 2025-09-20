@@ -4,7 +4,7 @@ import { useTheme, Appbar, Card, Text, Button, Divider, Checkbox, Portal, Modal,
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../../../../../lib/supabaseAdmin'
 import { printPDF, sharePDF, createPDFFile } from '../../../../../utils/pdfUtils'
-import * as FileSystem from 'expo-file-system'
+import * as FileSystem from 'expo-file-system/legacy'
 import { RESEND_API_KEY } from '@env'
 import useSnackbar from '../../../../hooks/useSnackbar'
 import Signature from 'react-native-signature-canvas'
@@ -14,7 +14,6 @@ const CreateInvoice = () => {
   const navigation = useNavigation()
   const route = useRoute()
   const { showSnackbar, SnackbarElement } = useSnackbar()
-
   const { summary } = route.params || {}
 
   // Signature states
@@ -35,6 +34,7 @@ const CreateInvoice = () => {
   
   // Data states
   const [currentInvoiceId, setCurrentInvoiceId] = useState(null)
+  const [pdfFileSize, setPdfFileSize] = useState(null)
 
   const signatureRef = useRef(null)
 
@@ -141,6 +141,13 @@ const CreateInvoice = () => {
   const handleOpenEmailDialog = () => {
     setEmailInput('')
     setEmailDialogVisible(true)
+  }
+
+  const formatBytes = (bytes) => {
+    if (!bytes || bytes <= 0) return '0 B'
+    const units = ['B', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(1024))
+    return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${units[i]}`
   }
 
   const handleSendEmail = async () => {
@@ -314,6 +321,29 @@ const CreateInvoice = () => {
           .single()
         if (error) throw error
         setCurrentInvoiceId(data?.invoice_id ?? null)
+        // compute PDF size for display
+        try {
+          const pdfData = await createPDFFile(
+            buildTransactionsPayload(),
+            null,
+            {
+              prepared: preparedSignatureDataUrl,
+              checked: checkedSignatureDataUrl,
+              preparedRotation: preparedSignatureRotation,
+              checkedRotation: checkedSignatureRotation,
+            },
+            { signatureOnFirstPage: true },
+            buildInvoiceData()
+          )
+          if (pdfData?.path) {
+            const info = await FileSystem.getInfoAsync(pdfData.path)
+            if (info && info.exists && typeof info.size === 'number') {
+              setPdfFileSize(info.size)
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to compute PDF size:', e)
+        }
       } catch (err) {
         console.error('Error fetching summary status:', err)
       }
@@ -358,16 +388,23 @@ const CreateInvoice = () => {
       <View style={styles.content}>
         <Card style={{ backgroundColor: colors.surface }}>
           <Card.Content>
-            {/* Summary ID */}
-            <Text style={[styles.label, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>Summary ID</Text>
-            <Text style={[styles.value, { color: colors.onSurface }, fonts.titleMedium]}>{summary?.summary_id || 'N/A'}</Text>
-            <Divider style={[styles.divider, { backgroundColor: colors.outline }]} />
 
             {/* Invoice ID */}
             <Text style={[styles.label, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>Invoice ID</Text>
             <Text style={[styles.value, { color: colors.primary }, fonts.titleMedium]}>
               {currentInvoiceId || 'Not assigned'}
             </Text>
+            <Divider style={[styles.divider, { backgroundColor: colors.outline }]} />
+
+            {/* Summary ID */}
+            <Text style={[styles.label, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>Summary ID</Text>
+            <Text style={[styles.value, { color: colors.onSurface }, fonts.titleMedium]}>{summary?.summary_id || 'N/A'}</Text>
+            <Divider style={[styles.divider, { backgroundColor: colors.outline }]} />
+
+            <Text style={[styles.label, { color: colors.onSurfaceVariant }, fonts.bodyMedium]}>File Size</Text>
+            {pdfFileSize != null && (
+              <Text style={[{ color: colors.onSurfaceVariant, marginTop: 4 }, fonts.bodySmall]}>PDF size: {formatBytes(pdfFileSize)}</Text>
+            )}
             <Divider style={[styles.divider, { backgroundColor: colors.outline }]} />
 
             {/* Signatures */}
