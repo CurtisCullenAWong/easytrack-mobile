@@ -239,7 +239,7 @@ const AdminAuditLogs = ({ navigation }) => {
                   <Button
                     mode="outlined"
                     icon="filter-variant"
-                    onPress={() => setFilterMenuVisible(true)}
+                    onPress={() => setFilterMenuVisible((prev) => !prev)}
                     style={[styles.filterButton, { borderColor: colors.outline }]}
                     contentStyle={styles.buttonContent}
                     labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
@@ -273,7 +273,7 @@ const AdminAuditLogs = ({ navigation }) => {
                   <Button
                     mode="outlined"
                     icon="history"
-                    onPress={() => setEventMenuVisible(true)}
+                    onPress={() => setEventMenuVisible((prev) => !prev)}
                     style={[styles.filterButton, { borderColor: colors.outline }]}
                     contentStyle={styles.buttonContent}
                     labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}

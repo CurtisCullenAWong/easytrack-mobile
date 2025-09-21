@@ -27,7 +27,7 @@ const filterSpecialCharacters = (text, fieldType) => {
       return text.replace(/[^0-9]/g, '')
     case 'address':
       // Allow letters, numbers, spaces, hyphens, dots, commas, hash for addresses
-      return text.replace(/[^A-Za-z0-9\s\-\.\,\#]/g, '')
+      return text.replace(/[^A-Za-z0-9ñÑ\s\-\.\,\#\/'’\(\)&]/g, '')
     case 'itemDescription':
       // Allow letters, numbers, spaces, hyphens, dots, commas for item descriptions
       return text.replace(/[^A-Za-z0-9\s\-\.\,\#]/g, '')

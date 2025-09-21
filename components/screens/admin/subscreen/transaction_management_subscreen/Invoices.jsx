@@ -18,6 +18,9 @@ const COLUMN_WIDTH = 180
 const Invoices = ({ navigation }) => {
   const { colors, fonts } = useTheme()
 
+  const currentMonth = String(new Date().getMonth() + 1)
+  const currentYear = String(new Date().getFullYear())
+
   const [searchQuery, setSearchQuery] = useState('')
   const [searchColumn, setSearchColumn] = useState('summary_id')
   const [filterMenuVisible, setFilterMenuVisible] = useState(false)
@@ -28,11 +31,10 @@ const Invoices = ({ navigation }) => {
   const [page, setPage] = useState(0)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [refreshing, setRefreshing] = useState(false)
-  const [actionMenuFor, setActionMenuFor] = useState(null)
   
   // Date filtering states
-  const [month, setMonth] = useState('')
-  const [year, setYear] = useState('')
+  const [month, setMonth] = useState(currentMonth)
+  const [year, setYear] = useState(currentYear)
   const [dateFilterType, setDateFilterType] = useState('created_at')
   const [dateFilterMenuVisible, setDateFilterMenuVisible] = useState(false)
   const [monthMenuVisible, setMonthMenuVisible] = useState(false)
@@ -98,12 +100,6 @@ const Invoices = ({ navigation }) => {
     const groupedTransactions = data.reduce((acc, transaction) => {
       const summaryId = transaction.summary_id
       if (!acc[summaryId]) {
-        const ownerName = [
-          transaction.owner_first_name,
-          transaction.owner_middle_initial,
-          transaction.owner_last_name
-        ].filter(Boolean).join(' ') || 'N/A'
-
         acc[summaryId] = {
           key: summaryId,
           summary_id: summaryId || 'N/A',
@@ -320,7 +316,7 @@ const Invoices = ({ navigation }) => {
                   <Button
                     mode="outlined"
                     icon="filter-variant"
-                    onPress={() => setFilterMenuVisible(true)}
+                    onPress={() => setFilterMenuVisible((prev) => !prev)}
                     style={[styles.filterButton, { borderColor: colors.outline }]}
                     contentStyle={styles.buttonContent}
                     labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
@@ -363,7 +359,7 @@ const Invoices = ({ navigation }) => {
                   <Button
                     mode="outlined"
                     icon="calendar"
-                    onPress={() => setDateFilterMenuVisible(true)}
+                    onPress={() => setDateFilterMenuVisible((prev) => !prev)}
                     style={[styles.filterButton, { borderColor: colors.outline }]}
                     contentStyle={styles.buttonContent}
                     labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
@@ -407,7 +403,7 @@ const Invoices = ({ navigation }) => {
                   <Button
                     mode="outlined"
                     icon="calendar-month"
-                    onPress={() => setMonthMenuVisible(true)}
+                    onPress={() => setMonthMenuVisible((prev) => !prev)}
                     style={[styles.filterButton, { borderColor: colors.outline }]}
                     contentStyle={styles.buttonContent}
                     labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
@@ -465,7 +461,7 @@ const Invoices = ({ navigation }) => {
                   <Button
                     mode="outlined"
                     icon="calendar"
-                    onPress={() => setYearMenuVisible(true)}
+                    onPress={() => setYearMenuVisible((prev) => !prev)}
                     style={[styles.filterButton, { borderColor: colors.outline }]}
                     contentStyle={styles.buttonContent}
                     labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}

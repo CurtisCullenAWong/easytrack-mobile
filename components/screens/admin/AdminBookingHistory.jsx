@@ -397,7 +397,7 @@ const AdminBookingHistory = ({ navigation, route }) => {
                     <Button
                       mode="outlined"
                       icon="flag"
-                      onPress={() => setShowStatusMenu(true)}
+                      onPress={() => setShowStatusMenu((prev) => !prev)}
                       style={[styles.filterButton, { borderColor: colors.outline }]}
                       contentStyle={styles.buttonContent}
                       labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
@@ -440,7 +440,7 @@ const AdminBookingHistory = ({ navigation, route }) => {
                     <Button
                       mode="outlined"
                       icon="office-building"
-                      onPress={() => setShowCorporationMenu(true)}
+                      onPress={() => setShowCorporationMenu((prev) => !prev)}
                       style={[styles.filterButton, { borderColor: colors.outline }]}
                       contentStyle={styles.buttonContent}
                       labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
@@ -485,7 +485,7 @@ const AdminBookingHistory = ({ navigation, route }) => {
                     <Button
                       mode="outlined"
                       icon="calendar"
-                      onPress={() => setShowDateMenu(true)}
+                      onPress={() => setShowDateMenu((prev) => !prev)}
                       style={[styles.filterButton, { borderColor: colors.outline }]}
                       contentStyle={styles.buttonContent}
                       labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
@@ -505,9 +505,10 @@ const AdminBookingHistory = ({ navigation, route }) => {
                       title={option.label}
                       titleStyle={[
                         {
-                          color: dateFilter === option.value
-                            ? colors.primary
-                            : colors.onSurface,
+                          color:
+                            dateFilter === option.value
+                              ? colors.primary
+                              : colors.onSurface,
                         },
                         fonts.bodyLarge,
                       ]}

@@ -10,7 +10,6 @@ import { ActivityIndicator, View } from 'react-native'
 import './components/hooks/backgroundLocationTask'
 import { Suspense, lazy } from 'react'
 
-// Lazy components
 const NotificationProvider = lazy(() =>
   import('./context/NotificationContext').then(mod => ({ default: mod.NotificationProvider }))
 )
@@ -21,38 +20,39 @@ const UpdatePrompt = lazy(() =>
 const THEME_KEY = 'appTheme'
 
 const App = () => {
-  const [theme, setTheme] = useState(lightTheme) // default immediately
+  const [theme, setTheme] = useState(lightTheme)
   const [ready, setReady] = useState(false)
 
-  // Load fonts async but don’t block UI
-  const loadFonts = async () => {
+  const toggleTheme = async () => {
+    try {
+      const newTheme = theme === lightTheme ? darkTheme : lightTheme
+      setTheme(newTheme)
+      await AsyncStorage.setItem(THEME_KEY, newTheme === darkTheme ? 'dark' : 'light')
+    } catch (error) {
+      console.error('Error saving theme:', error)
+    }
+  }
+
+  const loadFontsandTheme = async () => {
     try {
       await Font.loadAsync({
         'Onest-Regular': require('./assets/fonts/Onest-Regular.ttf'),
         'Onest-Bold': require('./assets/fonts/Onest-Bold.ttf'),
       })
-    } catch (err) {
-      console.warn('Font load failed:', err)
-    }
-  }
-
-  const loadTheme = async () => {
-    try {
       const storedTheme = await AsyncStorage.getItem(THEME_KEY)
       if (storedTheme === 'dark') setTheme(darkTheme)
     } catch (err) {
-      console.warn('Theme load failed:', err)
+      console.warn('Fonts and theme loading failed:', err)
     }
   }
 
-  const initialize = useCallback(async () => {
-    await Promise.all([loadFonts(), loadTheme()])
-    setReady(true)
-  }, [])
-
   useEffect(() => {
+    const initialize = async () => {
+      await loadFontsandTheme()
+      setReady(true)
+    }
     initialize()
-  }, [initialize])
+  }, [])
 
   if (!ready) {
     return (
@@ -63,7 +63,7 @@ const App = () => {
   }
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
       <PaperProvider theme={theme}>
         <Suspense fallback={<StackNavigator />}>
           <NotificationProvider>

@@ -193,7 +193,7 @@ const SearchFilterSection = ({
                 <Button
                   mode="outlined"
                   icon="file-document"
-                  onPress={() => setInvoiceMenuVisible(true)}
+                  onPress={() => setInvoiceMenuVisible((prev) => !prev)}
                   style={[styles.filterButton, { borderColor: colors.outline }]}
                   contentStyle={styles.buttonContent}
                   labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
@@ -219,7 +219,7 @@ const SearchFilterSection = ({
                 <Button
                   mode="outlined"
                   icon="filter-variant"
-                  onPress={() => setFilterMenuVisible(true)}
+                  onPress={() => setFilterMenuVisible((prev) => !prev)}
                   style={[styles.filterButton, { borderColor: colors.outline }]}
                   contentStyle={styles.buttonContent}
                   labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
@@ -244,7 +244,7 @@ const SearchFilterSection = ({
                 <Button
                   mode="outlined"
                   icon="office-building"
-                  onPress={() => setCorporationMenuVisible(true)}
+                  onPress={() => setCorporationMenuVisible((prev) => !prev)}
                   style={[styles.filterButton, { borderColor: colors.outline }]}
                   contentStyle={styles.buttonContent}
                   labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
@@ -275,7 +275,7 @@ const SearchFilterSection = ({
                 <Button
                   mode="outlined"
                   icon="calendar-month"
-                  onPress={() => setMonthMenuVisible(true)}
+                  onPress={() => setMonthMenuVisible((prev) => !prev)}
                   style={[styles.filterButton, { borderColor: colors.outline }]}
                   contentStyle={styles.buttonContent}
                   labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
@@ -327,7 +327,7 @@ const SearchFilterSection = ({
                 <Button
                   mode="outlined"
                   icon="calendar"
-                  onPress={() => setYearMenuVisible(true)}
+                  onPress={() => setYearMenuVisible((prev) => !prev)}
                   style={[styles.filterButton, { borderColor: colors.outline }]}
                   contentStyle={styles.buttonContent}
                   labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
@@ -438,6 +438,9 @@ const Bookings = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
+  const currentMonth = String(new Date().getMonth() + 1)
+  const currentYear = String(new Date().getFullYear())
+
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -448,8 +451,8 @@ const Bookings = ({ navigation }) => {
     searchColumn: 'id',
     selectedCorporation: '',
     invoiceFilter: 'all',
-    month: '',
-    year: '',
+    month: currentMonth,
+    year: currentYear,
   })
   
   const [sortConfig, setSortConfig] = useState({

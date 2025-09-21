@@ -1,64 +1,54 @@
 import { NavigationContainer } from '@react-navigation/native'
 import { createDrawerNavigator } from '@react-navigation/drawer'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import React, { Suspense } from 'react'
-
-const lazyScreen = (importFn) => {
-  const LazyComp = React.lazy(importFn)
-  return (props) => (
-    <Suspense fallback={null}>
-      <LazyComp {...props} />
-    </Suspense>
-  )
-}
 
 // Shared Screens
-const LoginScreen = lazyScreen(() => import('../screens/shared/LoginScreen'))
-const ContractDetails = lazyScreen(() => import('../screens/shared/ContractDetails'))
-const CheckLocation = lazyScreen(() => import('../screens/shared/CheckLocation'))
-const BookingHistory = lazyScreen(() => import('../screens/shared/BookingHistory'))
-const TermsAndConditions = lazyScreen(() => import('../screens/shared/TermsAndConditions'))
+import LoginScreen from '../screens/shared/LoginScreen'
+import ContractDetails from '../screens/shared/ContractDetails'
+import CheckLocation from '../screens/shared/CheckLocation'
+import BookingHistory from '../screens/shared/BookingHistory'
+import TermsAndConditions from '../screens/shared/TermsAndConditions'
 
 // Profile Screens
-const Profile = lazyScreen(() => import('../screens/profiles/Profile'))
-const EditProfileSubScreen = lazyScreen(() => import('../screens/profiles/subscreen/EditProfileSubScreen'))
-const Verification = lazyScreen(() => import('../screens/profiles/subscreen/ProfileVerification'))
-const SetNewPasswordScreen = lazyScreen(() => import('../screens/shared/SetNewPasswordScreen'))
-const ProfileCompletionCheck = lazyScreen(() => import('../screens/shared/ProfileCompletionCheck'))
-const UpdateProfileScreen = lazyScreen(() => import('../screens/shared/UpdateProfileScreen'))
+import Profile from '../screens/profiles/Profile'
+import EditProfileSubScreen from '../screens/profiles/subscreen/EditProfileSubScreen'
+import Verification from '../screens/profiles/subscreen/ProfileVerification'
+import SetNewPasswordScreen from '../screens/shared/SetNewPasswordScreen'
+import ProfileCompletionCheck from '../screens/shared/ProfileCompletionCheck'
+import UpdateProfileScreen from '../screens/shared/UpdateProfileScreen'
 
 // Admin Screens
-const AdminHome = lazyScreen(() => import('../screens/admin/AdminHome'))
-const UserManagement = lazyScreen(() => import('../screens/admin/UserManagement'))
-const TransactionManagement = lazyScreen(() => import('../screens/admin/TransactionManagement'))
-const GenerateInvoice = lazyScreen(() => import('../screens/admin/subscreen/transaction_management_subscreen/ToPay_GenerateInvoice'))
-const ViewInvoice = lazyScreen(() => import('../screens/admin/subscreen/transaction_management_subscreen/ViewInvoice'))
-const ContractDetailsAdmin = lazyScreen(() => import('../screens/admin/subscreen/booking_management/ContractDetailsAdmin'))
-const AdminBookingManagement = lazyScreen(() => import('../screens/admin/AdminBookingManagement'))
-const AdminBookingHistory = lazyScreen(() => import('../screens/admin/AdminBookingHistory'))
-const AddAccount = lazyScreen(() => import('../screens/admin/subscreen/user_management_subscreen/AddAccount'))
-const ViewAccountScreen = lazyScreen(() => import('../screens/admin/subscreen/user_management_subscreen/ViewAccountScreen'))
-const PerformanceStatistics = lazyScreen(() => import('../screens/admin/PerformanceStatistics'))
-const SelectLocation = lazyScreen(() => import('../screens/airline/subscreen/SelectLocation'))
-const AdminAuditLogs = lazyScreen(() => import('../screens/admin/AdminAuditLogs'))
+import AdminHome from '../screens/admin/AdminHome'
+import UserManagement from '../screens/admin/UserManagement'
+import TransactionManagement from '../screens/admin/TransactionManagement'
+import GenerateInvoice from '../screens/admin/subscreen/transaction_management_subscreen/ToPay_GenerateInvoice'
+import ViewInvoice from '../screens/admin/subscreen/transaction_management_subscreen/ViewInvoice'
+import ContractDetailsAdmin from '../screens/admin/subscreen/booking_management/ContractDetailsAdmin'
+import AdminBookingManagement from '../screens/admin/AdminBookingManagement'
+import AdminBookingHistory from '../screens/admin/AdminBookingHistory'
+import AddAccount from '../screens/admin/subscreen/user_management_subscreen/AddAccount'
+import ViewAccountScreen from '../screens/admin/subscreen/user_management_subscreen/ViewAccountScreen'
+import PerformanceStatistics from '../screens/admin/PerformanceStatistics'
+import SelectLocation from '../screens/airline/subscreen/SelectLocation'
+import AdminAuditLogs from '../screens/admin/AdminAuditLogs'
 
 // Airline Screens
-const AirlineHome = lazyScreen(() => import('../screens/airline/AirlineHome'))
-const AirlineBookingManagement = lazyScreen(() => import('../screens/airline/AirlineBookingManagement'))
-const TrackLuggage = lazyScreen(() => import('../screens/shared/TrackLuggage'))
+import AirlineHome from '../screens/airline/AirlineHome'
+import AirlineBookingManagement from '../screens/airline/AirlineBookingManagement'
+import TrackLuggage from '../screens/shared/TrackLuggage'
 
 // Delivery Screens
-const DeliveryHome = lazyScreen(() => import('../screens/delivery/DeliveryHome'))
-const DeliveryBookingManagement = lazyScreen(() => import('../screens/delivery/DeliveryBookingManagement'))
-const DeliveryConfirmation = lazyScreen(() => import('../screens/delivery/subscreen/DeliveryConfirmation'))
+import DeliveryHome from '../screens/delivery/DeliveryHome'
+import DeliveryBookingManagement from '../screens/delivery/DeliveryBookingManagement'
+import DeliveryConfirmation from '../screens/delivery/subscreen/DeliveryConfirmation'
 
 // Messaging Screens
-const Messages = lazyScreen(() => import('../screens/messaging/Messages'))
-const NewMessage = lazyScreen(() => import('../screens/messaging/NewMessage'))
-const ViewMessage = lazyScreen(() => import('../screens/messaging/ViewMessage'))
-const ViewProfile = lazyScreen(() => import('../screens/messaging/ViewProfile'))
+import Messages from '../screens/messaging/Messages'
+import NewMessage from '../screens/messaging/NewMessage'
+import ViewMessage from '../screens/messaging/ViewMessage'
+import ViewProfile from '../screens/messaging/ViewProfile'
 
-// Import Navigators (these are small wrappers so keep them non-lazy)
+// Import Navigators
 import AdminNavigator from './sidebar/AdminNavigator'
 import DeliveryNavigator from './sidebar/DeliveryNavigator'
 import AirlineNavigator from './sidebar/AirlineNavigator'

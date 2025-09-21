@@ -8,7 +8,6 @@ import useSnackbar from '../../../hooks/useSnackbar'
 const BookingList = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
-  const [currentTime, setCurrentTime] = useState('')
   const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -20,7 +19,6 @@ const BookingList = ({ navigation }) => {
   const [sortDirection, setSortDirection] = useState('descending')
   const [cancelDialogVisible, setCancelDialogVisible] = useState(false)
   const [contractToCancel, setContractToCancel] = useState(null)
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(3)
   const [pageSizeMenuVisible, setPageSizeMenuVisible] = useState(false)
@@ -51,24 +49,6 @@ const BookingList = ({ navigation }) => {
     { label: 'Delivery Date', value: 'delivered_at' },
     { label: 'Cancellation Date', value: 'cancelled_at' },
   ]
-
-  useEffect(() => {
-    const updateTime = () =>
-      setCurrentTime(
-        new Date().toLocaleString('en-PH', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: false,
-          timeZone: 'Asia/Manila',
-        })
-      )
-    updateTime()
-    const interval = setInterval(updateTime, 1000)
-    return () => clearInterval(interval)
-  }, [])
 
   // Fetch and subscribe only while screen is focused
   useFocusEffect(
@@ -318,11 +298,6 @@ const BookingList = ({ navigation }) => {
           <Divider />
 
           <List.Section>
-            <List.Accordion
-              title="Basic Info"
-              expanded={expanded.info}
-              onPress={() => toggle('info')}
-              titleStyle={[fonts.labelMedium, { color: colors.onSurface }]}>
               <View style={styles.passengerInfoContainer}>
                 <View>
                   <View style={{ flexDirection: 'row', gap: 5 }}>
@@ -339,8 +314,6 @@ const BookingList = ({ navigation }) => {
                   </View>
                 </View>
               </View>
-            </List.Accordion>
-
             <Divider />
 
             <List.Accordion
@@ -465,7 +438,7 @@ const BookingList = ({ navigation }) => {
                 <Button
                   mode="outlined"
                   icon="filter-variant"
-                  onPress={() => setFilterMenuVisible(true)}
+                  onPress={() => setFilterMenuVisible((prev) => !prev)}
                   style={[styles.filterButton, { borderColor: colors.outline }]}
                   contentStyle={styles.buttonContent}
                   labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
@@ -508,7 +481,7 @@ const BookingList = ({ navigation }) => {
                 <Button
                   mode="outlined"
                   icon="sort"
-                  onPress={() => setSortMenuVisible(true)}
+                  onPress={() => setSortMenuVisible((prev) => !prev)}
                   style={[styles.filterButton, { borderColor: colors.outline }]}
                   contentStyle={styles.buttonContent}
                   labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
@@ -607,7 +580,7 @@ const BookingList = ({ navigation }) => {
                     anchor={
                       <Button
                         mode="outlined"
-                        onPress={() => setPageSizeMenuVisible(true)}
+                        onPress={() => setPageSizeMenuVisible((prev) => !prev)}
                         style={[styles.pageSizeButton, { borderColor: colors.outline }]}
                         contentStyle={styles.buttonContent}
                         labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}

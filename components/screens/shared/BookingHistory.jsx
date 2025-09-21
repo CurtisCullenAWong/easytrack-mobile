@@ -347,7 +347,7 @@ const BookingHistory = ({ navigation }) => {
                   <Button
                     mode="outlined"
                     icon="filter-variant"
-                    onPress={() => setShowStatusMenu(true)}
+                    onPress={() => setShowStatusMenu((prev) => !prev)}
                     style={[styles.filterButton, { borderColor: colors.outline }]}
                     contentStyle={styles.buttonContent}
                     labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
@@ -390,7 +390,7 @@ const BookingHistory = ({ navigation }) => {
                   <Button
                     mode="outlined"
                     icon="calendar"
-                    onPress={() => setShowDateMenu(true)}
+                    onPress={() => setShowDateMenu((prev) => !prev)}
                     style={[styles.filterButton, { borderColor: colors.outline }]}
                     contentStyle={styles.buttonContent}
                     labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}

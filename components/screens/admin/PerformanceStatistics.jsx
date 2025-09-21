@@ -394,7 +394,7 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
                 <Button
                   mode="contained"
                   icon="calendar"
-                  onPress={() => setShowDateMenu(true)}
+                  onPress={() => setShowDateMenu((prev) => !prev)}
                   style={[styles.button, { borderColor: colors.primary, flex: 1 }]}
                   contentStyle={styles.buttonContent}
                   labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}

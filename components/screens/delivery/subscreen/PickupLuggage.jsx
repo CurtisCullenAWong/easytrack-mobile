@@ -588,7 +588,7 @@ const PickupLuggage = ({ navigation }) => {
                 <Button
                   mode="outlined"
                   icon="filter-variant"
-                  onPress={() => setFilterMenuVisible(true)}
+                  onPress={() => setFilterMenuVisible((prev) => !prev)}
                   style={[styles.filterButton, { borderColor: colors.outline }]}
                   contentStyle={styles.buttonContent}
                   labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
@@ -631,7 +631,7 @@ const PickupLuggage = ({ navigation }) => {
                 <Button
                   mode="outlined"
                   icon="sort"
-                  onPress={() => setSortMenuVisible(true)}
+                  onPress={() => setSortMenuVisible((prev) => !prev)}
                   style={[styles.filterButton, { borderColor: colors.outline }]}
                   contentStyle={styles.buttonContent}
                   labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
@@ -725,7 +725,7 @@ const PickupLuggage = ({ navigation }) => {
                     anchor={
                       <Button
                         mode="outlined"
-                        onPress={() => setPageSizeMenuVisible(true)}
+                        onPress={() => setPageSizeMenuVisible((prev) => !prev)}
                         style={[styles.pageSizeButton, { borderColor: colors.outline }]}
                         contentStyle={styles.buttonContent}
                         labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
