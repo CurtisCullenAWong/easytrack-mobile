@@ -6,9 +6,9 @@ import BottomModal from '../../../customComponents/BottomModal'
 import ContractActionModalContent from '../../../customComponents/ContractActionModalContent'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
-import { parseGeometry, calculateDistanceKm, compareGeometriesVicinity } from '../../../../utils/vicinityUtils'
+import { parseGeometry, calculateDistanceKm } from '../../../../utils/vicinityUtils'
 import * as Location from 'expo-location'
-const VICINITY_FEATURE_ENABLED = false
+const VICINITY_FEATURE_ENABLED = true
 
 const PickupLuggage = ({ navigation }) => {
   const { colors, fonts } = useTheme()
@@ -36,29 +36,35 @@ const PickupLuggage = ({ navigation }) => {
   // Get device location once per focus, used for pickup vicinity check before in-transit
   useFocusEffect(
     useCallback(() => {
-      let isActive = true
-      const getDeviceLocation = async () => {
-        try {
+        let subscription
+    
+        const startWatching = async () => {
           const { status } = await Location.requestForegroundPermissionsAsync()
           if (status !== 'granted') {
-            if (isActive) setDeviceGeoPoint(null)
+            setDeviceGeoPoint(null)
             return
           }
-          const { coords } = await Location.getCurrentPositionAsync({})
-          if (!coords) {
-            if (isActive) setDeviceGeoPoint(null)
-            return
-          }
-          const point = `SRID=4326;POINT(${coords.longitude} ${coords.latitude})`
-          if (isActive) setDeviceGeoPoint(point)
-        } catch (e) {
-          if (isActive) setDeviceGeoPoint(null)
+    
+          subscription = await Location.watchPositionAsync(
+            {
+              accuracy: Location.Accuracy.Balanced,
+              distanceInterval: 10, // update every 5 meters
+            },
+            (location) => {
+              setDeviceGeoPoint({
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+              })
+            }
+          )
         }
-      }
-      getDeviceLocation()
-      return () => { isActive = false }
-    }, [])
-  )
+        startWatching()
+        return () => {
+          subscription?.remove()
+        }
+      }, [])
+    )
+  
 
   const getDefaultExpanded = useCallback(() => ({
     info: true,
@@ -129,13 +135,19 @@ const PickupLuggage = ({ navigation }) => {
     return contracts.map(contract => {
       const pickupCoords = parseGeometry(contract.pickup_location_geo)
       const dropOffCoords = parseGeometry(contract.drop_off_location_geo)
-      const { distanceKm: pickupVicinityKm, withinMeters: withinPickupVicinity } = compareGeometriesVicinity(
-        deviceGeoPoint,
-        contract.pickup_location_geo,
-        50
-      )
-
-      let distance = null // route distance in km
+      let pickupVicinityKm = null
+      let withinPickupVicinity = false
+      if (deviceGeoPoint && pickupCoords) {
+        const distanceKm = calculateDistanceKm(
+          deviceGeoPoint.latitude,
+          deviceGeoPoint.longitude,
+          pickupCoords.latitude,
+          pickupCoords.longitude
+        )
+        pickupVicinityKm = distanceKm
+        withinPickupVicinity = distanceKm * 1000 <= 500 // within 1000 meters
+      }
+      let distance = null
       if (pickupCoords && dropOffCoords) {
         distance = calculateDistanceKm(
           pickupCoords.latitude,
@@ -152,6 +164,7 @@ const PickupLuggage = ({ navigation }) => {
       }
     })
   }, [contracts, deviceGeoPoint])
+  
 
   useEffect(() => {
     const updateTime = () =>
@@ -274,10 +287,10 @@ const PickupLuggage = ({ navigation }) => {
   const filteredAndSortedContracts = useMemo(() => {
     return contractsWithDistance
       .filter(contract => {
-        if (!searchQuery) return true;
+        if (!searchQuery) return true
         
-        const searchValue = searchQuery.toLowerCase();
-        let fieldValue = '';
+        const searchValue = searchQuery.toLowerCase()
+        let fieldValue = ''
 
         switch (searchColumn) {
           case 'airline_name':
@@ -286,94 +299,94 @@ const PickupLuggage = ({ navigation }) => {
               contract.airline_profile?.middle_initial,
               contract.airline_profile?.last_name,
               contract.airline_profile?.suffix
-            ].filter(Boolean).join(' ') || '';
-            break;
+            ].filter(Boolean).join(' ') || ''
+            break
           case 'owner_name':
             fieldValue = [
               contract.owner_first_name,
               contract.owner_middle_initial,
               contract.owner_last_name
-            ].filter(Boolean).join(' ') || '';
-            break;
+            ].filter(Boolean).join(' ') || ''
+            break
           case 'pickup_location':
           case 'drop_off_location':
           default:
-            fieldValue = contract[searchColumn] || '';
+            fieldValue = contract[searchColumn] || ''
         }
 
-        return String(fieldValue).toLowerCase().includes(searchValue);
+        return String(fieldValue).toLowerCase().includes(searchValue)
       })
       .sort((a, b) => {
-        let valA, valB;
+        let valA, valB
 
         switch (sortColumn) {
           case 'distance':
-            valA = a.distance || 0;
-            valB = b.distance || 0;
-            break;
+            valA = a.distance || 0
+            valB = b.distance || 0
+            break
           case 'airline_name':
             valA = [
               a.airline_profile?.first_name,
               a.airline_profile?.middle_initial,
               a.airline_profile?.last_name,
               a.airline_profile?.suffix
-            ].filter(Boolean).join(' ') || '';
+            ].filter(Boolean).join(' ') || ''
             valB = [
               b.airline_profile?.first_name,
               b.airline_profile?.middle_initial,
               b.airline_profile?.last_name,
               b.airline_profile?.suffix
-            ].filter(Boolean).join(' ') || '';
-            break;
+            ].filter(Boolean).join(' ') || ''
+            break
           case 'owner_name':
             valA = [
               a.owner_first_name,
               a.owner_middle_initial,
               a.owner_last_name
-            ].filter(Boolean).join(' ') || '';
+            ].filter(Boolean).join(' ') || ''
             valB = [
               b.owner_first_name,
               b.owner_middle_initial,
               b.owner_last_name
-            ].filter(Boolean).join(' ') || '';
-            break;
+            ].filter(Boolean).join(' ') || ''
+            break
           case 'luggage_quantity':
-            valA = Number(a[sortColumn]) || 0;
-            valB = Number(b[sortColumn]) || 0;
-            break;
+            valA = Number(a[sortColumn]) || 0
+            valB = Number(b[sortColumn]) || 0
+            break
           case 'created_at':
-            valA = a[sortColumn] ? new Date(a[sortColumn]) : null;
-            valB = b[sortColumn] ? new Date(b[sortColumn]) : null;
+            valA = a[sortColumn] ? new Date(a[sortColumn]) : null
+            valB = b[sortColumn] ? new Date(b[sortColumn]) : null
             
-            if (!valA && !valB) return 0;
-            if (!valA) return sortDirection === 'ascending' ? -1 : 1;
-            if (!valB) return sortDirection === 'ascending' ? 1 : -1;
+            if (!valA && !valB) return 0
+            if (!valA) return sortDirection === 'ascending' ? -1 : 1
+            if (!valB) return sortDirection === 'ascending' ? 1 : -1
             
             return sortDirection === 'ascending' 
               ? valA.getTime() - valB.getTime()
-              : valB.getTime() - valA.getTime();
+              : valB.getTime() - valA.getTime()
           default:
-            valA = a[sortColumn] || '';
-            valB = b[sortColumn] || '';
+            valA = a[sortColumn] || ''
+            valB = b[sortColumn] || ''
         }
 
         if (typeof valA === 'number' && typeof valB === 'number') {
           return sortDirection === 'ascending'
             ? valA - valB
-            : valB - valA;
+            : valB - valA
         }
 
         if (typeof valA === 'string' && typeof valB === 'string') {
           return sortDirection === 'ascending'
             ? valA.localeCompare(valB)
-            : valB.localeCompare(valA);
+            : valB.localeCompare(valA)
         }
 
         return sortDirection === 'ascending'
           ? valA > valB ? 1 : -1
-          : valA < valB ? 1 : -1;
-      });
-  }, [contractsWithDistance, searchQuery, searchColumn, sortColumn, sortDirection]);
+          : valA < valB ? 1 : -1
+      })
+  }, [contractsWithDistance, searchQuery, searchColumn, sortColumn, sortDirection])
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredAndSortedContracts.length / pageSize)
@@ -538,25 +551,14 @@ const PickupLuggage = ({ navigation }) => {
                   style={[styles.actionButton, { backgroundColor: colors.primary }]}
                   loading={pickingup && selectedContract?.id === contract.id}
                   disabled={
-                    VICINITY_FEATURE_ENABLED && (
-                      contract.pickupVicinityKm === null || contract.pickupVicinityKm > 0.05
-                    )
+                    VICINITY_FEATURE_ENABLED && !contract.withinPickupVicinity
                   }
                 >
                   Pickup Luggage
                 </Button>
               )}
               {contract.drop_off_location && (
-                <Button 
-                  mode="contained" 
-                  onPress={() => navigation.navigate('CheckLocation', { 
-                    dropOffLocation: contract.drop_off_location,
-                    dropOffLocationGeo: contract.drop_off_location_geo
-                  })} 
-                  style={[styles.actionButton, { backgroundColor: colors.primary }]}
-                >
-                  Check Location
-                </Button>
+                <Button mode="contained" onPress={() => navigation.navigate('CheckLocation', { dropOffLocation: contract.drop_off_location, dropOffLocationGeo: contract.drop_off_location_geo, pickupLocation: contract.pickup_location, pickupLocationGeo: contract.pickup_location_geo })} style={[styles.actionButton, { backgroundColor: colors.primary }]}>Check Location</Button>
               )}
             </List.Accordion>
           </List.Section>

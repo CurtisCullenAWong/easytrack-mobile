@@ -8,7 +8,7 @@ import { compareGeometriesVicinity, parseGeometry } from '../../../../utils/vici
 import BottomModal from '../../../customComponents/BottomModal'
 import ContractActionModalContent from '../../../customComponents/ContractActionModalContent'
 import useSnackbar from '../../../hooks/useSnackbar'
-const VICINITY_FEATURE_ENABLED = false
+const VICINITY_FEATURE_ENABLED = true
 
 // Constants
 const FILTER_OPTIONS = [
@@ -580,7 +580,7 @@ const contractsWithDistance = useMemo(() => {
             <List.Accordion title="Actions" expanded={expanded.actions} onPress={() => toggle('actions')} titleStyle={[fonts.labelMedium, { color: colors.onSurface }]}>
               <Button mode="contained" onPress={() => navigation.navigate('ContractDetails', { id: contract.id})} style={[styles.actionButton, { backgroundColor: colors.primary }]}>Show Details</Button>
               {contract.drop_off_location && (
-                <Button mode="contained" onPress={() => navigation.navigate('CheckLocation', { dropOffLocation: contract.drop_off_location, dropOffLocationGeo: contract.drop_off_location_geo })} style={[styles.actionButton, { backgroundColor: colors.primary }]}>Check Location</Button>
+                <Button mode="contained" onPress={() => navigation.navigate('CheckLocation', { dropOffLocation: contract.drop_off_location, dropOffLocationGeo: contract.drop_off_location_geo, pickupLocation: contract.pickup_location, pickupLocationGeo: contract.pickup_location_geo })} style={[styles.actionButton, { backgroundColor: colors.primary }]}>Check Location</Button>
               )}
               <Button mode="contained" onPress={() => { setSelectedContract(contract); setDialogType('deliver'); setModalVisible(true) }} style={[styles.actionButton, { backgroundColor: colors.primary }]} disabled={
                 contract.contract_status_id === 5 || contract.contract_status_id === 6 ||

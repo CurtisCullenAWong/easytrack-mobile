@@ -2,16 +2,13 @@ import React, { useEffect, useRef, useState } from 'react'
 import { View, StyleSheet, TouchableOpacity } from 'react-native'
 import { Text, useTheme, Appbar, IconButton } from 'react-native-paper'
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
-import MapViewDirections from 'react-native-maps-directions'
-import { GOOGLE_MAPS_API_KEY } from '@env'
 import * as Location from 'expo-location'
 import useSnackbar from '../../hooks/useSnackbar'
 
 const CheckLocation = ({ route, navigation }) => {
   const { colors, fonts } = useTheme()
-  const { dropOffLocation, dropOffLocationGeo } = route.params
+  const { dropOffLocation, dropOffLocationGeo, pickupLocation, pickupLocationGeo } = route.params
   const mapRef = useRef(null)
-  const [currentLocation, setCurrentLocation] = useState(null)
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
   useEffect(() => {
@@ -21,12 +18,6 @@ const CheckLocation = ({ route, navigation }) => {
         showSnackbar('Permission to access location was denied')
         return
       }
-
-      let location = await Location.getCurrentPositionAsync({})
-      setCurrentLocation({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      })
     })()
   }, [])
 
@@ -54,6 +45,7 @@ const CheckLocation = ({ route, navigation }) => {
   }
 
   const dropOffCoords = parseGeometry(dropOffLocationGeo)
+  const pickupCoords = parseGeometry(pickupLocationGeo)
 
   const defaultRegion = {
     latitude: 14.5995,
@@ -71,25 +63,17 @@ const CheckLocation = ({ route, navigation }) => {
       }
     : defaultRegion
 
-  const centerOnMarker = () => {
-    if (mapRef.current && dropOffCoords) {
-      mapRef.current.animateToRegion({
-        latitude: dropOffCoords.latitude,
-        longitude: dropOffCoords.longitude,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      }, 1000)
-    }
-  }
-
-  const centerOnCurrentLocation = () => {
-    if (mapRef.current && currentLocation) {
-      mapRef.current.animateToRegion({
-        latitude: currentLocation.latitude,
-        longitude: currentLocation.longitude,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      }, 1000)
+  const centerOnMarker = (coords) => {
+    if (mapRef.current && coords) {
+      mapRef.current.animateToRegion(
+        {
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          latitudeDelta: 0.005,
+          longitudeDelta: 0.005,
+        },
+        1000
+      )
     }
   }
 
@@ -121,6 +105,17 @@ const CheckLocation = ({ route, navigation }) => {
           showsIndoors={true}
           loadingEnabled={true}
         >
+          {/* Pickup Marker */}
+          {pickupCoords && (
+            <Marker
+              coordinate={pickupCoords}
+              title="Pickup Location"
+              description={pickupLocation || 'Pickup Point'}
+              pinColor={colors.tertiary} // distinguish color
+            />
+          )}
+
+          {/* Drop-off Marker */}
           {dropOffCoords && (
             <Marker
               coordinate={dropOffCoords}
@@ -129,41 +124,26 @@ const CheckLocation = ({ route, navigation }) => {
               pinColor={colors.primary}
             />
           )}
-          {/* {currentLocation && dropOffCoords && (
-            <MapViewDirections
-              origin={currentLocation}
-              destination={dropOffCoords}
-              apikey={GOOGLE_MAPS_API_KEY}
-              strokeWidth={4}
-              strokeColor={colors.primary}
-              optimizeWaypoints={false}
-              onError={() => {
-                showSnackbar('Unable to fetch route from Google Maps API')
-              }}
-            />
-          )} */}
         </MapView>
+
+        {/* Control Buttons */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity 
-            style={[styles.controlButton, { backgroundColor: colors.primary }]} 
-            onPress={centerOnMarker}
+          {/* Center on Drop-off */}
+          <TouchableOpacity
+            style={[styles.controlButton, { backgroundColor: colors.primary }]}
+            onPress={() => centerOnMarker(dropOffCoords)}
           >
-            <IconButton
-              icon="map-marker"
-              size={24}
-              iconColor={colors.onPrimary}
-            />
+            <IconButton icon="map-marker" size={24} iconColor={colors.onPrimary} />
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.controlButton, { backgroundColor: colors.primary }]} 
-            onPress={centerOnCurrentLocation}
+
+          {/* Center on Pickup */}
+          <TouchableOpacity
+            style={[styles.controlButton, { backgroundColor: colors.primary }]}
+            onPress={() => centerOnMarker(pickupCoords)}
           >
-            {/* <IconButton
-              icon="crosshairs-gps"
-              size={24}
-              iconColor={colors.onPrimary}
-            /> */}
+            <IconButton icon="map-marker-radius" size={24} iconColor={colors.onPrimary} />
           </TouchableOpacity>
+
         </View>
       </View>
     </View>

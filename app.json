@@ -9,7 +9,7 @@
     "updates": {
       "enabled": true,
       "fallbackToCacheTimeout": 2000,
-      "url": "https://u.expo.dev/a5192bb8-e028-41c6-b7f3-7bc1c100f880"
+      "url": "https://u.expo.dev/65fcdb1f-bd81-49c7-bab7-95d76c740a61"
     },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -81,13 +81,13 @@
       ]
     ],
     "notification": {
-      "icon": "./assets/images/splash-icon.png",  
+      "icon": "./assets/images/splash-icon.png",
       "color": "#0C5B47",
       "iosDisplayInForeground": true
     },
     "extra": {
       "eas": {
-        "projectId": "a5192bb8-e028-41c6-b7f3-7bc1c100f880"
+        "projectId": "65fcdb1f-bd81-49c7-bab7-95d76c740a61"
       }
     },
     "ios": {

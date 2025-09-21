@@ -375,9 +375,7 @@ const ContractInfo = ({ contractData, colors, fonts, showSnackbar }) => {
                 <InfoRow label="Owner Name:" value={`${contractData.owner_first_name || ''} ${contractData.owner_middle_initial || ''} ${contractData.owner_last_name || ''}`.trim()} colors={colors} fonts={fonts}/>
                 <InfoRow label="Owner Contact:" value={contractData.owner_contact} colors={colors} fonts={fonts}/>
                 <InfoRow label="Flight Number:" value={contractData.flight_number} colors={colors} fonts={fonts}/>
-                <InfoRow label="Case Number:" value={contractData.case_number} colors={colors} fonts={fonts}/>
                 <InfoRow label="Luggage Description:" value={contractData.luggage_description} colors={colors} fonts={fonts}/>
-                <InfoRow label="Luggage Weight:" value={contractData.luggage_weight ? `${contractData.luggage_weight} kg` : 'N/A'} colors={colors} fonts={fonts}/>
                 <InfoRow label="Luggage Quantity:" value={contractData.luggage_quantity} colors={colors} fonts={fonts}/>
 
                 <Text style={[fonts.titleMedium, { color: colors.primary, marginTop: 20, marginBottom: 10 }]}>
