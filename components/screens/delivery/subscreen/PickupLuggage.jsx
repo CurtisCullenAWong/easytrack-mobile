@@ -6,9 +6,8 @@ import BottomModal from '../../../customComponents/BottomModal'
 import ContractActionModalContent from '../../../customComponents/ContractActionModalContent'
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
-import { parseGeometry, calculateDistanceKm } from '../../../../utils/vicinityUtils'
+import { parseGeometry, calculateDistanceKm, VICINITY_FEATURE_ENABLED } from '../../../../utils/vicinityUtils'
 import * as Location from 'expo-location'
-const VICINITY_FEATURE_ENABLED = true
 
 const PickupLuggage = ({ navigation }) => {
   const { colors, fonts } = useTheme()

@@ -1,4 +1,5 @@
 // Reusable geometry and vicinity helpers for experimental vicinity gating
+export const VICINITY_FEATURE_ENABLED=true
 
 export const deg2rad = (degrees) => degrees * (Math.PI / 180)
 
@@ -57,5 +58,3 @@ export const formatDistanceDisplay = (distanceKm) => {
   if (distanceKm < 1) return `${Math.max(0, Math.round(distanceKm * 1000))} m`
   return `${distanceKm.toFixed(2)} km`
 }
-
-

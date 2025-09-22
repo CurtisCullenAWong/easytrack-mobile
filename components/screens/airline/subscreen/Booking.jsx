@@ -764,7 +764,9 @@ const Booking = () => {
           owner_middle_initial: contract.middleInitial,
           owner_last_name: contract.lastName,
           owner_contact: formatContactNumber(contract.contact),
-          luggage_description: contract.itemDescriptions && contract.itemDescriptions.length > 0 ? contract.itemDescriptions.join('\n') : contract.itemDescription,
+          luggage_description: Array.isArray(contract.itemDescriptions)
+          ? contract.itemDescriptions.filter(d => d && d.trim() !== '').join('\n')
+          : String(contract.itemDescription || '').trim(),
           luggage_quantity: contract.quantity,
           flight_number: contract.flightNumber,
           delivery_address: combinedDeliveryAddress,
@@ -943,6 +945,19 @@ const Booking = () => {
             </View>
           </Surface>
         )}
+        {deliveryFee <= 0 && dropOffLocation.location && (
+          <Surface style={[styles.warningSurface, { backgroundColor: colors.errorContainer }]} elevation={1}>
+            <View style={styles.warningContent}>
+              <IconButton icon="alert-circle" size={24} iconColor={colors.error} />
+              <View style={styles.warningText}>
+                <Text style={[fonts.titleSmall, { color: colors.error, marginBottom: 4 }]}>Delivery Fee Unavailable</Text>
+                <Text style={[fonts.bodyMedium, { color: colors.onErrorContainer }]}>
+                  The selected drop-off location is either invalid or out of bounds. Please select a valid one to proceed.
+                </Text>
+              </View>
+            </View>
+          </Surface>
+        )}
         <Surface style={[styles.surface, { padding: 16, marginBottom: 16, backgroundColor: colors.surface }]} elevation={1}>
           {renderPickupLocation}
 
@@ -976,19 +991,6 @@ const Booking = () => {
             Clear Address
           </Button>
         </Surface>
-        {deliveryFee <= 0 && dropOffLocation.location && (
-          <Surface style={[styles.warningSurface, { backgroundColor: colors.errorContainer }]} elevation={1}>
-            <View style={styles.warningContent}>
-              <IconButton icon="alert-circle" size={24} iconColor={colors.error} />
-              <View style={styles.warningText}>
-                <Text style={[fonts.titleSmall, { color: colors.error, marginBottom: 4 }]}>Delivery Fee Unavailable</Text>
-                <Text style={[fonts.bodyMedium, { color: colors.onErrorContainer }]}>
-                  The selected drop-off location is either invalid or out of bounds. Please select a valid one to proceed.
-                </Text>
-              </View>
-            </View>
-          </Surface>
-        )}
 
         {contracts.map((contract, index) => (
           <ContractForm

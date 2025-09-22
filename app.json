@@ -9,7 +9,7 @@
     "updates": {
       "enabled": true,
       "fallbackToCacheTimeout": 2000,
-      "url": "https://u.expo.dev/65fcdb1f-bd81-49c7-bab7-95d76c740a61"
+      "url": "https://u.expo.dev/92ae8a61-7103-489e-bc49-bb52cc3e81d1"
     },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -87,7 +87,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "65fcdb1f-bd81-49c7-bab7-95d76c740a61"
+        "projectId": "92ae8a61-7103-489e-bc49-bb52cc3e81d1"
       }
     },
     "ios": {

@@ -4,11 +4,10 @@ import { View, StyleSheet, FlatList, RefreshControl } from 'react-native'
 import { Text, Button, Card, Divider, IconButton, useTheme, Searchbar, Menu, Surface, List } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import { useLocation } from '../../../hooks/useLocation'
-import { compareGeometriesVicinity, parseGeometry } from '../../../../utils/vicinityUtils'
+import { compareGeometriesVicinity, parseGeometry, VICINITY_FEATURE_ENABLED } from '../../../../utils/vicinityUtils'
 import BottomModal from '../../../customComponents/BottomModal'
 import ContractActionModalContent from '../../../customComponents/ContractActionModalContent'
 import useSnackbar from '../../../hooks/useSnackbar'
-const VICINITY_FEATURE_ENABLED = true
 
 // Constants
 const FILTER_OPTIONS = [
