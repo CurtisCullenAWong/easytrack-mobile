@@ -4,7 +4,7 @@ import { ScrollView, View, StyleSheet, Image, SafeAreaView, ActivityIndicator } 
 import { Text, Card, Button, TextInput, useTheme, Portal, Dialog, IconButton, Appbar, Menu } from 'react-native-paper'
 import { supabase } from '../../../../lib/supabase'
 import * as ImagePicker from 'expo-image-picker'
-import * as FileSystem from 'expo-file-system'
+import * as FileSystem from 'expo-file-system/legacy'
 import { decode } from 'base64-arraybuffer'
 import useSnackbar from '../../../hooks/useSnackbar'
 

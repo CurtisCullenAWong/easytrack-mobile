@@ -25,7 +25,7 @@ import { DatePickerModal, en, registerTranslation } from 'react-native-paper-dat
 import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 import * as ImagePicker from 'expo-image-picker'
-import * as FileSystem from 'expo-file-system'
+import * as FileSystem from 'expo-file-system/legacy'
 import { decode } from 'base64-arraybuffer'
 registerTranslation('en', en)
 
