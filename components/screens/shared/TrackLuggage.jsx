@@ -17,20 +17,6 @@ import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import MapViewDirections from "react-native-maps-directions"
 
 const { width, height } = Dimensions.get('window')
-const toRadians = (degrees) => (degrees * Math.PI) / 180
-const haversineDistanceMeters = (a, b) => {
-    if (!a || !b) return Infinity
-    const R = 6371000
-    const dLat = toRadians(b.latitude - a.latitude)
-    const dLon = toRadians(b.longitude - a.longitude)
-    const lat1 = toRadians(a.latitude)
-    const lat2 = toRadians(b.latitude)
-    const sinDLat = Math.sin(dLat / 2)
-    const sinDLon = Math.sin(dLon / 2)
-    const h = sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLon * sinDLon
-    const c = 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h))
-    return R * c
-}
 
 // Geometry parser
 const parseGeometry = (geoString) => {
@@ -48,20 +34,127 @@ const parseGeometry = (geoString) => {
                 latitude: parseFloat(geoString.coordinates[1]),
             }
         }
-    } catch (error) {
-        // Surface parse errors via snackbar where available at call sites
-    }
+    } catch (error) {}
     return null
 }
 
-// Map Component
-const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors, contractStatusId, showSnackbar }) => {
-  const mapRef = useRef(null)
-  const lastRequestedOriginRef = useRef(null)
-  const lastRequestTimeRef = useRef(0)
-  const [throttledOrigin, setThrottledOrigin] = useState(null)
-  const [refreshTick, setRefreshTick] = useState(0)
+// --- Hook ---
+let globalLastFetchTime = 0
 
+const useDirections = ({ pickup, current, dropOff, showSnackbar, cooldownMs = 60000 }) => {
+  const [routeData, setRouteData] = useState(null)
+  const [cooldownActive, setCooldownActive] = useState(true)
+  const [directionElements, setDirectionElements] = useState(null)
+
+  const requestDirections = useCallback(() => {
+    const now = Date.now()
+    const timeSinceLast = now - globalLastFetchTime
+
+    if (timeSinceLast < cooldownMs) {
+        setCooldownActive(true)
+        return
+    }
+
+    globalLastFetchTime = now
+    setCooldownActive(true)
+
+    setTimeout(() => {
+        if (Date.now() - globalLastFetchTime >= cooldownMs) {
+            setCooldownActive(false)
+        }
+    }, cooldownMs)
+
+    if (!pickup || !dropOff) return
+    if (!GOOGLE_MAPS_API_KEY) {
+        showSnackbar("Directions are currently unavailable.")
+        return
+    }
+    const pickupToDropoff = (
+        <MapViewDirections
+            key="pickupToDropoff"
+            origin={pickup}
+            destination={dropOff}
+            apikey={GOOGLE_MAPS_API_KEY}
+            strokeWidth={0}
+            strokeColor="transparent"
+            onReady={(result) => {
+                setRouteData((prev) => ({
+                    ...prev,
+                    totalDistance: result.distance,
+                    duration: result.duration,
+                }))
+            }}
+            onError={() => showSnackbar("Unable to fetch pickup → dropoff route")}
+        />
+    )
+
+    const currentToDropoff = (
+        <MapViewDirections
+            key="currentToDropoff"
+            origin={current || pickup}
+            destination={dropOff}
+            apikey={GOOGLE_MAPS_API_KEY}
+            strokeWidth={4}
+            strokeColor="#0a6f12ff"
+            onReady={(result) => {
+                setRouteData((prev) => ({
+                    ...prev,
+                    remainingDistance: result.distance,
+                }))
+            }}
+            onError={() => showSnackbar("Unable to fetch current → dropoff route")}
+        />
+    )
+
+    setDirectionElements([pickupToDropoff, currentToDropoff])
+}, [pickup, current, dropOff, cooldownMs, showSnackbar])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const isActive = Date.now() - globalLastFetchTime < cooldownMs
+      setCooldownActive(isActive)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [cooldownMs])
+
+  return { routeData, requestDirections, cooldownActive, directionElements }
+}
+
+
+
+// --- ProgressMeter ---
+const ProgressMeter = ({ colors, contractData, routeData }) => {
+  if (contractData?.contract_status_id !== 4) return null
+  if (!routeData?.totalDistance || !routeData?.remainingDistance) return null
+
+  const { totalDistance, remainingDistance, duration } = routeData
+
+  let progress = 1 - remainingDistance / totalDistance
+  progress = Math.max(0.1, Math.min(progress, 1))
+
+  return (
+    <View style={styles.progressContainer}>
+      <View style={styles.progressInfo}>
+        <Text style={[styles.progressText, { color: colors.primary }]}>
+          Distance Remaining: {remainingDistance.toFixed(1)} km
+        </Text>
+        <Text style={[styles.progressText, { color: colors.primary }]}>
+          ETA: {Math.round(duration)} min
+        </Text>
+      </View>
+      <ProgressBar
+        progress={progress}
+        style={styles.progressBar}
+        color={colors.primary}
+      />
+    </View>
+  )
+}
+
+
+// Map Component
+const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors, contractStatusId, showSnackbar, requestDirections, cooldownActive, directionElement }) => {
+  const mapRef = useRef(null)
   const centerOnLocation = (coords) => {
     if (coords && mapRef.current) {
       mapRef.current.animateToRegion({
@@ -74,39 +167,6 @@ const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors
 
   const currentLocationCoords = parseGeometry(currentLocation)
   const dropOffCoords = parseGeometry(dropOffLocation)
-
-  // Initialize throttled origin when coords first arrive or change beyond threshold
-  useEffect(() => {
-    const now = Date.now()
-    const THROTTLE_DISTANCE_METERS = 50
-    const shouldForceByTime = now - lastRequestTimeRef.current >= 60000
-
-    if (!currentLocationCoords) return
-
-    if (!lastRequestedOriginRef.current) {
-      lastRequestedOriginRef.current = currentLocationCoords
-      lastRequestTimeRef.current = now
-      setThrottledOrigin(currentLocationCoords)
-      return
-    }
-
-    const movedMeters = haversineDistanceMeters(lastRequestedOriginRef.current, currentLocationCoords)
-    if (movedMeters >= THROTTLE_DISTANCE_METERS || shouldForceByTime) {
-      lastRequestedOriginRef.current = currentLocationCoords
-      lastRequestTimeRef.current = now
-      setThrottledOrigin(currentLocationCoords)
-    }
-  }, [currentLocationCoords])
-
-  // 60s refresh to force a new directions request even without significant movement
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setRefreshTick((t) => t + 1)
-      lastRequestTimeRef.current = Date.now()
-    }, 60000)
-    return () => clearInterval(interval)
-  }, [])
-
   const initialRegion = currentLocationCoords || dropOffCoords
 
   return (
@@ -127,54 +187,23 @@ const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors
       >
         {currentLocationCoords && (
           <Marker
-            title={[
-              deliveryProfile?.first_name,
-              deliveryProfile?.middle_initial + '.',
-              deliveryProfile?.last_name,
-              deliveryProfile?.suffix,
-              ' - Delivery Personnel'
-            ].filter(Boolean).join(' ') || 'Delivery Personnel'}
+            title={[deliveryProfile?.first_name, deliveryProfile?.middle_initial + '.', deliveryProfile?.last_name, deliveryProfile?.suffix, ' - Delivery Personnel'].filter(Boolean).join(' ') || 'Delivery Personnel'}
             coordinate={currentLocationCoords}
             pinColor={colors.primary}
           >
             {deliveryProfile?.pfp_id ? (
-              <Avatar.Image
-                size={32}
-                source={{ uri: deliveryProfile.pfp_id }}
-                style={{ borderColor: colors.primary }}
-              />
+              <Avatar.Image size={32} source={{ uri: deliveryProfile.pfp_id }} style={{ borderColor: colors.primary }} />
             ) : (
-              <Avatar.Text
-                size={32}
-                label={deliveryProfile?.first_name?.[0]?.toUpperCase() || 'N/A'}
-                style={{ backgroundColor: colors.primary }}
-                labelStyle={{ color: colors.onPrimary }}
-              />
+              <Avatar.Text size={32} label={deliveryProfile?.first_name?.[0]?.toUpperCase() || 'N/A'} style={{ backgroundColor: colors.primary }} labelStyle={{ color: colors.onPrimary }} />
             )}
           </Marker>
         )}
 
         {dropOffCoords && (
-          <Marker
-            title='Destination'
-            coordinate={dropOffCoords}
-            pinColor={colors.error}
-          />
+          <Marker title='Destination' coordinate={dropOffCoords} pinColor={colors.error} />
         )}
-        {contractStatusId === 4 && throttledOrigin && dropOffCoords && (
-          <MapViewDirections
-            key={`${throttledOrigin.latitude},${throttledOrigin.longitude}-${dropOffCoords.latitude},${dropOffCoords.longitude}-${refreshTick}`}
-            origin={throttledOrigin}
-            destination={dropOffCoords}
-            apikey={GOOGLE_MAPS_API_KEY}
-            strokeWidth={4}
-            strokeColor={colors.primary}
-            optimizeWaypoints={false}
-            onError={(err) => {
-              showSnackbar("Unable to fetch route from Google Maps API")
-            }}
-          />
-        )}
+
+        {contractStatusId === 4 && directionElement}
       </MapView>
 
       <View style={styles.mapButtons}>
@@ -198,11 +227,21 @@ const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors
             size={24}
           />
         )}
+        {contractStatusId === 4 && (
+          <IconButton
+            mode="contained"
+            onPress={requestDirections}
+            disabled={cooldownActive}
+            style={[styles.mapButton, { backgroundColor: colors.primary }]}
+            icon="routes"
+            iconColor={colors.onPrimary}
+            size={24}
+          />
+        )}
       </View>
     </View>
   )
 }
-
 
 // Info Row Component
 const InfoRow = ({ label, value, colors, fonts, style }) => (
@@ -211,111 +250,6 @@ const InfoRow = ({ label, value, colors, fonts, style }) => (
         <Text style={[fonts.bodyMedium, { color: colors.onSurface, flex: 1, textAlign: 'right' }]} selectable numberOfLines={3}>{value || 'N/A'}</Text>
     </View>
 )
-
-// ProgressMeter component (using Directions API)
-const ProgressMeter = ({ colors, contractData, showSnackbar }) => {
-  const [distanceRemaining, setDistanceRemaining] = useState(null)
-  const [etaRemaining, setEtaRemaining] = useState(null)
-  const [totalDistance, setTotalDistance] = useState(null)
-  const [progress, setProgress] = useState(0)
-  const [refreshTick, setRefreshTick] = useState(0)
-  const lastRequestedOriginRef = useRef(null)
-  const lastRequestTimeRef = useRef(0)
-
-  const pickupCoords = parseGeometry(contractData?.pickup_location_geo)
-  const currentCoords = parseGeometry(contractData?.current_location_geo)
-  const dropOffCoords = parseGeometry(contractData?.drop_off_location_geo)
-  const [throttledCurrent, setThrottledCurrent] = useState(null)
-
-  // Throttle remaining route requests based on distance or 60s
-  useEffect(() => {
-    const now = Date.now()
-    const THROTTLE_DISTANCE_METERS = 50
-    const shouldForceByTime = now - lastRequestTimeRef.current >= 60000
-    if (!currentCoords) return
-
-    if (!lastRequestedOriginRef.current) {
-      lastRequestedOriginRef.current = currentCoords
-      lastRequestTimeRef.current = now
-      setThrottledCurrent(currentCoords)
-      return
-    }
-
-    const movedMeters = haversineDistanceMeters(lastRequestedOriginRef.current, currentCoords)
-    if (movedMeters >= THROTTLE_DISTANCE_METERS || shouldForceByTime) {
-      lastRequestedOriginRef.current = currentCoords
-      lastRequestTimeRef.current = now
-      setThrottledCurrent(currentCoords)
-    }
-  }, [currentCoords])
-
-  // 60s refresh tick
-  useEffect(() => {
-    const i = setInterval(() => {
-      setRefreshTick((t) => t + 1)
-      lastRequestTimeRef.current = Date.now()
-    }, 60000)
-    return () => clearInterval(i)
-  }, [])
-
-  if (contractData?.contract_status_id !== 4) return null
-
-  return (
-    <View style={styles.progressContainer}>
-      {/* Pickup → Dropoff (total baseline) */}
-      {pickupCoords && dropOffCoords && (
-        <MapViewDirections
-          origin={pickupCoords}
-          destination={dropOffCoords}
-          apikey={GOOGLE_MAPS_API_KEY}
-          strokeWidth={0}
-          onReady={(result) => setTotalDistance(result.distance)}
-          onError={(err) => {
-            showSnackbar("Unable to fetch total route from Google Maps API")
-          }}
-        />
-      )}
-
-      {/* Current → Dropoff (remaining) */}
-      {throttledCurrent && dropOffCoords && (
-        <MapViewDirections
-          key={`${throttledCurrent.latitude},${throttledCurrent.longitude}-${dropOffCoords.latitude},${dropOffCoords.longitude}-${refreshTick}`}
-          origin={throttledCurrent}
-          destination={dropOffCoords}
-          apikey={GOOGLE_MAPS_API_KEY}
-          strokeWidth={0}
-          onReady={(result) => {
-            setDistanceRemaining(result.distance)
-            setEtaRemaining(result.duration)
-
-            if (totalDistance) {
-              const ratio = (totalDistance - result.distance) / totalDistance
-              setProgress(Math.max(0, Math.min(1, ratio)))
-            }
-          }}
-          onError={(err) => {
-            showSnackbar("Unable to fetch remaining route from Google Maps API")
-          }}
-        />
-      )}
-
-      <View style={styles.progressInfo}>
-        <Text style={[styles.progressText, { color: colors.primary }]}>
-          Distance Remaining: {distanceRemaining ? `${distanceRemaining.toFixed(1)} km` : 'Calculating...'}
-        </Text>
-        <Text style={[styles.progressText, { color: colors.primary }]}>
-        ETA: {etaRemaining ? `${Math.round(etaRemaining)} min` : 'Calculating...'}
-        </Text>
-      </View>
-
-      <ProgressBar
-        progress={progress}
-        color={colors.primary}
-        style={styles.progressBar}
-      />
-    </View>
-  )
-}
 
 // Contract Info Component
 const ContractInfo = ({ contractData, colors, fonts, showSnackbar }) => {
@@ -334,6 +268,18 @@ const ContractInfo = ({ contractData, colors, fonts, showSnackbar }) => {
 
     if (!contractData) return null
 
+const pickupCoords = parseGeometry(contractData?.pickup_location_geo)
+const dropOffCoords = parseGeometry(contractData?.drop_off_location_geo)
+const currentCoords = parseGeometry(contractData?.current_location_geo)
+
+const { routeData, requestDirections, cooldownActive, directionElements } =
+  useDirections({
+    pickup: pickupCoords,
+    current: currentCoords,
+    dropOff: dropOffCoords,
+    showSnackbar,
+  })
+
     return (
         <Card style={[styles.contractCard, { backgroundColor: colors.surface }]}>
             {contractData.contract_status_id === 4 && (
@@ -342,11 +288,7 @@ const ContractInfo = ({ contractData, colors, fonts, showSnackbar }) => {
                         Location Tracking
                     </Text>
                     <Divider style={{ marginBottom: 10 }} />
-                    <ProgressMeter
-                        colors={colors}
-                        contractData={contractData}
-                        showSnackbar={showSnackbar}
-                    />
+                    <ProgressMeter colors={colors} contractData={contractData} routeData={routeData} />
                     <TrackingMap
                       currentLocation={contractData.current_location_geo}
                       dropOffLocation={contractData.drop_off_location_geo}
@@ -354,6 +296,9 @@ const ContractInfo = ({ contractData, colors, fonts, showSnackbar }) => {
                       colors={colors}
                       contractStatusId={contractData.contract_status_id}
                       showSnackbar={showSnackbar}
+                      requestDirections={requestDirections}
+                      cooldownActive={cooldownActive}
+                      directionElement={directionElements}
                     />
                 </View>
             )}
@@ -493,6 +438,7 @@ const TrackLuggage = ({ navigation, route }) => {
                 .subscribe()
             return () => subscription.unsubscribe()
         }, [debouncedTrackingNumber])
+
     )
 
     const onRefresh = useCallback(() => {
@@ -525,12 +471,14 @@ const TrackLuggage = ({ navigation, route }) => {
 
                 <View style={styles.inputContainer}>
                     <TextInput
-                        mode="outlined"
-                        placeholder="Enter track number"
-                        value={trackingNumber}
-                        onChangeText={setTrackingNumber}
-                        style={styles.textInput}
-                        theme={{ colors: { primary: colors.primary } }}
+                      mode="outlined"
+                      placeholder="Enter track number"
+                      value={trackingNumber}
+                      onChangeText={(text) => setTrackingNumber(text.toUpperCase())}
+                      style={styles.textInput}
+                      theme={{ colors: { primary: colors.primary } }}
+                      maxLength={16}
+                      autoCapitalize="characters"
                     />
                 </View>
 

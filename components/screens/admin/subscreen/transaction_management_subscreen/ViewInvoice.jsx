@@ -8,6 +8,7 @@ import * as FileSystem from 'expo-file-system/legacy'
 import { RESEND_API_KEY } from '@env'
 import useSnackbar from '../../../../hooks/useSnackbar'
 import Signature from 'react-native-signature-canvas'
+export const FILE_SIZE_LIMIT = 5 * 1024 * 1024
 
 const CreateInvoice = () => {
   const { colors, fonts } = useTheme()
@@ -120,18 +121,23 @@ const CreateInvoice = () => {
 
   const handleShare = async () => {
     try {
-      await sharePDF(
-        buildTransactionsPayload(),
-        null,
-        {
-          prepared: preparedSignatureDataUrl,
-          checked: checkedSignatureDataUrl,
-          preparedRotation: preparedSignatureRotation,
-          checkedRotation: checkedSignatureRotation,
-        },
-        { signatureOnFirstPage: true },
-        buildInvoiceData()
-      )
+      if (pdfFileSize && pdfFileSize > FILE_SIZE_LIMIT) {
+        showSnackbar(`The PDF file size is too large ${[FILE_SIZE_LIMIT]}`)
+      } else {
+        // Use normal sharePDF
+        await sharePDF(
+          buildTransactionsPayload(),
+          null,
+          {
+            prepared: preparedSignatureDataUrl,
+            checked: checkedSignatureDataUrl,
+            preparedRotation: preparedSignatureRotation,
+            checkedRotation: checkedSignatureRotation,
+          },
+          { signatureOnFirstPage: true },
+          buildInvoiceData()
+        )
+      }
     } catch (error) {
       console.error('Error sharing PDF:', error)
       showSnackbar(`Failed to share PDF: ${error.message}`)
@@ -166,21 +172,26 @@ const CreateInvoice = () => {
 
       setIsSendingEmail(true)
 
-      const pdfData = await createPDFFile(
-        buildTransactionsPayload(),
-        null,
-        {
-          prepared: preparedSignatureDataUrl,
-          checked: checkedSignatureDataUrl,
-          preparedRotation: preparedSignatureRotation,
-          checkedRotation: checkedSignatureRotation,
-        },
-        { signatureOnFirstPage: true },
-        buildInvoiceData()
-      )
+      let pdfData
+      if (pdfFileSize && pdfFileSize > FILE_SIZE_LIMIT) {
+        showSnackbar(`The PDF file size is too large ${[pdfFilFILE_SIZE_LIMITeSize]}`)
+      } else {
+        // Use normal createPDFFile
+        pdfData = await createPDFFile(
+          buildTransactionsPayload(),
+          null,
+          {
+            prepared: preparedSignatureDataUrl,
+            checked: checkedSignatureDataUrl,
+            preparedRotation: preparedSignatureRotation,
+            checkedRotation: checkedSignatureRotation,
+          },
+          { signatureOnFirstPage: true },
+          buildInvoiceData()
+        )
+      }
 
       const base64 = await FileSystem.readAsStringAsync(pdfData.path, { encoding: FileSystem.EncodingType.Base64 })
-
       const summaryId = summary?.summary_id || 'SUMMARY'
       const subject = `Invoice ${currentInvoiceId || ''} / SOA ${summaryId}`.trim()
 
@@ -210,7 +221,7 @@ const CreateInvoice = () => {
       }
 
       showSnackbar('Email sent successfully', true)
-      
+
       // Update summary status to 2 after successful email send
       try {
         if (summary?.summary_id) {
