@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, View, StyleSheet, Image } from 'react-native'
 import { useTheme, Appbar, Card, Text, Button, Divider, Checkbox, Portal, Modal, Dialog, TextInput } from 'react-native-paper'
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'
@@ -8,7 +8,7 @@ import * as FileSystem from 'expo-file-system/legacy'
 import { RESEND_API_KEY } from '@env'
 import useSnackbar from '../../../../hooks/useSnackbar'
 import Signature from 'react-native-signature-canvas'
-export const FILE_SIZE_LIMIT = 5 * 1024 * 1024
+export const FILE_SIZE_LIMIT = 25 * 1024 * 1024
 
 const CreateInvoice = () => {
   const { colors, fonts } = useTheme()
