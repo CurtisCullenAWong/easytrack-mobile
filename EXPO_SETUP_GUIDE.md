@@ -33,6 +33,17 @@ The app is configured to use Expo Updates for seamless over-the-air updates with
 
 ## Building and Publishing Updates
 
+## For Configuring Builds
+
+```bash
+eas init (expo project)
+eas update:configure
+eas build:configure
+eas credentials
+npx expo-doctor
+eas env:pull
+```
+
 ### For Development
 ```bash
 # Build development client

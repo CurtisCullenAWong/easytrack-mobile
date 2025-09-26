@@ -9,12 +9,12 @@
     "updates": {
       "enabled": true,
       "fallbackToCacheTimeout": 2000,
-      "url": "https://u.expo.dev/92ae8a61-7103-489e-bc49-bb52cc3e81d1"
+      "url": "https://u.expo.dev/c0eeaad9-28e1-4d53-b2d5-f6676ad1ba30"
     },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "easytrack",
-    "owner": "thewalkingdevnumoa",
+    "owner": "thewalkingdev_numoa",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -87,7 +87,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "92ae8a61-7103-489e-bc49-bb52cc3e81d1"
+        "projectId": "c0eeaad9-28e1-4d53-b2d5-f6676ad1ba30"
       }
     },
     "ios": {
