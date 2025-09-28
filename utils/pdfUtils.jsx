@@ -2,6 +2,8 @@ import * as FileSystem from 'expo-file-system/legacy'
 import * as Print from 'expo-print'
 import * as Sharing from 'expo-sharing'
 import { supabase } from '../lib/supabaseAdmin'
+import { PDFDocument } from 'pdf-lib'
+import { decode as atob, encode as btoa } from 'base-64'
 
 const cfg = {
   company: {
@@ -40,7 +42,6 @@ const cfg = {
 
 const generateTransactionReportHTML = async (
   transactions,
-  invoiceImageUrl = null,
   signatureImageUrl = null,
   options = {},
   invoiceData = null
@@ -1217,5 +1218,105 @@ export const createPDFFile = async (
   } catch (error) {
     console.error('Error creating PDF file:', error)
     throw new Error(`Failed to create PDF file: ${error.message}`)
+  }
+}
+
+export async function splitPDFFile(pdfPath, sizeLimit) {
+  try {
+    // read original as base64 and decode to Uint8Array
+    const pdfBase64 = await FileSystem.readAsStringAsync(pdfPath, {
+      encoding: FileSystem.EncodingType.Base64,
+    })
+    const binaryString = atob(pdfBase64)
+    const pdfBytes = new Uint8Array(binaryString.length)
+    for (let i = 0; i < binaryString.length; i++) {
+      pdfBytes[i] = binaryString.charCodeAt(i)
+    }
+
+    const pdfDoc = await PDFDocument.load(pdfBytes)
+    const totalPages = pdfDoc.getPageCount()
+
+    // if already under raw size limit, return original path
+    const origInfo = await FileSystem.getInfoAsync(pdfPath)
+    if (origInfo.exists && typeof origInfo.size === 'number' && origInfo.size <= sizeLimit) {
+      return [pdfPath]
+    }
+
+    // helper: convert Uint8Array -> base64 string in chunks (safe for large arrays)
+    const bytesToBase64 = (bytes) => {
+      const CHUNK = 0x8000
+      let binary = ''
+      for (let i = 0; i < bytes.length; i += CHUNK) {
+        const slice = bytes.subarray(i, i + CHUNK)
+        binary += String.fromCharCode.apply(null, slice)
+      }
+      return btoa(binary)
+    }
+
+    const outputs = []
+    let partIndex = 1
+    let pageIndex = 0
+
+    while (pageIndex < totalPages) {
+      let acceptedCount = 0
+      let acceptedBytes = null
+
+      // try to greedily include pages starting at pageIndex
+      for (let tryCount = 1; pageIndex + tryCount <= totalPages; tryCount++) {
+        // build temp PDF with pages [pageIndex .. pageIndex+tryCount-1]
+        const tempPdf = await PDFDocument.create()
+        const range = Array.from({ length: tryCount }, (_, k) => pageIndex + k)
+        const copied = await tempPdf.copyPages(pdfDoc, range)
+        copied.forEach(p => tempPdf.addPage(p))
+        const tempBytes = await tempPdf.save()
+        const tempSize = tempBytes.length // raw PDF bytes
+
+        if (tempSize <= sizeLimit) {
+          // fits — remember this as the last accepted set of pages
+          acceptedCount = tryCount
+          acceptedBytes = tempBytes
+          // try to grow more (continue loop)
+          continue
+        } else {
+          // overflow — stop trying larger tryCount
+          break
+        }
+      }
+
+      if (acceptedCount > 0) {
+        // write the acceptedBytes as a part
+        const base64 = bytesToBase64(new Uint8Array(acceptedBytes))
+        const outPath = `${FileSystem.cacheDirectory}split_part${partIndex}.pdf`
+        await FileSystem.writeAsStringAsync(outPath, base64, {
+          encoding: FileSystem.EncodingType.Base64,
+        })
+        outputs.push(outPath)
+
+        // advance by acceptedCount pages
+        pageIndex += acceptedCount
+        partIndex++
+      } else {
+        // even a single page doesn't fit the sizeLimit -> write that single-page PDF alone
+        const singlePdf = await PDFDocument.create()
+        const [singlePage] = await singlePdf.copyPages(pdfDoc, [pageIndex])
+        singlePdf.addPage(singlePage)
+        const singleBytes = await singlePdf.save()
+        const base64 = bytesToBase64(new Uint8Array(singleBytes))
+        const outPath = `${FileSystem.cacheDirectory}split_part${partIndex}.pdf`
+        await FileSystem.writeAsStringAsync(outPath, base64, {
+          encoding: FileSystem.EncodingType.Base64,
+        })
+        outputs.push(outPath)
+
+        // consume this page and continue
+        pageIndex++
+        partIndex++
+      }
+    }
+
+    return outputs
+  } catch (error) {
+    console.error('Error splitting PDF:', error)
+    throw error
   }
 }

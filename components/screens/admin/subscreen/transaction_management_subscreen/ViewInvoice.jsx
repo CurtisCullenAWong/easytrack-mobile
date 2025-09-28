@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, View, StyleSheet, Image } from 'react-native'
-import { useTheme, Appbar, Card, Text, Button, Divider, Checkbox, Portal, Modal, Dialog, TextInput } from 'react-native-paper'
+import { useTheme, Appbar, Card, Text, Button, Divider, Checkbox, Portal, Modal, Dialog, TextInput, Menu, ProgressBar } from 'react-native-paper'
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../../../../../lib/supabaseAdmin'
-import { printPDF, sharePDF, createPDFFile } from '../../../../../utils/pdfUtils'
+import { printPDF, sharePDF, createPDFFile, splitPDFFile } from '../../../../../utils/pdfUtils'
 import * as FileSystem from 'expo-file-system/legacy'
 import { RESEND_API_KEY } from '@env'
 import useSnackbar from '../../../../hooks/useSnackbar'
 import Signature from 'react-native-signature-canvas'
-export const FILE_SIZE_LIMIT = 25 * 1024 * 1024
+export const FILE_SIZE_LIMIT = Math.round(24 * 1024 * 1024)
 
 const CreateInvoice = () => {
   const { colors, fonts } = useTheme()
@@ -16,7 +16,7 @@ const CreateInvoice = () => {
   const route = useRoute()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   const { summary } = route.params || {}
-
+  const [sendProgress, setSendProgress] = useState(0)
   // Signature states
   const [preparedSignatureDataUrl, setPreparedSignatureDataUrl] = useState('')
   const [checkedSignatureDataUrl, setCheckedSignatureDataUrl] = useState('')
@@ -32,7 +32,10 @@ const CreateInvoice = () => {
   const [emailDialogVisible, setEmailDialogVisible] = useState(false)
   const [emailInput, setEmailInput] = useState('')
   const [isSendingEmail, setIsSendingEmail] = useState(false)
-  
+  const [corporationEmails, setCorporationEmails] = useState([])
+  const [menuVisible, setMenuVisible] = useState(false)
+  const menuAnchorRef = useRef(null)
+
   // Data states
   const [currentInvoiceId, setCurrentInvoiceId] = useState(null)
   const [pdfFileSize, setPdfFileSize] = useState(null)
@@ -158,93 +161,129 @@ const CreateInvoice = () => {
 
   const handleSendEmail = async () => {
     try {
-      const email = (emailInput || '').trim()
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      const email = (emailInput || '').trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        showSnackbar('Please enter a valid email address')
-        return
+        showSnackbar('Please enter a valid email address');
+        return;
       }
 
-      if (!RESEND_API_KEY) {
-        showSnackbar('Missing Resend API key. Please set RESEND_API_KEY in app config.')
-        return
+      setIsSendingEmail(true);
+      setSendProgress(0);
+      showSnackbar(`Preparing PDF(s) for ${email}...`, true);
+
+      const transactions = buildTransactionsPayload();
+      if (!transactions || transactions.length === 0) {
+        showSnackbar('No transactions available');
+        return;
       }
 
-      setIsSendingEmail(true)
+      const attachments = [];
 
-      let pdfData
-      if (pdfFileSize && pdfFileSize > FILE_SIZE_LIMIT) {
-        showSnackbar(`The PDF file size is too large ${[pdfFilFILE_SIZE_LIMITeSize]}`)
-      } else {
-        // Use normal createPDFFile
-        pdfData = await createPDFFile(
-          buildTransactionsPayload(),
-          null,
-          {
-            prepared: preparedSignatureDataUrl,
-            checked: checkedSignatureDataUrl,
-            preparedRotation: preparedSignatureRotation,
-            checkedRotation: checkedSignatureRotation,
-          },
-          { signatureOnFirstPage: true },
-          buildInvoiceData()
-        )
-      }
-
-      const base64 = await FileSystem.readAsStringAsync(pdfData.path, { encoding: FileSystem.EncodingType.Base64 })
-      const summaryId = summary?.summary_id || 'SUMMARY'
-      const subject = `Invoice ${currentInvoiceId || ''} / SOA ${summaryId}`.trim()
-
-      const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
+      // 1) create the PDF
+      const pdfData = await createPDFFile(
+        transactions,
+        null,
+        {
+          prepared: preparedSignatureDataUrl,
+          checked: checkedSignatureDataUrl,
+          preparedRotation: preparedSignatureRotation,
+          checkedRotation: checkedSignatureRotation,
         },
-        body: JSON.stringify({
-          from: 'EasyTrack <onboarding@resend.dev>',
-          to: [email],
-          subject,
-          html: `<p>Please find the attached invoice and summary report.</p><p>SOA: ${summaryId}</p>`,
-          attachments: [
-            {
-              filename: pdfData.filename,
-              content: base64,
-            },
-          ],
-        }),
-      })
+        { signatureOnFirstPage: true },
+        buildInvoiceData()
+      );
+      setSendProgress(20);
+
+      if (!pdfData?.path) {
+        showSnackbar('Failed to generate PDF');
+        return;
+      }
+
+      // 2) check size + split into max-size parts
+      const fileInfo = await FileSystem.getInfoAsync(pdfData.path);
+      let filesToSend = [];
+      if (fileInfo.size > FILE_SIZE_LIMIT) {
+        filesToSend = await splitPDFFile(pdfData.path, FILE_SIZE_LIMIT);
+      } else {
+        filesToSend = [pdfData.path];
+      }
+      setSendProgress(60);
+
+      // 3) encode attachments one-by-one (to manage memory usage)
+      for (let j = 0; j < filesToSend.length; j++) {
+        const fpath = filesToSend[j];
+        const base64 = await FileSystem.readAsStringAsync(fpath, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        attachments.push({
+          filename: filesToSend.length > 1
+            ? `Invoice_part${j + 1}.pdf`
+            : `Invoice.pdf`,
+          content: base64,
+        });
+
+        setSendProgress(60 + Math.floor(((j + 1) / filesToSend.length) * 30));
+      }
+
+      if (attachments.length === 0) {
+        showSnackbar('Failed to create any PDF attachments');
+        return;
+      }
+
+      // 4) build and send email
+      const body = {
+        from: 'EasyTrack <onboarding@resend.dev>',
+        to: [email],
+        subject: `Invoice${attachments.length > 1 ? ` (parts 1-${attachments.length})` : ''} from EasyTrack`,
+        html: `<p>Please find the attached invoice and summary report (split into ${attachments.length} part(s)).</p>`,
+        attachments,
+      };
+
+      const sendOnce = async () => {
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${RESEND_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        });
+        return res;
+      };
+
+      let response = await sendOnce();
+      if (!response.ok) {
+        // retry once
+        await new Promise(r => setTimeout(r, 1200));
+        response = await sendOnce();
+      }
+      setSendProgress(100);
 
       if (!response.ok) {
-        const errText = await response.text()
-        throw new Error(errText || `HTTP ${response.status}`)
+        const errText = await response.text();
+        showSnackbar(`Failed to send email: ${response.status} ${errText}`);
+        return;
       }
-
-      showSnackbar('Email sent successfully', true)
-
-      // Update summary status to 2 after successful email send
-      try {
-        if (summary?.summary_id) {
-          const { error: statusUpdateError } = await supabase
-            .from('summary')
-            .update({ summary_status_id: 2 })
-            .eq('id', summary.summary_id)
-          if (statusUpdateError) {
-            console.error('Error updating summary_status_id:', statusUpdateError)
-          }
-        }
-      } catch (e) {
-        console.error('Unexpected error updating summary_status_id:', e)
+      showSnackbar(`Email sent to ${email} with ${attachments.length} attachment(s).`, true);
+      // 5) update summary status
+      if (summary?.summary_id) {
+        const { error: statusUpdateError } = await supabase
+          .from('summary')
+          .update({ summary_status_id: 2 })
+          .eq('id', summary.summary_id);
+        if (statusUpdateError) console.error('Error updating summary_status_id:', statusUpdateError);
       }
-
-      setEmailDialogVisible(false)
+      setEmailDialogVisible(false);
     } catch (error) {
-      console.error('Error sending email via Resend:', error)
-      showSnackbar(`Failed to send email: ${error.message}`)
+      console.error('Error sending email:', error);
+      showSnackbar(`Failed to send email: ${error.message}`);
     } finally {
-      setIsSendingEmail(false)
+      setIsSendingEmail(false);
+      setSendProgress(0);
     }
-  }
+}
 
   // Signature component renderer
   const renderSignatureSection = (signerType, signatureDataUrl, signatureSize, signatureRotation) => {
@@ -320,7 +359,20 @@ const CreateInvoice = () => {
       </>
     )
   }
-
+  useEffect(() => {
+    const fetchCorporationEmails = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles_corporation')
+          .select('corporation_email')
+        if (error) throw error
+        setCorporationEmails(data?.map(d => d.corporation_email).filter(Boolean) || [])
+      } catch (err) {
+        console.error('Error fetching corporation emails:', err)
+      }
+    }
+    fetchCorporationEmails()
+  }, [])
   useEffect(() => {
     const fetchSummaryStatus = async () => {
       try {
@@ -517,18 +569,55 @@ const CreateInvoice = () => {
           >
             <Dialog.Title style={[styles.emailDialogTitle, { color: colors.onSurface }]}>Send to email</Dialog.Title>
             <Dialog.Content style={styles.emailDialogContent}>
-              <TextInput
-                mode="outlined"
-                label="Recipient email"
-                placeholder="name@example.com"
-                value={emailInput}
-                onChangeText={setEmailInput}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoCorrect={false}
-                style={styles.emailDialogInput}
-                disabled={isSendingEmail}
-              />
+            <View>
+              <Menu
+                visible={menuVisible}
+                onDismiss={() => setMenuVisible(false)}
+                contentStyle={{ backgroundColor: colors.surface }}
+                anchor={
+                  <TextInput
+                    mode="outlined"
+                    label="Recipient email"
+                    placeholder="name@example.com"
+                    value={emailInput}
+                    onChangeText={setEmailInput}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    autoCorrect={false}
+                    style={styles.emailDialogInput}
+                    disabled={isSendingEmail}
+                    left={
+                      corporationEmails.length > 0 ? (
+                        <TextInput.Icon
+                          icon="chevron-down"
+                          onPress={() => setMenuVisible((prev) => !prev)}
+                          forceTextInputFocus={false}
+                        />
+                      ) : null
+                    }
+                  />
+                }
+              >
+                {corporationEmails.map((email, idx) => (
+                  <Menu.Item
+                    key={idx}
+                    onPress={() => {
+                      setEmailInput(email)
+                      setMenuVisible(false)
+                    }}
+                    title={email}
+                  />
+                ))}
+              </Menu>
+              {isSendingEmail && (
+                <View style={{ paddingVertical: 10 }}>
+                  <ProgressBar progress={sendProgress / 100} color={colors.primary} />
+                  <Text style={{ textAlign: 'center', marginTop: 5 }}>
+                    {sendProgress}% Sending...
+                  </Text>
+                </View>
+              )}
+            </View>
             </Dialog.Content>
             <Dialog.Actions style={styles.emailDialogActions}>
               <Button onPress={() => setEmailDialogVisible(false)} disabled={isSendingEmail} textColor={colors.primary}>Cancel</Button>
