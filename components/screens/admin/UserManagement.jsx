@@ -140,8 +140,8 @@ const UserManagement = ({ navigation }) => {
   const paginatedUsers = filteredAndSortedUsers.slice(from, to)
 
   const filterOptions = [
-    { label: 'Full Name', value: 'full_name' },
     { label: 'Email', value: 'email' },
+    { label: 'Full Name', value: 'full_name' },
     { label: 'Role', value: 'role' },
     { label: 'Account Status', value: 'status' },
     { label: 'Verification Status', value: 'verify_status' },
@@ -149,8 +149,8 @@ const UserManagement = ({ navigation }) => {
   ]
 
   const columns = [
-    { key: 'full_name', label: 'Full Name', width: FULL_NAME_WIDTH },
     { key: 'email', label: 'Email', width: EMAIL_COLUMN_WIDTH },
+    { key: 'full_name', label: 'Full Name', width: FULL_NAME_WIDTH },
     { key: 'contact_number', label: 'Contact Number', width: COLUMN_WIDTH },
     { key: 'role', label: 'Role', width: COLUMN_WIDTH },
     { key: 'status', label: 'Account Status', width: COLUMN_WIDTH },
@@ -402,8 +402,8 @@ const UserManagement = ({ navigation }) => {
                           )}
                         </DataTable.Cell>
                         {[
-                          { value: user.full_name, width: FULL_NAME_WIDTH },
                           { value: user.email, width: EMAIL_COLUMN_WIDTH },
+                          { value: user.full_name, width: FULL_NAME_WIDTH },
                           { value: user.contact_number, width: COLUMN_WIDTH },
                           { value: user.role, width: COLUMN_WIDTH },
                           { value: user.status, width: COLUMN_WIDTH },
@@ -416,7 +416,7 @@ const UserManagement = ({ navigation }) => {
                             key={idx}
                             style={[styles.tableColumn, { width, justifyContent: 'center' }]}
                           >
-                            <Text style={[styles.cellText, { color: colors.onSurface }, fonts.bodyMedium]}>{value}</Text>
+                            <Text style={[styles.cellText, { color: colors.onSurface }, fonts.bodyMedium]} selectable>{value}</Text>
                           </DataTable.Cell>
                         ))}
                       </DataTable.Row>

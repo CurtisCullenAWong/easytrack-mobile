@@ -1,36 +1,29 @@
+// ================================
+// IMPORTS
+// ================================
+
+// React & React Native
 import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native'
+
+// React Native Paper
 import { useTheme, TextInput, Button, Text, IconButton, Menu, Surface, List } from 'react-native-paper'
-import { supabase } from '../../../../lib/supabase'
-import useSnackbar from '../../../hooks/useSnackbar'
+
+// Navigation
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'
+
+// Local Components
 import BottomModal from '../../../customComponents/BottomModal'
+import LocationAutofill from '../../../customComponents/LocationAutofill'
+
+// Hooks & Utils
+import useSnackbar from '../../../hooks/useSnackbar'
+import { supabase } from '../../../../lib/supabase'
 import { sendNotificationAdmin } from '../../../../utils/registerForPushNotifications'
 
-/* ----------------------------- Helpers / Constants ----------------------------- */
-
-/** Filter special characters depending on field type */
-const filterSpecialCharacters = (text, fieldType) => {
-  if (typeof text !== 'string') return ''
-  switch (fieldType) {
-    case 'name':
-      return text.replace(/[^A-Za-z\s\-']/g, '')
-    case 'contact':
-      return text.replace(/[^0-9]/g, '')
-    case 'flightNumber':
-      return text.replace(/[^A-Za-z0-9]/g, '')
-    case 'postalCode':
-      return text.replace(/[^0-9]/g, '')
-    case 'quantity':
-      return text.replace(/[^0-9]/g, '')
-    case 'address':
-      return text.replace(/[^A-Za-z0-9ñÑ\s\-\.\,\#\/'’\(\)&]/g, '')
-    case 'itemDescription':
-      return text.replace(/[^A-Za-z0-9\s\-\.\,\#]/g, '')
-    default:
-      return text.replace(/[^A-Za-z0-9\s]/g, '')
-  }
-}
+// ================================
+// CONSTANTS & CONFIGURATION
+// ================================
 
 /** Initial contract template */
 const INITIAL_CONTRACT = {
@@ -79,7 +72,7 @@ const INPUT_LIMITS = {
   contact: { maxLength: 10, minLength: 10 },
   flightNumber: { maxLength: 8, minLength: 3 },
   itemDescription: { maxLength: 200, minLength: 6 },
-  quantity: { maxLength: 1, minLength: 1 },
+  quantity: { maxLength: 2, minLength: 1 }, // Max 2 digits for up to 25
   province: { maxLength: 50, minLength: 2 },
   cityMunicipality: { maxLength: 50, minLength: 2 },
   barangay: { maxLength: 50, minLength: 2 },
@@ -92,9 +85,9 @@ const INPUT_LIMITS = {
 
 const VALIDATION_PATTERNS = {
   contact: /^9\d{9}$/,
-  flightNumber: /^[A-Z0-9]{3,8}$/,
+  flightNumber: /^[A-Za-z0-9]{3,8}$/,
   postalCode: /^\d{4}$/,
-  quantity: /^[1-3]$/,
+  quantity: /^(?:[1-9]|[1-3][0-9]|25)$/,
   province: /^[A-Za-z\s\-\.]+$/,
   cityMunicipality: /^[A-Za-z\s\-\.]+$/,
   barangay: /^[A-Za-z0-9\s\-\.\,\#]+$/,
@@ -102,6 +95,33 @@ const VALIDATION_PATTERNS = {
   villageBuilding: /^[A-Za-z0-9\s\-\.\,\#]+$/,
   roomUnitNo: /^[A-Za-z0-9\s\-\.\,\#]*$/,
   landmarkEntrance: /^[A-Za-z0-9\s\-\.\,\#]*$/
+}
+
+// ================================
+// UTILITY FUNCTIONS
+// ================================
+
+/** Filter special characters depending on field type */
+const filterSpecialCharacters = (text, fieldType) => {
+  if (typeof text !== 'string') return ''
+  switch (fieldType) {
+    case 'name':
+      return text.replace(/[^A-Za-z\s\-']/g, '')
+    case 'contact':
+      return text.replace(/[^0-9]/g, '')
+    case 'flightNumber':
+      return text.replace(/[^A-Za-z0-9]/g, '')
+    case 'postalCode':
+      return text.replace(/[^0-9]/g, '')
+    case 'quantity':
+      return text.replace(/[^0-9]/g, '')
+    case 'address':
+      return text.replace(/[^A-Za-z0-9ñÑ\s\-\.\,\#\/''(\)&]/g, '')
+    case 'itemDescription':
+      return text.replace(/[^A-Za-z0-9\s\-\.\,\#]/g, '')
+    default:
+      return text.replace(/[^A-Za-z0-9\s]/g, '')
+  }
 }
 
 /** Format a camelCase / camel-style field into a human readable label */
@@ -132,19 +152,27 @@ const formatContactNumber = (contact) => {
   return c ? `+63 ${c}` : ''
 }
 
-/* ----------------------------- Contract Form (memoized) ----------------------------- */
+// ================================
+// COMPONENTS
+// ================================
 
+/**
+ * ContractForm - Memoized form component for individual passenger contracts
+ * Handles personal info, luggage details, and form validation
+ */
 const ContractForm = React.memo(({
   contract,
   index,
   onInputChange,
   onClear,
   onDelete,
-  onDuplicate,
   isLastContract,
-  isDisabled
+  isDisabled,
+  flightPrefixes,
+  hasDuplicateName = false
 }) => {
   const { colors, fonts } = useTheme()
+  const [showFlightPrefixMenu, setShowFlightPrefixMenu] = useState(false)
   const [expanded, setExpanded] = useState({
     personalInfo: false,
     luggageInfo: false,
@@ -154,7 +182,7 @@ const ContractForm = React.memo(({
 
   const toggle = (section) => setExpanded(prev => ({ ...prev, [section]: !prev[section] }))
 
-  const hasPersonalInfoErrors = contract.errors?.firstName || contract.errors?.lastName || contract.errors?.contact
+  const hasPersonalInfoErrors = contract.errors?.firstName || contract.errors?.lastName || contract.errors?.contact || hasDuplicateName
   const hasLuggageInfoErrors = contract.errors?.itemDescription || contract.errors?.quantity || contract.errors?.flightNumber
 
   useEffect(() => {
@@ -165,8 +193,11 @@ const ContractForm = React.memo(({
     }))
   }, [contract.errors, hasPersonalInfoErrors, hasLuggageInfoErrors])
 
-  const qty = Math.max(0, Math.min(3, parseInt(contract.quantity || '0') || 0))
+  const qty = parseInt(contract.quantity || '0') || 0
   const itemsIdx = Array.from({ length: qty }, (_, i) => i)
+  
+  // Calculate the number of sets of 3 for the quantity text
+  const setsOfThree = Math.ceil(qty / 3)
 
   return (
     <View style={[styles.luggageBlock, { backgroundColor: colors.surface, borderColor: colors.primary, opacity: isDisabled ? 0.6 : 1 }]}>
@@ -190,6 +221,14 @@ const ContractForm = React.memo(({
         style={{ padding: 0, marginBottom: 8 }}
       >
         <View style={styles.sectionContent}>
+          {hasDuplicateName && (
+            <View style={[styles.duplicateWarning, { backgroundColor: colors.errorContainer, borderColor: colors.error }]}>
+              <Text style={[fonts.bodySmall, { color: colors.error }]}>
+                ⚠️ This passenger name already exists. Please use a unique name.
+              </Text>
+            </View>
+          )}
+          
           <View style={styles.nameRow}>
             <TextInput
               label="First Name*"
@@ -197,7 +236,7 @@ const ContractForm = React.memo(({
               onChangeText={(text) => onInputChange(index, "firstName", filterSpecialCharacters(text, 'name'))}
               mode="outlined"
               style={[styles.nameField, { marginRight: 8 }]}
-              error={contract.errors?.firstName}
+              error={contract.errors?.firstName || hasDuplicateName}
               placeholder="Enter first name (2-50 characters)"
               maxLength={INPUT_LIMITS.firstName.maxLength}
               disabled={isDisabled}
@@ -220,7 +259,7 @@ const ContractForm = React.memo(({
             onChangeText={(text) => onInputChange(index, "lastName", filterSpecialCharacters(text, 'name'))}
             mode="outlined"
             style={{ marginBottom: 12 }}
-            error={contract.errors?.lastName}
+            error={contract.errors?.lastName || hasDuplicateName}
             placeholder="Enter last name (2-50 characters)"
             maxLength={INPUT_LIMITS.lastName.maxLength}
             disabled={isDisabled}
@@ -250,24 +289,58 @@ const ContractForm = React.memo(({
         style={{ padding: 0, marginBottom: 8 }}
       >
         <View style={styles.sectionContent}>
-          <TextInput
-            label="Flight Number*"
-            value={contract.flightNumber}
-            onChangeText={(text) => onInputChange(index, "flightNumber", filterSpecialCharacters(text, 'flightNumber').toUpperCase())}
-            mode="outlined"
-            style={{ marginBottom: 12 }}
-            error={contract.errors?.flightNumber}
-            maxLength={INPUT_LIMITS.flightNumber.maxLength}
-            placeholder="e.g., PR123, 5J1234"
-            disabled={isDisabled}
-          />
+          <View style={{ marginBottom: 12 }}>
+            <Menu
+              visible={showFlightPrefixMenu}
+              onDismiss={() => setShowFlightPrefixMenu(false)}
+              anchor={
+                <TouchableOpacity onPress={() => !isDisabled && setShowFlightPrefixMenu(true)}>
+                  <TextInput
+                    label="Flight Number*"
+                    value={contract.flightNumber}
+                    onChangeText={(text) => {
+                      // Allow alphanumerical characters
+                      const cleaned = filterSpecialCharacters(text, 'flightNumber').toUpperCase()
+                      onInputChange(index, "flightNumber", cleaned)
+                    }}
+                    mode="outlined"
+                    error={contract.errors?.flightNumber}
+                    maxLength={INPUT_LIMITS.flightNumber.maxLength}
+                    placeholder="Enter flight number (alphanumerical)"
+                    disabled={isDisabled}
+                    left={
+                      <TextInput.Icon
+                        icon="menu-down"
+                        onPress={() => !isDisabled && setShowFlightPrefixMenu(((prev) => !prev))}
+                        disabled={isDisabled}
+                      />
+                    }
+                  />
+                </TouchableOpacity>
+              }
+              contentStyle={{ backgroundColor: colors.surface }}
+            >
+              {flightPrefixes.map((prefix) => (
+                <Menu.Item
+                  key={prefix.id}
+                  onPress={() => {
+                    // Keep only the numbers from the current value
+                    const numbers = contract.flightNumber.replace(/[^0-9]/g, '')
+                    onInputChange(index, "flightNumber", `${prefix.flight_prefix}${numbers}`)
+                    setShowFlightPrefixMenu(false)
+                  }}
+                  title={`${prefix.flight_prefix} - ${prefix.flight_prefix === 'Z2' ? 'AirAsia' : 'Cebu Pacific'}`}
+                />
+              ))}
+            </Menu>
+          </View>
 
           <TextInput
             label="Luggage Quantity*"
             value={contract.quantity}
             onChangeText={(text) => {
               const filtered = filterSpecialCharacters(text, 'quantity')
-              if (filtered === '' || (filtered >= '1' && filtered <= '3')) {
+              if (filtered === '' || (parseInt(filtered) >= 1 && parseInt(filtered) <= 25)) {
                 onInputChange(index, "quantity", filtered)
               }
             }}
@@ -276,7 +349,7 @@ const ContractForm = React.memo(({
             style={{ marginBottom: 12 }}
             error={contract.errors?.quantity}
             maxLength={INPUT_LIMITS.quantity.maxLength}
-            placeholder="1-3 pieces"
+            placeholder="Enter quantity (1-25)"
             disabled={isDisabled}
           />
 
@@ -312,44 +385,57 @@ const ContractForm = React.memo(({
       >
         Clear Form
       </Button>
-
-      <Button
-        mode="outlined"
-        onPress={() => onDuplicate(index)}
-        style={{ marginTop: 8 }}
-        icon="content-copy"
-        disabled={isDisabled}
-      >
-        Duplicate Form
-      </Button>
     </View>
   )
 })
 
-/* ----------------------------- Booking Component ----------------------------- */
+// ================================
+// MAIN BOOKING COMPONENT
+// ================================
 
+/**
+ * Booking - Main component for airline booking management
+ * Handles contract creation, validation, and submission
+ */
 const Booking = () => {
+  // ================================
+  // HOOKS & NAVIGATION
+  // ================================
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
   const navigation = useNavigation()
   const route = useRoute()
 
-  // Location & address states
+  // ================================
+  // STATE MANAGEMENT
+  // ================================
+
+  // Location & Address States
   const [dropOffLocation, setDropOffLocation] = useState({ location: '', lat: null, lng: null })
   const [lastAddressDetails, setLastAddressDetails] = useState(null)
+  const [locationSelections, setLocationSelections] = useState({
+    region: null,
+    province: null,
+    city: null,
+    barangay: null
+  })
 
-  // Pickup
+  // Pickup Location States
   const [pickupLocation, setPickupLocation] = useState('')
   const [showPickupMenu, setShowPickupMenu] = useState(false)
   const [pickupError, setPickupError] = useState(false)
 
-  // Contracts & submission
+  // Flight & Prefix States
+  const [flightPrefixes, setFlightPrefixes] = useState([])
+  const [showFlightPrefixMenu, setShowFlightPrefixMenu] = useState(false)
+
+  // Contract & Submission States
   const [contracts, setContracts] = useState([JSON.parse(JSON.stringify(INITIAL_CONTRACT))])
   const [loading, setLoading] = useState(false)
   const [deliveryFee, setDeliveryFee] = useState(0)
   const [showConfirmationModal, setShowConfirmationModal] = useState(false)
 
-  // Address fields (shared across contracts)
+  // Shared Address Fields (across all contracts)
   const [province, setProvince] = useState('')
   const [cityMunicipality, setCityMunicipality] = useState('')
   const [barangay, setBarangay] = useState('')
@@ -359,6 +445,7 @@ const Booking = () => {
   const [roomUnitNo, setRoomUnitNo] = useState('')
   const [landmarkEntrance, setLandmarkEntrance] = useState('')
 
+  // Error States
   const [addressErrors, setAddressErrors] = useState({
     province: false,
     cityMunicipality: false,
@@ -368,13 +455,58 @@ const Booking = () => {
     villageBuilding: false,
   })
 
-  // Derived values
-  const totalDeliveryFee = useMemo(() => deliveryFee * contracts.length, [deliveryFee, contracts.length])
-  const totalLuggageQuantity = useMemo(() => contracts.reduce((sum, c) => sum + Number(c.quantity || 0), 0), [contracts])
+  // ================================
+  // DERIVED VALUES & COMPUTED STATE
+  // ================================
+  const totalDeliveryFee = useMemo(() => {
+    return contracts.reduce((total, contract) => {
+      const qty = parseInt(contract.quantity || '0') || 0
+      const setsOfThree = Math.ceil(qty / 3)
+      return total + (deliveryFee * setsOfThree)
+    }, 0)
+  }, [deliveryFee, contracts])
+  
+  const totalLuggageQuantity = useMemo(() => 
+    contracts.reduce((sum, c) => sum + Number(c.quantity || 0), 0), 
+    [contracts]
+  )
 
-  const pickupBays = useMemo(() => Array.from({ length: 12 }, (_, i) => `Terminal 3, Bay ${i + 1}`), [])
+  const pickupBays = useMemo(() => 
+    Array.from({ length: 12 }, (_, i) => `Terminal 3, Bay ${i + 1}`), 
+    []
+  )
 
-  /* ----------------------------- Effects ----------------------------- */
+  // ================================
+  // EFFECTS & SIDE EFFECTS
+  // ================================
+
+  // Fetch flight prefixes from profiles_corporation
+  useEffect(() => {
+    const fetchFlightPrefixes = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles_corporation')
+          .select('id, flight_prefix')
+          .in('id', [2, 3])
+          .order('id')
+
+        if (error) {
+          console.error('Error fetching flight prefixes:', error)
+          showSnackbar('Error loading flight prefixes', 'error')
+          return
+        }
+
+        if (data) {
+          setFlightPrefixes(data.filter(item => item.flight_prefix))
+        }
+      } catch (error) {
+        console.error('Error in fetchFlightPrefixes:', error)
+        showSnackbar('Error loading flight prefixes', 'error')
+      }
+    }
+
+    fetchFlightPrefixes()
+  }, [showSnackbar])
 
   // When route params contain locationData, populate address and attempt to fetch pricing
   useFocusEffect(
@@ -444,7 +576,9 @@ const Booking = () => {
     })))
   }, [province, cityMunicipality, barangay, postalCode, street, villageBuilding, roomUnitNo, landmarkEntrance])
 
-  /* ----------------------------- Contract list operations ----------------------------- */
+  // ================================
+  // CONTRACT MANAGEMENT FUNCTIONS
+  // ================================
 
   const handleInputChange = useCallback((index, field, value) => {
     setContracts(prev => {
@@ -473,30 +607,31 @@ const Booking = () => {
     })
   }, [])
 
-  const duplicateContract = useCallback((index) => {
-    setContracts(prev => {
-      if (prev.length >= 15) {
-        showSnackbar('Maximum of 15 passenger forms reached')
-        return prev
-      }
-      const original = prev[index] || {}
-      const cloned = {
-        ...original,
-        itemDescription: "",
-        itemDescriptions: [],
-        quantity: "",
-        errors: {
-          ...(original.errors || {}),
-          itemDescription: false,
-          quantity: false,
-        }
-      }
-      const updated = [...prev]
-      updated.splice(index + 1, 0, cloned)
-      return updated
-    })
-  }, [showSnackbar])
   
+  const handleLocationChange = useCallback((selections) => {
+    // Update the address fields directly from the autofill component
+    setProvince(selections.province || '')
+    setCityMunicipality(selections.city || '')
+    setBarangay(selections.barangay || '')
+    
+    // Update location selections for reference
+    setLocationSelections({
+      region: selections.region ? { name: selections.region } : null,
+      province: selections.province ? { name: selections.province } : null,
+      city: selections.city ? { name: selections.city } : null,
+      barangay: selections.barangay ? { name: selections.barangay } : null
+    })
+    
+    // Clear errors when location is selected
+    setAddressErrors(prev => ({
+      ...prev,
+      region: false,
+      province: false,
+      cityMunicipality: false,
+      barangay: false
+    }))
+  }, [])
+
   const clearDeliveryAddress = () => {
     setProvince('')
     setCityMunicipality('')
@@ -506,7 +641,21 @@ const Booking = () => {
     setVillageBuilding('')
     setRoomUnitNo('')
     setLandmarkEntrance('')
-    setAddressErrors({})
+    setLocationSelections({
+      region: null,
+      province: null,
+      city: null,
+      barangay: null
+    })
+    setAddressErrors({
+      region: false,
+      province: false,
+      cityMunicipality: false,
+      barangay: false,
+      postalCode: false,
+      street: false,
+      villageBuilding: false
+    })
   }
   
   const clearSingleContract = useCallback((index) => {
@@ -538,9 +687,13 @@ const Booking = () => {
       const prefilled = { ...base }
 
       // Prefill from shared address fields if available
-      if (province) prefilled.province = province
-      if (cityMunicipality) prefilled.cityMunicipality = cityMunicipality
-      if (barangay) prefilled.barangay = barangay
+      const prov = province
+      const city = cityMunicipality
+      const brgy = barangay
+      
+      if (prov) prefilled.province = prov
+      if (city) prefilled.cityMunicipality = city
+      if (brgy) prefilled.barangay = brgy
       if (postalCode) prefilled.postalCode = postalCode
       if (street) prefilled.street = street
       if (villageBuilding) prefilled.villageBuilding = villageBuilding
@@ -548,9 +701,9 @@ const Booking = () => {
       if (landmarkEntrance) prefilled.landmarkEntrance = landmarkEntrance
 
       // If shared fields empty and lastAddressDetails exists, use that
-      if (!province && lastAddressDetails) prefilled.province = lastAddressDetails.region || ''
-      if (!cityMunicipality && lastAddressDetails) prefilled.cityMunicipality = lastAddressDetails.city || ''
-      if (!barangay && lastAddressDetails) prefilled.barangay = lastAddressDetails.district || ''
+      if (!prov && lastAddressDetails) prefilled.province = lastAddressDetails.region || ''
+      if (!city && lastAddressDetails) prefilled.cityMunicipality = lastAddressDetails.city || ''
+      if (!brgy && lastAddressDetails) prefilled.barangay = lastAddressDetails.district || ''
       if (!postalCode && lastAddressDetails) prefilled.postalCode = (lastAddressDetails.postalCode || '').replace(/[^0-9]/g, '').slice(0, INPUT_LIMITS.postalCode.maxLength)
       if (!street && lastAddressDetails) prefilled.street = lastAddressDetails.street || ''
       if (!villageBuilding && lastAddressDetails) prefilled.villageBuilding = lastAddressDetails.name || ''
@@ -559,7 +712,30 @@ const Booking = () => {
     })
   }, [lastAddressDetails, province, cityMunicipality, barangay, postalCode, street, villageBuilding, roomUnitNo, landmarkEntrance, showSnackbar])
 
-  /* ----------------------------- Validation ----------------------------- */
+  // ================================
+  // VALIDATION FUNCTIONS
+  // ================================
+
+  // Check for duplicate names across all contracts
+  const checkForDuplicateNames = useCallback((contracts, currentIndex = -1) => {
+    const nameMap = new Map()
+    const duplicates = new Set()
+    
+    contracts.forEach((contract, index) => {
+      if (index === currentIndex) return // Skip current contract being edited
+      
+      const fullName = `${contract.firstName?.trim()} ${contract.lastName?.trim()}`.toLowerCase()
+      if (fullName.trim() && fullName !== ' ') {
+        if (nameMap.has(fullName)) {
+          duplicates.add(fullName)
+        } else {
+          nameMap.set(fullName, index)
+        }
+      }
+    })
+    
+    return duplicates
+  }, [])
 
   const validateContract = useCallback((contract) => {
     const trim = (s) => String(s || "").trim()
@@ -577,7 +753,6 @@ const Booking = () => {
         !VALIDATION_PATTERNS.contact.test(trim(contract.contact)),
       flightNumber:
         !trim(contract.flightNumber) ||
-        trim(contract.flightNumber).length < INPUT_LIMITS.flightNumber.minLength ||
         !VALIDATION_PATTERNS.flightNumber.test(trim(contract.flightNumber).toUpperCase()),
       itemDescription: (() => {
         const qty = parseInt(contract.quantity || "0") || 0
@@ -594,9 +769,10 @@ const Booking = () => {
 
   const validateDeliveryAddress = useCallback(() => {
     const errors = {
-      province: !String(province || "").trim(),
-      cityMunicipality: !String(cityMunicipality || "").trim(),
-      barangay: !String(barangay || "").trim(),
+      region: !String(locationSelections.region || "").trim(),
+      province: !String(locationSelections.province || "").trim(),
+      cityMunicipality: !String(locationSelections.city || "").trim(),
+      barangay: !String(locationSelections.barangay || "").trim(),
       postalCode: !String(postalCode || "").trim(),
       street: !String(street || "").trim(),
       villageBuilding: !String(villageBuilding || "").trim(),
@@ -605,7 +781,7 @@ const Booking = () => {
     setAddressErrors(errors)
     const firstErrorKey = Object.keys(errors).find((k) => errors[k])
     return { valid: !firstErrorKey, firstErrorKey }
-  }, [province, cityMunicipality, barangay, postalCode, street, villageBuilding])
+  }, [locationSelections, postalCode, street, villageBuilding])
 
   const validateForm = useCallback(() => {
     if (!deliveryFee || deliveryFee <= 0) {
@@ -631,6 +807,26 @@ const Booking = () => {
       return false
     }
 
+    // Check for duplicate passenger names
+    const nameMap = new Map()
+    const duplicateNames = []
+    
+    contracts.forEach((contract, index) => {
+      const fullName = `${contract.firstName?.trim()} ${contract.lastName?.trim()}`.toLowerCase()
+      if (fullName.trim() && fullName !== ' ') {
+        if (nameMap.has(fullName)) {
+          duplicateNames.push(fullName)
+        } else {
+          nameMap.set(fullName, index)
+        }
+      }
+    })
+
+    if (duplicateNames.length > 0) {
+      showSnackbar("Passengers cannot have the same name. Please ensure each passenger has a unique name.")
+      return false
+    }
+
     const updatedContracts = [...contracts]
     let firstContractError = null
 
@@ -652,7 +848,9 @@ const Booking = () => {
     return true
   }, [contracts, deliveryFee, dropOffLocation, pickupLocation, validateContract, validateDeliveryAddress, showSnackbar])
 
-  /* ----------------------------- Notifications ----------------------------- */
+  // ================================
+  // NOTIFICATION FUNCTIONS
+  // ================================
 
   const notifyAdministrators = useCallback(async (createdContracts, user) => {
     try {
@@ -705,7 +903,9 @@ const Booking = () => {
     }
   }, [])
 
-  /* ----------------------------- Submission ----------------------------- */
+  // ================================
+  // SUBMISSION FUNCTIONS
+  // ================================
 
   const handleConfirmSubmit = useCallback(async () => {
     try {
@@ -743,7 +943,7 @@ const Booking = () => {
           }
         } while (collisionCheck)
 
-        // Resolve address fields (shared above contract or the contract's own)
+        // Resolve address fields (use current address fields)
         const prov = province || contract.province || ''
         const city = cityMunicipality || contract.cityMunicipality || ''
         const brgy = barangay || contract.barangay || ''
@@ -823,7 +1023,9 @@ const Booking = () => {
     showSnackbar
   ])
 
-  /* ----------------------------- Pricing ----------------------------- */
+  // ================================
+  // PRICING FUNCTIONS
+  // ================================
 
   const fetchDeliveryPrice = async (address) => {
     try {
@@ -858,7 +1060,9 @@ const Booking = () => {
     }
   }
 
-  /* ----------------------------- Render helpers ----------------------------- */
+  // ================================
+  // RENDER HELPER FUNCTIONS
+  // ================================
 
   const renderDropOffLocation = useMemo(() => (
     <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
@@ -897,13 +1101,13 @@ const Booking = () => {
       visible={showPickupMenu}
       onDismiss={() => setShowPickupMenu(false)}
       anchor={
-        <TouchableOpacity onPress={() => setShowPickupMenu(true)}>
+        <TouchableOpacity onPress={() => setShowPickupMenu(((prev) => !prev))}>
           <TextInput
             label="Pickup Location"
             value={pickupLocation}
             mode="outlined"
             style={{ marginBottom: 16 }}
-            right={<TextInput.Icon icon="menu-down" onPress={() => setShowPickupMenu(true)} />}
+            right={<TextInput.Icon icon="menu-down" onPress={() => setShowPickupMenu(((prev) => !prev))} />}
             error={pickupError}
             editable={false}
           />
@@ -925,7 +1129,9 @@ const Booking = () => {
     </Menu>
   ), [showPickupMenu, pickupLocation, pickupError, pickupBays, colors])
 
-  /* ----------------------------- JSX ----------------------------- */
+  // ================================
+  // MAIN RENDER
+  // ================================
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -939,8 +1145,15 @@ const Booking = () => {
               <View style={styles.warningText}>
                 <Text style={[fonts.titleSmall, { color: colors.primary, marginBottom: 4 }]}>Delivery Fee Applied</Text>
                 <Text style={[fonts.titleSmall, { marginBottom: 10, color: colors.onPrimaryContainer }]}>Base Delivery Fee: ₱{deliveryFee.toFixed(2)}</Text>
-                <Text style={[fonts.titleSmall, { marginBottom: 10, color: colors.onPrimaryContainer }]}>Total Delivery Fee ({contracts.length} passengers): ₱{totalDeliveryFee.toFixed(2)}</Text>
-                <Text style={[fonts.titleSmall, { marginBottom: 10, color: colors.onPrimaryContainer }]}>Total Luggage Quantity: {totalLuggageQuantity}</Text>
+                <Text style={[fonts.titleSmall, { marginBottom: 10, color: colors.onPrimaryContainer }]}>
+                  Total Delivery Fee: ₱{totalDeliveryFee.toFixed(2)}
+                </Text>
+                <Text style={[fonts.titleSmall, { marginBottom: 10, color: colors.onPrimaryContainer }]}>
+                  Total Luggage Quantity: {totalLuggageQuantity} ({Math.ceil(totalLuggageQuantity / 3)} sets of 3)
+                </Text>
+                <Text style={[fonts.bodySmall, { color: colors.onPrimaryContainer, fontStyle: 'italic' }]}>
+                  Note: Delivery fee is charged per set of 3 luggages
+                </Text>
               </View>
             </View>
           </Surface>
@@ -961,11 +1174,13 @@ const Booking = () => {
         <Surface style={[styles.surface, { padding: 16, marginBottom: 16, backgroundColor: colors.surface }]} elevation={1}>
           {renderPickupLocation}
 
-          <Text style={[fonts.titleMedium, { color: colors.primary, marginBottom: 8 }]}>Delivery Address</Text>
+          <LocationAutofill
+            onLocationChange={handleLocationChange}
+            initialValues={locationSelections}
+            disabled={!dropOffLocation.location || deliveryFee <= 0}
+            errors={addressErrors}
+          />
 
-          <TextInput label="Province*" value={province} onChangeText={setProvince} mode="outlined" style={{ marginBottom: 12 }} error={addressErrors.province} />
-          <TextInput label="City/Municipality*" value={cityMunicipality} onChangeText={setCityMunicipality} mode="outlined" style={{ marginBottom: 12 }} error={addressErrors.cityMunicipality} />
-          <TextInput label="Barangay*" value={barangay} onChangeText={setBarangay} mode="outlined" style={{ marginBottom: 12 }} error={addressErrors.barangay} />
           <TextInput
             label="Postal Code*"
             value={postalCode}
@@ -974,37 +1189,82 @@ const Booking = () => {
             style={{ marginBottom: 12 }}
             keyboardType="numeric"
             error={addressErrors.postalCode}
+            disabled={!dropOffLocation.location || deliveryFee <= 0}
           />
 
           <Text style={[fonts.titleMedium, { color: colors.primary, marginBottom: 8 }]}>Address Line 1</Text>
-          <TextInput label="Street*" value={street} onChangeText={setStreet} mode="outlined" style={{ marginBottom: 12 }} error={addressErrors.street} />
-          <TextInput label="Village/Building*" value={villageBuilding} onChangeText={setVillageBuilding} mode="outlined" style={{ marginBottom: 12 }} error={addressErrors.villageBuilding} />
+          <TextInput 
+            label="Street*" 
+            value={street} 
+            onChangeText={setStreet} 
+            mode="outlined" 
+            style={{ marginBottom: 12 }} 
+            error={addressErrors.street}
+            disabled={!dropOffLocation.location || deliveryFee <= 0}
+          />
+          <TextInput 
+            label="Village/Building*" 
+            value={villageBuilding} 
+            onChangeText={setVillageBuilding} 
+            mode="outlined" 
+            style={{ marginBottom: 12 }} 
+            error={addressErrors.villageBuilding}
+            disabled={!dropOffLocation.location || deliveryFee <= 0}
+          />
 
           <Text style={[fonts.titleMedium, { color: colors.primary, marginBottom: 8 }]}>Address Line 2</Text>
-          <TextInput label="Room/Unit No. (Optional)" value={roomUnitNo} onChangeText={setRoomUnitNo} mode="outlined" style={{ marginBottom: 12 }} />
-          <TextInput label="Landmark / Entrance (Optional)" value={landmarkEntrance} onChangeText={setLandmarkEntrance} mode="outlined" multiline numberOfLines={2} style={{ marginBottom: 12 }} />
+          <TextInput 
+            label="Room/Unit No. (Optional)" 
+            value={roomUnitNo} 
+            onChangeText={setRoomUnitNo} 
+            mode="outlined" 
+            style={{ marginBottom: 12 }}
+            disabled={!dropOffLocation.location || deliveryFee <= 0}
+          />
+          <TextInput 
+            label="Landmark / Entrance (Optional)" 
+            value={landmarkEntrance} 
+            onChangeText={setLandmarkEntrance} 
+            mode="outlined" 
+            multiline 
+            numberOfLines={2} 
+            style={{ marginBottom: 12 }}
+            disabled={!dropOffLocation.location || deliveryFee <= 0}
+          />
           <Button
             mode="outlined"
             onPress={clearDeliveryAddress}
             icon="broom"
+            disabled={!dropOffLocation.location || deliveryFee <= 0}
           >
             Clear Address
           </Button>
         </Surface>
 
-        {contracts.map((contract, index) => (
-          <ContractForm
-            key={index}
-            contract={contract}
-            index={index}
-            onInputChange={handleInputChange}
-            onClear={clearSingleContract}
-            onDelete={deleteContract}
-            onDuplicate={duplicateContract}
-            isLastContract={contracts.length === 1}
-            isDisabled={!dropOffLocation.location || deliveryFee <= 0}
-          />
-        ))}
+        {contracts.map((contract, index) => {
+          // Check if this contract has a duplicate name
+          const currentName = `${contract.firstName?.trim()} ${contract.lastName?.trim()}`.toLowerCase()
+          const hasDuplicateName = currentName.trim() && currentName !== ' ' && 
+            contracts.some((otherContract, otherIndex) => 
+              otherIndex !== index && 
+              `${otherContract.firstName?.trim()} ${otherContract.lastName?.trim()}`.toLowerCase() === currentName
+            )
+
+          return (
+            <ContractForm
+              key={index}
+              contract={contract}
+              index={index}
+              onInputChange={handleInputChange}
+              onClear={clearSingleContract}
+              onDelete={deleteContract}
+              isLastContract={contracts.length === 1}
+              isDisabled={!dropOffLocation.location || deliveryFee <= 0}
+              flightPrefixes={flightPrefixes}
+              hasDuplicateName={hasDuplicateName}
+            />
+          )
+        })}
 
         <View style={styles.buttonContainer}>
           <Button
@@ -1064,11 +1324,25 @@ const Booking = () => {
   )
 }
 
-/* ----------------------------- Styles ----------------------------- */
+// ================================
+// STYLES
+// ================================
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: 16 },
+  // Layout & Container Styles
+  container: { 
+    flex: 1 
+  },
+  content: { 
+    padding: 16 
+  },
+  surface: { 
+    padding: 16, 
+    borderRadius: 8, 
+    marginBottom: 16 
+  },
+
+  // Contract Form Styles
   luggageBlock: {
     marginBottom: 20,
     padding: 12,
@@ -1081,33 +1355,122 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  headerLeft: { flex: 1 },
+  sectionContent: { 
+    paddingHorizontal: 16, 
+    paddingBottom: 16 
+  },
+
+  // Form Field Styles
+  nameRow: { 
+    flexDirection: 'row', 
+    marginBottom: 12 
+  },
+  nameField: { 
+    flex: 1 
+  },
+  middleInitialField: { 
+    width: 80 
+  },
+  addressRow: { 
+    flexDirection: 'row', 
+    marginBottom: 12 
+  },
+  addressField: { 
+    flex: 1 
+  },
+  duplicateWarning: {
+    padding: 8,
+    borderRadius: 4,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+
+  // Location & Map Styles
+  locationHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: 12 
+  },
+  locationContent: { 
+    padding: 12, 
+    borderRadius: 8 
+  },
+  map: { 
+    width: '100%', 
+    height: 400, 
+    borderRadius: 8 
+  },
+  mapHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: 8 
+  },
+  mapControls: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8 
+  },
+  dropoffContainer: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    borderWidth: 1, 
+    borderRadius: 4, 
+    paddingHorizontal: 12, 
+    paddingVertical: 12, 
+    marginBottom: 16 
+  },
+
+  // Warning & Status Styles
+  warningSurface: { 
+    padding: 16, 
+    borderRadius: 8, 
+    marginBottom: 16 
+  },
+  warningContent: { 
+    flexDirection: 'row', 
+    alignItems: 'flex-start' 
+  },
+  warningText: { 
+    flex: 1, 
+    marginLeft: 8 
+  },
+
+  // Button & Action Styles
+  buttonContainer: { 
+    flexDirection: 'row', 
+    justifyContent: 'center', 
+    gap: 5, 
+    marginTop: 24, 
+    marginBottom: 32 
+  },
+
+  // Modal & Confirmation Styles
+  confirmationContent: { 
+    padding: 16 
+  },
+  confirmationDetails: { 
+    padding: 16, 
+    borderRadius: 8, 
+    marginBottom: 16 
+  },
+  confirmationButtons: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between' 
+  },
+
+  // Address Section Styles
   addressSection: {
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
   },
-  nameRow: { flexDirection: 'row', marginBottom: 12 },
-  nameField: { flex: 1 },
-  middleInitialField: { width: 80 },
-  addressRow: { flexDirection: 'row', marginBottom: 12 },
-  addressField: { flex: 1 },
-  sectionContent: { paddingHorizontal: 16, paddingBottom: 16 },
-  buttonContainer: { flexDirection: 'row', justifyContent: 'center', gap: 5, marginTop: 24, marginBottom: 32 },
-  surface: { padding: 16, borderRadius: 8, marginBottom: 16 },
-  map: { width: '100%', height: 400, borderRadius: 8 },
-  mapHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  dropoffContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderRadius: 4, paddingHorizontal: 12, paddingVertical: 12, marginBottom: 16 },
-  mapControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  locationHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  locationContent: { padding: 12, borderRadius: 8 },
-  warningSurface: { padding: 16, borderRadius: 8, marginBottom: 16 },
-  warningContent: { flexDirection: 'row', alignItems: 'flex-start' },
-  warningText: { flex: 1, marginLeft: 8 },
-  confirmationContent: { padding: 16 },
-  confirmationDetails: { padding: 16, borderRadius: 8, marginBottom: 16 },
-  confirmationButtons: { flexDirection: 'row', justifyContent: 'space-between' },
+  headerLeft: { 
+    flex: 1 
+  },
 })
 
 export default React.memo(Booking)

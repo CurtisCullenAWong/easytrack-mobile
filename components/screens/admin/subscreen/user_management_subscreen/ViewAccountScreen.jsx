@@ -19,7 +19,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import BottomModal from '../../../../customComponents/BottomModal'
 import useSnackbar from '../../../../hooks/useSnackbar'
 
-// Constants
+// ----------------- Constants -----------------
 const PROFILE_SECTIONS = {
   PERSONAL: 'Personal Information',
   ACCOUNT: 'Account Info',
@@ -28,177 +28,196 @@ const PROFILE_SECTIONS = {
   VEHICLE: 'Vehicle Information',
 }
 
-// Profile Card Component
-const ProfileCard = React.memo(({ user, colors, fonts, onUpdateStatus, onUpdateVerifyStatus, saving, statuses, verifyStatuses }) => {
-  const [statusMenuVisible, setStatusMenuVisible] = useState(false)
-  const [verifyStatusMenuVisible, setVerifyStatusMenuVisible] = useState(false)
-  const [statusDialogVisible, setStatusDialogVisible] = useState(false)
-  const [verifyStatusDialogVisible, setVerifyStatusDialogVisible] = useState(false)
-  const [selectedStatus, setSelectedStatus] = useState(null)
-  const [selectedVerifyStatus, setSelectedVerifyStatus] = useState(null)
-  
-  const fullName = useMemo(() => 
-    `${user?.first_name || ''} ${user?.middle_initial || ''} ${user?.last_name || ''}`.trim(),
-    [user?.first_name, user?.middle_initial, user?.last_name]
-  )
+// ----------------- Profile Card -----------------
+const ProfileCard = React.memo(
+  ({ user, colors, fonts, onUpdateStatus, onUpdateVerifyStatus, saving, statuses, verifyStatuses }) => {
+    const [statusMenuVisible, setStatusMenuVisible] = useState(false)
+    const [verifyStatusMenuVisible, setVerifyStatusMenuVisible] = useState(false)
+    const [statusDialogVisible, setStatusDialogVisible] = useState(false)
+    const [verifyStatusDialogVisible, setVerifyStatusDialogVisible] = useState(false)
+    const [selectedStatus, setSelectedStatus] = useState(null)
+    const [selectedVerifyStatus, setSelectedVerifyStatus] = useState(null)
 
-  const handleStatusSelect = (status) => {
-    setSelectedStatus(status)
-    setStatusMenuVisible(false)
-    setStatusDialogVisible(true)
-  }
+    const fullName = useMemo(
+      () =>
+        `${user?.first_name || ''} ${user?.middle_initial || ''} ${user?.last_name || ''}`.trim(),
+      [user?.first_name, user?.middle_initial, user?.last_name]
+    )
 
-  const handleVerifyStatusSelect = (status) => {
-    setSelectedVerifyStatus(status)
-    setVerifyStatusMenuVisible(false)
-    setVerifyStatusDialogVisible(true)
-  }
+    const handleStatusSelect = (status) => {
+      setSelectedStatus(status)
+      setStatusMenuVisible(false)
+      setStatusDialogVisible(true)
+    }
 
-  const confirmStatusUpdate = () => {
-    onUpdateStatus(selectedStatus)
-    setStatusDialogVisible(false)
-  }
+    const handleVerifyStatusSelect = (status) => {
+      setSelectedVerifyStatus(status)
+      setVerifyStatusMenuVisible(false)
+      setVerifyStatusDialogVisible(true)
+    }
 
-  const confirmVerifyStatusUpdate = () => {
-    onUpdateVerifyStatus(selectedVerifyStatus)
-    setVerifyStatusDialogVisible(false)
-  }
+    const confirmStatusUpdate = () => {
+      onUpdateStatus(selectedStatus)
+      setStatusDialogVisible(false)
+    }
 
-  return (
-    <Card style={[styles.card, { backgroundColor: colors.surface }]}>
-      <View style={styles.profileContainer}>
-        {user?.pfp_id ? (
-          <Avatar.Image
-            size={150}
-            source={{ uri: user.pfp_id, cache: 'reload' }}
-            style={[styles.profile, { borderColor: colors.background }]}
-          />
-        ) : (
-          <Avatar.Text
-            size={100}
-            label={user?.first_name ? user.first_name[0].toUpperCase() : 'U'}
-            style={[styles.profile, { backgroundColor: colors.primary }]}
-            labelStyle={{ color: colors.onPrimary }}
-          />
-        )}
-      </View>
-      
-      <Card.Content style={styles.cardContent}>
-        <View style={styles.cardTextContainer}>
-          <Text style={[{ color: colors.onSurface, ...fonts.titleLarge }]}>
-            {fullName || 'No Name Available'}
-          </Text>
-          <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-            {user?.email}
-          </Text>
+    const confirmVerifyStatusUpdate = () => {
+      onUpdateVerifyStatus(selectedVerifyStatus)
+      setVerifyStatusDialogVisible(false)
+    }
+
+    return (
+      <Card style={[styles.card, { backgroundColor: colors.surface }]}>
+        {/* Profile Picture */}
+        <View style={styles.profileContainer}>
+          {user?.pfp_id ? (
+            <Avatar.Image
+              size={150}
+              source={{ uri: user.pfp_id, cache: 'reload' }}
+              style={[{ borderColor: colors.background }]}
+            />
+          ) : (
+            <Avatar.Text
+              size={100}
+              label={user?.first_name ? user.first_name[0].toUpperCase() : 'U'}
+              style={[{ backgroundColor: colors.primary }]}
+              labelStyle={{ color: colors.onPrimary }}
+            />
+          )}
         </View>
-      </Card.Content>
-      <View style={styles.menuContainer}>
-        <TouchableOpacity onPress={() => setStatusMenuVisible(true)}>
-          <Menu
-            visible={statusMenuVisible}
-            onDismiss={() => setStatusMenuVisible(false)}
-            anchor={
-              <TextInput
-                label='Status'
-                value={user?.user_status}
-                editable={false}
-                mode='outlined'
-                style={styles.input}
-                right={<TextInput.Icon icon='account-check' onPress={() => setStatusMenuVisible(true)} />}
-                theme={{ colors: { primary: colors.primary } }}
-              />
-            }
-            contentStyle={{ backgroundColor: colors.surface }}
-          >
-            {statuses.map((status) => (
-              <Menu.Item
-                key={status.id}
-                onPress={() => handleStatusSelect(status.status_name)}
-                title={status.status_name}
-                titleStyle={[
-                  fonts.bodyLarge,
-                  { color: user?.user_status === status.status_name ? colors.primary : colors.onSurface }
-                ]}
-                leadingIcon={user?.user_status === status.status_name ? 'check' : undefined}
-              />
-            ))}
-          </Menu>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setVerifyStatusMenuVisible(true)}>
+
+        {/* Name + Email */}
+        <Card.Content style={styles.cardContent}>
+          <View style={styles.cardTextContainer}>
+            <Text style={[{ color: colors.onSurface, ...fonts.titleLarge }]} selectable>
+              {fullName || 'No Name Available'}
+            </Text>
+            <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+              {user?.email}
+            </Text>
+          </View>
+        </Card.Content>
+
+        {/* Menus */}
+        <View style={styles.menuContainer}>
+          {/* Status Menu */}
+          <TouchableOpacity onPress={() => setStatusMenuVisible(((prev) => !prev))}>
             <Menu
-            visible={verifyStatusMenuVisible}
-            onDismiss={() => setVerifyStatusMenuVisible(false)}
-            anchor={
-              <TextInput
-                label='Verification Status'
-                value={user?.verify_status}
-                editable={false}
-                mode='outlined'
-                style={styles.input}
-                right={<TextInput.Icon icon='shield-check' onPress={() => setVerifyStatusMenuVisible(true)} />}
-                theme={{ colors: { primary: colors.primary } }}
-                disabled={saving}
-              />
-            }
-            contentStyle={{ backgroundColor: colors.surface }}
-          >
-            {verifyStatuses.map((status) => (
-              <Menu.Item
-                key={status.id}
-                onPress={() => handleVerifyStatusSelect(status.status_name)}
-                title={status.status_name}
-                titleStyle={[
-                  fonts.bodyLarge,
-                  { color: user?.verify_status === status.status_name ? colors.primary : colors.onSurface }
-                ]}
-                leadingIcon={user?.verify_status === status.status_name ? 'check' : undefined}
-              />
-            ))}
-          </Menu>
-        </TouchableOpacity>
+              visible={statusMenuVisible}
+              onDismiss={() => setStatusMenuVisible(false)}
+              anchor={
+                <TextInput
+                  label="Status"
+                  value={user?.user_status}
+                  editable={false}
+                  mode="outlined"
+                  style={styles.input}
+                  right={<TextInput.Icon icon="account-check" onPress={() => setStatusMenuVisible(((prev) => !prev))} />}
+                  theme={{ colors: { primary: colors.primary } }}
+                />
+              }
+              contentStyle={{ backgroundColor: colors.surface }}
+            >
+              {statuses.map((status) => (
+                <Menu.Item
+                  key={status.id}
+                  onPress={() => handleStatusSelect(status.status_name)}
+                  title={status.status_name}
+                  titleStyle={[
+                    fonts.bodyLarge,
+                    { color: user?.user_status === status.status_name ? colors.primary : colors.onSurface },
+                  ]}
+                  leadingIcon={user?.user_status === status.status_name ? 'check' : undefined}
+                />
+              ))}
+            </Menu>
+          </TouchableOpacity>
 
-        
+          {/* Verification Menu */}
+          <TouchableOpacity onPress={() => setVerifyStatusMenuVisible(((prev) => !prev))}>
+            <Menu
+              visible={verifyStatusMenuVisible}
+              onDismiss={() => setVerifyStatusMenuVisible(false)}
+              anchor={
+                <TextInput
+                  label="Verification Status"
+                  value={user?.verify_status}
+                  editable={false}
+                  mode="outlined"
+                  style={styles.input}
+                  right={<TextInput.Icon icon="shield-check" onPress={() => setVerifyStatusMenuVisible(((prev) => !prev))} />}
+                  theme={{ colors: { primary: colors.primary } }}
+                  disabled={saving}
+                />
+              }
+              contentStyle={{ backgroundColor: colors.surface }}
+            >
+              {verifyStatuses.map((status) => (
+                <Menu.Item
+                  key={status.id}
+                  onPress={() => handleVerifyStatusSelect(status.status_name)}
+                  title={status.status_name}
+                  titleStyle={[
+                    fonts.bodyLarge,
+                    { color: user?.verify_status === status.status_name ? colors.primary : colors.onSurface },
+                  ]}
+                  leadingIcon={user?.verify_status === status.status_name ? 'check' : undefined}
+                />
+              ))}
+            </Menu>
+          </TouchableOpacity>
 
-        <Portal>
-          <Dialog visible={statusDialogVisible} onDismiss={() => setStatusDialogVisible(false)} style={{ backgroundColor: colors.surface }}>
-            <Dialog.Title>Confirm Status Update</Dialog.Title>
-            <Dialog.Content>
-              <Text>Are you sure you want to change the status to "{selectedStatus}"?</Text>
-            </Dialog.Content>
-            <Dialog.Actions>
-              <Button onPress={() => setStatusDialogVisible(false)}>Cancel</Button>
-              <Button onPress={confirmStatusUpdate}>Confirm</Button>
-            </Dialog.Actions>
-          </Dialog>
+          {/* Confirmation Dialogs */}
+          <Portal>
+            {/* Status Dialog */}
+            <Dialog
+              visible={statusDialogVisible}
+              onDismiss={() => setStatusDialogVisible(false)}
+              style={{ backgroundColor: colors.surface }}
+            >
+              <Dialog.Title>Confirm Status Update</Dialog.Title>
+              <Dialog.Content>
+                <Text>Are you sure you want to change the status to "{selectedStatus}"?</Text>
+              </Dialog.Content>
+              <Dialog.Actions>
+                <Button onPress={() => setStatusDialogVisible(false)}>Cancel</Button>
+                <Button onPress={confirmStatusUpdate}>Confirm</Button>
+              </Dialog.Actions>
+            </Dialog>
 
-          <Dialog visible={verifyStatusDialogVisible} onDismiss={() => setVerifyStatusDialogVisible(false)} style={{ backgroundColor: colors.surface }}>
-            <Dialog.Title>Confirm Verification Status Update</Dialog.Title>
-            <Dialog.Content>
-              <Text>Are you sure you want to change the verification status to "{selectedVerifyStatus}"?</Text>
-            </Dialog.Content>
-            <Dialog.Actions>
-              <Button onPress={() => setVerifyStatusDialogVisible(false)}>Cancel</Button>
-              <Button onPress={confirmVerifyStatusUpdate}>Confirm</Button>
-            </Dialog.Actions>
-          </Dialog>
-        </Portal>
-      </View>
-    </Card>
-  )
-})
+            {/* Verification Dialog */}
+            <Dialog
+              visible={verifyStatusDialogVisible}
+              onDismiss={() => setVerifyStatusDialogVisible(false)}
+              style={{ backgroundColor: colors.surface }}
+            >
+              <Dialog.Title>Confirm Verification Status Update</Dialog.Title>
+              <Dialog.Content>
+                <Text>Are you sure you want to change the verification status to "{selectedVerifyStatus}"?</Text>
+              </Dialog.Content>
+              <Dialog.Actions>
+                <Button onPress={() => setVerifyStatusDialogVisible(false)}>Cancel</Button>
+                <Button onPress={confirmVerifyStatusUpdate}>Confirm</Button>
+              </Dialog.Actions>
+            </Dialog>
+          </Portal>
+        </View>
+      </Card>
+    )
+  }
+)
 
-// Info Card Component
+// ----------------- Info Card -----------------
 const InfoCard = React.memo(({ title, data, colors, fonts }) => (
   <Card style={[styles.card, { backgroundColor: colors.surface }]}>
-    <Card.Title 
-      title={title} 
-      titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} 
-    />
+    <Card.Title title={title} titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} />
     <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
     <Card.Content>
       {Object.entries(data).map(([key, value]) => (
-        <Text key={key} style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
+        <Text
+          key={key}
+          style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}
+        >
           {key}: {value || 'N/A'}
         </Text>
       ))}
@@ -206,13 +225,30 @@ const InfoCard = React.memo(({ title, data, colors, fonts }) => (
   </Card>
 ))
 
-// Verification Card Component
+// ----------------- Verification Card -----------------
 const VerificationCard = React.memo(({ user, colors, fonts }) => {
+  const renderProof = (label, uri, placeholder) => (
+    <View style={styles.imageContainer}>
+      <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>{label}:</Text>
+      {uri ? (
+        <Image
+          source={{ uri, cache: 'reload' }}
+          style={[styles.verificationImage, { aspectRatio: 16 / 9 }]}
+          resizeMode="contain"
+        />
+      ) : (
+        <View style={[styles.placeholderImage, { backgroundColor: colors.surfaceVariant }]}>
+          <Text style={[styles.placeholderText, { color: colors.onSurfaceVariant }]}>{placeholder}</Text>
+        </View>
+      )}
+    </View>
+  )
+
   return (
     <Card style={[styles.card, { backgroundColor: colors.surface }]}>
-      <Card.Title 
-        title={PROFILE_SECTIONS.VERIFICATION} 
-        titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} 
+      <Card.Title
+        title={PROFILE_SECTIONS.VERIFICATION}
+        titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]}
       />
       <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
       <Card.Content>
@@ -225,62 +261,40 @@ const VerificationCard = React.memo(({ user, colors, fonts }) => {
         <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
           ID Number: {user.gov_id_number || 'N/A'}
         </Text>
-        {user.gov_id_proof ? (
-          <View style={styles.imageContainer}>
-            <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-              ID Proof (Front):
-            </Text>
-            <Image
-              source={{ uri: user.gov_id_proof, cache: 'reload' }}
-              style={[styles.verificationImage, { aspectRatio: 16/9 }]}
-              resizeMode="contain"
-            />
-          </View>
-        ) : (
-          <View style={styles.imageContainer}>
-            <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-              ID Proof (Front):
-            </Text>
-            <View style={[styles.placeholderImage, { backgroundColor: colors.surfaceVariant }]}>
-              <Text style={[styles.placeholderText, { color: colors.onSurfaceVariant }]}>No ID Proof Uploaded</Text>
-            </View>
-          </View>
-        )}
-        {user.gov_id_proof_back ? (
-          <View style={styles.imageContainer}>
-            <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-              ID Proof (Back):
-            </Text>
-            <Image
-              source={{ uri: user.gov_id_proof_back, cache: 'reload' }}
-              style={[styles.verificationImage, { aspectRatio: 16/9 }]}
-              resizeMode="contain"
-            />
-          </View>
-        ) : (
-          <View style={styles.imageContainer}>
-            <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-              ID Proof (Back):
-            </Text>
-            <View style={[styles.placeholderImage, { backgroundColor: colors.surfaceVariant }]}>
-              <Text style={[styles.placeholderText, { color: colors.onSurfaceVariant }]}>No ID Proof Uploaded</Text>
-            </View>
-          </View>
-        )}
+
+        {renderProof('ID Proof (Front)', user.gov_id_proof, 'No ID Proof Uploaded')}
+        {renderProof('ID Proof (Back)', user.gov_id_proof_back, 'No ID Proof Uploaded')}
       </Card.Content>
     </Card>
   )
 })
 
-// Vehicle Card Component
+// ----------------- Vehicle Card -----------------
 const VehicleCard = React.memo(({ user, colors, fonts }) => {
   if (!user || user.role_id !== 2) return null
 
+  const renderDocument = (label, uri, placeholder) => (
+    <View style={styles.imageContainer}>
+      <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>{label}:</Text>
+      {uri ? (
+        <Image
+          source={{ uri, cache: 'reload' }}
+          style={[styles.verificationImage, { aspectRatio: 16 / 9 }]}
+          resizeMode="contain"
+        />
+      ) : (
+        <View style={[styles.placeholderImage, { backgroundColor: colors.surfaceVariant }]}>
+          <Text style={[styles.placeholderText, { color: colors.onSurfaceVariant }]}>{placeholder}</Text>
+        </View>
+      )}
+    </View>
+  )
+
   return (
     <Card style={[styles.card, { backgroundColor: colors.surface }]}>
-      <Card.Title 
-        title={PROFILE_SECTIONS.VEHICLE} 
-        titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]} 
+      <Card.Title
+        title={PROFILE_SECTIONS.VEHICLE}
+        titleStyle={[{ color: colors.onSurface, ...fonts.titleMedium }]}
       />
       <Divider style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
       <Card.Content>
@@ -290,53 +304,43 @@ const VehicleCard = React.memo(({ user, colors, fonts }) => {
         <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
           Plate Number: {user.vehicle_plate_number || 'N/A'}
         </Text>
-        {user.vehicle_or_cr ? (
-          <View style={styles.imageContainer}>
-            <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-              OR/CR Document:
-            </Text>
-            <Image
-              source={{ uri: user.vehicle_or_cr, cache: 'reload' }}
-              style={[styles.verificationImage, { aspectRatio: 16/9 }]}
-              resizeMode="contain"
-            />
-          </View>
-        ) : (
-          <View style={styles.imageContainer}>
-            <Text style={[styles.text, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
-              OR/CR Document:
-            </Text>
-            <View style={[styles.placeholderImage, { backgroundColor: colors.surfaceVariant }]}>
-              <Text style={[styles.placeholderText, { color: colors.onSurfaceVariant }]}>No OR/CR Uploaded</Text>
-            </View>
-          </View>
-        )}
+        {renderDocument('OR/CR Document', user.vehicle_or_cr, 'No OR/CR Uploaded')}
       </Card.Content>
     </Card>
   )
 })
 
+// ----------------- Main Screen -----------------
 const ViewProfileScreen = ({ route, navigation }) => {
   const { userId } = route.params
   const { colors, fonts } = useTheme()
+
+  // State
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
+
   const [statuses, setStatuses] = useState([])
   const [verifyStatuses, setVerifyStatuses] = useState([])
+
   const { showSnackbar, SnackbarElement } = useSnackbar()
+
+  const [showChangeEmail, setShowChangeEmail] = useState(false)
+  const [email, setEmail] = useState('')
+
   const [showChangePw, setShowChangePw] = useState(false)
   const [pwVisibility, setPwVisibility] = useState({ pw: false, confirm: false })
   const [passwords, setPasswords] = useState({ pw: '', confirm: '' })
 
+  // ----------------- Fetching -----------------
   const fetchStatuses = async () => {
     try {
       const [{ data: profileStatuses }, { data: verificationStatuses }] = await Promise.all([
         supabase.from('profiles_status').select('id, status_name').in('id', [4, 5]),
-        supabase.from('verify_status').select('id, status_name').in('id', [1, 2])
+        supabase.from('verify_status').select('id, status_name').in('id', [1, 2]),
       ])
-      
+
       if (profileStatuses) setStatuses(profileStatuses)
       if (verificationStatuses) setVerifyStatuses(verificationStatuses)
     } catch (error) {
@@ -347,6 +351,7 @@ const ViewProfileScreen = ({ route, navigation }) => {
   const fetchAccount = useCallback(async () => {
     setLoading(true)
     setError(null)
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -374,67 +379,13 @@ const ViewProfileScreen = ({ route, navigation }) => {
         last_sign_in_at: data.last_sign_in_at ? new Date(data.last_sign_in_at) : null,
         updated_at: data.updated_at ? new Date(data.updated_at) : null,
       })
-    } catch (error) {
-      console.error('Error fetching user data:', error)
-      setError(error.message)
+    } catch (err) {
+      console.error('Error fetching user data:', err)
+      setError(err.message)
     } finally {
       setLoading(false)
     }
   }, [userId])
-
-  const updateUserStatus = async (newStatus) => {
-    try {
-      setSaving(true)
-      const statusData = statuses.find(s => s.status_name === newStatus)
-      if (!statusData) throw new Error('Invalid status selected')
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          user_status_id: statusData.id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', userId)
-
-      if (updateError) throw updateError
-
-      setUser(prev => ({
-        ...prev,
-        user_status: newStatus
-      }))
-    } catch (error) {
-      console.error('Error updating user status:', error)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const updateVerifyStatus = async (newStatus) => {
-    try {
-      setSaving(true)
-      const statusData = verifyStatuses.find(s => s.status_name === newStatus)
-      if (!statusData) throw new Error('Invalid verification status selected')
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          verify_status_id: statusData.id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', userId)
-
-      if (updateError) throw updateError
-
-      setUser(prev => ({
-        ...prev,
-        verify_status: newStatus
-      }))
-    } catch (error) {
-      console.error('Error updating verification status:', error)
-    } finally {
-      setSaving(false)
-    }
-  }
 
   useFocusEffect(
     useCallback(() => {
@@ -443,6 +394,50 @@ const ViewProfileScreen = ({ route, navigation }) => {
     }, [fetchAccount])
   )
 
+  // ----------------- Update Status -----------------
+  const updateUserStatus = async (newStatus) => {
+    try {
+      setSaving(true)
+      const statusData = statuses.find((s) => s.status_name === newStatus)
+      if (!statusData) throw new Error('Invalid status selected')
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ user_status_id: statusData.id, updated_at: new Date().toISOString() })
+        .eq('id', userId)
+
+      if (updateError) throw updateError
+
+      setUser((prev) => ({ ...prev, user_status: newStatus }))
+    } catch (err) {
+      console.error('Error updating user status:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const updateVerifyStatus = async (newStatus) => {
+    try {
+      setSaving(true)
+      const statusData = verifyStatuses.find((s) => s.status_name === newStatus)
+      if (!statusData) throw new Error('Invalid verification status selected')
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ verify_status_id: statusData.id, updated_at: new Date().toISOString() })
+        .eq('id', userId)
+
+      if (updateError) throw updateError
+
+      setUser((prev) => ({ ...prev, verify_status: newStatus }))
+    } catch (err) {
+      console.error('Error updating verification status:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // ----------------- Helpers -----------------
   const formatDateTime = useCallback((date) => {
     if (!date) return 'N/A'
     return date.toLocaleString(undefined, {
@@ -465,25 +460,35 @@ const ViewProfileScreen = ({ route, navigation }) => {
     })
   }, [])
 
-  const personalInfo = useMemo(() => ({
-    'Contact Number': user?.contact_number,
-    'Birth Date': formatDate(user?.birth_date),
-    'Emergency Contact Name': user?.emergency_contact_name,
-    'Emergency Contact Number': user?.emergency_contact_number,
-  }), [user?.contact_number, user?.birth_date, user?.emergency_contact_name, user?.emergency_contact_number, formatDate])
+  const personalInfo = useMemo(
+    () => ({
+      'Contact Number': user?.contact_number,
+      'Birth Date': formatDate(user?.birth_date),
+      'Emergency Contact Name': user?.emergency_contact_name,
+      'Emergency Contact Number': user?.emergency_contact_number,
+    }),
+    [user?.contact_number, user?.birth_date, user?.emergency_contact_name, user?.emergency_contact_number, formatDate]
+  )
 
-  const accountInfo = useMemo(() => ({
-    'Role': user?.role,
-    'Status': user?.user_status,
-    'Corporation': user?.corporation_name || 'N/A',
-    'Date Created': formatDateTime(user?.created_at),
-  }), [user?.role, user?.user_status, user?.created_at, formatDateTime])
+  const accountInfo = useMemo(
+    () => ({
+      Role: user?.role,
+      Status: user?.user_status,
+      Corporation: user?.corporation_name || 'N/A',
+      'Date Created': formatDateTime(user?.created_at),
+    }),
+    [user?.role, user?.user_status, user?.created_at, formatDateTime]
+  )
 
-  const recentActivity = useMemo(() => ({
-    'Last Login': formatDateTime(user?.last_sign_in_at),
-    'Last Updated': formatDateTime(user?.updated_at),
-  }), [user?.last_sign_in_at, user?.updated_at, formatDateTime])
+  const recentActivity = useMemo(
+    () => ({
+      'Last Login': formatDateTime(user?.last_sign_in_at),
+      'Last Updated': formatDateTime(user?.updated_at),
+    }),
+    [user?.last_sign_in_at, user?.updated_at, formatDateTime]
+  )
 
+  // ----------------- Admin Actions -----------------
   const validatePassword = (password) => {
     if (!password || password.length < 8) return 'Password must be at least 8 characters long'
     if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter'
@@ -491,15 +496,72 @@ const ViewProfileScreen = ({ route, navigation }) => {
     if (!/[0-9]/.test(password)) return 'Password must contain at least one number'
     return null
   }
+  
+  const adminChangeEmail = async () => {
+    try {
+      if (!email) return showSnackbar('Please enter a new email')
+
+      const newEmail = email.trim().toLowerCase()
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(newEmail)) {
+        return showSnackbar('Please enter a valid email address')
+      }
+
+      setSaving(true)
+
+      // Check if email already exists in profiles
+      const { data: existingProfile, error: checkError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', newEmail)
+        .single()
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        // PGRST116 = no rows found, which is okay
+        throw checkError
+      }
+
+      if (existingProfile && existingProfile.id !== userId) {
+        return showSnackbar('Email is already in use by another account')
+      }
+
+      // Update email in Supabase Auth
+      const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {
+        email: newEmail,
+        email_confirm: true, // confirm immediately since it's admin action
+      })
+      if (updateError) throw updateError
+
+      // Update email in profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ email: newEmail })
+        .eq('id', userId)
+
+      if (profileError) throw profileError
+
+      showSnackbar('Email updated successfully', true)
+
+      // Update local state
+      setUser((prev) => ({ ...prev, email: newEmail }))
+      setShowChangeEmail(false)
+      setEmail('')
+    } catch (err) {
+      console.error('Admin email change error:', err)
+      showSnackbar(err.message || 'Failed to update email')
+    } finally {
+      setSaving(false)
+    }
+  }
+
 
   const adminChangePassword = async () => {
     try {
-      if (!passwords.pw || !passwords.confirm) {
-        return showSnackbar('Please fill in all fields')
-      }
-      if (passwords.pw !== passwords.confirm) {
-        return showSnackbar('Passwords do not match')
-      }
+      if (!passwords.pw || !passwords.confirm) return showSnackbar('Please fill in all fields')
+      if (passwords.pw !== passwords.confirm) return showSnackbar('Passwords do not match')
+
       const pwError = validatePassword(passwords.pw)
       if (pwError) return showSnackbar(pwError)
 
@@ -508,6 +570,7 @@ const ViewProfileScreen = ({ route, navigation }) => {
         password: passwords.pw,
       })
       if (updateError) throw updateError
+
       showSnackbar('Password updated successfully', true)
       setShowChangePw(false)
       setPasswords({ pw: '', confirm: '' })
@@ -519,6 +582,7 @@ const ViewProfileScreen = ({ route, navigation }) => {
     }
   }
 
+  // ----------------- Loading / Error States -----------------
   if (loading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
@@ -534,6 +598,7 @@ const ViewProfileScreen = ({ route, navigation }) => {
           <Appbar.BackAction onPress={() => navigation.navigate('UserManagement')} />
           <Appbar.Content title="View Account" />
         </Appbar.Header>
+
         <View style={styles.loadingContainer}>
           <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
           <Button
@@ -555,6 +620,7 @@ const ViewProfileScreen = ({ route, navigation }) => {
           <Appbar.BackAction onPress={() => navigation.navigate('UserManagement')} />
           <Appbar.Content title="View Account" />
         </Appbar.Header>
+
         <View style={styles.loadingContainer}>
           <Text style={[styles.errorText, { color: colors.error }]}>User not found</Text>
         </View>
@@ -562,147 +628,222 @@ const ViewProfileScreen = ({ route, navigation }) => {
     )
   }
 
+  // ----------------- Main UI -----------------
   return (
     <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
+      {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.navigate('UserManagement')} />
         <Appbar.Content title="View Account" />
-        <Appbar.Action 
-          icon="refresh" 
-          onPress={fetchAccount}
-        />
+        <Appbar.Action icon="refresh" onPress={fetchAccount} />
       </Appbar.Header>
 
-      <ProfileCard 
-        user={user} 
-        colors={colors} 
-        fonts={fonts} 
+      {/* Profile */}
+      <ProfileCard
+        user={user}
+        colors={colors}
+        fonts={fonts}
         onUpdateStatus={updateUserStatus}
         onUpdateVerifyStatus={updateVerifyStatus}
         saving={saving}
         statuses={statuses}
         verifyStatuses={verifyStatuses}
       />
+
+      {/* Admin Actions */}
       <View style={{ marginHorizontal: 16 }}>
         <Button
-          mode='contained-tonal'
+          mode="contained-tonal"
+          onPress={() => setShowChangeEmail(true)}
+          icon="email-edit"
+          style={{ marginBottom: 8 }}
+        >
+          Change Email
+        </Button>
+        <Button
+          mode="contained-tonal"
           onPress={() => setShowChangePw(true)}
-          icon='lock-reset'
+          icon="lock-reset"
           style={{ marginBottom: 8 }}
         >
           Change Password
         </Button>
       </View>
+
+      {/* Info Sections */}
       <InfoCard title={PROFILE_SECTIONS.PERSONAL} data={personalInfo} colors={colors} fonts={fonts} />
       <InfoCard title={PROFILE_SECTIONS.ACCOUNT} data={accountInfo} colors={colors} fonts={fonts} />
       <InfoCard title={PROFILE_SECTIONS.ACTIVITY} data={recentActivity} colors={colors} fonts={fonts} />
       <VerificationCard user={user} colors={colors} fonts={fonts} />
       <VehicleCard user={user} colors={colors} fonts={fonts} />
 
-      <BottomModal visible={showChangePw} onDismiss={() => setShowChangePw(false)}>
+      {/* Change Email Modal */}
+      <BottomModal visible={showChangeEmail} onDismiss={() => setShowChangeEmail(false)}>
         <View style={{ paddingTop: 8 }}>
-          <Text style={[fonts.titleLarge, { color: colors.primary, textAlign: 'center', marginBottom: 12 }]}>Change Password</Text>
+          <Text style={[fonts.titleLarge, { color: colors.primary, textAlign: 'center', marginBottom: 12 }]}>
+            Change Email
+          </Text>
           <TextInput
-            label='New Password'
-            value={passwords.pw}
-            onChangeText={(v) => setPasswords(prev => ({ ...prev, pw: v }))}
-            secureTextEntry={!pwVisibility.pw}
-            right={<TextInput.Icon icon={pwVisibility.pw ? 'eye-off' : 'eye'} onPress={() => setPwVisibility(prev => ({ ...prev, pw: !prev.pw }))} />}
-            mode='outlined'
+            label="New Email"
+            value={email}
+            onChangeText={setEmail}
+            mode="outlined"
             style={styles.input}
-          />
-          <TextInput
-            label='Confirm Password'
-            value={passwords.confirm}
-            onChangeText={(v) => setPasswords(prev => ({ ...prev, confirm: v }))}
-            secureTextEntry={!pwVisibility.confirm}
-            right={<TextInput.Icon icon={pwVisibility.confirm ? 'eye-off' : 'eye'} onPress={() => setPwVisibility(prev => ({ ...prev, confirm: !prev.confirm }))} />}
-            mode='outlined'
-            style={styles.input}
+            autoCapitalize="none"
+            keyboardType="email-address"
           />
           <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 }}>
-            <Button onPress={() => setShowChangePw(false)} style={{ marginRight: 8 }}>Cancel</Button>
-            <Button mode='contained' onPress={adminChangePassword} loading={saving} disabled={saving}>Update</Button>
+            <Button onPress={() => setShowChangeEmail(false)} style={{ marginRight: 8 }}>
+              Cancel
+            </Button>
+            <Button mode="contained" onPress={adminChangeEmail} loading={saving} disabled={saving}>
+              Update
+            </Button>
           </View>
         </View>
       </BottomModal>
+
+      {/* Change Password Modal */}
+      <BottomModal visible={showChangePw} onDismiss={() => setShowChangePw(false)}>
+        <View style={{ paddingTop: 8 }}>
+          <Text style={[fonts.titleLarge, { color: colors.primary, textAlign: 'center', marginBottom: 12 }]}>
+            Change Password
+          </Text>
+          <TextInput
+            label="New Password"
+            value={passwords.pw}
+            onChangeText={(v) => setPasswords((prev) => ({ ...prev, pw: v }))}
+            secureTextEntry={!pwVisibility.pw}
+            right={
+              <TextInput.Icon
+                icon={pwVisibility.pw ? 'eye-off' : 'eye'}
+                onPress={() => setPwVisibility((prev) => ({ ...prev, pw: !prev.pw }))}
+              />
+            }
+            mode="outlined"
+            style={styles.input}
+          />
+          <TextInput
+            label="Confirm Password"
+            value={passwords.confirm}
+            onChangeText={(v) => setPasswords((prev) => ({ ...prev, confirm: v }))}
+            secureTextEntry={!pwVisibility.confirm}
+            right={
+              <TextInput.Icon
+                icon={pwVisibility.confirm ? 'eye-off' : 'eye'}
+                onPress={() => setPwVisibility((prev) => ({ ...prev, confirm: !prev.confirm }))}
+              />
+            }
+            mode="outlined"
+            style={styles.input}
+          />
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 }}>
+            <Button onPress={() => setShowChangePw(false)} style={{ marginRight: 8 }}>
+              Cancel
+            </Button>
+            <Button mode="contained" onPress={adminChangePassword} loading={saving} disabled={saving}>
+              Update
+            </Button>
+          </View>
+        </View>
+      </BottomModal>
+
       {SnackbarElement}
     </ScrollView>
   )
 }
 
+export default ViewProfileScreen
+// ----------------- Styles -----------------
+// ----------------- Styles -----------------
 const styles = StyleSheet.create({
-  scrollView: { 
-    flex: 1 
-  },
-  card: {
-    margin: 16,
-  },
-  profileContainer: {
-    alignItems: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-  },
-  menuContainer: {
-    margin: 16,
-  },
-  cardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-  },
-  profile: {
-    marginRight: 16,
-  },
-  cardTextContainer: {
+  // Layout
+  container: {
     flex: 1,
   },
-  text: {
-    marginVertical: 6,
-  },
-  divider: {
-    height: 1.5,
-    marginHorizontal: 16,
+  scrollView: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
+  },
+
+  // Cards
+  card: {
+    margin: 16,
+    borderRadius: 12,
+    elevation: 2,
+  },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  cardTextContainer: {
+    flex: 1,
+  },
+
+  // Profile
+  profileContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+
+  // Menus & Inputs
+  menuContainer: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  input: {
+    marginTop: 8,
+    marginBottom: 8,
+  },
+
+  // Text
+  text: {
+    marginBottom: 6,
   },
   errorText: {
     fontSize: 16,
     textAlign: 'center',
   },
-  imageContainer: {
+
+  // Divider
+  divider: {
     marginVertical: 8,
-    alignItems: 'center',
+    height: StyleSheet.hairlineWidth,
+  },
+
+  // Images (Verification & Vehicle)
+  imageContainer: {
+    marginTop: 12,
+    marginBottom: 8,
   },
   verificationImage: {
-    marginTop: 8,
     width: '100%',
     height: undefined,
     borderRadius: 8,
+    marginTop: 6,
   },
   placeholderImage: {
-    marginTop: 8,
     width: '100%',
-    aspectRatio: 16/9,
+    aspectRatio: 16 / 9,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.12)',
+    marginTop: 6,
   },
   placeholderText: {
     fontSize: 14,
     textAlign: 'center',
-    padding: 16,
   },
-  input: {
-    marginBottom: 12,
+
+  // Buttons
+  button: {
+    marginVertical: 4,
   },
 })
-
-export default ViewProfileScreen 

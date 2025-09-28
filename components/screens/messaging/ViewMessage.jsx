@@ -21,6 +21,7 @@ import {
 } from "react-native-paper"
 import { supabase } from "../../../lib/supabase"
 import { useFocusEffect } from "@react-navigation/native"
+import { sendNotificationToUsers } from '../../../utils/registerForPushNotifications'
 
 const ViewMessage = ({ navigation, route }) => {
   const { colors, fonts } = useTheme()
@@ -245,6 +246,11 @@ const ViewMessage = ({ navigation, route }) => {
 
       await supabase.from("messages").insert(payload)
       setNewMessage("")
+      await sendNotificationToUsers(
+        otherUser.id,
+        "New Message",
+        `You have a new message from ${currentUser.first_name} ${currentUser.last_name}`
+      )
     } catch (error) {
       console.error("Error sending message:", error)
     } finally {

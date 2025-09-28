@@ -80,6 +80,7 @@ const generateTransactionReportHTML = async (
         delivery_discount,
         remarks,
         passenger_form,
+        pickup_location,
         delivery_address,
         address_line_1,
         address_line_2,
@@ -179,23 +180,92 @@ const generateTransactionReportHTML = async (
   // Generate HTML for passenger forms
   const formPages = transactionsWithForms.map((contract, index) => {
     const imageUrl = contract.passenger_form || contract.proof_of_delivery;
+    const statusName = String(contract.contract_status?.status_name || '').toLowerCase().trim();
+    const isDelivered = statusName.includes('delivered');
+    
+    // Build owner name from individual fields
+    const ownerName = [
+      contract.owner_first_name,
+      contract.owner_middle_initial,
+      contract.owner_last_name
+    ].filter(Boolean).join(' ') || 'N/A';
+
+    // Format date for display
+    const formatDate = (dateString) => {
+      if (!dateString) return 'N/A';
+      try {
+        const date = new Date(dateString);
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear();
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const ampm = date.getHours() >= 12 ? 'PM' : 'AM';
+        return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
+      } catch { return 'N/A'; }
+    };
+
+    // Determine header based on status
+    const headerText = isDelivered ? 'PASSENGER FORM' : 'PROOF OF DELIVERY';
+    
+    // Build address from available fields
+    const address = [
+      contract.delivery_address,
+      contract.address_line_1,
+      contract.address_line_2
+    ].map(v => (v || '').toString().trim()).filter(Boolean).join(', ') || 'N/A';
+
     return `
       <div class="page-break"></div>
-      <div class="form-container">
-        <img src="${imageUrl}" class="form-image" />
-        <div class="form-info">
-          Contract ID: ${contract.id}, Page ${index + 1} of ${transactionsWithForms.length}
+      <div class="form-page">
+        <div class="form-header">
+          <h1 class="form-title">${headerText}</h1>
+        </div>
+        
+        <div class="contract-details">
+          <h2 class="details-title">Contract Details:</h2>
+          <div class="details-grid">
+            <div class="detail-row">
+              <span class="detail-label">Contract ID:</span>
+              <span class="detail-value">${contract.id}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Luggage Owner:</span>
+              <span class="detail-value">${ownerName}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Flight Number:</span>
+              <span class="detail-value">${contract.flight_number || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Pickup Location:</span>
+              <span class="detail-value">${contract.pickup_location || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Drop-off Location:</span>
+              <span class="detail-value">${address}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">${isDelivered ? 'Delivery Date:' : 'Cancellation Date:'}</span>
+              <span class="detail-value">${formatDate(contract.delivered_at || contract.cancelled_at)}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Status:</span>
+              <span class="detail-value">${contract.contract_status?.status_name || 'N/A'}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-image-container">
+          <img src="${imageUrl}" class="form-image" />
+        </div>
+        
+        <div class="form-footer">
+          <span class="page-info">Page ${index + 1} of ${transactionsWithForms.length}</span>
         </div>
       </div>
     `;
   }).join('')
-
-  // Generate invoice image HTML if available
-  const invoiceImageHTML = invoiceImageUrl ? `
-    <div class="invoice-container">
-      <img src="${invoiceImageUrl}" class="invoice-image" />
-    </div>
-  ` : ''
 
   // Generate invoice HTML if invoiceData is provided
   let invoiceHTML = ''
@@ -625,30 +695,99 @@ const generateTransactionReportHTML = async (
             page-break-before: always;
             break-before: page;
           }
-          .form-container {
+          .form-page {
             width: 100%;
-            height: 100vh;
+            min-height: 100vh;
+            max-height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
             margin: 0;
-            padding: 0;
+            padding: 15px;
             box-sizing: border-box;
+            page-break-inside: avoid;
+            break-inside: avoid;
+            overflow: hidden;
+          }
+          .form-header {
+            text-align: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 8px;
+            flex-shrink: 0;
+          }
+          .form-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 0;
+            color: #000;
+          }
+          .contract-details {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            flex-shrink: 0;
+          }
+          .details-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+            color: #333;
+          }
+          .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+          }
+          .detail-row {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 5px;
+          }
+          .detail-label {
+            font-size: 10px;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 2px;
+          }
+          .detail-value {
+            font-size: 11px;
+            color: #000;
+            word-wrap: break-word;
+          }
+          .form-image-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            background-color: #fff;
+            min-height: 400px;
+            max-height: 800px;
+            overflow: hidden;
+            position: relative;
           }
           .form-image {
-            width: 100%;
-            height: calc(100vh - 40px);
+            min-width: 70%;
+            min-height: 70%;
+            width: auto;
+            height: auto;
             object-fit: contain;
+            object-position: center;
+            display: block;
           }
-          .form-info {
-            font-family: Arial, sans-serif;
+          .form-footer {
+            text-align: center;
+            padding: 8px;
+            border-top: 1px solid #ccc;
+            background-color: #f5f5f5;
+            flex-shrink: 0;
+          }
+          .page-info {
             font-size: 10px;
             color: #666;
-            text-align: center;
-            width: 100%;
-            padding: 10px;
-            background-color: #fff;
+            font-weight: bold;
           }
           .invoice-container {
             margin: 0;
@@ -1016,7 +1155,11 @@ export const sharePDF = async (
       invoiceData
     );
 
-    const { uri } = await Print.printToFileAsync({ html });
+    const { uri } = await Print.printToFileAsync({
+      html,
+      width: 595.28,   // A4 width in points (72 DPI)
+      height: 841.89,  // A4 height in points (72 DPI)
+    })
 
     const summaryId = transactions[0]?.summary_id || 'SUMMARY';
     const filename = `${summaryId}.pdf`;
@@ -1061,7 +1204,11 @@ export const createPDFFile = async (
     const summaryId = transactions[0]?.summary_id || 'SUMMARY'
     const filename = `${summaryId}.pdf`
 
-    const { uri } = await Print.printToFileAsync({ html })
+    const { uri } = await Print.printToFileAsync({
+      html,
+      width: 595.28,   // A4 width in points (72 DPI)
+      height: 841.89,  // A4 height in points (72 DPI)
+    })
 
     const newPath = `${FileSystem.documentDirectory}${filename}`
     await FileSystem.moveAsync({ from: uri, to: newPath })

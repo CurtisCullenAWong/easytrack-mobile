@@ -1,5 +1,5 @@
 // Reusable geometry and vicinity helpers for experimental vicinity gating
-export const VICINITY_FEATURE_ENABLED=true
+export const VICINITY_FEATURE_ENABLED=false
 
 export const deg2rad = (degrees) => degrees * (Math.PI / 180)
 

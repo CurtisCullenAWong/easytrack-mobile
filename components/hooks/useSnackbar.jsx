@@ -26,6 +26,7 @@ const useSnackbar = () => {
           borderRadius: 8,
           marginHorizontal: '10%',
           marginBottom: '20%',
+          zIndex: 9999,
         }}
       >
         <Text style={[fonts.bodyMedium, { color: 'white', textAlign: 'center' }]}>
