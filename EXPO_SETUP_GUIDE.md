@@ -42,6 +42,7 @@ eas build:configure
 eas credentials
 npx expo-doctor
 eas env:pull
+adb logcat *:S ReactNative:V ReactNativeJS:V > eas-crash-log.txt
 ```
 
 ### For Development
