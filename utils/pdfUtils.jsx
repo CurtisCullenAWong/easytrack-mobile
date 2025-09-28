@@ -42,6 +42,7 @@ const cfg = {
 
 const generateTransactionReportHTML = async (
   transactions,
+  invoiceImageUrl,
   signatureImageUrl = null,
   options = {},
   invoiceData = null
