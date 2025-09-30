@@ -4,8 +4,7 @@ import { resolveExtra } from './env'
 const extra = resolveExtra()
 
 const SUPABASE_URL = extra?.SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL
-// Service role key must never be public; only read from private config
-const SUPABASE_SERVICE_ROLE_KEY = extra?.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+const SUPABASE_SERVICE_ROLE_KEY = extra?.EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || process.env.EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY
 
 if (!SUPABASE_URL) {
   throw new Error('Missing Supabase url')

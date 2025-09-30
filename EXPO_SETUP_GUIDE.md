@@ -46,6 +46,7 @@ cd "C:\Users\curtc\AppData\Local\Android\Sdk\platform-tools>"
 adb logcat *:S ReactNative:V ReactNativeJS:V > eas-crash-log.txt
 adb logcat -c
 adb logcat *:S ReactNative:V ReactNativeJS:V
+eas secret:create --name SUPABASE_SERVICE_ROLE_KEY --value ""
 ```
 
 ### For Development
