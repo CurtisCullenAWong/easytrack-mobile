@@ -18,7 +18,6 @@
     "base-64": "^1.0.0",
     "base64-arraybuffer": "^1.0.2",
     "dotenv": "^17.2.3",
-    "expo": "^54.0.10",
     "expo-auth-session": "~7.0.8",
     "expo-crypto": "~15.0.7",
     "expo-dev-client": "~6.0.12",
@@ -59,6 +58,7 @@
     "@babel/core": "^7.20.0",
     "@react-native-community/cli": "^18.0.0",
     "@types/react": "19.1.10",
+    "expo": "^54.0.10",
     "supabase": "^2.23.4",
     "typescript": "5.9.2"
   },
