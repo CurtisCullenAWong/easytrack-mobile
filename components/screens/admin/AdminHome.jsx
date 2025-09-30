@@ -1,4 +1,4 @@
-import React from 'react'
+import { useRef, useEffect } from 'react'
 import { ScrollView, View, Dimensions, FlatList, StyleSheet } from 'react-native'
 import { Text, Button, Surface, Card, useTheme, Divider } from 'react-native-paper'
 import Header from '../../customComponents/Header'
@@ -16,6 +16,23 @@ const AdminHome = ({ navigation }) => {
     require('../../../assets/admin_home/admin3.jpg'),
   ]
 
+  const flatListRef = useRef(null)
+  const currentIndex = useRef(0)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (flatListRef.current) {
+        currentIndex.current = (currentIndex.current + 1) % images.length
+        flatListRef.current.scrollToIndex({
+          index: currentIndex.current,
+          animated: true,
+        })
+      }
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [images])
+
   const renderItem = ({ item }) => (
     <Card style={[styles.card, { backgroundColor: colors.surface, elevation: colors.elevation.level1 }]}>
       <Card.Cover source={item} style={styles.cardCover} />
@@ -26,6 +43,7 @@ const AdminHome = ({ navigation }) => {
     { label: 'User Management', icon: 'account-group', screen: 'UserManagement' },
     { label: 'Booking Management', icon: 'map-marker-path', screen: 'BookingManagement' },
     { label: 'Transaction Management', icon: 'bank-transfer', screen: 'TransactionManagement' },
+    { label: 'Performance Statistics', icon: 'chart-line', screen: 'PerformanceStatistics' },
   ]
 
   return (
@@ -46,6 +64,7 @@ const AdminHome = ({ navigation }) => {
         <Surface style={[styles.carouselSurface, { backgroundColor: colors.surface }]} elevation={1}>
           {images.length ? (
             <FlatList
+              ref={flatListRef}
               data={images}
               renderItem={renderItem}
               keyExtractor={(_, index) => index.toString()}

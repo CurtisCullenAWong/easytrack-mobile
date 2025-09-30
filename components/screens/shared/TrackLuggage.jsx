@@ -12,10 +12,11 @@ import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabase'
 import useSnackbar from '../../hooks/useSnackbar'
 import { useFocusEffect } from '@react-navigation/native'
-import { GOOGLE_MAPS_API_KEY } from '@env'
+import Constants from "expo-constants"
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import MapViewDirections from "react-native-maps-directions"
 
+const { GOOGLE_MAPS_API_KEY } = Constants.expoConfig?.extra || {}
 const { width, height } = Dimensions.get('window')
 
 // Geometry parser

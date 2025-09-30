@@ -5,7 +5,8 @@ import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/nativ
 import { supabase } from '../../../../../lib/supabaseAdmin'
 import { printPDF, sharePDF, createPDFFile, splitPDFFile } from '../../../../../utils/pdfUtils'
 import * as FileSystem from 'expo-file-system/legacy'
-import { RESEND_API_KEY } from '@env'
+import Constants from "expo-constants"
+const { RESEND_API_KEY } = Constants.expoConfig.extra
 import useSnackbar from '../../../../hooks/useSnackbar'
 import Signature from 'react-native-signature-canvas'
 export const FILE_SIZE_LIMIT = Math.round(24 * 1024 * 1024)

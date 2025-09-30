@@ -1,4 +1,4 @@
-import React from 'react'
+import { useRef, useEffect } from 'react'
 import { ScrollView, Dimensions, FlatList, View, StyleSheet } from 'react-native'
 import { Text, Button, Surface, Card, useTheme, Divider } from 'react-native-paper'
 import Header from '../../customComponents/Header'
@@ -16,11 +16,22 @@ const DeliveryHome = ({ navigation }) => {
     require('../../../assets/delivery_home/delivery3.jpg'),
   ]
 
-  const performanceImages = [
-    require('../../../assets/delivery_home/delivery4.jpg'),
-    require('../../../assets/delivery_home/delivery5.jpg'),
-    require('../../../assets/delivery_home/delivery6.jpg'),
-  ]
+  const flatListRef = useRef(null)
+  const currentIndex = useRef(0)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (flatListRef.current) {
+        currentIndex.current = (currentIndex.current + 1) % images.length
+        flatListRef.current.scrollToIndex({
+          index: currentIndex.current,
+          animated: true,
+        })
+      }
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [images])
 
   const renderItem = ({ item }) => (
     <Card style={[styles.card, { backgroundColor: colors.surface, elevation: colors.elevation.level1 }]}>
@@ -54,6 +65,7 @@ const DeliveryHome = ({ navigation }) => {
           <Text style={[styles.sectionTitle, { color: colors.onSurface, ...fonts.titleLarge }]}>Current Routes</Text>
           {images.length ? (
             <FlatList
+              ref={flatListRef}
               data={images}
               renderItem={renderItem}
               keyExtractor={(_, index) => index.toString()}
@@ -93,33 +105,10 @@ const DeliveryHome = ({ navigation }) => {
           </View>
         </Surface>
         )}
-        {/* EGC-GHE Delivery Services Carousel Section */}
-        <Surface style={[styles.carouselSurface, { backgroundColor: colors.surface }]} elevation={1}>
-          <Text style={[styles.sectionTitle, { color: colors.onSurface, ...fonts.titleLarge }]}>EGC-GHE Delivery Services</Text>
-          {performanceImages.length ? (
-            <FlatList
-              data={performanceImages}
-              renderItem={renderItem}
-              keyExtractor={(_, index) => index.toString()}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.flatList}
-              snapToInterval={width * 0.85 + 16}
-              decelerationRate="fast"
-              snapToAlignment="start"
-            />
-          ) : (
-            <Text style={[styles.noImages, { color: colors.error, ...fonts.bodyLarge }]}>
-              No data available.
-            </Text>
-          )}
-        </Surface>
-
         {/* Quote Section */}
         <Surface style={[styles.quoteSurface, { backgroundColor: colors.surface }]} elevation={1}>
           <Text style={[styles.quoteText, { color: colors.onSurface, ...fonts.bodyMedium }]}>
-            “Analyze your delivery performance, track contracts, and improve your efficiency with real-time data analytics.”
+            Good to see you again! Let’s get started with today’s deliveries — your stops and tasks are all lined up and ready.
           </Text>
         </Surface>
       </View>

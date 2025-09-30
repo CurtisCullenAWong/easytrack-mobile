@@ -51,7 +51,8 @@ export async function registerForPushNotificationsAsync() {
     const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data
     return token
   } else {
-    throw new Error("Must use physical device for push notifications")
+    console.warn("Running on an emulator. Push notifications are disabled.")
+    return null
   }
 }
 

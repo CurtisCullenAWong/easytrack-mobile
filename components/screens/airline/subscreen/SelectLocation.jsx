@@ -5,7 +5,8 @@ import { Text, Button, Appbar, Surface, useTheme, IconButton, Divider } from 're
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import * as Location from 'expo-location'
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
-import { GOOGLE_MAPS_API_KEY } from '@env'
+import Constants from "expo-constants"
+const { GOOGLE_MAPS_API_KEY } = Constants.expoConfig.extra
 import useSnackbar from '../../../hooks/useSnackbar'
 
 const { height: screenHeight } = Dimensions.get('window')

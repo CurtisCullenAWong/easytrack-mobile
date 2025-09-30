@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai"
-import { GEMINI_API_KEY } from '@env'
+import Constants from "expo-constants"
+const { GEMINI_API_KEY } = Constants.expoConfig.extra
 
 // Initialize the Gemini API with your API key
 const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null

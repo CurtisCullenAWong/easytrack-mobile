@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { ScrollView, View, Dimensions, FlatList, StyleSheet } from 'react-native'
 import { Text, Button, Surface, Card, useTheme, Divider } from 'react-native-paper'
 import { supabase } from '../../../lib/supabase'
@@ -73,7 +73,23 @@ const AirlineHome = ({ navigation }) => {
 
     fetchCorporationImages()
   }, [])
+  const flatListRef = useRef(null)
+  const currentIndex = useRef(0)
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (flatListRef.current) {
+        currentIndex.current = (currentIndex.current + 1) % images.length
+        flatListRef.current.scrollToIndex({
+          index: currentIndex.current,
+          animated: true,
+        })
+      }
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [images])
+  
   const renderItem = ({ item }) => (
     <Card style={[styles.card, { backgroundColor: colors.surface, elevation: colors.elevation.level1 }]}>
       <Card.Cover source={item} style={styles.cardCover} />
@@ -109,6 +125,7 @@ const AirlineHome = ({ navigation }) => {
             <Text style={{ textAlign: 'center', color: colors.onSurfaceVariant }}>Loading images...</Text>
           ) : images.length ? (
             <FlatList
+              ref={flatListRef}
               data={images}
               renderItem={renderItem}
               keyExtractor={(_, index) => index.toString()}
