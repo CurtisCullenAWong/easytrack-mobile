@@ -10,7 +10,7 @@ export default ({ config }) => ({
     updates: {
       enabled: true,
       fallbackToCacheTimeout: 2000,
-      url: "https://u.expo.dev/715e0276-b3b2-47c8-9c92-cd2f71f0b251",
+      url: "https://u.expo.dev/2a9ca4db-e0b3-4054-9f87-61975dbed992",
     },
     orientation: "portrait",
     icon: "./assets/images/icon.png",
@@ -87,7 +87,6 @@ export default ({ config }) => ({
       color: "#0C5B47",
       iosDisplayInForeground: true,
     },
-
     ios: {
       bundleIdentifier: "EasyTrack",
       infoPlist: {
@@ -101,12 +100,10 @@ export default ({ config }) => ({
     },
     extra: {
       eas: {
-        projectId: "715e0276-b3b2-47c8-9c92-cd2f71f0b251",
+        projectId: "2a9ca4db-e0b3-4054-9f87-61975dbed992"
       },
-      // Public values
-      EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
-      EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-      // Secrets (from EAS)
+      SUPABASE_URL: process.env.SUPABASE_URL,
+      SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
       SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
       GEMINI_API_KEY: process.env.GEMINI_API_KEY,
       GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,

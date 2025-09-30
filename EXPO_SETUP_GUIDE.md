@@ -45,7 +45,6 @@ eas env:pull
 cd "C:\Users\curtc\AppData\Local\Android\Sdk\platform-tools>"
 adb logcat *:S ReactNative:V ReactNativeJS:V > eas-crash-log.txt
 adb logcat -c
-adb logcat *:S ReactNative:V ReactNativeJS:V > eas-crash-log.txt
 adb logcat *:S ReactNative:V ReactNativeJS:V
 ```
 
