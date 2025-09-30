@@ -10,7 +10,7 @@ export default ({ config }) => ({
     updates: {
       enabled: true,
       fallbackToCacheTimeout: 2000,
-      url: "https://u.expo.dev/db9f4779-57bd-4ebc-9dff-4d1c2311661b",
+      url: "https://u.expo.dev/715e0276-b3b2-47c8-9c92-cd2f71f0b251",
     },
     orientation: "portrait",
     icon: "./assets/images/icon.png",
@@ -46,7 +46,7 @@ export default ({ config }) => ({
       ],
       config: {
         googleMaps: {
-          apiKey: process.env.GOOGLE_MAPS_API_KEY,
+          apiKey: process.env.ANDROID_GOOGLE_MAPS_API_KEY,
         },
       },
     },
@@ -101,7 +101,7 @@ export default ({ config }) => ({
     },
     extra: {
       eas: {
-        projectId: "db9f4779-57bd-4ebc-9dff-4d1c2311661b",
+        projectId: "715e0276-b3b2-47c8-9c92-cd2f71f0b251",
       },
       // Public values
       EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,

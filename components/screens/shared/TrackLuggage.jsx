@@ -13,10 +13,10 @@ import { supabase } from '../../../lib/supabase'
 import useSnackbar from '../../hooks/useSnackbar'
 import { useFocusEffect } from '@react-navigation/native'
 import Constants from "expo-constants"
+const { GOOGLE_MAPS_API_KEY } = Constants.expoConfig.extra
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import MapViewDirections from "react-native-maps-directions"
 
-const { GOOGLE_MAPS_API_KEY } = Constants.expoConfig?.extra || {}
 const { width, height } = Dimensions.get('window')
 
 // Geometry parser
@@ -254,6 +254,18 @@ const InfoRow = ({ label, value, colors, fonts, style }) => (
 
 // Contract Info Component
 const ContractInfo = ({ contractData, colors, fonts, showSnackbar }) => {
+    const pickupCoords = parseGeometry(contractData?.pickup_location_geo)
+    const dropOffCoords = parseGeometry(contractData?.drop_off_location_geo)
+    const currentCoords = parseGeometry(contractData?.current_location_geo)
+
+    const { routeData, requestDirections, cooldownActive, directionElements } =
+      useDirections({
+        pickup: pickupCoords,
+        current: currentCoords,
+        dropOff: dropOffCoords,
+        showSnackbar,
+      })
+
     const formatDate = (dateString) => {
         if (!dateString) return 'Not set'
         return new Date(dateString).toLocaleString('en-PH', {
@@ -267,19 +279,8 @@ const ContractInfo = ({ contractData, colors, fonts, showSnackbar }) => {
         })
     }
 
+    // Now safe to return early after all hooks are called
     if (!contractData) return null
-
-const pickupCoords = parseGeometry(contractData?.pickup_location_geo)
-const dropOffCoords = parseGeometry(contractData?.drop_off_location_geo)
-const currentCoords = parseGeometry(contractData?.current_location_geo)
-
-const { routeData, requestDirections, cooldownActive, directionElements } =
-  useDirections({
-    pickup: pickupCoords,
-    current: currentCoords,
-    dropOff: dropOffCoords,
-    showSnackbar,
-  })
 
     return (
         <Card style={[styles.contractCard, { backgroundColor: colors.surface }]}>
@@ -364,7 +365,6 @@ const { routeData, requestDirections, cooldownActive, directionElements } =
         </Card>
     )
 }
-
 // Main Component
 const TrackLuggage = ({ navigation, route }) => {
     const [trackingNumber, setTrackingNumber] = useState('')
