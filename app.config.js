@@ -48,7 +48,7 @@ export default ({ config }) => ({
       ],
       config: {
         googleMaps: {
-          apiKey: process.env.ANDROID_GOOGLE_MAPS_API_KEY,
+          apiKey: process.env.EXPO_PUBLIC_ANDROID_GOOGLE_MAPS_API_KEY,
         },
       },
     },
@@ -104,12 +104,12 @@ export default ({ config }) => ({
       eas: {
         projectId: "2a9ca4db-e0b3-4054-9f87-61975dbed992"
       },
-      SUPABASE_URL: process.env.SUPABASE_URL,
-      SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
+      SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+      SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+      GEMINI_API_KEY: process.env.EXPO_PUBLIC_GEMINI_API_KEY,
+      GOOGLE_MAPS_API_KEY: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
+      RESEND_API_KEY: process.env.EXPO_PUBLIC_RESEND_API_KEY,
       SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-      GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-      GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
-      RESEND_API_KEY: process.env.RESEND_API_KEY,
     },
   },
 })
