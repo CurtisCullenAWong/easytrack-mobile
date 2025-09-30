@@ -235,7 +235,7 @@ const CreateInvoice = () => {
 
       // 4) build and send email
       const body = {
-        from: 'EasyTrack <onboarding@resend.dev>',
+        from: 'EasyTrack <easytrack@ghe-easytrack.org>',
         to: [email],
         subject: `Invoice${attachments.length > 1 ? ` (parts 1-${attachments.length})` : ''} from EasyTrack`,
         html: `<p>Please find the attached invoice and summary report (split into ${attachments.length} part(s)).</p>`,
