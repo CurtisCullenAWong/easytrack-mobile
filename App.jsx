@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { Provider as PaperProvider } from 'react-native-paper'
 import * as Font from 'expo-font'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -8,18 +8,12 @@ import darkTheme from './components/themes/darkTheme'
 import { ThemeContext } from './components/themes/themeContext'
 import { ActivityIndicator, View } from 'react-native'
 import './components/hooks/backgroundLocationTask'
-import { Suspense, lazy } from 'react'
-
-const NotificationProvider = lazy(() =>
-  import('./context/NotificationContext').then(mod => ({ default: mod.NotificationProvider }))
-)
-const UpdatePrompt = lazy(() =>
-  import('./components/customComponents/UpdatePrompt')
-)
+import { NotificationProvider } from './context/NotificationContext'
+import UpdatePrompt from './components/customComponents/UpdatePrompt'
 
 const THEME_KEY = 'appTheme'
 
-const App = () => {
+export default function App() {
   const [theme, setTheme] = useState(lightTheme)
   const [ready, setReady] = useState(false)
 
@@ -27,13 +21,16 @@ const App = () => {
     try {
       const newTheme = theme === lightTheme ? darkTheme : lightTheme
       setTheme(newTheme)
-      await AsyncStorage.setItem(THEME_KEY, newTheme === darkTheme ? 'dark' : 'light')
+      await AsyncStorage.setItem(
+        THEME_KEY,
+        newTheme === darkTheme ? 'dark' : 'light'
+      )
     } catch (error) {
       console.error('Error saving theme:', error)
     }
   }
 
-  const loadFontsandTheme = async () => {
+  const loadFontsAndTheme = async () => {
     try {
       await Font.loadAsync({
         'Onest-Regular': require('./assets/fonts/Onest-Regular.ttf'),
@@ -48,7 +45,7 @@ const App = () => {
 
   useEffect(() => {
     const initialize = async () => {
-      await loadFontsandTheme()
+      await loadFontsAndTheme()
       setReady(true)
     }
     initialize()
@@ -65,15 +62,11 @@ const App = () => {
   return (
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
       <PaperProvider theme={theme}>
-        <Suspense fallback={<StackNavigator />}>
-          <NotificationProvider>
-            <StackNavigator />
-            <UpdatePrompt />
-          </NotificationProvider>
-        </Suspense>
+        <NotificationProvider>
+          <StackNavigator />
+          <UpdatePrompt />
+        </NotificationProvider>
       </PaperProvider>
     </ThemeContext.Provider>
   )
 }
-
-export default App
