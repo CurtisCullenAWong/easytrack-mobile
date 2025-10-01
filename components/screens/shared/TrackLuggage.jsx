@@ -12,8 +12,7 @@ import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabase'
 import useSnackbar from '../../hooks/useSnackbar'
 import { useFocusEffect } from '@react-navigation/native'
-import Constants from "expo-constants"
-const { GOOGLE_MAPS_API_KEY } = Constants.expoConfig.extra
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import MapViewDirections from "react-native-maps-directions"
 
@@ -42,7 +41,7 @@ const parseGeometry = (geoString) => {
 // --- Hook ---
 let globalLastFetchTime = 0
 
-const useDirections = ({ pickup, current, dropOff, showSnackbar, cooldownMs = 60000 }) => {
+const useDirections = ({ pickup, current, dropOff, showSnackbar, cooldownMs = 150000 }) => {
   const [routeData, setRouteData] = useState(null)
   const [cooldownActive, setCooldownActive] = useState(true)
   const [directionElements, setDirectionElements] = useState(null)

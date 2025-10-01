@@ -1,12 +1,11 @@
 import 'react-native-get-random-values'
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { View, StyleSheet, ScrollView, Dimensions, ActivityIndicator, TouchableOpacity } from 'react-native'
+import { View, StyleSheet, ScrollView, Dimensions, ActivityIndicator } from 'react-native'
 import { Text, Button, Appbar, Surface, useTheme, IconButton, Divider } from 'react-native-paper'
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import * as Location from 'expo-location'
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
-import Constants from "expo-constants"
-const { GOOGLE_MAPS_API_KEY } = Constants.expoConfig.extra
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
 import useSnackbar from '../../../hooks/useSnackbar'
 
 const { height: screenHeight } = Dimensions.get('window')

@@ -3,11 +3,10 @@ import { View, StyleSheet, TouchableOpacity } from 'react-native'
 import { Text, useTheme, Appbar, IconButton } from 'react-native-paper'
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import MapViewDirections from 'react-native-maps-directions'
-import Constants from 'expo-constants'
 import * as Location from 'expo-location'
 import useSnackbar from '../../hooks/useSnackbar'
 
-const { GOOGLE_MAPS_API_KEY } = Constants.expoConfig?.extra || {}
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
 
 const CheckLocation = ({ route, navigation }) => {
   const { colors, fonts } = useTheme()
