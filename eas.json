@@ -22,6 +22,14 @@
       },
       "channel": "production",
       "environment": "production"
+    },
+    "admin_production": {
+      "autoIncrement": true,
+      "android": {
+        "buildType": "apk"
+      },
+      "channel": "admin_production",
+      "environment": "preview"
     }
   },
   "submit": {

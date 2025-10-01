@@ -12,7 +12,7 @@ export default ({ config }) => ({
     updates: {
       enabled: true,
       fallbackToCacheTimeout: 2000,
-      url: "https://u.expo.dev/179dfb22-939f-4b91-b3fc-71881d4ad20f",
+      url: "https://u.expo.dev/51066ce1-0c86-40e9-9f97-2d8098cfa262",
     },
     orientation: "portrait",
     icon: "./assets/images/icon.png",
@@ -102,11 +102,8 @@ export default ({ config }) => ({
     },
     extra: {
       eas: {
-        projectId: "179dfb22-939f-4b91-b3fc-71881d4ad20f"
+        projectId: "51066ce1-0c86-40e9-9f97-2d8098cfa262"
       },
-      GEMINI_API_KEY: process.env.EXPO_PUBLIC_GEMINI_API_KEY,
-      GOOGLE_MAPS_API_KEY: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
-      RESEND_API_KEY: process.env.EXPO_PUBLIC_RESEND_API_KEY,
     },
   },
 })

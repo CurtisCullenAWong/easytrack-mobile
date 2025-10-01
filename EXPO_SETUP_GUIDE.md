@@ -69,6 +69,13 @@ eas env:pull --environment production
 eas build --profile production --platform android
 ```
 
+### For Admin Production
+```bash
+# Build production version
+eas env:pull --environment preview
+eas build --profile admin_production --platform android
+```
+
 ## Publishing Updates
 
 ### Development Channel
@@ -87,6 +94,12 @@ eas update --channel preview --platform android --message "Preview update"
 ```bash
 eas env:pull --environment production
 eas update --channel production --platform android --message "Production update"
+```
+
+### Admin Production Channel
+```bash
+eas env:pull --environment preview
+eas update --channel admin_production --platform android --message "Production update"
 ```
 
 ## Support
