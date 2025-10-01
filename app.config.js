@@ -104,9 +104,6 @@ export default ({ config }) => ({
       eas: {
         projectId: "179dfb22-939f-4b91-b3fc-71881d4ad20f"
       },
-      SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
-      SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-      SUPABASE_SERVICE_ROLE_KEY: process.env.EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY,
       GEMINI_API_KEY: process.env.GEMINI_API_KEY,
       GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
       RESEND_API_KEY: process.env.RESEND_API_KEY,
