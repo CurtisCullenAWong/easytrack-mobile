@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Platform } from 'react-native'
+import { Platform, StyleSheet } from 'react-native'
 import * as Updates from 'expo-updates'
-import { Portal, Dialog, Button, Text, ActivityIndicator, ProgressBar } from 'react-native-paper'
+import { Portal, Dialog, Button, Text, ActivityIndicator, ProgressBar, useTheme } from 'react-native-paper'
 
 const UpdatePrompt = () => {
+  const { colors, fonts } = useTheme()
   const [isUpdateAvailable, setIsUpdateAvailable] = useState(false)
   const [checking, setChecking] = useState(false)
   const [downloading, setDownloading] = useState(false)
@@ -50,34 +51,70 @@ const UpdatePrompt = () => {
 
   return (
     <Portal>
-      <Dialog visible={!!isUpdateAvailable} dismissable={!downloading} onDismiss={() => !downloading && setIsUpdateAvailable(false)}>
-        <Dialog.Title>Update available</Dialog.Title>
+      <Dialog 
+        visible={!!isUpdateAvailable} 
+        dismissable={!downloading} 
+        onDismiss={() => !downloading && setIsUpdateAvailable(false)}
+        style={{ backgroundColor: colors.surface }}
+      >
+        <Dialog.Title style={[fonts.headlineSmall, { color: colors.onSurface }]}>
+          Update available
+        </Dialog.Title>
         <Dialog.Content>
           {checking && (
             <>
-              <Text>Checking for updates…</Text>
-              <ActivityIndicator style={{ marginTop: 12 }} />
+              <Text style={[fonts.bodyMedium, { color: colors.onSurfaceVariant }]}>
+                Checking for updates…
+              </Text>
+              <ActivityIndicator 
+                style={styles.loadingContainer} 
+                color={colors.primary}
+              />
             </>
           )}
           {!checking && !downloading && (
-            <Text>A new version is ready. Install now?</Text>
+            <Text style={[fonts.bodyMedium, { color: colors.onSurfaceVariant }]}>
+              A new version is ready. Install now?
+            </Text>
           )}
           {downloading && (
             <>
-              <Text>Downloading update…</Text>
-              <ProgressBar indeterminate style={{ marginTop: 12 }} />
+              <Text style={[fonts.bodyMedium, { color: colors.onSurfaceVariant }]}>
+                Downloading update…
+              </Text>
+              <ProgressBar 
+                indeterminate 
+                style={[styles.progressBar, { backgroundColor: colors.surfaceVariant }]}
+                color={colors.primary}
+              />
             </>
           )}
           {!!errorMessage && (
-            <Text style={{ color: 'red', marginTop: 12 }}>{errorMessage}</Text>
+            <Text style={[fonts.bodyMedium, { color: colors.error, marginTop: 12 }]}>
+              {errorMessage}
+            </Text>
           )}
         </Dialog.Content>
         <Dialog.Actions>
           {!downloading && (
-            <Button onPress={() => setIsUpdateAvailable(false)}>Later</Button>
+            <Button 
+              onPress={() => setIsUpdateAvailable(false)}
+              textColor={colors.primary}
+              labelStyle={fonts.labelLarge}
+              style={{ borderRadius: 8 }}
+            >
+              Later
+            </Button>
           )}
           {!downloading && (
-            <Button mode="contained" onPress={downloadAndInstall}>Install</Button>
+            <Button 
+              mode="contained" 
+              onPress={downloadAndInstall}
+              style={{ backgroundColor: colors.primary, borderRadius: 8 }}
+              labelStyle={[fonts.labelLarge, { color: colors.onPrimary }]}
+            >
+              Install
+            </Button>
           )}
         </Dialog.Actions>
       </Dialog>
@@ -88,3 +125,11 @@ const UpdatePrompt = () => {
 export default UpdatePrompt
 
 
+const styles = StyleSheet.create({
+  loadingContainer: {
+    marginTop: 16
+  },
+  progressBar: {
+    marginTop: 16
+  }
+})
