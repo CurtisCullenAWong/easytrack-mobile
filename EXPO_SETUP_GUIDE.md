@@ -71,7 +71,7 @@ eas build --profile production --platform android
 
 ### For Admin Production
 ```bash
-# Build production version
+# Build admin_production version
 eas env:pull --environment preview
 eas build --profile admin_production --platform android
 ```
