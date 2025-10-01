@@ -34,7 +34,7 @@ yarn-error.*
 # env files
 .env*
 .env*.local
-easytrack-notifications-831d7-firebase-adminsdk-fbsvc-0582ae68f1.json
+easytrack-notifications-831d7-firebase-adminsdk-fbsvc-8d7f9ccf3f.json
 
 # typescript
 *.tsbuildinfo

@@ -12,12 +12,12 @@ export default ({ config }) => ({
     updates: {
       enabled: true,
       fallbackToCacheTimeout: 2000,
-      url: "https://u.expo.dev/2a9ca4db-e0b3-4054-9f87-61975dbed992",
+      url: "https://u.expo.dev/179dfb22-939f-4b91-b3fc-71881d4ad20f",
     },
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: "easytrack",
-    owner: "thewalkingdev_numoa",
+    owner: "thewalkingdevnumoa",
     userInterfaceStyle: "light",
     newArchEnabled: true,
     splash: {
@@ -26,7 +26,7 @@ export default ({ config }) => ({
       backgroundColor: "#F3F8F2",
     },
     android: {
-      package: "com.thewalkingdev_numoa.EasyTrack",
+      package: "com.thewalkingdevnumoa.EasyTrack",
       googleServicesFile: "./google-services.json",
       runtimeVersion: {
         policy: "appVersion",
@@ -102,7 +102,7 @@ export default ({ config }) => ({
     },
     extra: {
       eas: {
-        projectId: "2a9ca4db-e0b3-4054-9f87-61975dbed992"
+        projectId: "179dfb22-939f-4b91-b3fc-71881d4ad20f"
       },
       SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
       SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,

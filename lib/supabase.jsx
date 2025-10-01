@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 import { resolveExtra } from './env'
 const extra = resolveExtra()
 
-const SUPABASE_URL = extra?.SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL
-const SUPABASE_ANON_KEY = extra?.SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+const SUPABASE_URL = extra?.SUPABASE_URL
+const SUPABASE_ANON_KEY = extra?.SUPABASE_ANON_KEY
 
 if (!SUPABASE_URL) {
   throw new Error('Missing Supabase url')
