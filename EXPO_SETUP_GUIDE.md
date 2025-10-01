@@ -41,7 +41,6 @@ eas update:configure
 eas build:configure
 eas credentials
 npx expo-doctor
-eas env:pull
 cd "C:\Users\curtc\AppData\Local\Android\Sdk\platform-tools>"
 adb logcat -c
 adb logcat *:S ReactNative:V ReactNativeJS:V
@@ -52,38 +51,41 @@ eas secret:create --name SUPABASE_SERVICE_ROLE_KEY --value ""
 ### For Development
 ```bash
 # Build development client
+eas env:pull --environment development
 eas build --profile development --platform android
-eas build --profile development --platform ios
 ```
 
 ### For Preview/Testing
 ```bash
 # Build preview version
+eas env:pull --environment preview
 eas build --profile preview --platform android
-eas build --profile preview --platform ios
 ```
 
 ### For Production
 ```bash
 # Build production version
+eas env:pull --environment production
 eas build --profile production --platform android
-eas build --profile production --platform ios
 ```
 
 ## Publishing Updates
 
 ### Development Channel
 ```bash
+eas env:pull --environment development
 eas update --channel development --platform android --message "Development update"
 ```
 
 ### Preview Channel
 ```bash
+eas env:pull --environment preview
 eas update --channel preview --platform android --message "Preview update"
 ```
 
 ### Production Channel
 ```bash
+eas env:pull --environment production
 eas update --channel production --platform android --message "Production update"
 ```
 

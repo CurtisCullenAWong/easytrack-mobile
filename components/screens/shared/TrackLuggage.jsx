@@ -154,7 +154,7 @@ const ProgressMeter = ({ colors, contractData, routeData }) => {
 
 
 // Map Component
-const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors, contractStatusId, showSnackbar, requestDirections, cooldownActive, directionElement }) => {
+const TrackingMap = ({ currentLocation, dropOffLocation, deliveryProfile, colors, contractStatusId, requestDirections, cooldownActive, directionElement }) => {
   const mapRef = useRef(null)
   const centerOnLocation = (coords) => {
     if (coords && mapRef.current) {

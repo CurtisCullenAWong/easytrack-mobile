@@ -1,13 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { View, StyleSheet, TouchableOpacity } from 'react-native'
 import { Text, useTheme, Appbar, IconButton } from 'react-native-paper'
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
+import MapViewDirections from 'react-native-maps-directions'
+import Constants from 'expo-constants'
 import * as Location from 'expo-location'
 import useSnackbar from '../../hooks/useSnackbar'
 
+const { GOOGLE_MAPS_API_KEY } = Constants.expoConfig?.extra || {}
+
 const CheckLocation = ({ route, navigation }) => {
   const { colors, fonts } = useTheme()
-  const { dropOffLocation, dropOffLocationGeo, pickupLocation, pickupLocationGeo } = route.params
+  const { dropOffLocation, dropOffLocationGeo, pickupLocation, pickupLocationGeo, contractStatusId } = route.params || {}
   const mapRef = useRef(null)
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
@@ -44,8 +48,99 @@ const CheckLocation = ({ route, navigation }) => {
     return null
   }
 
+  // --- Directions hook (copied from TrackLuggage) ---
+  let globalLastFetchTime = 0
+
+  const useDirections = ({ pickup, current, dropOff, showSnackbar, cooldownMs = 60000 }) => {
+    const [routeData, setRouteData] = useState(null)
+    const [cooldownActive, setCooldownActive] = useState(true)
+    const [directionElements, setDirectionElements] = useState(null)
+
+    const requestDirections = useCallback(() => {
+      const now = Date.now()
+      const timeSinceLast = now - globalLastFetchTime
+
+      if (timeSinceLast < cooldownMs) {
+          setCooldownActive(true)
+          return
+      }
+
+      globalLastFetchTime = now
+      setCooldownActive(true)
+
+      setTimeout(() => {
+          if (Date.now() - globalLastFetchTime >= cooldownMs) {
+              setCooldownActive(false)
+          }
+      }, cooldownMs)
+
+      if (!pickup || !dropOff) return
+      if (!GOOGLE_MAPS_API_KEY) {
+          showSnackbar("Directions are currently unavailable.")
+          return
+      }
+      const pickupToDropoff = (
+          <MapViewDirections
+              key="pickupToDropoff"
+              origin={pickup}
+              destination={dropOff}
+              apikey={GOOGLE_MAPS_API_KEY}
+              strokeWidth={0}
+              strokeColor="transparent"
+              onReady={(result) => {
+                  setRouteData((prev) => ({
+                    ...prev,
+                    totalDistance: result.distance,
+                    duration: result.duration,
+                  }))
+              }}
+              onError={() => showSnackbar("Unable to fetch pickup → dropoff route")}
+          />
+      )
+
+      const currentToDropoff = (
+          <MapViewDirections
+              key="currentToDropoff"
+              origin={current || pickup}
+              destination={dropOff}
+              apikey={GOOGLE_MAPS_API_KEY}
+              strokeWidth={4}
+              strokeColor="#0a6f12ff"
+              onReady={(result) => {
+                  setRouteData((prev) => ({
+                    ...prev,
+                    remainingDistance: result.distance,
+                  }))
+              }}
+              onError={() => showSnackbar("Unable to fetch current → dropoff route")}
+          />
+      )
+
+      setDirectionElements([pickupToDropoff, currentToDropoff])
+  }, [pickup, current, dropOff, cooldownMs, showSnackbar])
+
+    useEffect(() => {
+      const interval = setInterval(() => {
+        const isActive = Date.now() - globalLastFetchTime < cooldownMs
+        setCooldownActive(isActive)
+      }, 1000)
+      return () => clearInterval(interval)
+    }, [cooldownMs])
+
+    return { routeData, requestDirections, cooldownActive, directionElements }
+  }
+  // --- end directions hook ---
+
   const dropOffCoords = parseGeometry(dropOffLocationGeo)
   const pickupCoords = parseGeometry(pickupLocationGeo)
+
+  // Initialize directions hook using parsed coords and snackbar
+  const { routeData, requestDirections: localRequestDirections, cooldownActive: localCooldownActive, directionElements } =
+    useDirections({ pickup: pickupCoords, current: null, dropOff: dropOffCoords, showSnackbar })
+
+  // Allow route params to override (backwards compatibility) otherwise use local hook
+  const requestDirections = route.params?.requestDirections ?? localRequestDirections
+  const cooldownActive = route.params?.cooldownActive ?? localCooldownActive
 
   const defaultRegion = {
     latitude: 14.5995,
@@ -124,6 +219,8 @@ const CheckLocation = ({ route, navigation }) => {
               pinColor={colors.primary}
             />
           )}
+          {/* Render directions elements when available */}
+          {contractStatusId === 4 && directionElements}
         </MapView>
 
         {/* Control Buttons */}
@@ -144,6 +241,16 @@ const CheckLocation = ({ route, navigation }) => {
             <IconButton icon="map-marker-radius" size={24} iconColor={colors.onPrimary} />
           </TouchableOpacity>
 
+          {/* Directions control (copied from TrackLuggage) */}
+          {contractStatusId === 4 && (
+            <TouchableOpacity
+              style={[styles.controlButton, { backgroundColor: colors.primary }]}
+              onPress={requestDirections}
+              disabled={cooldownActive}
+            >
+              <IconButton icon="routes" size={24} iconColor={colors.onPrimary} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>
