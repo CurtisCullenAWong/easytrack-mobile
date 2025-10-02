@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 
 // Shared Screens
 import LoginScreen from '../screens/shared/LoginScreen'
+import Home from '../screens/shared/Home'
 import ContractDetails from '../screens/shared/ContractDetails'
 import CheckLocation from '../screens/shared/CheckLocation'
 import BookingHistory from '../screens/shared/BookingHistory'
@@ -18,7 +19,6 @@ import ProfileCompletionCheck from '../screens/shared/ProfileCompletionCheck'
 import UpdateProfileScreen from '../screens/shared/UpdateProfileScreen'
 
 // Admin Screens
-import AdminHome from '../screens/admin/AdminHome'
 import UserManagement from '../screens/admin/UserManagement'
 import TransactionManagement from '../screens/admin/TransactionManagement'
 import GenerateInvoice from '../screens/admin/subscreen/transaction_management_subscreen/ToPay_GenerateInvoice'
@@ -33,12 +33,10 @@ import SelectLocation from '../screens/airline/subscreen/SelectLocation'
 import AdminAuditLogs from '../screens/admin/AdminAuditLogs'
 
 // Airline Screens
-import AirlineHome from '../screens/airline/AirlineHome'
 import AirlineBookingManagement from '../screens/airline/AirlineBookingManagement'
 import TrackLuggage from '../screens/shared/TrackLuggage'
 
 // Delivery Screens
-import DeliveryHome from '../screens/delivery/DeliveryHome'
 import DeliveryBookingManagement from '../screens/delivery/DeliveryBookingManagement'
 import DeliveryConfirmation from '../screens/delivery/subscreen/DeliveryConfirmation'
 
@@ -72,7 +70,7 @@ const AdminDrawer = () => (
     drawerContent={(props) => <AdminNavigator {...props} />}
     screenOptions={{ headerShown: false }}
   >
-    <Drawer.Screen name="AdminHome" component={AdminHome} />
+    <Drawer.Screen name="Home" component={Home} />
     <Drawer.Screen name="UserManagement" component={UserManagement} />
     <Drawer.Screen name="TransactionManagement" component={TransactionManagement} />
     <Drawer.Screen name="GenerateInvoice" component={GenerateInvoice} />
@@ -106,7 +104,7 @@ const AirlineDrawer = () => (
     drawerContent={(props) => <AirlineNavigator {...props} />}
     screenOptions={{ headerShown: false }}
   >
-    <Drawer.Screen name="AirlineHome" component={AirlineHome} />
+    <Drawer.Screen name="Home" component={Home} />
     <Drawer.Screen name="BookingManagement" component={AirlineBookingManagement} />
     <Drawer.Screen name="ContractDetails" component={ContractDetails} />
     <Drawer.Screen name="SelectLocation" component={SelectLocation} />
@@ -132,7 +130,7 @@ const DeliveryDrawer = () => (
     drawerContent={(props) => <DeliveryNavigator {...props} />}
     screenOptions={{ headerShown: false }}
   >
-    <Drawer.Screen name="DeliveryHome" component={DeliveryHome} />
+    <Drawer.Screen name="Home" component={Home} />
     <Drawer.Screen name="BookingManagement" component={DeliveryBookingManagement} />
     <Drawer.Screen name="ContractDetails" component={ContractDetails} />
     <Drawer.Screen name="DeliveryConfirmation" component={DeliveryConfirmation} />

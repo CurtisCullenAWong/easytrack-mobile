@@ -6,36 +6,9 @@ node_modules/
 # Expo
 .expo/
 dist/
-web-build/
-expo-env.d.ts
-
-# Native
-android/
-ios/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
-.DS_Store
-*.pem
 
 # env files
 .env*
 .env*.local
 easytrack-notifications-831d7-firebase-adminsdk-fbsvc-8d7f9ccf3f.json
 google-services.json
-
-# typescript
-*.tsbuildinfo

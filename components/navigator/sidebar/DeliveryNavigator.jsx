@@ -97,7 +97,7 @@ const DeliveryNavigator = ({ navigation }) => {
       key: 'account',
       icon: 'account',
       items: [
-        { icon: 'home-outline', label: 'Home', screen: 'DeliveryHome' },
+        { icon: 'home-outline', label: 'Home', screen: 'Home' },
         { icon: 'card-account-details-outline', label: 'Profile', screen: 'Profile' },
         { icon: 'logout', label: 'Logout', color: 'red', actionKey: 'logout' },
       ],
