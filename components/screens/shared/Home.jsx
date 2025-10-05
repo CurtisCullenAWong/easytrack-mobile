@@ -207,7 +207,7 @@ const airlineAnnouncement =
                   {'\n'}
                   <Text
                     style={[styles.announcementText, { color: 'blue', ...fonts.bodyMedium, textDecorationLine: 'underline' }]}
-                    onPress={() => Linking.openURL('https://docs.google.com/forms/d/1DkNcJ5avdyWlRriAEBrlCkSbyEJqyvhrD5-wRLjCNh4/edit')}
+                    onPress={() => Linking.openURL('https://forms.gle/R6YkHvb9MBURDyyk8')}
                   >
                     EasyTrack Mobile App Feedback Form
                   </Text>

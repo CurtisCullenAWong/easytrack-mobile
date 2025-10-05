@@ -71,7 +71,7 @@ const INPUT_LIMITS = {
   lastName: { maxLength: 50, minLength: 2 },
   contact: { maxLength: 10, minLength: 10 },
   flightNumber: { maxLength: 8, minLength: 3 },
-  itemDescription: { maxLength: 200, minLength: 6 },
+  itemDescription: { maxLength: 100, minLength: 6 },
   quantity: { maxLength: 2, minLength: 1 }, // Max 2 digits for up to 25
   province: { maxLength: 50, minLength: 2 },
   cityMunicipality: { maxLength: 50, minLength: 2 },
@@ -378,7 +378,7 @@ const ContractForm = React.memo(({
             style={{ marginBottom: 8 }}
             error={contract.errors?.quantity}
             maxLength={INPUT_LIMITS.quantity.maxLength}
-          placeholder="Enter quantity (1-15)"
+            placeholder="Enter quantity (1-15)"
             disabled={isDisabled}
           />
 
@@ -395,11 +395,9 @@ const ContractForm = React.memo(({
                   onInputChange(index, 'itemDescriptions', next)
                 }}
                 mode="outlined"
-                dense
                 style={{ marginBottom: 8 }}
                 placeholder="Describe the luggage"
-                multiline
-                numberOfLines={2}
+                maxLength={INPUT_LIMITS.itemDescription.maxLength}
                 disabled={isDisabled}
                 error={contract.errors?.itemDescription}
               />

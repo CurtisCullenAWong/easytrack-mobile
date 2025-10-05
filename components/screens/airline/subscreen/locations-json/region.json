@@ -32,50 +32,8 @@
   {
     "id": 6,
     "psgc_code": "050000000",
-    "region_name": "Bicol Region (Region V) ",
+    "region_name": "Bicol Region (Region V)",
     "region_code": "05"
-  },
-  {
-    "id": 7,
-    "psgc_code": "060000000",
-    "region_name": "Western Visayas (Region VI)",
-    "region_code": "06"
-  },
-  {
-    "id": 8,
-    "psgc_code": "070000000",
-    "region_name": "Central Visayas (Region VII)",
-    "region_code": "07"
-  },
-  {
-    "id": 9,
-    "psgc_code": "080000000",
-    "region_name": "Eastern Visayas (Region VIII)",
-    "region_code": "08"
-  },
-  {
-    "id": 10,
-    "psgc_code": "090000000",
-    "region_name": "Zamboanga Peninzula (Region IX)",
-    "region_code": "09"
-  },
-  {
-    "id": 11,
-    "psgc_code": "100000000",
-    "region_name": "Northern Mindanao (Region X)",
-    "region_code": "10"
-  },
-  {
-    "id": 12,
-    "psgc_code": "110000000",
-    "region_name": "Davao Region (Region XI)",
-    "region_code": "11"
-  },
-  {
-    "id": 13,
-    "psgc_code": "120000000",
-    "region_name": "SOCCSKSARGEN (Region XII)",
-    "region_code": "12"
   },
   {
     "id": 14,
@@ -88,17 +46,5 @@
     "psgc_code": "140000000",
     "region_name": "Cordillera Administrative Region (CAR)",
     "region_code": "14"
-  },
-  {
-    "id": 16,
-    "psgc_code": "150000000",
-    "region_name": "Autonomous Region in Muslim Mindanao (ARMM)",
-    "region_code": "15"
-  },
-  {
-    "id": 17,
-    "psgc_code": "160000000",
-    "region_name": "Caraga (Region XIII)",
-    "region_code": "16"
   }
 ]

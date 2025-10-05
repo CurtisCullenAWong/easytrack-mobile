@@ -1,0 +1,6051 @@
+[
+    
+    {
+        "city_code": "060401",
+        "city_name": "Altavas",
+        "province_code": "0604",
+        "psgc_code": "060401000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060402",
+        "city_name": "Balete",
+        "province_code": "0604",
+        "psgc_code": "060402000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060403",
+        "city_name": "Banga",
+        "province_code": "0604",
+        "psgc_code": "060403000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060404",
+        "city_name": "Batan",
+        "province_code": "0604",
+        "psgc_code": "060404000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060405",
+        "city_name": "Buruanga",
+        "province_code": "0604",
+        "psgc_code": "060405000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060406",
+        "city_name": "Ibajay",
+        "province_code": "0604",
+        "psgc_code": "060406000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060407",
+        "city_name": "Kalibo (Capital)",
+        "province_code": "0604",
+        "psgc_code": "060407000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060408",
+        "city_name": "Lezo",
+        "province_code": "0604",
+        "psgc_code": "060408000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060409",
+        "city_name": "Libacao",
+        "province_code": "0604",
+        "psgc_code": "060409000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060410",
+        "city_name": "Madalag",
+        "province_code": "0604",
+        "psgc_code": "060410000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060411",
+        "city_name": "Makato",
+        "province_code": "0604",
+        "psgc_code": "060411000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060412",
+        "city_name": "Malay",
+        "province_code": "0604",
+        "psgc_code": "060412000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060413",
+        "city_name": "Malinao",
+        "province_code": "0604",
+        "psgc_code": "060413000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060414",
+        "city_name": "Nabas",
+        "province_code": "0604",
+        "psgc_code": "060414000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060415",
+        "city_name": "New Washington",
+        "province_code": "0604",
+        "psgc_code": "060415000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060416",
+        "city_name": "Numancia",
+        "province_code": "0604",
+        "psgc_code": "060416000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060417",
+        "city_name": "Tangalan",
+        "province_code": "0604",
+        "psgc_code": "060417000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060601",
+        "city_name": "Anini-y",
+        "province_code": "0606",
+        "psgc_code": "060601000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060602",
+        "city_name": "Barbaza",
+        "province_code": "0606",
+        "psgc_code": "060602000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060603",
+        "city_name": "Belison",
+        "province_code": "0606",
+        "psgc_code": "060603000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060604",
+        "city_name": "Bugasong",
+        "province_code": "0606",
+        "psgc_code": "060604000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060605",
+        "city_name": "Caluya",
+        "province_code": "0606",
+        "psgc_code": "060605000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060606",
+        "city_name": "Culasi",
+        "province_code": "0606",
+        "psgc_code": "060606000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060607",
+        "city_name": "Tobias Fornier (Dao)",
+        "province_code": "0606",
+        "psgc_code": "060607000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060608",
+        "city_name": "Hamtic",
+        "province_code": "0606",
+        "psgc_code": "060608000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060609",
+        "city_name": "Laua-an",
+        "province_code": "0606",
+        "psgc_code": "060609000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060610",
+        "city_name": "Libertad",
+        "province_code": "0606",
+        "psgc_code": "060610000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060611",
+        "city_name": "Pandan",
+        "province_code": "0606",
+        "psgc_code": "060611000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060612",
+        "city_name": "Patnongon",
+        "province_code": "0606",
+        "psgc_code": "060612000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060613",
+        "city_name": "San Jose (Capital)",
+        "province_code": "0606",
+        "psgc_code": "060613000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060614",
+        "city_name": "San Remigio",
+        "province_code": "0606",
+        "psgc_code": "060614000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060615",
+        "city_name": "Sebaste",
+        "province_code": "0606",
+        "psgc_code": "060615000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060616",
+        "city_name": "Sibalom",
+        "province_code": "0606",
+        "psgc_code": "060616000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060617",
+        "city_name": "Tibiao",
+        "province_code": "0606",
+        "psgc_code": "060617000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "060618",
+        "city_name": "Valderrama",
+        "province_code": "0606",
+        "psgc_code": "060618000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "061901",
+        "city_name": "Cuartero",
+        "province_code": "0619",
+        "psgc_code": "061901000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "061902",
+        "city_name": "Dao",
+        "province_code": "0619",
+        "psgc_code": "061902000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "061903",
+        "city_name": "Dumalag",
+        "province_code": "0619",
+        "psgc_code": "061903000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "061904",
+        "city_name": "Dumarao",
+        "province_code": "0619",
+        "psgc_code": "061904000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "061905",
+        "city_name": "Ivisan",
+        "province_code": "0619",
+        "psgc_code": "061905000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "061906",
+        "city_name": "Jamindan",
+        "province_code": "0619",
+        "psgc_code": "061906000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "061907",
+        "city_name": "Ma-ayon",
+        "province_code": "0619",
+        "psgc_code": "061907000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "061908",
+        "city_name": "Mambusao",
+        "province_code": "0619",
+        "psgc_code": "061908000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "061909",
+        "city_name": "Panay",
+        "province_code": "0619",
+        "psgc_code": "061909000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "061910",
+        "city_name": "Panitan",
+        "province_code": "0619",
+        "psgc_code": "061910000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "061911",
+        "city_name": "Pilar",
+        "province_code": "0619",
+        "psgc_code": "061911000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "061912",
+        "city_name": "Pontevedra",
+        "province_code": "0619",
+        "psgc_code": "061912000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "061913",
+        "city_name": "President Roxas",
+        "province_code": "0619",
+        "psgc_code": "061913000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "061914",
+        "city_name": "Roxas City (Capital)",
+        "province_code": "0619",
+        "psgc_code": "061914000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "061915",
+        "city_name": "Sapi-an",
+        "province_code": "0619",
+        "psgc_code": "061915000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "061916",
+        "city_name": "Sigma",
+        "province_code": "0619",
+        "psgc_code": "061916000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "061917",
+        "city_name": "Tapaz",
+        "province_code": "0619",
+        "psgc_code": "061917000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063001",
+        "city_name": "Ajuy",
+        "province_code": "0630",
+        "psgc_code": "063001000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063002",
+        "city_name": "Alimodian",
+        "province_code": "0630",
+        "psgc_code": "063002000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063003",
+        "city_name": "Anilao",
+        "province_code": "0630",
+        "psgc_code": "063003000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063004",
+        "city_name": "Badiangan",
+        "province_code": "0630",
+        "psgc_code": "063004000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063005",
+        "city_name": "Balasan",
+        "province_code": "0630",
+        "psgc_code": "063005000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063006",
+        "city_name": "Banate",
+        "province_code": "0630",
+        "psgc_code": "063006000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063007",
+        "city_name": "Barotac Nuevo",
+        "province_code": "0630",
+        "psgc_code": "063007000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063008",
+        "city_name": "Barotac Viejo",
+        "province_code": "0630",
+        "psgc_code": "063008000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063009",
+        "city_name": "Batad",
+        "province_code": "0630",
+        "psgc_code": "063009000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063010",
+        "city_name": "Bingawan",
+        "province_code": "0630",
+        "psgc_code": "063010000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063012",
+        "city_name": "Cabatuan",
+        "province_code": "0630",
+        "psgc_code": "063012000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063013",
+        "city_name": "Calinog",
+        "province_code": "0630",
+        "psgc_code": "063013000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063014",
+        "city_name": "Carles",
+        "province_code": "0630",
+        "psgc_code": "063014000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063015",
+        "city_name": "Concepcion",
+        "province_code": "0630",
+        "psgc_code": "063015000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063016",
+        "city_name": "Dingle",
+        "province_code": "0630",
+        "psgc_code": "063016000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063017",
+        "city_name": "Dueñas",
+        "province_code": "0630",
+        "psgc_code": "063017000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063018",
+        "city_name": "Dumangas",
+        "province_code": "0630",
+        "psgc_code": "063018000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063019",
+        "city_name": "Estancia",
+        "province_code": "0630",
+        "psgc_code": "063019000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063020",
+        "city_name": "Guimbal",
+        "province_code": "0630",
+        "psgc_code": "063020000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063021",
+        "city_name": "Igbaras",
+        "province_code": "0630",
+        "psgc_code": "063021000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063022",
+        "city_name": "Iloilo City (Capital)",
+        "province_code": "0630",
+        "psgc_code": "063022000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063023",
+        "city_name": "Janiuay",
+        "province_code": "0630",
+        "psgc_code": "063023000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063025",
+        "city_name": "Lambunao",
+        "province_code": "0630",
+        "psgc_code": "063025000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063026",
+        "city_name": "Leganes",
+        "province_code": "0630",
+        "psgc_code": "063026000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063027",
+        "city_name": "Lemery",
+        "province_code": "0630",
+        "psgc_code": "063027000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063028",
+        "city_name": "Leon",
+        "province_code": "0630",
+        "psgc_code": "063028000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063029",
+        "city_name": "Maasin",
+        "province_code": "0630",
+        "psgc_code": "063029000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063030",
+        "city_name": "Miagao",
+        "province_code": "0630",
+        "psgc_code": "063030000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063031",
+        "city_name": "Mina",
+        "province_code": "0630",
+        "psgc_code": "063031000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063032",
+        "city_name": "New Lucena",
+        "province_code": "0630",
+        "psgc_code": "063032000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063034",
+        "city_name": "Oton",
+        "province_code": "0630",
+        "psgc_code": "063034000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063035",
+        "city_name": "City Of Passi",
+        "province_code": "0630",
+        "psgc_code": "063035000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063036",
+        "city_name": "Pavia",
+        "province_code": "0630",
+        "psgc_code": "063036000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063037",
+        "city_name": "Pototan",
+        "province_code": "0630",
+        "psgc_code": "063037000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063038",
+        "city_name": "San Dionisio",
+        "province_code": "0630",
+        "psgc_code": "063038000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063039",
+        "city_name": "San Enrique",
+        "province_code": "0630",
+        "psgc_code": "063039000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063040",
+        "city_name": "San Joaquin",
+        "province_code": "0630",
+        "psgc_code": "063040000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063041",
+        "city_name": "San Miguel",
+        "province_code": "0630",
+        "psgc_code": "063041000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063042",
+        "city_name": "San Rafael",
+        "province_code": "0630",
+        "psgc_code": "063042000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063043",
+        "city_name": "Santa Barbara",
+        "province_code": "0630",
+        "psgc_code": "063043000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063044",
+        "city_name": "Sara",
+        "province_code": "0630",
+        "psgc_code": "063044000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063045",
+        "city_name": "Tigbauan",
+        "province_code": "0630",
+        "psgc_code": "063045000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063046",
+        "city_name": "Tubungan",
+        "province_code": "0630",
+        "psgc_code": "063046000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "063047",
+        "city_name": "Zarraga",
+        "province_code": "0630",
+        "psgc_code": "063047000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064501",
+        "city_name": "Bacolod City (Capital)",
+        "province_code": "0645",
+        "psgc_code": "064501000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064502",
+        "city_name": "Bago City",
+        "province_code": "0645",
+        "psgc_code": "064502000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064503",
+        "city_name": "Binalbagan",
+        "province_code": "0645",
+        "psgc_code": "064503000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064504",
+        "city_name": "Cadiz City",
+        "province_code": "0645",
+        "psgc_code": "064504000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064505",
+        "city_name": "Calatrava",
+        "province_code": "0645",
+        "psgc_code": "064505000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064506",
+        "city_name": "Candoni",
+        "province_code": "0645",
+        "psgc_code": "064506000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064507",
+        "city_name": "Cauayan",
+        "province_code": "0645",
+        "psgc_code": "064507000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064508",
+        "city_name": "Enrique B. Magalona (Saravia)",
+        "province_code": "0645",
+        "psgc_code": "064508000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064509",
+        "city_name": "City Of Escalante",
+        "province_code": "0645",
+        "psgc_code": "064509000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064510",
+        "city_name": "City Of Himamaylan",
+        "province_code": "0645",
+        "psgc_code": "064510000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064511",
+        "city_name": "Hinigaran",
+        "province_code": "0645",
+        "psgc_code": "064511000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064512",
+        "city_name": "Hinoba-an (Asia)",
+        "province_code": "0645",
+        "psgc_code": "064512000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064513",
+        "city_name": "Ilog",
+        "province_code": "0645",
+        "psgc_code": "064513000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064514",
+        "city_name": "Isabela",
+        "province_code": "0645",
+        "psgc_code": "064514000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064515",
+        "city_name": "City Of Kabankalan",
+        "province_code": "0645",
+        "psgc_code": "064515000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064516",
+        "city_name": "La Carlota City",
+        "province_code": "0645",
+        "psgc_code": "064516000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064517",
+        "city_name": "La Castellana",
+        "province_code": "0645",
+        "psgc_code": "064517000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064518",
+        "city_name": "Manapla",
+        "province_code": "0645",
+        "psgc_code": "064518000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064519",
+        "city_name": "Moises Padilla (Magallon)",
+        "province_code": "0645",
+        "psgc_code": "064519000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064520",
+        "city_name": "Murcia",
+        "province_code": "0645",
+        "psgc_code": "064520000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064521",
+        "city_name": "Pontevedra",
+        "province_code": "0645",
+        "psgc_code": "064521000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064522",
+        "city_name": "Pulupandan",
+        "province_code": "0645",
+        "psgc_code": "064522000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064523",
+        "city_name": "Sagay City",
+        "province_code": "0645",
+        "psgc_code": "064523000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064524",
+        "city_name": "San Carlos City",
+        "province_code": "0645",
+        "psgc_code": "064524000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064525",
+        "city_name": "San Enrique",
+        "province_code": "0645",
+        "psgc_code": "064525000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064526",
+        "city_name": "Silay City",
+        "province_code": "0645",
+        "psgc_code": "064526000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064527",
+        "city_name": "City Of Sipalay",
+        "province_code": "0645",
+        "psgc_code": "064527000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064528",
+        "city_name": "City Of Talisay",
+        "province_code": "0645",
+        "psgc_code": "064528000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064529",
+        "city_name": "Toboso",
+        "province_code": "0645",
+        "psgc_code": "064529000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064530",
+        "city_name": "Valladolid",
+        "province_code": "0645",
+        "psgc_code": "064530000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064531",
+        "city_name": "City Of Victorias",
+        "province_code": "0645",
+        "psgc_code": "064531000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "064532",
+        "city_name": "Salvador Benedicto",
+        "province_code": "0645",
+        "psgc_code": "064532000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "067901",
+        "city_name": "Buenavista",
+        "province_code": "0679",
+        "psgc_code": "067901000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "067902",
+        "city_name": "Jordan (Capital)",
+        "province_code": "0679",
+        "psgc_code": "067902000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "067903",
+        "city_name": "Nueva Valencia",
+        "province_code": "0679",
+        "psgc_code": "067903000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "067904",
+        "city_name": "San Lorenzo",
+        "province_code": "0679",
+        "psgc_code": "067904000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "067905",
+        "city_name": "Sibunag",
+        "province_code": "0679",
+        "psgc_code": "067905000",
+        "region_desc": "06"
+    },
+    {
+        "city_code": "071201",
+        "city_name": "Alburquerque",
+        "province_code": "0712",
+        "psgc_code": "071201000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071202",
+        "city_name": "Alicia",
+        "province_code": "0712",
+        "psgc_code": "071202000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071203",
+        "city_name": "Anda",
+        "province_code": "0712",
+        "psgc_code": "071203000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071204",
+        "city_name": "Antequera",
+        "province_code": "0712",
+        "psgc_code": "071204000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071205",
+        "city_name": "Baclayon",
+        "province_code": "0712",
+        "psgc_code": "071205000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071206",
+        "city_name": "Balilihan",
+        "province_code": "0712",
+        "psgc_code": "071206000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071207",
+        "city_name": "Batuan",
+        "province_code": "0712",
+        "psgc_code": "071207000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071208",
+        "city_name": "Bilar",
+        "province_code": "0712",
+        "psgc_code": "071208000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071209",
+        "city_name": "Buenavista",
+        "province_code": "0712",
+        "psgc_code": "071209000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071210",
+        "city_name": "Calape",
+        "province_code": "0712",
+        "psgc_code": "071210000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071211",
+        "city_name": "Candijay",
+        "province_code": "0712",
+        "psgc_code": "071211000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071212",
+        "city_name": "Carmen",
+        "province_code": "0712",
+        "psgc_code": "071212000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071213",
+        "city_name": "Catigbian",
+        "province_code": "0712",
+        "psgc_code": "071213000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071214",
+        "city_name": "Clarin",
+        "province_code": "0712",
+        "psgc_code": "071214000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071215",
+        "city_name": "Corella",
+        "province_code": "0712",
+        "psgc_code": "071215000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071216",
+        "city_name": "Cortes",
+        "province_code": "0712",
+        "psgc_code": "071216000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071217",
+        "city_name": "Dagohoy",
+        "province_code": "0712",
+        "psgc_code": "071217000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071218",
+        "city_name": "Danao",
+        "province_code": "0712",
+        "psgc_code": "071218000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071219",
+        "city_name": "Dauis",
+        "province_code": "0712",
+        "psgc_code": "071219000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071220",
+        "city_name": "Dimiao",
+        "province_code": "0712",
+        "psgc_code": "071220000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071221",
+        "city_name": "Duero",
+        "province_code": "0712",
+        "psgc_code": "071221000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071222",
+        "city_name": "Garcia Hernandez",
+        "province_code": "0712",
+        "psgc_code": "071222000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071223",
+        "city_name": "Guindulman",
+        "province_code": "0712",
+        "psgc_code": "071223000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071224",
+        "city_name": "Inabanga",
+        "province_code": "0712",
+        "psgc_code": "071224000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071225",
+        "city_name": "Jagna",
+        "province_code": "0712",
+        "psgc_code": "071225000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071226",
+        "city_name": "Jetafe",
+        "province_code": "0712",
+        "psgc_code": "071226000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071227",
+        "city_name": "Lila",
+        "province_code": "0712",
+        "psgc_code": "071227000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071228",
+        "city_name": "Loay",
+        "province_code": "0712",
+        "psgc_code": "071228000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071229",
+        "city_name": "Loboc",
+        "province_code": "0712",
+        "psgc_code": "071229000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071230",
+        "city_name": "Loon",
+        "province_code": "0712",
+        "psgc_code": "071230000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071231",
+        "city_name": "Mabini",
+        "province_code": "0712",
+        "psgc_code": "071231000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071232",
+        "city_name": "Maribojoc",
+        "province_code": "0712",
+        "psgc_code": "071232000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071233",
+        "city_name": "Panglao",
+        "province_code": "0712",
+        "psgc_code": "071233000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071234",
+        "city_name": "Pilar",
+        "province_code": "0712",
+        "psgc_code": "071234000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071235",
+        "city_name": "Pres. Carlos P. Garcia (Pitogo)",
+        "province_code": "0712",
+        "psgc_code": "071235000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071236",
+        "city_name": "Sagbayan (Borja)",
+        "province_code": "0712",
+        "psgc_code": "071236000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071237",
+        "city_name": "San Isidro",
+        "province_code": "0712",
+        "psgc_code": "071237000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071238",
+        "city_name": "San Miguel",
+        "province_code": "0712",
+        "psgc_code": "071238000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071239",
+        "city_name": "Sevilla",
+        "province_code": "0712",
+        "psgc_code": "071239000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071240",
+        "city_name": "Sierra Bullones",
+        "province_code": "0712",
+        "psgc_code": "071240000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071241",
+        "city_name": "Sikatuna",
+        "province_code": "0712",
+        "psgc_code": "071241000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071242",
+        "city_name": "Tagbilaran City (Capital)",
+        "province_code": "0712",
+        "psgc_code": "071242000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071243",
+        "city_name": "Talibon",
+        "province_code": "0712",
+        "psgc_code": "071243000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071244",
+        "city_name": "Trinidad",
+        "province_code": "0712",
+        "psgc_code": "071244000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071245",
+        "city_name": "Tubigon",
+        "province_code": "0712",
+        "psgc_code": "071245000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071246",
+        "city_name": "Ubay",
+        "province_code": "0712",
+        "psgc_code": "071246000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071247",
+        "city_name": "Valencia",
+        "province_code": "0712",
+        "psgc_code": "071247000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "071248",
+        "city_name": "Bien Unido",
+        "province_code": "0712",
+        "psgc_code": "071248000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072201",
+        "city_name": "Alcantara",
+        "province_code": "0722",
+        "psgc_code": "072201000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072202",
+        "city_name": "Alcoy",
+        "province_code": "0722",
+        "psgc_code": "072202000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072203",
+        "city_name": "Alegria",
+        "province_code": "0722",
+        "psgc_code": "072203000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072204",
+        "city_name": "Aloguinsan",
+        "province_code": "0722",
+        "psgc_code": "072204000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072205",
+        "city_name": "Argao",
+        "province_code": "0722",
+        "psgc_code": "072205000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072206",
+        "city_name": "Asturias",
+        "province_code": "0722",
+        "psgc_code": "072206000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072207",
+        "city_name": "Badian",
+        "province_code": "0722",
+        "psgc_code": "072207000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072208",
+        "city_name": "Balamban",
+        "province_code": "0722",
+        "psgc_code": "072208000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072209",
+        "city_name": "Bantayan",
+        "province_code": "0722",
+        "psgc_code": "072209000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072210",
+        "city_name": "Barili",
+        "province_code": "0722",
+        "psgc_code": "072210000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072211",
+        "city_name": "City Of Bogo",
+        "province_code": "0722",
+        "psgc_code": "072211000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072212",
+        "city_name": "Boljoon",
+        "province_code": "0722",
+        "psgc_code": "072212000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072213",
+        "city_name": "Borbon",
+        "province_code": "0722",
+        "psgc_code": "072213000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072214",
+        "city_name": "City Of Carcar",
+        "province_code": "0722",
+        "psgc_code": "072214000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072215",
+        "city_name": "Carmen",
+        "province_code": "0722",
+        "psgc_code": "072215000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072216",
+        "city_name": "Catmon",
+        "province_code": "0722",
+        "psgc_code": "072216000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072217",
+        "city_name": "Cebu City (Capital)",
+        "province_code": "0722",
+        "psgc_code": "072217000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072218",
+        "city_name": "Compostela",
+        "province_code": "0722",
+        "psgc_code": "072218000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072219",
+        "city_name": "Consolacion",
+        "province_code": "0722",
+        "psgc_code": "072219000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072220",
+        "city_name": "Cordova",
+        "province_code": "0722",
+        "psgc_code": "072220000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072221",
+        "city_name": "Daanbantayan",
+        "province_code": "0722",
+        "psgc_code": "072221000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072222",
+        "city_name": "Dalaguete",
+        "province_code": "0722",
+        "psgc_code": "072222000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072223",
+        "city_name": "Danao City",
+        "province_code": "0722",
+        "psgc_code": "072223000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072224",
+        "city_name": "Dumanjug",
+        "province_code": "0722",
+        "psgc_code": "072224000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072225",
+        "city_name": "Ginatilan",
+        "province_code": "0722",
+        "psgc_code": "072225000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072226",
+        "city_name": "Lapu-lapu City (Opon)",
+        "province_code": "0722",
+        "psgc_code": "072226000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072227",
+        "city_name": "Liloan",
+        "province_code": "0722",
+        "psgc_code": "072227000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072228",
+        "city_name": "Madridejos",
+        "province_code": "0722",
+        "psgc_code": "072228000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072229",
+        "city_name": "Malabuyoc",
+        "province_code": "0722",
+        "psgc_code": "072229000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072230",
+        "city_name": "Mandaue City",
+        "province_code": "0722",
+        "psgc_code": "072230000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072231",
+        "city_name": "Medellin",
+        "province_code": "0722",
+        "psgc_code": "072231000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072232",
+        "city_name": "Minglanilla",
+        "province_code": "0722",
+        "psgc_code": "072232000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072233",
+        "city_name": "Moalboal",
+        "province_code": "0722",
+        "psgc_code": "072233000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072234",
+        "city_name": "City Of Naga",
+        "province_code": "0722",
+        "psgc_code": "072234000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072235",
+        "city_name": "Oslob",
+        "province_code": "0722",
+        "psgc_code": "072235000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072236",
+        "city_name": "Pilar",
+        "province_code": "0722",
+        "psgc_code": "072236000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072237",
+        "city_name": "Pinamungahan",
+        "province_code": "0722",
+        "psgc_code": "072237000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072238",
+        "city_name": "Poro",
+        "province_code": "0722",
+        "psgc_code": "072238000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072239",
+        "city_name": "Ronda",
+        "province_code": "0722",
+        "psgc_code": "072239000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072240",
+        "city_name": "Samboan",
+        "province_code": "0722",
+        "psgc_code": "072240000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072241",
+        "city_name": "San Fernando",
+        "province_code": "0722",
+        "psgc_code": "072241000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072242",
+        "city_name": "San Francisco",
+        "province_code": "0722",
+        "psgc_code": "072242000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072243",
+        "city_name": "San Remigio",
+        "province_code": "0722",
+        "psgc_code": "072243000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072244",
+        "city_name": "Santa Fe",
+        "province_code": "0722",
+        "psgc_code": "072244000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072245",
+        "city_name": "Santander",
+        "province_code": "0722",
+        "psgc_code": "072245000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072246",
+        "city_name": "Sibonga",
+        "province_code": "0722",
+        "psgc_code": "072246000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072247",
+        "city_name": "Sogod",
+        "province_code": "0722",
+        "psgc_code": "072247000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072248",
+        "city_name": "Tabogon",
+        "province_code": "0722",
+        "psgc_code": "072248000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072249",
+        "city_name": "Tabuelan",
+        "province_code": "0722",
+        "psgc_code": "072249000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072250",
+        "city_name": "City Of Talisay",
+        "province_code": "0722",
+        "psgc_code": "072250000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072251",
+        "city_name": "Toledo City",
+        "province_code": "0722",
+        "psgc_code": "072251000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072252",
+        "city_name": "Tuburan",
+        "province_code": "0722",
+        "psgc_code": "072252000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "072253",
+        "city_name": "Tudela",
+        "province_code": "0722",
+        "psgc_code": "072253000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074601",
+        "city_name": "Amlan (Ayuquitan)",
+        "province_code": "0746",
+        "psgc_code": "074601000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074602",
+        "city_name": "Ayungon",
+        "province_code": "0746",
+        "psgc_code": "074602000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074603",
+        "city_name": "Bacong",
+        "province_code": "0746",
+        "psgc_code": "074603000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074604",
+        "city_name": "Bais City",
+        "province_code": "0746",
+        "psgc_code": "074604000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074605",
+        "city_name": "Basay",
+        "province_code": "0746",
+        "psgc_code": "074605000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074606",
+        "city_name": "City Of Bayawan (Tulong)",
+        "province_code": "0746",
+        "psgc_code": "074606000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074607",
+        "city_name": "Bindoy (Payabon)",
+        "province_code": "0746",
+        "psgc_code": "074607000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074608",
+        "city_name": "Canlaon City",
+        "province_code": "0746",
+        "psgc_code": "074608000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074609",
+        "city_name": "Dauin",
+        "province_code": "0746",
+        "psgc_code": "074609000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074610",
+        "city_name": "Dumaguete City (Capital)",
+        "province_code": "0746",
+        "psgc_code": "074610000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074611",
+        "city_name": "City Of Guihulngan",
+        "province_code": "0746",
+        "psgc_code": "074611000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074612",
+        "city_name": "Jimalalud",
+        "province_code": "0746",
+        "psgc_code": "074612000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074613",
+        "city_name": "La Libertad",
+        "province_code": "0746",
+        "psgc_code": "074613000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074614",
+        "city_name": "Mabinay",
+        "province_code": "0746",
+        "psgc_code": "074614000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074615",
+        "city_name": "Manjuyod",
+        "province_code": "0746",
+        "psgc_code": "074615000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074616",
+        "city_name": "Pamplona",
+        "province_code": "0746",
+        "psgc_code": "074616000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074617",
+        "city_name": "San Jose",
+        "province_code": "0746",
+        "psgc_code": "074617000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074618",
+        "city_name": "Santa Catalina",
+        "province_code": "0746",
+        "psgc_code": "074618000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074619",
+        "city_name": "Siaton",
+        "province_code": "0746",
+        "psgc_code": "074619000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074620",
+        "city_name": "Sibulan",
+        "province_code": "0746",
+        "psgc_code": "074620000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074621",
+        "city_name": "City Of Tanjay",
+        "province_code": "0746",
+        "psgc_code": "074621000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074622",
+        "city_name": "Tayasan",
+        "province_code": "0746",
+        "psgc_code": "074622000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074623",
+        "city_name": "Valencia (Luzurriaga)",
+        "province_code": "0746",
+        "psgc_code": "074623000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074624",
+        "city_name": "Vallehermoso",
+        "province_code": "0746",
+        "psgc_code": "074624000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "074625",
+        "city_name": "Zamboanguita",
+        "province_code": "0746",
+        "psgc_code": "074625000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "076101",
+        "city_name": "Enrique Villanueva",
+        "province_code": "0761",
+        "psgc_code": "076101000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "076102",
+        "city_name": "Larena",
+        "province_code": "0761",
+        "psgc_code": "076102000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "076103",
+        "city_name": "Lazi",
+        "province_code": "0761",
+        "psgc_code": "076103000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "076104",
+        "city_name": "Maria",
+        "province_code": "0761",
+        "psgc_code": "076104000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "076105",
+        "city_name": "San Juan",
+        "province_code": "0761",
+        "psgc_code": "076105000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "076106",
+        "city_name": "Siquijor (Capital)",
+        "province_code": "0761",
+        "psgc_code": "076106000",
+        "region_desc": "07"
+    },
+    {
+        "city_code": "082601",
+        "city_name": "Arteche",
+        "province_code": "0826",
+        "psgc_code": "082601000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082602",
+        "city_name": "Balangiga",
+        "province_code": "0826",
+        "psgc_code": "082602000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082603",
+        "city_name": "Balangkayan",
+        "province_code": "0826",
+        "psgc_code": "082603000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082604",
+        "city_name": "City Of Borongan (Capital)",
+        "province_code": "0826",
+        "psgc_code": "082604000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082605",
+        "city_name": "Can-avid",
+        "province_code": "0826",
+        "psgc_code": "082605000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082606",
+        "city_name": "Dolores",
+        "province_code": "0826",
+        "psgc_code": "082606000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082607",
+        "city_name": "General Macarthur",
+        "province_code": "0826",
+        "psgc_code": "082607000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082608",
+        "city_name": "Giporlos",
+        "province_code": "0826",
+        "psgc_code": "082608000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082609",
+        "city_name": "Guiuan",
+        "province_code": "0826",
+        "psgc_code": "082609000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082610",
+        "city_name": "Hernani",
+        "province_code": "0826",
+        "psgc_code": "082610000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082611",
+        "city_name": "Jipapad",
+        "province_code": "0826",
+        "psgc_code": "082611000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082612",
+        "city_name": "Lawaan",
+        "province_code": "0826",
+        "psgc_code": "082612000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082613",
+        "city_name": "Llorente",
+        "province_code": "0826",
+        "psgc_code": "082613000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082614",
+        "city_name": "Maslog",
+        "province_code": "0826",
+        "psgc_code": "082614000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082615",
+        "city_name": "Maydolong",
+        "province_code": "0826",
+        "psgc_code": "082615000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082616",
+        "city_name": "Mercedes",
+        "province_code": "0826",
+        "psgc_code": "082616000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082617",
+        "city_name": "Oras",
+        "province_code": "0826",
+        "psgc_code": "082617000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082618",
+        "city_name": "Quinapondan",
+        "province_code": "0826",
+        "psgc_code": "082618000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082619",
+        "city_name": "Salcedo",
+        "province_code": "0826",
+        "psgc_code": "082619000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082620",
+        "city_name": "San Julian",
+        "province_code": "0826",
+        "psgc_code": "082620000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082621",
+        "city_name": "San Policarpo",
+        "province_code": "0826",
+        "psgc_code": "082621000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082622",
+        "city_name": "Sulat",
+        "province_code": "0826",
+        "psgc_code": "082622000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "082623",
+        "city_name": "Taft",
+        "province_code": "0826",
+        "psgc_code": "082623000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083701",
+        "city_name": "Abuyog",
+        "province_code": "0837",
+        "psgc_code": "083701000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083702",
+        "city_name": "Alangalang",
+        "province_code": "0837",
+        "psgc_code": "083702000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083703",
+        "city_name": "Albuera",
+        "province_code": "0837",
+        "psgc_code": "083703000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083705",
+        "city_name": "Babatngon",
+        "province_code": "0837",
+        "psgc_code": "083705000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083706",
+        "city_name": "Barugo",
+        "province_code": "0837",
+        "psgc_code": "083706000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083707",
+        "city_name": "Bato",
+        "province_code": "0837",
+        "psgc_code": "083707000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083708",
+        "city_name": "City Of Baybay",
+        "province_code": "0837",
+        "psgc_code": "083708000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083710",
+        "city_name": "Burauen",
+        "province_code": "0837",
+        "psgc_code": "083710000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083713",
+        "city_name": "Calubian",
+        "province_code": "0837",
+        "psgc_code": "083713000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083714",
+        "city_name": "Capoocan",
+        "province_code": "0837",
+        "psgc_code": "083714000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083715",
+        "city_name": "Carigara",
+        "province_code": "0837",
+        "psgc_code": "083715000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083717",
+        "city_name": "Dagami",
+        "province_code": "0837",
+        "psgc_code": "083717000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083718",
+        "city_name": "Dulag",
+        "province_code": "0837",
+        "psgc_code": "083718000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083719",
+        "city_name": "Hilongos",
+        "province_code": "0837",
+        "psgc_code": "083719000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083720",
+        "city_name": "Hindang",
+        "province_code": "0837",
+        "psgc_code": "083720000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083721",
+        "city_name": "Inopacan",
+        "province_code": "0837",
+        "psgc_code": "083721000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083722",
+        "city_name": "Isabel",
+        "province_code": "0837",
+        "psgc_code": "083722000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083723",
+        "city_name": "Jaro",
+        "province_code": "0837",
+        "psgc_code": "083723000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083724",
+        "city_name": "Javier (Bugho)",
+        "province_code": "0837",
+        "psgc_code": "083724000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083725",
+        "city_name": "Julita",
+        "province_code": "0837",
+        "psgc_code": "083725000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083726",
+        "city_name": "Kananga",
+        "province_code": "0837",
+        "psgc_code": "083726000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083728",
+        "city_name": "La Paz",
+        "province_code": "0837",
+        "psgc_code": "083728000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083729",
+        "city_name": "Leyte",
+        "province_code": "0837",
+        "psgc_code": "083729000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083730",
+        "city_name": "Macarthur",
+        "province_code": "0837",
+        "psgc_code": "083730000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083731",
+        "city_name": "Mahaplag",
+        "province_code": "0837",
+        "psgc_code": "083731000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083733",
+        "city_name": "Matag-ob",
+        "province_code": "0837",
+        "psgc_code": "083733000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083734",
+        "city_name": "Matalom",
+        "province_code": "0837",
+        "psgc_code": "083734000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083735",
+        "city_name": "Mayorga",
+        "province_code": "0837",
+        "psgc_code": "083735000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083736",
+        "city_name": "Merida",
+        "province_code": "0837",
+        "psgc_code": "083736000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083738",
+        "city_name": "Ormoc City",
+        "province_code": "0837",
+        "psgc_code": "083738000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083739",
+        "city_name": "Palo",
+        "province_code": "0837",
+        "psgc_code": "083739000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083740",
+        "city_name": "Palompon",
+        "province_code": "0837",
+        "psgc_code": "083740000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083741",
+        "city_name": "Pastrana",
+        "province_code": "0837",
+        "psgc_code": "083741000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083742",
+        "city_name": "San Isidro",
+        "province_code": "0837",
+        "psgc_code": "083742000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083743",
+        "city_name": "San Miguel",
+        "province_code": "0837",
+        "psgc_code": "083743000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083744",
+        "city_name": "Santa Fe",
+        "province_code": "0837",
+        "psgc_code": "083744000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083745",
+        "city_name": "Tabango",
+        "province_code": "0837",
+        "psgc_code": "083745000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083746",
+        "city_name": "Tabontabon",
+        "province_code": "0837",
+        "psgc_code": "083746000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083747",
+        "city_name": "Tacloban City (Capital)",
+        "province_code": "0837",
+        "psgc_code": "083747000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083748",
+        "city_name": "Tanauan",
+        "province_code": "0837",
+        "psgc_code": "083748000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083749",
+        "city_name": "Tolosa",
+        "province_code": "0837",
+        "psgc_code": "083749000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083750",
+        "city_name": "Tunga",
+        "province_code": "0837",
+        "psgc_code": "083750000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "083751",
+        "city_name": "Villaba",
+        "province_code": "0837",
+        "psgc_code": "083751000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084801",
+        "city_name": "Allen",
+        "province_code": "0848",
+        "psgc_code": "084801000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084802",
+        "city_name": "Biri",
+        "province_code": "0848",
+        "psgc_code": "084802000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084803",
+        "city_name": "Bobon",
+        "province_code": "0848",
+        "psgc_code": "084803000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084804",
+        "city_name": "Capul",
+        "province_code": "0848",
+        "psgc_code": "084804000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084805",
+        "city_name": "Catarman (Capital)",
+        "province_code": "0848",
+        "psgc_code": "084805000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084806",
+        "city_name": "Catubig",
+        "province_code": "0848",
+        "psgc_code": "084806000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084807",
+        "city_name": "Gamay",
+        "province_code": "0848",
+        "psgc_code": "084807000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084808",
+        "city_name": "Laoang",
+        "province_code": "0848",
+        "psgc_code": "084808000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084809",
+        "city_name": "Lapinig",
+        "province_code": "0848",
+        "psgc_code": "084809000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084810",
+        "city_name": "Las Navas",
+        "province_code": "0848",
+        "psgc_code": "084810000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084811",
+        "city_name": "Lavezares",
+        "province_code": "0848",
+        "psgc_code": "084811000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084812",
+        "city_name": "Mapanas",
+        "province_code": "0848",
+        "psgc_code": "084812000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084813",
+        "city_name": "Mondragon",
+        "province_code": "0848",
+        "psgc_code": "084813000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084814",
+        "city_name": "Palapag",
+        "province_code": "0848",
+        "psgc_code": "084814000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084815",
+        "city_name": "Pambujan",
+        "province_code": "0848",
+        "psgc_code": "084815000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084816",
+        "city_name": "Rosario",
+        "province_code": "0848",
+        "psgc_code": "084816000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084817",
+        "city_name": "San Antonio",
+        "province_code": "0848",
+        "psgc_code": "084817000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084818",
+        "city_name": "San Isidro",
+        "province_code": "0848",
+        "psgc_code": "084818000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084819",
+        "city_name": "San Jose",
+        "province_code": "0848",
+        "psgc_code": "084819000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084820",
+        "city_name": "San Roque",
+        "province_code": "0848",
+        "psgc_code": "084820000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084821",
+        "city_name": "San Vicente",
+        "province_code": "0848",
+        "psgc_code": "084821000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084822",
+        "city_name": "Silvino Lobos",
+        "province_code": "0848",
+        "psgc_code": "084822000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084823",
+        "city_name": "Victoria",
+        "province_code": "0848",
+        "psgc_code": "084823000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "084824",
+        "city_name": "Lope De Vega",
+        "province_code": "0848",
+        "psgc_code": "084824000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086001",
+        "city_name": "Almagro",
+        "province_code": "0860",
+        "psgc_code": "086001000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086002",
+        "city_name": "Basey",
+        "province_code": "0860",
+        "psgc_code": "086002000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086003",
+        "city_name": "Calbayog City",
+        "province_code": "0860",
+        "psgc_code": "086003000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086004",
+        "city_name": "Calbiga",
+        "province_code": "0860",
+        "psgc_code": "086004000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086005",
+        "city_name": "City Of Catbalogan (Capital)",
+        "province_code": "0860",
+        "psgc_code": "086005000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086006",
+        "city_name": "Daram",
+        "province_code": "0860",
+        "psgc_code": "086006000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086007",
+        "city_name": "Gandara",
+        "province_code": "0860",
+        "psgc_code": "086007000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086008",
+        "city_name": "Hinabangan",
+        "province_code": "0860",
+        "psgc_code": "086008000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086009",
+        "city_name": "Jiabong",
+        "province_code": "0860",
+        "psgc_code": "086009000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086010",
+        "city_name": "Marabut",
+        "province_code": "0860",
+        "psgc_code": "086010000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086011",
+        "city_name": "Matuguinao",
+        "province_code": "0860",
+        "psgc_code": "086011000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086012",
+        "city_name": "Motiong",
+        "province_code": "0860",
+        "psgc_code": "086012000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086013",
+        "city_name": "Pinabacdao",
+        "province_code": "0860",
+        "psgc_code": "086013000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086014",
+        "city_name": "San Jose De Buan",
+        "province_code": "0860",
+        "psgc_code": "086014000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086015",
+        "city_name": "San Sebastian",
+        "province_code": "0860",
+        "psgc_code": "086015000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086016",
+        "city_name": "Santa Margarita",
+        "province_code": "0860",
+        "psgc_code": "086016000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086017",
+        "city_name": "Santa Rita",
+        "province_code": "0860",
+        "psgc_code": "086017000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086018",
+        "city_name": "Santo Niño",
+        "province_code": "0860",
+        "psgc_code": "086018000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086019",
+        "city_name": "Talalora",
+        "province_code": "0860",
+        "psgc_code": "086019000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086020",
+        "city_name": "Tarangnan",
+        "province_code": "0860",
+        "psgc_code": "086020000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086021",
+        "city_name": "Villareal",
+        "province_code": "0860",
+        "psgc_code": "086021000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086022",
+        "city_name": "Paranas (Wright)",
+        "province_code": "0860",
+        "psgc_code": "086022000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086023",
+        "city_name": "Zumarraga",
+        "province_code": "0860",
+        "psgc_code": "086023000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086024",
+        "city_name": "Tagapul-an",
+        "province_code": "0860",
+        "psgc_code": "086024000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086025",
+        "city_name": "San Jorge",
+        "province_code": "0860",
+        "psgc_code": "086025000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086026",
+        "city_name": "Pagsanghan",
+        "province_code": "0860",
+        "psgc_code": "086026000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086401",
+        "city_name": "Anahawan",
+        "province_code": "0864",
+        "psgc_code": "086401000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086402",
+        "city_name": "Bontoc",
+        "province_code": "0864",
+        "psgc_code": "086402000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086403",
+        "city_name": "Hinunangan",
+        "province_code": "0864",
+        "psgc_code": "086403000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086404",
+        "city_name": "Hinundayan",
+        "province_code": "0864",
+        "psgc_code": "086404000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086405",
+        "city_name": "Libagon",
+        "province_code": "0864",
+        "psgc_code": "086405000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086406",
+        "city_name": "Liloan",
+        "province_code": "0864",
+        "psgc_code": "086406000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086407",
+        "city_name": "City Of Maasin (Capital)",
+        "province_code": "0864",
+        "psgc_code": "086407000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086408",
+        "city_name": "Macrohon",
+        "province_code": "0864",
+        "psgc_code": "086408000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086409",
+        "city_name": "Malitbog",
+        "province_code": "0864",
+        "psgc_code": "086409000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086410",
+        "city_name": "Padre Burgos",
+        "province_code": "0864",
+        "psgc_code": "086410000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086411",
+        "city_name": "Pintuyan",
+        "province_code": "0864",
+        "psgc_code": "086411000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086412",
+        "city_name": "Saint Bernard",
+        "province_code": "0864",
+        "psgc_code": "086412000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086413",
+        "city_name": "San Francisco",
+        "province_code": "0864",
+        "psgc_code": "086413000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086414",
+        "city_name": "San Juan (Cabalian)",
+        "province_code": "0864",
+        "psgc_code": "086414000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086415",
+        "city_name": "San Ricardo",
+        "province_code": "0864",
+        "psgc_code": "086415000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086416",
+        "city_name": "Silago",
+        "province_code": "0864",
+        "psgc_code": "086416000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086417",
+        "city_name": "Sogod",
+        "province_code": "0864",
+        "psgc_code": "086417000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086418",
+        "city_name": "Tomas Oppus",
+        "province_code": "0864",
+        "psgc_code": "086418000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "086419",
+        "city_name": "Limasawa",
+        "province_code": "0864",
+        "psgc_code": "086419000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "087801",
+        "city_name": "Almeria",
+        "province_code": "0878",
+        "psgc_code": "087801000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "087802",
+        "city_name": "Biliran",
+        "province_code": "0878",
+        "psgc_code": "087802000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "087803",
+        "city_name": "Cabucgayan",
+        "province_code": "0878",
+        "psgc_code": "087803000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "087804",
+        "city_name": "Caibiran",
+        "province_code": "0878",
+        "psgc_code": "087804000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "087805",
+        "city_name": "Culaba",
+        "province_code": "0878",
+        "psgc_code": "087805000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "087806",
+        "city_name": "Kawayan",
+        "province_code": "0878",
+        "psgc_code": "087806000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "087807",
+        "city_name": "Maripipi",
+        "province_code": "0878",
+        "psgc_code": "087807000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "087808",
+        "city_name": "Naval (Capital)",
+        "province_code": "0878",
+        "psgc_code": "087808000",
+        "region_desc": "08"
+    },
+    {
+        "city_code": "097201",
+        "city_name": "Dapitan City",
+        "province_code": "0972",
+        "psgc_code": "097201000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097202",
+        "city_name": "Dipolog City (Capital)",
+        "province_code": "0972",
+        "psgc_code": "097202000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097203",
+        "city_name": "Katipunan",
+        "province_code": "0972",
+        "psgc_code": "097203000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097204",
+        "city_name": "La Libertad",
+        "province_code": "0972",
+        "psgc_code": "097204000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097205",
+        "city_name": "Labason",
+        "province_code": "0972",
+        "psgc_code": "097205000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097206",
+        "city_name": "Liloy",
+        "province_code": "0972",
+        "psgc_code": "097206000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097207",
+        "city_name": "Manukan",
+        "province_code": "0972",
+        "psgc_code": "097207000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097208",
+        "city_name": "Mutia",
+        "province_code": "0972",
+        "psgc_code": "097208000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097209",
+        "city_name": "Piñan (New Piñan)",
+        "province_code": "0972",
+        "psgc_code": "097209000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097210",
+        "city_name": "Polanco",
+        "province_code": "0972",
+        "psgc_code": "097210000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097211",
+        "city_name": "Pres. Manuel A. Roxas",
+        "province_code": "0972",
+        "psgc_code": "097211000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097212",
+        "city_name": "Rizal",
+        "province_code": "0972",
+        "psgc_code": "097212000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097213",
+        "city_name": "Salug",
+        "province_code": "0972",
+        "psgc_code": "097213000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097214",
+        "city_name": "Sergio Osmeña Sr.",
+        "province_code": "0972",
+        "psgc_code": "097214000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097215",
+        "city_name": "Siayan",
+        "province_code": "0972",
+        "psgc_code": "097215000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097216",
+        "city_name": "Sibuco",
+        "province_code": "0972",
+        "psgc_code": "097216000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097217",
+        "city_name": "Sibutad",
+        "province_code": "0972",
+        "psgc_code": "097217000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097218",
+        "city_name": "Sindangan",
+        "province_code": "0972",
+        "psgc_code": "097218000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097219",
+        "city_name": "Siocon",
+        "province_code": "0972",
+        "psgc_code": "097219000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097220",
+        "city_name": "Sirawai",
+        "province_code": "0972",
+        "psgc_code": "097220000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097221",
+        "city_name": "Tampilisan",
+        "province_code": "0972",
+        "psgc_code": "097221000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097222",
+        "city_name": "Jose Dalman (Ponot)",
+        "province_code": "0972",
+        "psgc_code": "097222000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097223",
+        "city_name": "Gutalac",
+        "province_code": "0972",
+        "psgc_code": "097223000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097224",
+        "city_name": "Baliguian",
+        "province_code": "0972",
+        "psgc_code": "097224000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097225",
+        "city_name": "Godod",
+        "province_code": "0972",
+        "psgc_code": "097225000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097226",
+        "city_name": "Bacungan (Leon T. Postigo)",
+        "province_code": "0972",
+        "psgc_code": "097226000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097227",
+        "city_name": "Kalawit",
+        "province_code": "0972",
+        "psgc_code": "097227000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097302",
+        "city_name": "Aurora",
+        "province_code": "0973",
+        "psgc_code": "097302000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097303",
+        "city_name": "Bayog",
+        "province_code": "0973",
+        "psgc_code": "097303000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097305",
+        "city_name": "Dimataling",
+        "province_code": "0973",
+        "psgc_code": "097305000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097306",
+        "city_name": "Dinas",
+        "province_code": "0973",
+        "psgc_code": "097306000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097307",
+        "city_name": "Dumalinao",
+        "province_code": "0973",
+        "psgc_code": "097307000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097308",
+        "city_name": "Dumingag",
+        "province_code": "0973",
+        "psgc_code": "097308000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097311",
+        "city_name": "Kumalarang",
+        "province_code": "0973",
+        "psgc_code": "097311000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097312",
+        "city_name": "Labangan",
+        "province_code": "0973",
+        "psgc_code": "097312000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097313",
+        "city_name": "Lapuyan",
+        "province_code": "0973",
+        "psgc_code": "097313000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097315",
+        "city_name": "Mahayag",
+        "province_code": "0973",
+        "psgc_code": "097315000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097317",
+        "city_name": "Margosatubig",
+        "province_code": "0973",
+        "psgc_code": "097317000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097318",
+        "city_name": "Midsalip",
+        "province_code": "0973",
+        "psgc_code": "097318000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097319",
+        "city_name": "Molave",
+        "province_code": "0973",
+        "psgc_code": "097319000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097322",
+        "city_name": "Pagadian City (Capital)",
+        "province_code": "0973",
+        "psgc_code": "097322000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097323",
+        "city_name": "Ramon Magsaysay (Liargo)",
+        "province_code": "0973",
+        "psgc_code": "097323000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097324",
+        "city_name": "San Miguel",
+        "province_code": "0973",
+        "psgc_code": "097324000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097325",
+        "city_name": "San Pablo",
+        "province_code": "0973",
+        "psgc_code": "097325000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097327",
+        "city_name": "Tabina",
+        "province_code": "0973",
+        "psgc_code": "097327000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097328",
+        "city_name": "Tambulig",
+        "province_code": "0973",
+        "psgc_code": "097328000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097330",
+        "city_name": "Tukuran",
+        "province_code": "0973",
+        "psgc_code": "097330000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097332",
+        "city_name": "Zamboanga City",
+        "province_code": "0973",
+        "psgc_code": "097332000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097333",
+        "city_name": "Lakewood",
+        "province_code": "0973",
+        "psgc_code": "097333000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097337",
+        "city_name": "Josefina",
+        "province_code": "0973",
+        "psgc_code": "097337000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097338",
+        "city_name": "Pitogo",
+        "province_code": "0973",
+        "psgc_code": "097338000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097340",
+        "city_name": "Sominot (Don Mariano Marcos)",
+        "province_code": "0973",
+        "psgc_code": "097340000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097341",
+        "city_name": "Vincenzo A. Sagun",
+        "province_code": "0973",
+        "psgc_code": "097341000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097343",
+        "city_name": "Guipos",
+        "province_code": "0973",
+        "psgc_code": "097343000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "097344",
+        "city_name": "Tigbao",
+        "province_code": "0973",
+        "psgc_code": "097344000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "098301",
+        "city_name": "Alicia",
+        "province_code": "0983",
+        "psgc_code": "098301000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "098302",
+        "city_name": "Buug",
+        "province_code": "0983",
+        "psgc_code": "098302000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "098303",
+        "city_name": "Diplahan",
+        "province_code": "0983",
+        "psgc_code": "098303000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "098304",
+        "city_name": "Imelda",
+        "province_code": "0983",
+        "psgc_code": "098304000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "098305",
+        "city_name": "Ipil (Capital)",
+        "province_code": "0983",
+        "psgc_code": "098305000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "098306",
+        "city_name": "Kabasalan",
+        "province_code": "0983",
+        "psgc_code": "098306000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "098307",
+        "city_name": "Mabuhay",
+        "province_code": "0983",
+        "psgc_code": "098307000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "098308",
+        "city_name": "Malangas",
+        "province_code": "0983",
+        "psgc_code": "098308000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "098309",
+        "city_name": "Naga",
+        "province_code": "0983",
+        "psgc_code": "098309000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "098310",
+        "city_name": "Olutanga",
+        "province_code": "0983",
+        "psgc_code": "098310000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "098311",
+        "city_name": "Payao",
+        "province_code": "0983",
+        "psgc_code": "098311000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "098312",
+        "city_name": "Roseller Lim",
+        "province_code": "0983",
+        "psgc_code": "098312000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "098313",
+        "city_name": "Siay",
+        "province_code": "0983",
+        "psgc_code": "098313000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "098314",
+        "city_name": "Talusan",
+        "province_code": "0983",
+        "psgc_code": "098314000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "098315",
+        "city_name": "Titay",
+        "province_code": "0983",
+        "psgc_code": "098315000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "098316",
+        "city_name": "Tungawan",
+        "province_code": "0983",
+        "psgc_code": "098316000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "099701",
+        "city_name": "City Of Isabela",
+        "province_code": "0997",
+        "psgc_code": "099701000",
+        "region_desc": "09"
+    },
+    {
+        "city_code": "101301",
+        "city_name": "Baungon",
+        "province_code": "1013",
+        "psgc_code": "101301000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101302",
+        "city_name": "Damulog",
+        "province_code": "1013",
+        "psgc_code": "101302000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101303",
+        "city_name": "Dangcagan",
+        "province_code": "1013",
+        "psgc_code": "101303000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101304",
+        "city_name": "Don Carlos",
+        "province_code": "1013",
+        "psgc_code": "101304000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101305",
+        "city_name": "Impasug-ong",
+        "province_code": "1013",
+        "psgc_code": "101305000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101306",
+        "city_name": "Kadingilan",
+        "province_code": "1013",
+        "psgc_code": "101306000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101307",
+        "city_name": "Kalilangan",
+        "province_code": "1013",
+        "psgc_code": "101307000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101308",
+        "city_name": "Kibawe",
+        "province_code": "1013",
+        "psgc_code": "101308000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101309",
+        "city_name": "Kitaotao",
+        "province_code": "1013",
+        "psgc_code": "101309000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101310",
+        "city_name": "Lantapan",
+        "province_code": "1013",
+        "psgc_code": "101310000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101311",
+        "city_name": "Libona",
+        "province_code": "1013",
+        "psgc_code": "101311000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101312",
+        "city_name": "City Of Malaybalay (Capital)",
+        "province_code": "1013",
+        "psgc_code": "101312000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101313",
+        "city_name": "Malitbog",
+        "province_code": "1013",
+        "psgc_code": "101313000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101314",
+        "city_name": "Manolo Fortich",
+        "province_code": "1013",
+        "psgc_code": "101314000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101315",
+        "city_name": "Maramag",
+        "province_code": "1013",
+        "psgc_code": "101315000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101316",
+        "city_name": "Pangantucan",
+        "province_code": "1013",
+        "psgc_code": "101316000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101317",
+        "city_name": "Quezon",
+        "province_code": "1013",
+        "psgc_code": "101317000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101318",
+        "city_name": "San Fernando",
+        "province_code": "1013",
+        "psgc_code": "101318000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101319",
+        "city_name": "Sumilao",
+        "province_code": "1013",
+        "psgc_code": "101319000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101320",
+        "city_name": "Talakag",
+        "province_code": "1013",
+        "psgc_code": "101320000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101321",
+        "city_name": "City Of Valencia",
+        "province_code": "1013",
+        "psgc_code": "101321000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101322",
+        "city_name": "Cabanglasan",
+        "province_code": "1013",
+        "psgc_code": "101322000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101801",
+        "city_name": "Catarman",
+        "province_code": "1018",
+        "psgc_code": "101801000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101802",
+        "city_name": "Guinsiliban",
+        "province_code": "1018",
+        "psgc_code": "101802000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101803",
+        "city_name": "Mahinog",
+        "province_code": "1018",
+        "psgc_code": "101803000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101804",
+        "city_name": "Mambajao (Capital)",
+        "province_code": "1018",
+        "psgc_code": "101804000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "101805",
+        "city_name": "Sagay",
+        "province_code": "1018",
+        "psgc_code": "101805000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103501",
+        "city_name": "Bacolod",
+        "province_code": "1035",
+        "psgc_code": "103501000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103502",
+        "city_name": "Baloi",
+        "province_code": "1035",
+        "psgc_code": "103502000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103503",
+        "city_name": "Baroy",
+        "province_code": "1035",
+        "psgc_code": "103503000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103504",
+        "city_name": "Iligan City",
+        "province_code": "1035",
+        "psgc_code": "103504000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103505",
+        "city_name": "Kapatagan",
+        "province_code": "1035",
+        "psgc_code": "103505000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103506",
+        "city_name": "Sultan Naga Dimaporo (Karomatan)",
+        "province_code": "1035",
+        "psgc_code": "103506000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103507",
+        "city_name": "Kauswagan",
+        "province_code": "1035",
+        "psgc_code": "103507000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103508",
+        "city_name": "Kolambugan",
+        "province_code": "1035",
+        "psgc_code": "103508000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103509",
+        "city_name": "Lala",
+        "province_code": "1035",
+        "psgc_code": "103509000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103510",
+        "city_name": "Linamon",
+        "province_code": "1035",
+        "psgc_code": "103510000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103511",
+        "city_name": "Magsaysay",
+        "province_code": "1035",
+        "psgc_code": "103511000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103512",
+        "city_name": "Maigo",
+        "province_code": "1035",
+        "psgc_code": "103512000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103513",
+        "city_name": "Matungao",
+        "province_code": "1035",
+        "psgc_code": "103513000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103514",
+        "city_name": "Munai",
+        "province_code": "1035",
+        "psgc_code": "103514000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103515",
+        "city_name": "Nunungan",
+        "province_code": "1035",
+        "psgc_code": "103515000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103516",
+        "city_name": "Pantao Ragat",
+        "province_code": "1035",
+        "psgc_code": "103516000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103517",
+        "city_name": "Poona Piagapo",
+        "province_code": "1035",
+        "psgc_code": "103517000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103518",
+        "city_name": "Salvador",
+        "province_code": "1035",
+        "psgc_code": "103518000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103519",
+        "city_name": "Sapad",
+        "province_code": "1035",
+        "psgc_code": "103519000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103520",
+        "city_name": "Tagoloan",
+        "province_code": "1035",
+        "psgc_code": "103520000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103521",
+        "city_name": "Tangcal",
+        "province_code": "1035",
+        "psgc_code": "103521000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103522",
+        "city_name": "Tubod (Capital)",
+        "province_code": "1035",
+        "psgc_code": "103522000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "103523",
+        "city_name": "Pantar",
+        "province_code": "1035",
+        "psgc_code": "103523000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104201",
+        "city_name": "Aloran",
+        "province_code": "1042",
+        "psgc_code": "104201000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104202",
+        "city_name": "Baliangao",
+        "province_code": "1042",
+        "psgc_code": "104202000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104203",
+        "city_name": "Bonifacio",
+        "province_code": "1042",
+        "psgc_code": "104203000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104204",
+        "city_name": "Calamba",
+        "province_code": "1042",
+        "psgc_code": "104204000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104205",
+        "city_name": "Clarin",
+        "province_code": "1042",
+        "psgc_code": "104205000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104206",
+        "city_name": "Concepcion",
+        "province_code": "1042",
+        "psgc_code": "104206000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104207",
+        "city_name": "Jimenez",
+        "province_code": "1042",
+        "psgc_code": "104207000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104208",
+        "city_name": "Lopez Jaena",
+        "province_code": "1042",
+        "psgc_code": "104208000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104209",
+        "city_name": "Oroquieta City (Capital)",
+        "province_code": "1042",
+        "psgc_code": "104209000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104210",
+        "city_name": "Ozamis City",
+        "province_code": "1042",
+        "psgc_code": "104210000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104211",
+        "city_name": "Panaon",
+        "province_code": "1042",
+        "psgc_code": "104211000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104212",
+        "city_name": "Plaridel",
+        "province_code": "1042",
+        "psgc_code": "104212000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104213",
+        "city_name": "Sapang Dalaga",
+        "province_code": "1042",
+        "psgc_code": "104213000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104214",
+        "city_name": "Sinacaban",
+        "province_code": "1042",
+        "psgc_code": "104214000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104215",
+        "city_name": "Tangub City",
+        "province_code": "1042",
+        "psgc_code": "104215000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104216",
+        "city_name": "Tudela",
+        "province_code": "1042",
+        "psgc_code": "104216000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104217",
+        "city_name": "Don Victoriano Chiongbian  (Don Mariano Marcos)",
+        "province_code": "1042",
+        "psgc_code": "104217000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104301",
+        "city_name": "Alubijid",
+        "province_code": "1043",
+        "psgc_code": "104301000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104302",
+        "city_name": "Balingasag",
+        "province_code": "1043",
+        "psgc_code": "104302000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104303",
+        "city_name": "Balingoan",
+        "province_code": "1043",
+        "psgc_code": "104303000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104304",
+        "city_name": "Binuangan",
+        "province_code": "1043",
+        "psgc_code": "104304000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104305",
+        "city_name": "Cagayan De Oro City (Capital)",
+        "province_code": "1043",
+        "psgc_code": "104305000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104306",
+        "city_name": "Claveria",
+        "province_code": "1043",
+        "psgc_code": "104306000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104307",
+        "city_name": "City Of El Salvador",
+        "province_code": "1043",
+        "psgc_code": "104307000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104308",
+        "city_name": "Gingoog City",
+        "province_code": "1043",
+        "psgc_code": "104308000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104309",
+        "city_name": "Gitagum",
+        "province_code": "1043",
+        "psgc_code": "104309000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104310",
+        "city_name": "Initao",
+        "province_code": "1043",
+        "psgc_code": "104310000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104311",
+        "city_name": "Jasaan",
+        "province_code": "1043",
+        "psgc_code": "104311000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104312",
+        "city_name": "Kinoguitan",
+        "province_code": "1043",
+        "psgc_code": "104312000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104313",
+        "city_name": "Lagonglong",
+        "province_code": "1043",
+        "psgc_code": "104313000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104314",
+        "city_name": "Laguindingan",
+        "province_code": "1043",
+        "psgc_code": "104314000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104315",
+        "city_name": "Libertad",
+        "province_code": "1043",
+        "psgc_code": "104315000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104316",
+        "city_name": "Lugait",
+        "province_code": "1043",
+        "psgc_code": "104316000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104317",
+        "city_name": "Magsaysay (Linugos)",
+        "province_code": "1043",
+        "psgc_code": "104317000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104318",
+        "city_name": "Manticao",
+        "province_code": "1043",
+        "psgc_code": "104318000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104319",
+        "city_name": "Medina",
+        "province_code": "1043",
+        "psgc_code": "104319000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104320",
+        "city_name": "Naawan",
+        "province_code": "1043",
+        "psgc_code": "104320000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104321",
+        "city_name": "Opol",
+        "province_code": "1043",
+        "psgc_code": "104321000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104322",
+        "city_name": "Salay",
+        "province_code": "1043",
+        "psgc_code": "104322000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104323",
+        "city_name": "Sugbongcogon",
+        "province_code": "1043",
+        "psgc_code": "104323000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104324",
+        "city_name": "Tagoloan",
+        "province_code": "1043",
+        "psgc_code": "104324000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104325",
+        "city_name": "Talisayan",
+        "province_code": "1043",
+        "psgc_code": "104325000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "104326",
+        "city_name": "Villanueva",
+        "province_code": "1043",
+        "psgc_code": "104326000",
+        "region_desc": "10"
+    },
+    {
+        "city_code": "112301",
+        "city_name": "Asuncion (Saug)",
+        "province_code": "1123",
+        "psgc_code": "112301000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112303",
+        "city_name": "Carmen",
+        "province_code": "1123",
+        "psgc_code": "112303000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112305",
+        "city_name": "Kapalong",
+        "province_code": "1123",
+        "psgc_code": "112305000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112314",
+        "city_name": "New Corella",
+        "province_code": "1123",
+        "psgc_code": "112314000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112315",
+        "city_name": "City Of Panabo",
+        "province_code": "1123",
+        "psgc_code": "112315000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112317",
+        "city_name": "Island Garden City Of Samal",
+        "province_code": "1123",
+        "psgc_code": "112317000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112318",
+        "city_name": "Santo Tomas",
+        "province_code": "1123",
+        "psgc_code": "112318000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112319",
+        "city_name": "City Of Tagum (Capital)",
+        "province_code": "1123",
+        "psgc_code": "112319000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112322",
+        "city_name": "Talaingod",
+        "province_code": "1123",
+        "psgc_code": "112322000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112323",
+        "city_name": "Braulio E. Dujali",
+        "province_code": "1123",
+        "psgc_code": "112323000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112324",
+        "city_name": "San Isidro",
+        "province_code": "1123",
+        "psgc_code": "112324000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112401",
+        "city_name": "Bansalan",
+        "province_code": "1124",
+        "psgc_code": "112401000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112402",
+        "city_name": "Davao City",
+        "province_code": "1124",
+        "psgc_code": "112402000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112403",
+        "city_name": "City Of Digos (Capital)",
+        "province_code": "1124",
+        "psgc_code": "112403000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112404",
+        "city_name": "Hagonoy",
+        "province_code": "1124",
+        "psgc_code": "112404000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112406",
+        "city_name": "Kiblawan",
+        "province_code": "1124",
+        "psgc_code": "112406000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112407",
+        "city_name": "Magsaysay",
+        "province_code": "1124",
+        "psgc_code": "112407000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112408",
+        "city_name": "Malalag",
+        "province_code": "1124",
+        "psgc_code": "112408000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112410",
+        "city_name": "Matanao",
+        "province_code": "1124",
+        "psgc_code": "112410000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112411",
+        "city_name": "Padada",
+        "province_code": "1124",
+        "psgc_code": "112411000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112412",
+        "city_name": "Santa Cruz",
+        "province_code": "1124",
+        "psgc_code": "112412000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112414",
+        "city_name": "Sulop",
+        "province_code": "1124",
+        "psgc_code": "112414000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112501",
+        "city_name": "Baganga",
+        "province_code": "1125",
+        "psgc_code": "112501000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112502",
+        "city_name": "Banaybanay",
+        "province_code": "1125",
+        "psgc_code": "112502000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112503",
+        "city_name": "Boston",
+        "province_code": "1125",
+        "psgc_code": "112503000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112504",
+        "city_name": "Caraga",
+        "province_code": "1125",
+        "psgc_code": "112504000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112505",
+        "city_name": "Cateel",
+        "province_code": "1125",
+        "psgc_code": "112505000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112506",
+        "city_name": "Governor Generoso",
+        "province_code": "1125",
+        "psgc_code": "112506000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112507",
+        "city_name": "Lupon",
+        "province_code": "1125",
+        "psgc_code": "112507000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112508",
+        "city_name": "Manay",
+        "province_code": "1125",
+        "psgc_code": "112508000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112509",
+        "city_name": "City Of Mati (Capital)",
+        "province_code": "1125",
+        "psgc_code": "112509000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112510",
+        "city_name": "San Isidro",
+        "province_code": "1125",
+        "psgc_code": "112510000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "112511",
+        "city_name": "Tarragona",
+        "province_code": "1125",
+        "psgc_code": "112511000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "118201",
+        "city_name": "Compostela",
+        "province_code": "1182",
+        "psgc_code": "118201000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "118202",
+        "city_name": "Laak (San Vicente)",
+        "province_code": "1182",
+        "psgc_code": "118202000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "118203",
+        "city_name": "Mabini (Doña Alicia)",
+        "province_code": "1182",
+        "psgc_code": "118203000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "118204",
+        "city_name": "Maco",
+        "province_code": "1182",
+        "psgc_code": "118204000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "118205",
+        "city_name": "Maragusan (San Mariano)",
+        "province_code": "1182",
+        "psgc_code": "118205000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "118206",
+        "city_name": "Mawab",
+        "province_code": "1182",
+        "psgc_code": "118206000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "118207",
+        "city_name": "Monkayo",
+        "province_code": "1182",
+        "psgc_code": "118207000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "118208",
+        "city_name": "Montevista",
+        "province_code": "1182",
+        "psgc_code": "118208000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "118209",
+        "city_name": "Nabunturan (Capital)",
+        "province_code": "1182",
+        "psgc_code": "118209000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "118210",
+        "city_name": "New Bataan",
+        "province_code": "1182",
+        "psgc_code": "118210000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "118211",
+        "city_name": "Pantukan",
+        "province_code": "1182",
+        "psgc_code": "118211000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "118601",
+        "city_name": "Don Marcelino",
+        "province_code": "1186",
+        "psgc_code": "118601000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "118602",
+        "city_name": "Jose Abad Santos (Trinidad)",
+        "province_code": "1186",
+        "psgc_code": "118602000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "118603",
+        "city_name": "Malita",
+        "province_code": "1186",
+        "psgc_code": "118603000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "118604",
+        "city_name": "Santa Maria",
+        "province_code": "1186",
+        "psgc_code": "118604000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "118605",
+        "city_name": "Sarangani",
+        "province_code": "1186",
+        "psgc_code": "118605000",
+        "region_desc": "11"
+    },
+    {
+        "city_code": "124701",
+        "city_name": "Alamada",
+        "province_code": "1247",
+        "psgc_code": "124701000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "124702",
+        "city_name": "Carmen",
+        "province_code": "1247",
+        "psgc_code": "124702000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "124703",
+        "city_name": "Kabacan",
+        "province_code": "1247",
+        "psgc_code": "124703000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "124704",
+        "city_name": "City Of Kidapawan (Capital)",
+        "province_code": "1247",
+        "psgc_code": "124704000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "124705",
+        "city_name": "Libungan",
+        "province_code": "1247",
+        "psgc_code": "124705000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "124706",
+        "city_name": "Magpet",
+        "province_code": "1247",
+        "psgc_code": "124706000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "124707",
+        "city_name": "Makilala",
+        "province_code": "1247",
+        "psgc_code": "124707000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "124708",
+        "city_name": "Matalam",
+        "province_code": "1247",
+        "psgc_code": "124708000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "124709",
+        "city_name": "Midsayap",
+        "province_code": "1247",
+        "psgc_code": "124709000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "124710",
+        "city_name": "M'lang",
+        "province_code": "1247",
+        "psgc_code": "124710000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "124711",
+        "city_name": "Pigkawayan",
+        "province_code": "1247",
+        "psgc_code": "124711000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "124712",
+        "city_name": "Pikit",
+        "province_code": "1247",
+        "psgc_code": "124712000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "124713",
+        "city_name": "President Roxas",
+        "province_code": "1247",
+        "psgc_code": "124713000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "124714",
+        "city_name": "Tulunan",
+        "province_code": "1247",
+        "psgc_code": "124714000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "124715",
+        "city_name": "Antipas",
+        "province_code": "1247",
+        "psgc_code": "124715000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "124716",
+        "city_name": "Banisilan",
+        "province_code": "1247",
+        "psgc_code": "124716000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "124717",
+        "city_name": "Aleosan",
+        "province_code": "1247",
+        "psgc_code": "124717000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "124718",
+        "city_name": "Arakan",
+        "province_code": "1247",
+        "psgc_code": "124718000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126302",
+        "city_name": "Banga",
+        "province_code": "1263",
+        "psgc_code": "126302000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126303",
+        "city_name": "General Santos City (Dadiangas)",
+        "province_code": "1263",
+        "psgc_code": "126303000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126306",
+        "city_name": "City Of Koronadal (Capital)",
+        "province_code": "1263",
+        "psgc_code": "126306000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126311",
+        "city_name": "Norala",
+        "province_code": "1263",
+        "psgc_code": "126311000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126312",
+        "city_name": "Polomolok",
+        "province_code": "1263",
+        "psgc_code": "126312000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126313",
+        "city_name": "Surallah",
+        "province_code": "1263",
+        "psgc_code": "126313000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126314",
+        "city_name": "Tampakan",
+        "province_code": "1263",
+        "psgc_code": "126314000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126315",
+        "city_name": "Tantangan",
+        "province_code": "1263",
+        "psgc_code": "126315000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126316",
+        "city_name": "T'boli",
+        "province_code": "1263",
+        "psgc_code": "126316000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126317",
+        "city_name": "Tupi",
+        "province_code": "1263",
+        "psgc_code": "126317000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126318",
+        "city_name": "Santo Niño",
+        "province_code": "1263",
+        "psgc_code": "126318000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126319",
+        "city_name": "Lake Sebu",
+        "province_code": "1263",
+        "psgc_code": "126319000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126501",
+        "city_name": "Bagumbayan",
+        "province_code": "1265",
+        "psgc_code": "126501000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126502",
+        "city_name": "Columbio",
+        "province_code": "1265",
+        "psgc_code": "126502000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126503",
+        "city_name": "Esperanza",
+        "province_code": "1265",
+        "psgc_code": "126503000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126504",
+        "city_name": "Isulan (Capital)",
+        "province_code": "1265",
+        "psgc_code": "126504000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126505",
+        "city_name": "Kalamansig",
+        "province_code": "1265",
+        "psgc_code": "126505000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126506",
+        "city_name": "Lebak",
+        "province_code": "1265",
+        "psgc_code": "126506000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126507",
+        "city_name": "Lutayan",
+        "province_code": "1265",
+        "psgc_code": "126507000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126508",
+        "city_name": "Lambayong (Mariano Marcos)",
+        "province_code": "1265",
+        "psgc_code": "126508000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126509",
+        "city_name": "Palimbang",
+        "province_code": "1265",
+        "psgc_code": "126509000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126510",
+        "city_name": "President Quirino",
+        "province_code": "1265",
+        "psgc_code": "126510000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126511",
+        "city_name": "City Of Tacurong",
+        "province_code": "1265",
+        "psgc_code": "126511000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "126512",
+        "city_name": "Sen. Ninoy Aquino",
+        "province_code": "1265",
+        "psgc_code": "126512000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "128001",
+        "city_name": "Alabel (Capital)",
+        "province_code": "1280",
+        "psgc_code": "128001000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "128002",
+        "city_name": "Glan",
+        "province_code": "1280",
+        "psgc_code": "128002000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "128003",
+        "city_name": "Kiamba",
+        "province_code": "1280",
+        "psgc_code": "128003000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "128004",
+        "city_name": "Maasim",
+        "province_code": "1280",
+        "psgc_code": "128004000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "128005",
+        "city_name": "Maitum",
+        "province_code": "1280",
+        "psgc_code": "128005000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "128006",
+        "city_name": "Malapatan",
+        "province_code": "1280",
+        "psgc_code": "128006000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "128007",
+        "city_name": "Malungon",
+        "province_code": "1280",
+        "psgc_code": "128007000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "129804",
+        "city_name": "Cotabato City",
+        "province_code": "1298",
+        "psgc_code": "129804000",
+        "region_desc": "12"
+    },
+    {
+        "city_code": "000000",
+        "city_name": "Tondo II",
+        "province_code": "1339",
+        "psgc_code": "133901000",
+        "region_desc": "13"
+    },
+    {
+        "city_code": "150702",
+        "city_name": "City Of Lamitan",
+        "province_code": "1507",
+        "psgc_code": "150702000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "150703",
+        "city_name": "Lantawan",
+        "province_code": "1507",
+        "psgc_code": "150703000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "150704",
+        "city_name": "Maluso",
+        "province_code": "1507",
+        "psgc_code": "150704000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "150705",
+        "city_name": "Sumisip",
+        "province_code": "1507",
+        "psgc_code": "150705000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "150706",
+        "city_name": "Tipo-tipo",
+        "province_code": "1507",
+        "psgc_code": "150706000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "150707",
+        "city_name": "Tuburan",
+        "province_code": "1507",
+        "psgc_code": "150707000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "150708",
+        "city_name": "Akbar",
+        "province_code": "1507",
+        "psgc_code": "150708000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "150709",
+        "city_name": "Al-barka",
+        "province_code": "1507",
+        "psgc_code": "150709000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "150710",
+        "city_name": "Hadji Mohammad Ajul",
+        "province_code": "1507",
+        "psgc_code": "150710000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "150711",
+        "city_name": "Ungkaya Pukan",
+        "province_code": "1507",
+        "psgc_code": "150711000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "150712",
+        "city_name": "Hadji Muhtamad",
+        "province_code": "1507",
+        "psgc_code": "150712000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "150713",
+        "city_name": "Tabuan-lasa",
+        "province_code": "1507",
+        "psgc_code": "150713000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153601",
+        "city_name": "Bacolod-kalawi (Bacolod Grande)",
+        "province_code": "1536",
+        "psgc_code": "153601000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153602",
+        "city_name": "Balabagan",
+        "province_code": "1536",
+        "psgc_code": "153602000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153603",
+        "city_name": "Balindong (Watu)",
+        "province_code": "1536",
+        "psgc_code": "153603000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153604",
+        "city_name": "Bayang",
+        "province_code": "1536",
+        "psgc_code": "153604000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153605",
+        "city_name": "Binidayan",
+        "province_code": "1536",
+        "psgc_code": "153605000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153606",
+        "city_name": "Bubong",
+        "province_code": "1536",
+        "psgc_code": "153606000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153607",
+        "city_name": "Butig",
+        "province_code": "1536",
+        "psgc_code": "153607000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153609",
+        "city_name": "Ganassi",
+        "province_code": "1536",
+        "psgc_code": "153609000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153610",
+        "city_name": "Kapai",
+        "province_code": "1536",
+        "psgc_code": "153610000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153611",
+        "city_name": "Lumba-bayabao (Maguing)",
+        "province_code": "1536",
+        "psgc_code": "153611000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153612",
+        "city_name": "Lumbatan",
+        "province_code": "1536",
+        "psgc_code": "153612000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153613",
+        "city_name": "Madalum",
+        "province_code": "1536",
+        "psgc_code": "153613000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153614",
+        "city_name": "Madamba",
+        "province_code": "1536",
+        "psgc_code": "153614000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153615",
+        "city_name": "Malabang",
+        "province_code": "1536",
+        "psgc_code": "153615000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153616",
+        "city_name": "Marantao",
+        "province_code": "1536",
+        "psgc_code": "153616000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153617",
+        "city_name": "Marawi City (Capital)",
+        "province_code": "1536",
+        "psgc_code": "153617000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153618",
+        "city_name": "Masiu",
+        "province_code": "1536",
+        "psgc_code": "153618000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153619",
+        "city_name": "Mulondo",
+        "province_code": "1536",
+        "psgc_code": "153619000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153620",
+        "city_name": "Pagayawan (Tatarikan)",
+        "province_code": "1536",
+        "psgc_code": "153620000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153621",
+        "city_name": "Piagapo",
+        "province_code": "1536",
+        "psgc_code": "153621000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153622",
+        "city_name": "Poona Bayabao (Gata)",
+        "province_code": "1536",
+        "psgc_code": "153622000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153623",
+        "city_name": "Pualas",
+        "province_code": "1536",
+        "psgc_code": "153623000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153624",
+        "city_name": "Ditsaan-ramain",
+        "province_code": "1536",
+        "psgc_code": "153624000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153625",
+        "city_name": "Saguiaran",
+        "province_code": "1536",
+        "psgc_code": "153625000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153626",
+        "city_name": "Tamparan",
+        "province_code": "1536",
+        "psgc_code": "153626000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153627",
+        "city_name": "Taraka",
+        "province_code": "1536",
+        "psgc_code": "153627000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153628",
+        "city_name": "Tubaran",
+        "province_code": "1536",
+        "psgc_code": "153628000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153629",
+        "city_name": "Tugaya",
+        "province_code": "1536",
+        "psgc_code": "153629000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153630",
+        "city_name": "Wao",
+        "province_code": "1536",
+        "psgc_code": "153630000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153631",
+        "city_name": "Marogong",
+        "province_code": "1536",
+        "psgc_code": "153631000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153632",
+        "city_name": "Calanogas",
+        "province_code": "1536",
+        "psgc_code": "153632000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153633",
+        "city_name": "Buadiposo-buntong",
+        "province_code": "1536",
+        "psgc_code": "153633000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153634",
+        "city_name": "Maguing",
+        "province_code": "1536",
+        "psgc_code": "153634000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153635",
+        "city_name": "Picong (Sultan Gumander)",
+        "province_code": "1536",
+        "psgc_code": "153635000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153636",
+        "city_name": "Lumbayanague",
+        "province_code": "1536",
+        "psgc_code": "153636000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153637",
+        "city_name": "Bumbaran",
+        "province_code": "1536",
+        "psgc_code": "153637000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153638",
+        "city_name": "Tagoloan Ii",
+        "province_code": "1536",
+        "psgc_code": "153638000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153639",
+        "city_name": "Kapatagan",
+        "province_code": "1536",
+        "psgc_code": "153639000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153640",
+        "city_name": "Sultan Dumalondong",
+        "province_code": "1536",
+        "psgc_code": "153640000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153641",
+        "city_name": "Lumbaca-unayan",
+        "province_code": "1536",
+        "psgc_code": "153641000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153801",
+        "city_name": "Ampatuan",
+        "province_code": "1538",
+        "psgc_code": "153801000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153802",
+        "city_name": "Buldon",
+        "province_code": "1538",
+        "psgc_code": "153802000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153803",
+        "city_name": "Buluan",
+        "province_code": "1538",
+        "psgc_code": "153803000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153805",
+        "city_name": "Datu Paglas",
+        "province_code": "1538",
+        "psgc_code": "153805000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153806",
+        "city_name": "Datu Piang",
+        "province_code": "1538",
+        "psgc_code": "153806000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153807",
+        "city_name": "Datu Odin Sinsuat (Dinaig)",
+        "province_code": "1538",
+        "psgc_code": "153807000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153808",
+        "city_name": "Shariff Aguak (Maganoy) (Capital)",
+        "province_code": "1538",
+        "psgc_code": "153808000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153809",
+        "city_name": "Matanog",
+        "province_code": "1538",
+        "psgc_code": "153809000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153810",
+        "city_name": "Pagalungan",
+        "province_code": "1538",
+        "psgc_code": "153810000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153811",
+        "city_name": "Parang",
+        "province_code": "1538",
+        "psgc_code": "153811000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153812",
+        "city_name": "Sultan Kudarat (Nuling)",
+        "province_code": "1538",
+        "psgc_code": "153812000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153813",
+        "city_name": "Sultan Sa Barongis (Lambayong)",
+        "province_code": "1538",
+        "psgc_code": "153813000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153814",
+        "city_name": "Kabuntalan (Tumbao)",
+        "province_code": "1538",
+        "psgc_code": "153814000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153815",
+        "city_name": "Upi",
+        "province_code": "1538",
+        "psgc_code": "153815000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153816",
+        "city_name": "Talayan",
+        "province_code": "1538",
+        "psgc_code": "153816000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153817",
+        "city_name": "South Upi",
+        "province_code": "1538",
+        "psgc_code": "153817000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153818",
+        "city_name": "Barira",
+        "province_code": "1538",
+        "psgc_code": "153818000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153819",
+        "city_name": "Gen. S. K. Pendatun",
+        "province_code": "1538",
+        "psgc_code": "153819000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153820",
+        "city_name": "Mamasapano",
+        "province_code": "1538",
+        "psgc_code": "153820000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153821",
+        "city_name": "Talitay",
+        "province_code": "1538",
+        "psgc_code": "153821000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153822",
+        "city_name": "Pagagawan",
+        "province_code": "1538",
+        "psgc_code": "153822000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153823",
+        "city_name": "Paglat",
+        "province_code": "1538",
+        "psgc_code": "153823000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153824",
+        "city_name": "Sultan Mastura",
+        "province_code": "1538",
+        "psgc_code": "153824000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153825",
+        "city_name": "Guindulungan",
+        "province_code": "1538",
+        "psgc_code": "153825000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153826",
+        "city_name": "Datu Saudi-ampatuan",
+        "province_code": "1538",
+        "psgc_code": "153826000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153827",
+        "city_name": "Datu Unsay",
+        "province_code": "1538",
+        "psgc_code": "153827000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153828",
+        "city_name": "Datu Abdullah Sangki",
+        "province_code": "1538",
+        "psgc_code": "153828000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153829",
+        "city_name": "Rajah Buayan",
+        "province_code": "1538",
+        "psgc_code": "153829000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153830",
+        "city_name": "Datu Blah T. Sinsuat",
+        "province_code": "1538",
+        "psgc_code": "153830000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153831",
+        "city_name": "Datu Anggal Midtimbang",
+        "province_code": "1538",
+        "psgc_code": "153831000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153832",
+        "city_name": "Mangudadatu",
+        "province_code": "1538",
+        "psgc_code": "153832000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153833",
+        "city_name": "Pandag",
+        "province_code": "1538",
+        "psgc_code": "153833000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153834",
+        "city_name": "Northern Kabuntalan",
+        "province_code": "1538",
+        "psgc_code": "153834000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153835",
+        "city_name": "Datu Hoffer Ampatuan",
+        "province_code": "1538",
+        "psgc_code": "153835000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153836",
+        "city_name": "Datu Salibo",
+        "province_code": "1538",
+        "psgc_code": "153836000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "153837",
+        "city_name": "Shariff Saydona Mustapha",
+        "province_code": "1538",
+        "psgc_code": "153837000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "156601",
+        "city_name": "Indanan",
+        "province_code": "1566",
+        "psgc_code": "156601000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "156602",
+        "city_name": "Jolo (Capital)",
+        "province_code": "1566",
+        "psgc_code": "156602000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "156603",
+        "city_name": "Kalingalan Caluang",
+        "province_code": "1566",
+        "psgc_code": "156603000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "156604",
+        "city_name": "Luuk",
+        "province_code": "1566",
+        "psgc_code": "156604000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "156605",
+        "city_name": "Maimbung",
+        "province_code": "1566",
+        "psgc_code": "156605000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "156606",
+        "city_name": "Hadji Panglima Tahil (Marunggas)",
+        "province_code": "1566",
+        "psgc_code": "156606000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "156607",
+        "city_name": "Old Panamao",
+        "province_code": "1566",
+        "psgc_code": "156607000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "156608",
+        "city_name": "Pangutaran",
+        "province_code": "1566",
+        "psgc_code": "156608000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "156609",
+        "city_name": "Parang",
+        "province_code": "1566",
+        "psgc_code": "156609000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "156610",
+        "city_name": "Pata",
+        "province_code": "1566",
+        "psgc_code": "156610000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "156611",
+        "city_name": "Patikul",
+        "province_code": "1566",
+        "psgc_code": "156611000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "156612",
+        "city_name": "Siasi",
+        "province_code": "1566",
+        "psgc_code": "156612000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "156613",
+        "city_name": "Talipao",
+        "province_code": "1566",
+        "psgc_code": "156613000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "156614",
+        "city_name": "Tapul",
+        "province_code": "1566",
+        "psgc_code": "156614000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "156615",
+        "city_name": "Tongkil",
+        "province_code": "1566",
+        "psgc_code": "156615000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "156616",
+        "city_name": "Panglima Estino (New Panamao)",
+        "province_code": "1566",
+        "psgc_code": "156616000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "156617",
+        "city_name": "Lugus",
+        "province_code": "1566",
+        "psgc_code": "156617000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "156618",
+        "city_name": "Pandami",
+        "province_code": "1566",
+        "psgc_code": "156618000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "156619",
+        "city_name": "Omar",
+        "province_code": "1566",
+        "psgc_code": "156619000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "157001",
+        "city_name": "Panglima Sugala (Balimbing)",
+        "province_code": "1570",
+        "psgc_code": "157001000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "157002",
+        "city_name": "Bongao (Capital)",
+        "province_code": "1570",
+        "psgc_code": "157002000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "157003",
+        "city_name": "Mapun (Cagayan De Tawi-tawi)",
+        "province_code": "1570",
+        "psgc_code": "157003000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "157004",
+        "city_name": "Simunul",
+        "province_code": "1570",
+        "psgc_code": "157004000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "157005",
+        "city_name": "Sitangkai",
+        "province_code": "1570",
+        "psgc_code": "157005000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "157006",
+        "city_name": "South Ubian",
+        "province_code": "1570",
+        "psgc_code": "157006000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "157007",
+        "city_name": "Tandubas",
+        "province_code": "1570",
+        "psgc_code": "157007000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "157008",
+        "city_name": "Turtle Islands",
+        "province_code": "1570",
+        "psgc_code": "157008000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "157009",
+        "city_name": "Languyan",
+        "province_code": "1570",
+        "psgc_code": "157009000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "157010",
+        "city_name": "Sapa-sapa",
+        "province_code": "1570",
+        "psgc_code": "157010000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "157011",
+        "city_name": "Sibutu",
+        "province_code": "1570",
+        "psgc_code": "157011000",
+        "region_desc": "15"
+    },
+    {
+        "city_code": "160201",
+        "city_name": "Buenavista",
+        "province_code": "1602",
+        "psgc_code": "160201000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160202",
+        "city_name": "Butuan City (Capital)",
+        "province_code": "1602",
+        "psgc_code": "160202000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160203",
+        "city_name": "City Of Cabadbaran",
+        "province_code": "1602",
+        "psgc_code": "160203000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160204",
+        "city_name": "Carmen",
+        "province_code": "1602",
+        "psgc_code": "160204000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160205",
+        "city_name": "Jabonga",
+        "province_code": "1602",
+        "psgc_code": "160205000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160206",
+        "city_name": "Kitcharao",
+        "province_code": "1602",
+        "psgc_code": "160206000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160207",
+        "city_name": "Las Nieves",
+        "province_code": "1602",
+        "psgc_code": "160207000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160208",
+        "city_name": "Magallanes",
+        "province_code": "1602",
+        "psgc_code": "160208000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160209",
+        "city_name": "Nasipit",
+        "province_code": "1602",
+        "psgc_code": "160209000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160210",
+        "city_name": "Santiago",
+        "province_code": "1602",
+        "psgc_code": "160210000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160211",
+        "city_name": "Tubay",
+        "province_code": "1602",
+        "psgc_code": "160211000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160212",
+        "city_name": "Remedios T. Romualdez",
+        "province_code": "1602",
+        "psgc_code": "160212000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160301",
+        "city_name": "City Of Bayugan",
+        "province_code": "1603",
+        "psgc_code": "160301000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160302",
+        "city_name": "Bunawan",
+        "province_code": "1603",
+        "psgc_code": "160302000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160303",
+        "city_name": "Esperanza",
+        "province_code": "1603",
+        "psgc_code": "160303000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160304",
+        "city_name": "La Paz",
+        "province_code": "1603",
+        "psgc_code": "160304000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160305",
+        "city_name": "Loreto",
+        "province_code": "1603",
+        "psgc_code": "160305000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160306",
+        "city_name": "Prosperidad (Capital)",
+        "province_code": "1603",
+        "psgc_code": "160306000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160307",
+        "city_name": "Rosario",
+        "province_code": "1603",
+        "psgc_code": "160307000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160308",
+        "city_name": "San Francisco",
+        "province_code": "1603",
+        "psgc_code": "160308000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160309",
+        "city_name": "San Luis",
+        "province_code": "1603",
+        "psgc_code": "160309000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160310",
+        "city_name": "Santa Josefa",
+        "province_code": "1603",
+        "psgc_code": "160310000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160311",
+        "city_name": "Talacogon",
+        "province_code": "1603",
+        "psgc_code": "160311000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160312",
+        "city_name": "Trento",
+        "province_code": "1603",
+        "psgc_code": "160312000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160313",
+        "city_name": "Veruela",
+        "province_code": "1603",
+        "psgc_code": "160313000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "160314",
+        "city_name": "Sibagat",
+        "province_code": "1603",
+        "psgc_code": "160314000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166701",
+        "city_name": "Alegria",
+        "province_code": "1667",
+        "psgc_code": "166701000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166702",
+        "city_name": "Bacuag",
+        "province_code": "1667",
+        "psgc_code": "166702000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166704",
+        "city_name": "Burgos",
+        "province_code": "1667",
+        "psgc_code": "166704000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166706",
+        "city_name": "Claver",
+        "province_code": "1667",
+        "psgc_code": "166706000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166707",
+        "city_name": "Dapa",
+        "province_code": "1667",
+        "psgc_code": "166707000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166708",
+        "city_name": "Del Carmen",
+        "province_code": "1667",
+        "psgc_code": "166708000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166710",
+        "city_name": "General Luna",
+        "province_code": "1667",
+        "psgc_code": "166710000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166711",
+        "city_name": "Gigaquit",
+        "province_code": "1667",
+        "psgc_code": "166711000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166714",
+        "city_name": "Mainit",
+        "province_code": "1667",
+        "psgc_code": "166714000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166715",
+        "city_name": "Malimono",
+        "province_code": "1667",
+        "psgc_code": "166715000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166716",
+        "city_name": "Pilar",
+        "province_code": "1667",
+        "psgc_code": "166716000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166717",
+        "city_name": "Placer",
+        "province_code": "1667",
+        "psgc_code": "166717000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166718",
+        "city_name": "San Benito",
+        "province_code": "1667",
+        "psgc_code": "166718000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166719",
+        "city_name": "San Francisco (Anao-aon)",
+        "province_code": "1667",
+        "psgc_code": "166719000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166720",
+        "city_name": "San Isidro",
+        "province_code": "1667",
+        "psgc_code": "166720000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166721",
+        "city_name": "Santa Monica (Sapao)",
+        "province_code": "1667",
+        "psgc_code": "166721000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166722",
+        "city_name": "Sison",
+        "province_code": "1667",
+        "psgc_code": "166722000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166723",
+        "city_name": "Socorro",
+        "province_code": "1667",
+        "psgc_code": "166723000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166724",
+        "city_name": "Surigao City (Capital)",
+        "province_code": "1667",
+        "psgc_code": "166724000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166725",
+        "city_name": "Tagana-an",
+        "province_code": "1667",
+        "psgc_code": "166725000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166727",
+        "city_name": "Tubod",
+        "province_code": "1667",
+        "psgc_code": "166727000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166801",
+        "city_name": "Barobo",
+        "province_code": "1668",
+        "psgc_code": "166801000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166802",
+        "city_name": "Bayabas",
+        "province_code": "1668",
+        "psgc_code": "166802000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166803",
+        "city_name": "City Of Bislig",
+        "province_code": "1668",
+        "psgc_code": "166803000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166804",
+        "city_name": "Cagwait",
+        "province_code": "1668",
+        "psgc_code": "166804000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166805",
+        "city_name": "Cantilan",
+        "province_code": "1668",
+        "psgc_code": "166805000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166806",
+        "city_name": "Carmen",
+        "province_code": "1668",
+        "psgc_code": "166806000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166807",
+        "city_name": "Carrascal",
+        "province_code": "1668",
+        "psgc_code": "166807000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166808",
+        "city_name": "Cortes",
+        "province_code": "1668",
+        "psgc_code": "166808000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166809",
+        "city_name": "Hinatuan",
+        "province_code": "1668",
+        "psgc_code": "166809000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166810",
+        "city_name": "Lanuza",
+        "province_code": "1668",
+        "psgc_code": "166810000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166811",
+        "city_name": "Lianga",
+        "province_code": "1668",
+        "psgc_code": "166811000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166812",
+        "city_name": "Lingig",
+        "province_code": "1668",
+        "psgc_code": "166812000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166813",
+        "city_name": "Madrid",
+        "province_code": "1668",
+        "psgc_code": "166813000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166814",
+        "city_name": "Marihatag",
+        "province_code": "1668",
+        "psgc_code": "166814000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166815",
+        "city_name": "San Agustin",
+        "province_code": "1668",
+        "psgc_code": "166815000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166816",
+        "city_name": "San Miguel",
+        "province_code": "1668",
+        "psgc_code": "166816000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166817",
+        "city_name": "Tagbina",
+        "province_code": "1668",
+        "psgc_code": "166817000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166818",
+        "city_name": "Tago",
+        "province_code": "1668",
+        "psgc_code": "166818000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "166819",
+        "city_name": "City Of Tandag (Capital)",
+        "province_code": "1668",
+        "psgc_code": "166819000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "168501",
+        "city_name": "Basilisa (Rizal)",
+        "province_code": "1685",
+        "psgc_code": "168501000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "168502",
+        "city_name": "Cagdianao",
+        "province_code": "1685",
+        "psgc_code": "168502000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "168503",
+        "city_name": "Dinagat",
+        "province_code": "1685",
+        "psgc_code": "168503000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "168504",
+        "city_name": "Libjo (Albor)",
+        "province_code": "1685",
+        "psgc_code": "168504000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "168505",
+        "city_name": "Loreto",
+        "province_code": "1685",
+        "psgc_code": "168505000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "168506",
+        "city_name": "San Jose (Capital)",
+        "province_code": "1685",
+        "psgc_code": "168506000",
+        "region_desc": "16"
+    },
+    {
+        "city_code": "168507",
+        "city_name": "Tubajon",
+        "province_code": "1685",
+        "psgc_code": "168507000",
+        "region_desc": "16"
+    }
+]
