@@ -321,7 +321,7 @@ const ContractForm = React.memo(({
                 visible={showFlightPrefixMenu}
                 onDismiss={() => setShowFlightPrefixMenu(false)}
                 anchor={
-                  <TouchableOpacity onPress={() => !isDisabled && setShowFlightPrefixMenu(prev )}>
+                  <TouchableOpacity onPress={() => !isDisabled && setShowFlightPrefixMenu(((prev) => !prev))}>
                     <TextInput
                       dense
                       label="Flight Number*"
@@ -459,7 +459,10 @@ const Booking = () => {
 
   // Pickup Location States
   const [pickupLocation, setPickupLocation] = useState('')
-  const [showPickupMenu, setShowPickupMenu] = useState(false)
+  const [selectedTerminal, setSelectedTerminal] = useState(null)
+  const [selectedBay, setSelectedBay] = useState(null)
+  const [showTerminalMenu, setShowTerminalMenu] = useState(false)
+  const [showBayMenu, setShowBayMenu] = useState(false)
   const [pickupError, setPickupError] = useState(false)
 
   // Flight & Prefix States
@@ -518,10 +521,24 @@ const Booking = () => {
     [contracts]
   )
 
+  const terminalOptions = useMemo(() => ([
+    { label: 'Terminal 1', lat: 14.508963226090515, lng: 121.00417400814496 },
+    { label: 'Terminal 2', lat: 14.511166725278645, lng: 121.01288969053523 },
+    { label: 'Terminal 3', lat: 14.5201168528943, lng: 121.01377520505147 },
+    { label: 'Terminal 4', lat: 14.525440177319647, lng: 121.00111980000001 }
+  ]), [])
+
   const pickupBays = useMemo(() => 
-    Array.from({ length: 12 }, (_, i) => `Terminal 3, Bay ${i + 1}`), 
+    Array.from({ length: 20 }, (_, i) => `Bay ${i + 1}`), 
     []
   )
+
+  useEffect(() => {
+    if (selectedTerminal && selectedBay) {
+      setPickupLocation(`${selectedTerminal}, ${selectedBay}`)
+      setPickupError(false)
+    }
+  }, [selectedTerminal, selectedBay])
 
   // ================================
   // EFFECTS & SIDE EFFECTS
@@ -783,9 +800,10 @@ const Booking = () => {
     setDropOffLocation({ location: '', lat: null, lng: null })
     setDeliveryFee(0)
 
-    // Clear pickup and pickup menu
+    // Clear pickup and pickup menus
     setPickupLocation('')
-    setShowPickupMenu(false)
+    setSelectedTerminal(null)
+    setSelectedBay(null)
 
     // Clear corporation/prefix selection (admin)
     setSelectedCorporationId(null)
@@ -1072,6 +1090,11 @@ const Booking = () => {
         const combinedAddressLine1 = [st, vb].filter(Boolean).join(', ').trim()
         const combinedAddressLine2 = [rno, lmk].filter(Boolean).join(', ').trim()
 
+        // Resolve pickup geo based on selected terminal
+        const selectedTerminalLabel = selectedTerminal || (pickupLocation?.split(',')?.[0]?.trim() || null)
+        const terminalMeta = terminalOptions.find(t => t.label === selectedTerminalLabel) || null
+        const pickupGeoPoint = terminalMeta ? `POINT(${terminalMeta.lng} ${terminalMeta.lat})` : null
+
         const contractData = {
           id: trackingID,
           airline_id: user.id,
@@ -1088,6 +1111,7 @@ const Booking = () => {
           address_line_1: combinedAddressLine1,
           address_line_2: combinedAddressLine2,
           pickup_location: pickupLocation,
+          pickup_location_geo: pickupGeoPoint,
           drop_off_location: dropOffLocation.location,
           drop_off_location_geo: (dropOffLocation.lng !== null && dropOffLocation.lat !== null) ? `POINT(${dropOffLocation.lng} ${dropOffLocation.lat})` : null,
           delivery_charge: deliveryFee
@@ -1110,6 +1134,8 @@ const Booking = () => {
       // Reset state to defaults
       setDropOffLocation({ location: '', lat: null, lng: null })
       setPickupLocation('')
+      setSelectedTerminal(null)
+      setSelectedBay(null)
       setContracts([JSON.parse(JSON.stringify(INITIAL_CONTRACT))])
 
       navigation.navigate('BookingManagement', { screen: 'made' })
@@ -1213,37 +1239,78 @@ const Booking = () => {
   ), [dropOffLocation, colors, fonts, navigation])
 
   const renderPickupLocation = useMemo(() => (
-    <Menu
-      visible={showPickupMenu}
-      onDismiss={() => setShowPickupMenu(false)}
-      anchor={
-        <TouchableOpacity onPress={() => setShowPickupMenu(((prev) => !prev))}>
-          <TextInput
-            label="Pickup Location"
-            value={pickupLocation}
-            mode="outlined"
-            style={{ marginBottom: 16 }}
-            right={<TextInput.Icon icon="menu-down" onPress={() => setShowPickupMenu(((prev) => !prev))} />}
-            error={pickupError}
-            editable={false}
-          />
-        </TouchableOpacity>
-      }
-      contentStyle={{ backgroundColor: colors.surface }}
-    >
-      {pickupBays.map((bay) => (
-        <Menu.Item
-          key={bay}
-          onPress={() => {
-            setPickupLocation(bay)
-            setShowPickupMenu(false)
-            setPickupError(false)
-          }}
-          title={bay}
-        />
-      ))}
-    </Menu>
-  ), [showPickupMenu, pickupLocation, pickupError, pickupBays, colors])
+    <View>
+      <TextInput
+        label="Pickup Location"
+        value={pickupLocation}
+        mode="outlined"
+        style={{ marginBottom: 16 }}
+        error={pickupError}
+        editable={false}
+      />
+
+      <View style={{ flexDirection: 'row', gap: 12, alignSelf: 'center', minWidth: '100%'}}>
+        <Menu
+          visible={showTerminalMenu}
+          onDismiss={() => setShowTerminalMenu(false)}
+          anchor={
+            <TouchableOpacity onPress={() => setShowTerminalMenu(((prev) => !prev))} style={{ flex: 1 }}>
+              <TextInput
+                label="Terminal"
+                value={selectedTerminal || ''}
+                mode="outlined"
+                right={<TextInput.Icon icon="menu-down" onPress={() => setShowTerminalMenu(((prev) => !prev))} />}
+                editable={false}
+                style={{ marginBottom: 16 }}
+              />
+            </TouchableOpacity>
+          }
+          contentStyle={{ backgroundColor: colors.surface }}
+        >
+          {terminalOptions.map((t) => (
+            <Menu.Item
+              key={t.label}
+              onPress={() => {
+                setSelectedTerminal(t.label)
+                setShowTerminalMenu(false)
+              }}
+              title={t.label}
+            />
+          ))}
+        </Menu>
+
+        <Menu
+          visible={showBayMenu}
+          onDismiss={() => setShowBayMenu(false)}
+          anchor={
+            <TouchableOpacity onPress={() => selectedTerminal && setShowBayMenu(((prev) => !prev))} style={{ flex: 1 }}>
+              <TextInput
+                label="Bay"
+                value={selectedBay || ''}
+                mode="outlined"
+                right={<TextInput.Icon icon="menu-down" onPress={() => selectedTerminal && setShowBayMenu(((prev) => !prev))} />}
+                editable={false}
+                style={{ marginBottom: 16 }}
+                disabled={!selectedTerminal}
+              />
+            </TouchableOpacity>
+          }
+          contentStyle={{ backgroundColor: colors.surface }}
+        >
+          {pickupBays.map((bay) => (
+            <Menu.Item
+              key={bay}
+              onPress={() => {
+                setSelectedBay(bay)
+                setShowBayMenu(false)
+              }}
+              title={bay}
+            />
+          ))}
+        </Menu>
+      </View>
+    </View>
+  ), [pickupLocation, pickupError, showTerminalMenu, showBayMenu, selectedTerminal, selectedBay, terminalOptions, pickupBays, colors])
 
   // ================================
   // MAIN RENDER
@@ -1628,7 +1695,7 @@ const styles = StyleSheet.create({
   },
   stickyCol: {
     alignItems: 'center',
-    paddingHorizontal: 6
+    padding: 10,
   }
 })
 

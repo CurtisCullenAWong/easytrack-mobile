@@ -33,6 +33,8 @@ const AdminBookingList = ({ navigation }) => {
       luggage_quantity: contract.luggage_quantity || 'N/A',
       luggage_weight: contract.luggage_weight || 'N/A',
       flight_number: contract.flight_number || 'N/A',
+      pickup_location: contract.pickup_location || 'N/A',
+      pickup_location_geo: contract.pickup_location_geo || 'N/A',
       drop_off_location: contract.drop_off_location || 'N/A',
       drop_off_location_geo: contract.drop_off_location_geo || 'N/A',
       airline_name: `${contract.airline?.first_name || ''} ${contract.airline?.middle_initial || ''} ${contract.airline?.last_name || ''} ${contract.airline?.suffix || ''}`.trim() || 'N/A',
@@ -806,10 +808,7 @@ const AdminBookingList = ({ navigation }) => {
                               <Menu.Item
                                 onPress={() => {
                                   setActionMenuVisible(null)
-                                  navigation.navigate('CheckLocation', { 
-                                    dropOffLocation: contract.drop_off_location,
-                                    dropOffLocationGeo: contract.drop_off_location_geo
-                                  })
+                                  navigation.navigate('CheckLocation', { dropOffLocation: contract.drop_off_location, dropOffLocationGeo: contract.drop_off_location_geo, pickupLocation: contract.pickup_location, pickupLocationGeo: contract.pickup_location_geo })
                                 }}
                                 title="Check Location"
                                 leadingIcon="map-marker"
