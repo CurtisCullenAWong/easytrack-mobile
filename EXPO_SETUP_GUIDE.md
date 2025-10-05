@@ -93,12 +93,16 @@ eas update --channel preview --platform android --message "Preview update"
 ### Production Channel
 ```bash
 eas env:pull --environment production
+y
+
 eas update --channel production --platform android --message "Production update"
 ```
 
 ### Admin Production Channel
 ```bash
 eas env:pull --environment preview
+y
+
 eas update --channel admin_production --platform android --message "Admin Production update"
 ```
 
