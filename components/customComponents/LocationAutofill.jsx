@@ -7,6 +7,7 @@ import {
   getProvincesByRegion, 
   getCitiesByProvince, 
   getBarangaysByCity,
+  getPostalCodes,
 } from '../../utils/locationData'
 
 const LocationAutofill = ({ 
@@ -23,6 +24,7 @@ const LocationAutofill = ({
   const [province, setProvince] = useState(initialValues.province || '')
   const [cityMunicipality, setCityMunicipality] = useState(initialValues.city || '')
   const [barangay, setBarangay] = useState(initialValues.barangay || '')
+  const [postalCode, setPostalCode] = useState(initialValues.postalCode || '')
   
   // State for selected objects (to get codes for data fetching)
   const [selectedRegionObj, setSelectedRegionObj] = useState(null)
@@ -117,9 +119,10 @@ const LocationAutofill = ({
       region: region,
       province: province,
       city: cityMunicipality,
-      barangay: barangay
+      barangay: barangay,
+      postalCode: postalCode
     })
-  }, [region, province, cityMunicipality, barangay, onLocationChange])
+  }, [region, province, cityMunicipality, barangay, postalCode, onLocationChange])
   
   const handleRegionSelect = useCallback((selectedRegion) => {
     setRegion(selectedRegion.name)
@@ -149,27 +152,38 @@ const LocationAutofill = ({
     setBarangay('')
     setShowCityMenu(false)
     setCityQuery('')
+    // Autofill postal code from location (prefer barangay if present later)
+    const list = getPostalCodes({ regionName: region, cityName: selectedCity.name })
+    if (list && list.length > 0) {
+      setPostalCode(list[0].name)
+    } else {
+      setPostalCode('')
+    }
   }, [])
   
   const handleBarangaySelect = useCallback((selectedBarangay) => {
     setBarangay(selectedBarangay.name)
     setShowBarangayMenu(false)
     setBarangayQuery('')
+    // Refine postal code using barangay/district when available
+    const list = getPostalCodes({ regionName: region, cityName: cityMunicipality, barangayName: selectedBarangay.name })
+    if (list && list.length > 0) {
+      setPostalCode(list[0].name)
+    } else {
+      // fallback to city-level
+      const byCity = getPostalCodes({ regionName: region, cityName: cityMunicipality })
+      if (byCity && byCity.length > 0) setPostalCode(byCity[0].name)
+    }
   }, [])
+
+  // If user selected city/barangay earlier but postalCode was empty, attempt autofill
+  useEffect(() => {
+    if (!postalCode && cityMunicipality) {
+      const list = getPostalCodes({ regionName: region, cityName: cityMunicipality, barangayName: barangay })
+      if (list && list.length > 0) setPostalCode(list[0].name)
+    }
+  }, [region, cityMunicipality, barangay, postalCode])
   
-  const clearAllSelections = () => {
-    setRegion('')
-    setProvince('')
-    setCityMunicipality('')
-    setBarangay('')
-    setSelectedRegionObj(null)
-    setSelectedProvinceObj(null)
-    setSelectedCityObj(null)
-    setRegionQuery('')
-    setProvinceQuery('')
-    setCityQuery('')
-    setBarangayQuery('')
-  }
   
   const renderAutofillDropdown = (label, value, onSelect, showMenu, setShowMenu, query, setQuery, filteredData, disabled, onTextChange, error = false) => (
     <Menu
@@ -318,16 +332,21 @@ const LocationAutofill = ({
         errors.barangay
       )}
       
-      <TouchableOpacity 
-        onPress={clearAllSelections}
-        style={[styles.clearButton, { borderColor: colors.outline }]}
+      <TextInput
+        label="Postal Code*"
+        value={postalCode}
+        onChangeText={(text) => {
+          const digitsOnly = String(text || '').replace(/[^0-9]/g, '')
+          setPostalCode(digitsOnly.slice(0, 4))
+        }}
+        mode="outlined"
+        style={[styles.input, style]}
+        keyboardType="numeric"
+        error={errors.postalCode}
+        editable={!disabled}
         disabled={disabled}
-      >
-        <IconButton icon="broom" size={20} iconColor={colors.onSurfaceVariant} />
-        <Text style={[fonts.bodyMedium, { color: colors.onSurfaceVariant }]}>
-          Clear All Selections
-        </Text>
-      </TouchableOpacity>
+        placeholder="Enter 4-digit postal code"
+      />
     </View>
   )
 }
@@ -338,15 +357,6 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 12,
-  },
-  clearButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 8,
-    marginTop: 8,
   },
   menuContainer: {
     maxHeight: 350,

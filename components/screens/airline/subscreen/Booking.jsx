@@ -169,6 +169,8 @@ const ContractForm = React.memo(({
   isLastContract,
   isDisabled,
   flightPrefixes,
+  isFixedCorporation = false,
+  fixedPrefix = null,
   hasDuplicateName = false
 }) => {
   const { colors, fonts } = useTheme()
@@ -231,17 +233,19 @@ const ContractForm = React.memo(({
           
           <View style={styles.nameRow}>
             <TextInput
+              dense
               label="First Name*"
               value={contract.firstName}
               onChangeText={(text) => onInputChange(index, "firstName", filterSpecialCharacters(text, 'name'))}
               mode="outlined"
-              style={[styles.nameField, { marginRight: 8 }]}
+              style={[styles.nameField, { marginRight: 6 }]}
               error={contract.errors?.firstName || hasDuplicateName}
               placeholder="Enter first name (2-50 characters)"
               maxLength={INPUT_LIMITS.firstName.maxLength}
               disabled={isDisabled}
             />
             <TextInput
+              dense
               label="M.I."
               value={contract.middleInitial}
               onChangeText={(text) => onInputChange(index, "middleInitial", filterSpecialCharacters(text, 'name'))}
@@ -254,11 +258,12 @@ const ContractForm = React.memo(({
           </View>
 
           <TextInput
+            dense
             label="Last Name*"
             value={contract.lastName}
             onChangeText={(text) => onInputChange(index, "lastName", filterSpecialCharacters(text, 'name'))}
             mode="outlined"
-            style={{ marginBottom: 12 }}
+            style={{ marginBottom: 8 }}
             error={contract.errors?.lastName || hasDuplicateName}
             placeholder="Enter last name (2-50 characters)"
             maxLength={INPUT_LIMITS.lastName.maxLength}
@@ -266,11 +271,12 @@ const ContractForm = React.memo(({
           />
 
           <TextInput
+            dense
             label="Owner's Contact Number*"
             value={contract.contact}
             onChangeText={(text) => onInputChange(index, "contact", filterSpecialCharacters(text, 'contact'))}
             mode="outlined"
-            style={{ marginBottom: 12 }}
+            style={{ marginBottom: 8 }}
             keyboardType="phone-pad"
             left={<TextInput.Affix text="+63" />}
             error={contract.errors?.contact}
@@ -290,52 +296,75 @@ const ContractForm = React.memo(({
       >
         <View style={styles.sectionContent}>
           <View style={{ marginBottom: 12 }}>
-            <Menu
-              visible={showFlightPrefixMenu}
-              onDismiss={() => setShowFlightPrefixMenu(false)}
-              anchor={
-                <TouchableOpacity onPress={() => !isDisabled && setShowFlightPrefixMenu(true)}>
-                  <TextInput
-                    label="Flight Number*"
-                    value={contract.flightNumber}
-                    onChangeText={(text) => {
-                      // Allow alphanumerical characters
-                      const cleaned = filterSpecialCharacters(text, 'flightNumber').toUpperCase()
-                      onInputChange(index, "flightNumber", cleaned)
-                    }}
-                    mode="outlined"
-                    error={contract.errors?.flightNumber}
-                    maxLength={INPUT_LIMITS.flightNumber.maxLength}
-                    placeholder="Enter flight number (alphanumerical)"
-                    disabled={isDisabled}
-                    left={
-                      <TextInput.Icon
-                        icon="menu-down"
-                        onPress={() => !isDisabled && setShowFlightPrefixMenu(((prev) => !prev))}
-                        disabled={isDisabled}
-                      />
-                    }
-                  />
-                </TouchableOpacity>
-              }
-              contentStyle={{ backgroundColor: colors.surface }}
-            >
-              {flightPrefixes.map((prefix) => (
-                <Menu.Item
-                  key={prefix.id}
-                  onPress={() => {
-                    // Keep only the numbers from the current value
-                    const numbers = contract.flightNumber.replace(/[^0-9]/g, '')
-                    onInputChange(index, "flightNumber", `${prefix.flight_prefix}${numbers}`)
-                    setShowFlightPrefixMenu(false)
+            {/* Flight prefix selector or fixed prefix display */}
+            {isFixedCorporation && fixedPrefix ? (
+              <View>
+                <TextInput
+                  dense
+                  label="Flight Number*"
+                  value={contract.flightNumber}
+                  onChangeText={(text) => {
+                    // when fixed prefix is present, allow editing after the prefix
+                    const cleaned = filterSpecialCharacters(text, 'flightNumber').toUpperCase()
+                    onInputChange(index, "flightNumber", cleaned)
                   }}
-                  title={`${prefix.flight_prefix} - ${prefix.flight_prefix === 'Z2' ? 'AirAsia' : 'Cebu Pacific'}`}
+                  mode="outlined"
+                  error={contract.errors?.flightNumber}
+                  maxLength={INPUT_LIMITS.flightNumber.maxLength}
+                  placeholder={'Enter flight number (alphanumerical)'}
+                  disabled={isDisabled}
+                  left={<TextInput.Affix text={fixedPrefix} />}
                 />
-              ))}
-            </Menu>
+              </View>
+            ) : (
+              <Menu
+                visible={showFlightPrefixMenu}
+                onDismiss={() => setShowFlightPrefixMenu(false)}
+                anchor={
+                  <TouchableOpacity onPress={() => !isDisabled && setShowFlightPrefixMenu(prev )}>
+                    <TextInput
+                      dense
+                      label="Flight Number*"
+                      value={contract.flightNumber}
+                      onChangeText={(text) => {
+                        // Allow alphanumerical characters
+                        const cleaned = filterSpecialCharacters(text, 'flightNumber').toUpperCase()
+                        onInputChange(index, "flightNumber", cleaned)
+                      }}
+                      mode="outlined"
+                      error={contract.errors?.flightNumber}
+                      maxLength={INPUT_LIMITS.flightNumber.maxLength}
+                      placeholder="Enter flight number (alphanumerical)"
+                      disabled={isDisabled}
+                      left={
+                        <TextInput.Icon
+                          icon="menu-down"
+                          onPress={() => !isDisabled && setShowFlightPrefixMenu(((prev) => !prev))}
+                          disabled={isDisabled}
+                        />
+                      }
+                    />
+                  </TouchableOpacity>
+                }
+                contentStyle={{ backgroundColor: colors.surface }}
+              >
+                {flightPrefixes.map((prefix) => (
+                  <Menu.Item
+                    key={prefix.id}
+                    onPress={() => {
+                      // clear any existing flight number and set only the prefix
+                      onInputChange(index, "flightNumber", `${prefix.flight_prefix}`)
+                      setShowFlightPrefixMenu(false)
+                    }}
+                    title={`${prefix.corporation_name} - ${prefix.flight_prefix}`}
+                  />
+                ))}
+              </Menu>
+            )}
           </View>
 
           <TextInput
+            dense
             label="Luggage Quantity*"
             value={contract.quantity}
             onChangeText={(text) => {
@@ -346,7 +375,7 @@ const ContractForm = React.memo(({
             }}
             inputMode="numeric"
             mode="outlined"
-            style={{ marginBottom: 12 }}
+            style={{ marginBottom: 8 }}
             error={contract.errors?.quantity}
             maxLength={INPUT_LIMITS.quantity.maxLength}
             placeholder="Enter quantity (1-25)"
@@ -354,24 +383,32 @@ const ContractForm = React.memo(({
           />
 
           {itemsIdx.map((i) => (
-            <TextInput
-              key={`desc-${index}-${i}`}
-              label={`Luggage Description ${i + 1}*`}
-              value={contract.itemDescriptions?.[i] ?? ''}
-              onChangeText={(text) => {
-                const sanitized = filterSpecialCharacters(text, 'itemDescription')
-                const next = [...(contract.itemDescriptions || [])]
-                next[i] = sanitized
-                onInputChange(index, 'itemDescriptions', next)
-              }}
-              mode="outlined"
-              style={{ marginBottom: 12 }}
-              placeholder="Describe the luggage"
-              multiline
-              numberOfLines={2}
-              disabled={isDisabled}
-              error={contract.errors?.itemDescription}
-            />
+            <React.Fragment key={`desc-frag-${index}-${i}`}>
+              <TextInput
+                key={`desc-${index}-${i}`}
+                label={`Luggage Description ${i + 1}*`}
+                value={contract.itemDescriptions?.[i] ?? ''}
+                onChangeText={(text) => {
+                  const sanitized = filterSpecialCharacters(text, 'itemDescription')
+                  const next = [...(contract.itemDescriptions || [])]
+                  next[i] = sanitized
+                  onInputChange(index, 'itemDescriptions', next)
+                }}
+                mode="outlined"
+                dense
+                style={{ marginBottom: 8 }}
+                placeholder="Describe the luggage"
+                multiline
+                numberOfLines={2}
+                disabled={isDisabled}
+                error={contract.errors?.itemDescription}
+              />
+
+              {/* Divider after every 3 descriptions, unless it's the last item */}
+              {((i + 1) % 3 === 0) && (i !== itemsIdx.length - 1) && (
+                <View key={`divider-${index}-${i}`} style={styles.luggageDivider} />
+              )}
+            </React.Fragment>
           ))}
         </View>
       </List.Accordion>
@@ -427,7 +464,9 @@ const Booking = () => {
 
   // Flight & Prefix States
   const [flightPrefixes, setFlightPrefixes] = useState([])
-  const [showFlightPrefixMenu, setShowFlightPrefixMenu] = useState(false)
+  const [userRoleId, setUserRoleId] = useState(null)
+  const [selectedCorporationId, setSelectedCorporationId] = useState(null)
+  const [fixedPrefix, setFixedPrefix] = useState(null)
 
   // Contract & Submission States
   const [contracts, setContracts] = useState([JSON.parse(JSON.stringify(INITIAL_CONTRACT))])
@@ -455,6 +494,14 @@ const Booking = () => {
     villageBuilding: false,
   })
 
+  // Helper to check if any selection exists
+  const hasSelections = Boolean(
+    dropOffLocation.location ||
+    pickupLocation ||
+    selectedCorporationId ||
+    province || cityMunicipality || barangay || postalCode || street || villageBuilding
+  )
+
   // ================================
   // DERIVED VALUES & COMPUTED STATE
   // ================================
@@ -480,13 +527,79 @@ const Booking = () => {
   // EFFECTS & SIDE EFFECTS
   // ================================
 
-  // Fetch flight prefixes from profiles_corporation
+  // Fetch user profile and load flight prefixes based on role
   useEffect(() => {
-    const fetchFlightPrefixes = async () => {
+    const initPrefixes = async () => {
       try {
+        const { data: { user }, error: userErr } = await supabase.auth.getUser()
+        if (userErr) {
+          console.error('Error fetching user from auth:', userErr)
+          return
+        }
+        if (!user) return
+
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role_id, corporation_id')
+          .eq('id', user.id)
+          .single()
+
+        if (profileError) {
+          console.error('Error fetching profile:', profileError)
+        }
+
+        const roleId = profile?.role_id ?? null
+        const corpId = profile?.corporation_id ?? null
+        setUserRoleId(roleId)
+
+        // Role 3: fixed corporation - load only that corporation's prefix
+        if (roleId === 3 && corpId) {
+          const { data, error } = await supabase
+            .from('profiles_corporation')
+            .select('id, flight_prefix, corporation_name')
+            .eq('id', corpId)
+
+          if (error) {
+            console.error('Error fetching corporation prefix for role 3:', error)
+            showSnackbar('Error loading flight prefixes', 'error')
+          } else {
+            const items = Array.isArray(data) ? data : []
+            const filtered = items.filter(item => item.flight_prefix)
+            setFlightPrefixes(filtered)
+            setSelectedCorporationId(corpId)
+            // If there's exactly one prefix for this corp, set it as fixed prefix
+            if (filtered.length === 1) {
+              setFixedPrefix(filtered[0].flight_prefix)
+            } else {
+              setFixedPrefix(null)
+            }
+          }
+          return
+        }
+
+        // Role 1: admin - load list of corporations and allow selection via menu
+        if (roleId === 1) {
+          const { data, error } = await supabase
+            .from('profiles_corporation')
+            .select('id, flight_prefix, corporation_name')
+            .order('corporation_name', { ascending: true })
+
+          if (error) {
+            console.error('Error fetching corporations for admin:', error)
+            showSnackbar('Error loading flight prefixes', 'error')
+          } else {
+            const list = Array.isArray(data) ? data : []
+            // Show all available prefixes for admin selection
+            setFlightPrefixes(list.filter(item => item.flight_prefix))
+            setSelectedCorporationId(null)
+          }
+          return
+        }
+
+        // Default behavior: fallback to fetching known corp ids (legacy)
         const { data, error } = await supabase
           .from('profiles_corporation')
-          .select('id, flight_prefix')
+          .select('id, flight_prefix, corporation_name')
           .in('id', [2, 3])
           .order('id')
 
@@ -500,12 +613,12 @@ const Booking = () => {
           setFlightPrefixes(data.filter(item => item.flight_prefix))
         }
       } catch (error) {
-        console.error('Error in fetchFlightPrefixes:', error)
+        console.error('Error initializing flight prefixes:', error)
         showSnackbar('Error loading flight prefixes', 'error')
       }
     }
 
-    fetchFlightPrefixes()
+    initPrefixes()
   }, [showSnackbar])
 
   // When route params contain locationData, populate address and attempt to fetch pricing
@@ -613,13 +726,15 @@ const Booking = () => {
     setProvince(selections.province || '')
     setCityMunicipality(selections.city || '')
     setBarangay(selections.barangay || '')
+    setPostalCode(selections.postalCode || '')
     
     // Update location selections for reference
     setLocationSelections({
       region: selections.region ? { name: selections.region } : null,
       province: selections.province ? { name: selections.province } : null,
       city: selections.city ? { name: selections.city } : null,
-      barangay: selections.barangay ? { name: selections.barangay } : null
+      barangay: selections.barangay ? { name: selections.barangay } : null,
+      postalCode: selections.postalCode ? { name: selections.postalCode } : null
     })
     
     // Clear errors when location is selected
@@ -628,7 +743,8 @@ const Booking = () => {
       region: false,
       province: false,
       cityMunicipality: false,
-      barangay: false
+      barangay: false,
+      postalCode: false
     }))
   }, [])
 
@@ -657,6 +773,25 @@ const Booking = () => {
       villageBuilding: false
     })
   }
+
+  // Clear all UI selections: address, drop-off, pickup, corporation/prefix selection
+  const clearAllSelections = useCallback(() => {
+    // Clear address fields
+    clearDeliveryAddress()
+
+    // Clear drop-off location and pricing
+    setDropOffLocation({ location: '', lat: null, lng: null })
+    setDeliveryFee(0)
+
+    // Clear pickup and pickup menu
+    setPickupLocation('')
+    setShowPickupMenu(false)
+
+    // Clear corporation/prefix selection (admin)
+    setSelectedCorporationId(null)
+    setFlightPrefixes([])
+    setFixedPrefix(null)
+  }, [clearDeliveryAddress])
   
   const clearSingleContract = useCallback((index) => {
     setContracts(prev => {
@@ -717,26 +852,6 @@ const Booking = () => {
   // ================================
 
   // Check for duplicate names across all contracts
-  const checkForDuplicateNames = useCallback((contracts, currentIndex = -1) => {
-    const nameMap = new Map()
-    const duplicates = new Set()
-    
-    contracts.forEach((contract, index) => {
-      if (index === currentIndex) return // Skip current contract being edited
-      
-      const fullName = `${contract.firstName?.trim()} ${contract.lastName?.trim()}`.toLowerCase()
-      if (fullName.trim() && fullName !== ' ') {
-        if (nameMap.has(fullName)) {
-          duplicates.add(fullName)
-        } else {
-          nameMap.set(fullName, index)
-        }
-      }
-    })
-    
-    return duplicates
-  }, [])
-
   const validateContract = useCallback((contract) => {
     const trim = (s) => String(s || "").trim()
     return {
@@ -1070,14 +1185,15 @@ const Booking = () => {
         <Text style={[fonts.titleMedium, { color: colors.primary }]}>Drop-Off Location Pin</Text>
       </View>
 
-      <Button
-        mode="contained"
-        onPress={() => navigation.navigate('SelectLocation')}
-        icon="map-marker"
-        style={{ backgroundColor: colors.primary, alignSelf: 'center', marginBottom: 10 }}
-      >
-        Select Location
-      </Button>
+          <Button
+            mode="contained"
+            onPress={() => navigation.navigate('SelectLocation')}
+            icon="map-marker"
+            style={{ backgroundColor: colors.primary, alignSelf: 'center', marginBottom: 8, paddingVertical: 6 }}
+            contentStyle={{ height: 36 }}
+          >
+            Select Location
+          </Button>
 
       {dropOffLocation.location ? (
         <View style={[styles.locationContent, { backgroundColor: colors.surfaceVariant }]}>
@@ -1134,10 +1250,11 @@ const Booking = () => {
   // ================================
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      {SnackbarElement}
-      <View style={styles.content}>
-        {renderDropOffLocation}
+    <View style={{ flex: 1 }}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+        {SnackbarElement}
+        <View style={styles.content}>
+          {renderDropOffLocation}
         {deliveryFee > 0 && dropOffLocation.location && (
           <Surface style={[styles.warningSurface, { backgroundColor: colors.primaryContainer }]} elevation={1}>
             <View style={styles.warningContent}>
@@ -1152,7 +1269,7 @@ const Booking = () => {
                   Total Luggage Quantity: {totalLuggageQuantity} ({Math.ceil(totalLuggageQuantity / 3)} sets of 3)
                 </Text>
                 <Text style={[fonts.bodySmall, { color: colors.onPrimaryContainer, fontStyle: 'italic' }]}>
-                  Note: Delivery fee is charged per set of 3 luggages
+                  Note: Delivery is charged per set of 3 luggages per head.
                 </Text>
               </View>
             </View>
@@ -1176,20 +1293,15 @@ const Booking = () => {
 
           <LocationAutofill
             onLocationChange={handleLocationChange}
-            initialValues={locationSelections}
+            initialValues={{
+              region: locationSelections.region?.name || '',
+              province: locationSelections.province?.name || '',
+              city: locationSelections.city?.name || '',
+              barangay: locationSelections.barangay?.name || '',
+              postalCode: postalCode || '',
+            }}
             disabled={!dropOffLocation.location || deliveryFee <= 0}
             errors={addressErrors}
-          />
-
-          <TextInput
-            label="Postal Code*"
-            value={postalCode}
-            onChangeText={(v) => setPostalCode(filterSpecialCharacters(v, "postalCode").slice(0, INPUT_LIMITS.postalCode.maxLength))}
-            mode="outlined"
-            style={{ marginBottom: 12 }}
-            keyboardType="numeric"
-            error={addressErrors.postalCode}
-            disabled={!dropOffLocation.location || deliveryFee <= 0}
           />
 
           <Text style={[fonts.titleMedium, { color: colors.primary, marginBottom: 8 }]}>Address Line 1</Text>
@@ -1233,11 +1345,11 @@ const Booking = () => {
           />
           <Button
             mode="outlined"
-            onPress={clearDeliveryAddress}
+            onPress={clearAllSelections}
             icon="broom"
-            disabled={!dropOffLocation.location || deliveryFee <= 0}
+            disabled={!hasSelections}
           >
-            Clear Address
+            Clear All Addresses
           </Button>
         </Surface>
 
@@ -1261,6 +1373,8 @@ const Booking = () => {
               isLastContract={contracts.length === 1}
               isDisabled={!dropOffLocation.location || deliveryFee <= 0}
               flightPrefixes={flightPrefixes}
+              isFixedCorporation={userRoleId === 3}
+              fixedPrefix={fixedPrefix}
               hasDuplicateName={hasDuplicateName}
             />
           )
@@ -1286,7 +1400,32 @@ const Booking = () => {
             Create Contracts
           </Button>
         </View>
-      </View>
+        </View>
+      </ScrollView>
+
+      {/* Sticky compact delivery fee bar */}
+      {dropOffLocation.location && (
+        deliveryFee > 0 ? (
+          <View style={[styles.stickyFeeBar, { backgroundColor: colors.primaryContainer }]}>
+            <View style={styles.stickyCol}>
+              <Text style={[fonts.titleSmall, { color: colors.primary }]}>Base</Text>
+              <Text style={[fonts.bodySmall, { color: colors.onPrimaryContainer }]}>₱{deliveryFee.toFixed(2)}</Text>
+            </View>
+            <View style={styles.stickyCol}>
+              <Text style={[fonts.titleSmall, { color: colors.primary }]}>Total</Text>
+              <Text style={[fonts.bodySmall, { color: colors.onPrimaryContainer }]}>₱{totalDeliveryFee.toFixed(2)}</Text>
+            </View>
+            <View style={styles.stickyCol}>
+              <Text style={[fonts.titleSmall, { color: colors.primary }]}>Luggages</Text>
+              <Text style={[fonts.bodySmall, { color: colors.onPrimaryContainer }]}>{totalLuggageQuantity} ({Math.ceil(totalLuggageQuantity / 3)})</Text>
+            </View>
+          </View>
+        ) : (
+          <View style={[styles.stickyFeeBar, { backgroundColor: colors.errorContainer }]}>
+            <Text style={[fonts.bodySmall, { color: colors.onErrorContainer }]}>Delivery fee unavailable for selected location</Text>
+          </View>
+        )
+      )}
 
       <BottomModal visible={showConfirmationModal} onDismiss={() => setShowConfirmationModal(false)}>
         <View style={styles.confirmationContent}>
@@ -1320,7 +1459,7 @@ const Booking = () => {
           </View>
         </View>
       </BottomModal>
-    </ScrollView>
+    </View>
   )
 }
 
@@ -1334,19 +1473,19 @@ const styles = StyleSheet.create({
     flex: 1 
   },
   content: { 
-    padding: 16 
+    padding: 10 
   },
   surface: { 
-    padding: 16, 
-    borderRadius: 8, 
-    marginBottom: 16 
+    padding: 10, 
+    borderRadius: 6, 
+    marginBottom: 10 
   },
 
   // Contract Form Styles
   luggageBlock: {
-    marginBottom: 20,
-    padding: 12,
-    borderRadius: 8,
+    marginBottom: 12,
+    padding: 8,
+    borderRadius: 6,
     borderWidth: 1,
   },
   headerContainer: {
@@ -1356,8 +1495,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionContent: { 
-    paddingHorizontal: 16, 
-    paddingBottom: 16 
+    paddingHorizontal: 8, 
+    paddingBottom: 8 
   },
 
   // Form Field Styles
@@ -1383,6 +1522,13 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 1,
     marginBottom: 12,
+  },
+
+  luggageDivider: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginVertical: 6,
+    borderRadius: 1,
   },
 
   // Location & Map Styles
@@ -1425,9 +1571,9 @@ const styles = StyleSheet.create({
 
   // Warning & Status Styles
   warningSurface: { 
-    padding: 16, 
-    borderRadius: 8, 
-    marginBottom: 16 
+    padding: 10, 
+    borderRadius: 6, 
+    marginBottom: 10 
   },
   warningContent: { 
     flexDirection: 'row', 
@@ -1442,19 +1588,19 @@ const styles = StyleSheet.create({
   buttonContainer: { 
     flexDirection: 'row', 
     justifyContent: 'center', 
-    gap: 5, 
-    marginTop: 24, 
-    marginBottom: 32 
+    gap: 6, 
+    marginTop: 12, 
+    marginBottom: 16 
   },
 
   // Modal & Confirmation Styles
   confirmationContent: { 
-    padding: 16 
+    padding: 12 
   },
   confirmationDetails: { 
-    padding: 16, 
-    borderRadius: 8, 
-    marginBottom: 16 
+    padding: 12, 
+    borderRadius: 6, 
+    marginBottom: 12 
   },
   confirmationButtons: { 
     flexDirection: 'row', 
@@ -1463,14 +1609,27 @@ const styles = StyleSheet.create({
 
   // Address Section Styles
   addressSection: {
-    marginTop: 16,
-    paddingTop: 16,
+    marginTop: 12,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
   },
   headerLeft: { 
     flex: 1 
   },
+  stickyFeeBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderTopWidth: 1,
+    borderColor: '#e0e0e0'
+  },
+  stickyCol: {
+    alignItems: 'center',
+    paddingHorizontal: 6
+  }
 })
 
 export default React.memo(Booking)

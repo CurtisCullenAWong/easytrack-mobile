@@ -10,7 +10,6 @@ import { ActivityIndicator, View } from 'react-native'
 import './components/hooks/backgroundLocationTask'
 import { NotificationProvider } from './context/NotificationContext'
 import UpdatePrompt from './components/customComponents/UpdatePrompt'
-import Constants from 'expo-constants'
 const THEME_KEY = 'appTheme'
 
 export default function App() {
@@ -49,9 +48,6 @@ export default function App() {
       setReady(true)
     }
     initialize()
-    console.log('Process API Key:', process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY)
-    console.log('Process Resend API Key:', process.env.EXPO_PUBLIC_RESEND_API_KEY)
-    console.log('Process Gemini API Key:', process.env.EXPO_PUBLIC_GEMINI_API_KEY)
   }, [])
 
   if (!ready) {

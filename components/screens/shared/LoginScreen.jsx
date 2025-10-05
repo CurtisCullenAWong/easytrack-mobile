@@ -64,7 +64,7 @@ const LoginScreen = ({ navigation }) => {
       <>
       <Image source={require('../../../assets/banner.png')} style={styles.bannerImage} />
       <Text style={[styles.title, { color: colors.primary, ...fonts.displayLarge }]}>
-        EasyTrack Admin
+        EasyTrack
         <Text style={[styles.subtitle, { color: colors.primary, ...fonts.displaySmall }]}>
         {'\n'}v1.0.0
         </Text>

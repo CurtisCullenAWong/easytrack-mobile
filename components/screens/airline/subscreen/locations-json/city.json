@@ -9444,7 +9444,14 @@
     },
     {
         "city_code": "133901",
-        "city_name": "Tondo I / Ii",
+        "city_name": "Tondo I",
+        "province_code": "1339",
+        "psgc_code": "133901000",
+        "region_desc": "13"
+    },
+    {
+        "city_code": "000000",
+        "city_name": "Tondo II",
         "province_code": "1339",
         "psgc_code": "133901000",
         "region_desc": "13"
@@ -9454,7 +9461,8 @@
         "city_name": "Binondo",
         "province_code": "1339",
         "psgc_code": "133902000",
-        "region_desc": "13"
+        "region_desc": "13",
+        "postal_code": 1006
     },
     {
         "city_code": "133903",
@@ -9503,14 +9511,16 @@
         "city_name": "Intramuros",
         "province_code": "1339",
         "psgc_code": "133909000",
-        "region_desc": "13"
+        "region_desc": "13",
+        "postal_code": 1002
     },
     {
         "city_code": "133910",
         "city_name": "Malate",
         "province_code": "1339",
         "psgc_code": "133910000",
-        "region_desc": "13"
+        "region_desc": "13",
+        "postal_code": 1004
     },
     {
         "city_code": "133911",

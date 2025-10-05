@@ -2,7 +2,7 @@ import regionData from '../components/screens/airline/subscreen/locations-json/r
 import provinceData from '../components/screens/airline/subscreen/locations-json/province.json'
 import cityData from '../components/screens/airline/subscreen/locations-json/city.json'
 import barangayData from '../components/screens/airline/subscreen/locations-json/barangay.json'
-
+import postalCodeData from '../components/screens/airline/subscreen/locations-json/postal-codes.json'
 /**
  * Location data utilities for systematic autofill
  */
@@ -11,7 +11,8 @@ import barangayData from '../components/screens/airline/subscreen/locations-json
 const cache = {
   provinces: new Map(),
   cities: new Map(),
-  barangays: new Map()
+  barangays: new Map(),
+  postalCodes: new Map()
 }
 
 /**
@@ -115,6 +116,76 @@ export const searchLocations = (locations, query) => {
 }
 
 /**
+ * Get postal codes filtered by selected location names
+ * Accepts names to avoid coupling to PSGC codes since dataset is name-based
+ */
+export const getPostalCodes = ({ regionName = '', cityName = '', barangayName = '' } = {}) => {
+  const norm = (s) => String(s || '').toLowerCase().trim()
+  const r = norm(regionName)
+  const c = norm(cityName)
+  const b = norm(barangayName)
+
+  const key = `${r}|${c}|${b}`
+  if (cache.postalCodes.has(key)) return cache.postalCodes.get(key)
+
+  if (!c && !b) {
+    cache.postalCodes.set(key, [])
+    return []
+  }
+
+  // Score-based matching to handle schema differences (location vs municipality) and abbreviations
+  const scored = postalCodeData.map(p => {
+    const loc = norm(p.location)
+    const mun = norm(p.municipality)
+    const reg = norm(p.region)
+
+    let score = 0
+
+    // City match signals
+    if (c) {
+      if (loc === c || mun === c) score += 3
+      else if (loc.includes(c) || c.includes(loc) || mun.includes(c) || c.includes(mun)) score += 2
+    }
+
+    // Barangay/district refinement
+    if (b) {
+      if (mun === b) score += 3
+      else if (mun.includes(b) || b.includes(mun)) score += 2
+    }
+
+    // Region hint, do not over-restrict
+    if (r) {
+      if (reg === r) score += 1
+      else if (reg.includes(r) || r.includes(reg)) score += 0.5
+    }
+
+    return {
+      id: String(p.post_code),
+      code: String(p.post_code),
+      name: String(p.post_code),
+      city: p.location || '',
+      municipality: p.municipality || '',
+      region: p.region || '',
+      _score: score
+    }
+  })
+
+  // Keep items with non-zero score; sort by score desc, then code asc
+  const filtered = scored.filter(x => x._score > 0)
+    .sort((a, b) => (b._score - a._score) || a.code.localeCompare(b.code))
+
+  // Dedupe by postal code, retain highest score
+  const byCode = new Map()
+  for (const item of filtered) {
+    if (!byCode.has(item.code)) byCode.set(item.code, item)
+  }
+
+  const result = Array.from(byCode.values()).map(({ _score, ...rest }) => rest)
+  cache.postalCodes.set(key, result)
+  return result
+}
+
+/**
  * Get location by code at any level
  */
 export const getLocationByCode = (code, level) => {
@@ -127,6 +198,8 @@ export const getLocationByCode = (code, level) => {
       return cityData.find(c => c.city_code === code)
     case 'barangay':
       return barangayData.find(b => b.brgy_code === code)
+    case 'postalCode':
+      return postalCodeData.find(p => p.post_code === code)
     default:
       return null
   }
@@ -139,4 +212,5 @@ export const clearCache = () => {
   cache.provinces.clear()
   cache.cities.clear()
   cache.barangays.clear()
+  cache.postalCodes.clear()
 }
