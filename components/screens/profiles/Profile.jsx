@@ -231,15 +231,17 @@ const Profile = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false)
 
   const { handleLogout, LogoutDialog } = useLogout(navigation)
+  const { showSnackbar, SnackbarElement } = useSnackbar()
 
   const fetchProfile = useCallback(async () => {
     setLoading(true)
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-      if (authError) {
-        showSnackbar('User not authenticated')
-        handleLogout()
+      if (authError || !user) {
+        // Session missing/expired: send user to Login safely
+        showSnackbar('Your session has expired. Please log in again.')
+        navigation.reset({ index: 0, routes: [{ name: 'Login' }] })
         return
       }
 
@@ -256,7 +258,12 @@ const Profile = ({ navigation }) => {
         .eq('id', user.id)
         .single()
 
-      if (error) throw error
+      if (error) {
+        // If auth-related error occurs, redirect to Login instead of crashing
+        showSnackbar('Unable to load profile. Please log in again.')
+        navigation.reset({ index: 0, routes: [{ name: 'Login' }] })
+        return
+      }
       setProfile(data)
     } catch (error) {
       console.error('Error in fetchProfile:', error)
@@ -340,6 +347,7 @@ const Profile = ({ navigation }) => {
         navigation={navigation} 
         title="Profile"
       />
+      {SnackbarElement}
       
       <ProfileCard profile={profile} colors={colors} fonts={fonts} />
       

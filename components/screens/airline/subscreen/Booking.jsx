@@ -34,7 +34,7 @@ const INITIAL_CONTRACT = {
   flightNumber: "",
   itemDescription: "",
   itemDescriptions: [],
-  quantity: "",
+  quantity: "1",
   deliveryAddress: "",
   addressLine1: "",
   addressLine2: "",
@@ -87,7 +87,7 @@ const VALIDATION_PATTERNS = {
   contact: /^9\d{9}$/,
   flightNumber: /^[A-Za-z0-9]{3,8}$/,
   postalCode: /^\d{4}$/,
-  quantity: /^(?:[1-9]|[1-3][0-9]|25)$/,
+  quantity: /^(?:[1-9]|1[0-5])$/,
   province: /^[A-Za-z\s\-\.]+$/,
   cityMunicipality: /^[A-Za-z\s\-\.]+$/,
   barangay: /^[A-Za-z0-9\s\-\.\,\#]+$/,
@@ -369,7 +369,7 @@ const ContractForm = React.memo(({
             value={contract.quantity}
             onChangeText={(text) => {
               const filtered = filterSpecialCharacters(text, 'quantity')
-              if (filtered === '' || (parseInt(filtered) >= 1 && parseInt(filtered) <= 25)) {
+            if (filtered === '' || (parseInt(filtered) >= 1 && parseInt(filtered) <= 15)) {
                 onInputChange(index, "quantity", filtered)
               }
             }}
@@ -378,7 +378,7 @@ const ContractForm = React.memo(({
             style={{ marginBottom: 8 }}
             error={contract.errors?.quantity}
             maxLength={INPUT_LIMITS.quantity.maxLength}
-            placeholder="Enter quantity (1-25)"
+          placeholder="Enter quantity (1-15)"
             disabled={isDisabled}
           />
 
@@ -726,7 +726,7 @@ const Booking = () => {
     setProvince(selections.province || '')
     setCityMunicipality(selections.city || '')
     setBarangay(selections.barangay || '')
-    setPostalCode(selections.postalCode || '')
+    setPostalCode(String(selections.postalCode || '').replace(/[^0-9]/g, '').slice(0, INPUT_LIMITS.postalCode.maxLength))
     
     // Update location selections for reference
     setLocationSelections({
