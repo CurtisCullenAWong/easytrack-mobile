@@ -7,7 +7,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native'
 
 // React Native Paper
-import { useTheme, TextInput, Button, Text, IconButton, Menu, Surface, List } from 'react-native-paper'
+import { useTheme, TextInput, Button, Text, IconButton, Menu, Surface, List, Divider } from 'react-native-paper'
 
 // Navigation
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'
@@ -197,9 +197,6 @@ const ContractForm = React.memo(({
 
   const qty = parseInt(contract.quantity || '0') || 0
   const itemsIdx = Array.from({ length: qty }, (_, i) => i)
-  
-  // Calculate the number of sets of 3 for the quantity text
-  const setsOfThree = Math.ceil(qty / 3)
 
   return (
     <View style={[styles.luggageBlock, { backgroundColor: colors.surface, borderColor: colors.primary, opacity: isDisabled ? 0.6 : 1 }]}>
@@ -474,7 +471,8 @@ const Booking = () => {
   const [loading, setLoading] = useState(false)
   const [deliveryFee, setDeliveryFee] = useState(0)
   const [showConfirmationModal, setShowConfirmationModal] = useState(false)
-
+  const [showStickyExpanded, setShowStickyExpanded] = useState(false)
+  
   // Shared Address Fields (across all contracts)
   const [province, setProvince] = useState('')
   const [cityMunicipality, setCityMunicipality] = useState('')
@@ -1237,7 +1235,7 @@ const Booking = () => {
   ), [dropOffLocation, colors, fonts, navigation])
 
   const renderPickupLocation = useMemo(() => (
-    <View>
+    <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
       <TextInput
         label="Pickup Location"
         value={pickupLocation}
@@ -1247,25 +1245,25 @@ const Booking = () => {
         editable={false}
       />
 
-      <View style={{ flexDirection: 'row', gap: 12, alignSelf: 'center', minWidth: '100%'}}>
+      <View style={{ flexDirection: 'row', gap: 12, justifyContent: 'center' }}>
         <Menu
           visible={showTerminalMenu}
           onDismiss={() => setShowTerminalMenu(false)}
           anchor={
-            <TouchableOpacity onPress={() => setShowTerminalMenu(((prev) => !prev))} style={{ flex: 1 }}>
+            <TouchableOpacity onPress={() => setShowTerminalMenu(prev => !prev)}>
               <TextInput
                 label="Terminal"
                 value={selectedTerminal || ''}
                 mode="outlined"
-                right={<TextInput.Icon icon="menu-down" onPress={() => setShowTerminalMenu(((prev) => !prev))} />}
+                right={<TextInput.Icon icon="menu-down" onPress={() => setShowTerminalMenu(prev => !prev)} />}
                 editable={false}
-                style={{ marginBottom: 16 }}
+                style={{ marginBottom: 16, width: 150 }} // fixed width
               />
             </TouchableOpacity>
           }
-          contentStyle={{ backgroundColor: colors.surface }}
+          contentStyle={{ backgroundColor: colors.surface, width: 150 }} // match width
         >
-          {terminalOptions.map((t) => (
+          {terminalOptions.map(t => (
             <Menu.Item
               key={t.label}
               onPress={() => {
@@ -1281,21 +1279,21 @@ const Booking = () => {
           visible={showBayMenu}
           onDismiss={() => setShowBayMenu(false)}
           anchor={
-            <TouchableOpacity onPress={() => selectedTerminal && setShowBayMenu(((prev) => !prev))} style={{ flex: 1 }}>
+            <TouchableOpacity onPress={() => selectedTerminal && setShowBayMenu(prev => !prev)}>
               <TextInput
                 label="Bay"
                 value={selectedBay || ''}
                 mode="outlined"
-                right={<TextInput.Icon icon="menu-down" onPress={() => selectedTerminal && setShowBayMenu(((prev) => !prev))} />}
+                right={<TextInput.Icon icon="menu-down" onPress={() => selectedTerminal && setShowBayMenu(prev => !prev)} />}
                 editable={false}
-                style={{ marginBottom: 16 }}
                 disabled={!selectedTerminal}
+                style={{ marginBottom: 16, width: 150 }} // fixed width
               />
             </TouchableOpacity>
           }
-          contentStyle={{ backgroundColor: colors.surface }}
+          contentStyle={{ backgroundColor: colors.surface, width: 150 }} // match width
         >
-          {pickupBays.map((bay) => (
+          {pickupBays.map(bay => (
             <Menu.Item
               key={bay}
               onPress={() => {
@@ -1307,7 +1305,7 @@ const Booking = () => {
           ))}
         </Menu>
       </View>
-    </View>
+    </Surface>
   ), [pickupLocation, pickupError, showTerminalMenu, showBayMenu, selectedTerminal, selectedBay, terminalOptions, pickupBays, colors])
 
   // ================================
@@ -1316,46 +1314,125 @@ const Booking = () => {
 
   return (
     <View style={{ flex: 1 }}>
+      {/* Compact sticky booking summary */}
+      {dropOffLocation.location && (
+        <View>
+          {deliveryFee > 0 ? (
+            <Surface
+              style={[
+                styles.stickyFeeBar,
+                { backgroundColor: colors.primaryContainer, paddingVertical: 6, paddingHorizontal: 10 },
+              ]}
+              elevation={2}
+            >
+              {/* Summary row */}
+              <View style={[styles.stickyRow, { justifyContent: 'space-between' }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <List.Icon icon="cash" color={colors.onPrimaryContainer} style={{ margin: 0, marginRight: 4 }} />
+                  <Text style={[fonts.labelSmall, { color: colors.onPrimaryContainer }]}>
+                    Base: ₱{deliveryFee.toFixed(2)}
+                  </Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <List.Icon icon="cash-multiple" color={colors.onPrimaryContainer} style={{ margin: 0, marginRight: 4 }} />
+                  <Text style={[fonts.labelSmall, { color: colors.onPrimaryContainer }]}>
+                    ₱{totalDeliveryFee.toFixed(2)}
+                  </Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <List.Icon icon="account-group" color={colors.onPrimaryContainer} style={{ margin: 0, marginRight: 4 }} />
+                  <Text style={[fonts.labelSmall, { color: colors.onPrimaryContainer }]}>
+                    {contracts.length}
+                  </Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <List.Icon icon="bag-suitcase" color={colors.onPrimaryContainer} style={{ margin: 0, marginRight: 4 }} />
+                  <Text style={[fonts.labelSmall, { color: colors.onPrimaryContainer }]}>
+                    {totalLuggageQuantity}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Toggle */}
+              <TouchableOpacity onPress={() => setShowStickyExpanded((s) => !s)} style={{ marginTop: 4 }}>
+                <Text
+                  style={[
+                    fonts.bodyLarge,
+                    { color: colors.onPrimaryContainer, fontStyle: 'italic', textAlign: 'center' },
+                  ]}
+                >
+                  {showStickyExpanded ? 'Close Passenger Summary ▲' : 'Open Passenger Summary ▼'}
+                </Text>
+              </TouchableOpacity>
+            </Surface>
+          ) : (
+            <Surface
+              style={[styles.stickyFeeBar, { backgroundColor: colors.errorContainer, padding: 10 }]}
+              elevation={2}
+            >
+              <Text style={[fonts.bodySmall, { color: colors.onErrorContainer }]}>
+                Delivery fee unavailable
+              </Text>
+            </Surface>
+          )}
+
+          {/* Expandable details */}
+          {deliveryFee > 0 && showStickyExpanded && (
+            <Surface
+              style={[
+                styles.warningSurface,
+                { backgroundColor: colors.surface, marginTop: 6, padding: 8 },
+              ]}
+              elevation={1}
+            >
+          {/* Passenger breakdown */}
+          {contracts.map((p, idx) => {
+            const luggageCount = parseInt(p.quantity || '0') || 0;
+            const setsOfThree = Math.ceil(luggageCount / 3);
+            const perPassengerCharge = deliveryFee * setsOfThree;
+
+            return (
+              <View
+                key={idx}
+                style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginVertical: 1, justifyContent: 'center' }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', flexGrow: 1, flexShrink: 1, minWidth: 0, justifyContent: 'center' }}>
+                  <List.Icon icon="account" color={colors.onSurfaceVariant} style={{ margin: 0, marginRight: 4 }} />
+                  <Text style={[fonts.bodySmall, { color: colors.onSurface, flexShrink: 1, minWidth: 0 }]}>
+                    Passenger {idx + 1}: {luggageCount + ' luggage(s)'}, {setsOfThree} set(s)
+                  </Text>
+                </View>
+                <Text style={[fonts.bodySmall, { color: colors.onSurface, textAlign: 'right', flexShrink: 1, minWidth: 0 }]}>
+                → ({setsOfThree}×₱{deliveryFee.toFixed(2)}) = ₱{perPassengerCharge.toFixed(2)}
+                </Text>
+                {idx < contracts.length - 1 && (
+                <Divider style={{ width: '100%', marginVertical: 4 }} />
+                )}
+              </View>
+            );
+          })}
+
+              <Text
+                style={[
+                  fonts.labelSmall,
+                  { color: colors.onSurfaceVariant, fontStyle: 'italic', marginTop: 6 },
+                ]}
+              >
+                Note: Charged per 3 luggages per head.
+              </Text>
+            </Surface>
+          )}
+        </View>
+      )}
       <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
         {SnackbarElement}
         <View style={styles.content}>
-          {renderDropOffLocation}
-        {deliveryFee > 0 && dropOffLocation.location && (
-          <Surface style={[styles.warningSurface, { backgroundColor: colors.primaryContainer }]} elevation={1}>
-            <View style={styles.warningContent}>
-              <IconButton icon="check-circle" size={24} iconColor={colors.primary} />
-              <View style={styles.warningText}>
-                <Text style={[fonts.titleSmall, { color: colors.primary, marginBottom: 4 }]}>Delivery Fee Applied</Text>
-                <Text style={[fonts.titleSmall, { marginBottom: 10, color: colors.onPrimaryContainer }]}>Base Delivery Fee: ₱{deliveryFee.toFixed(2)}</Text>
-                <Text style={[fonts.titleSmall, { marginBottom: 10, color: colors.onPrimaryContainer }]}>
-                  Total Delivery Fee: ₱{totalDeliveryFee.toFixed(2)}
-                </Text>
-                <Text style={[fonts.titleSmall, { marginBottom: 10, color: colors.onPrimaryContainer }]}>
-                  Total Luggage Quantity: {totalLuggageQuantity} ({Math.ceil(totalLuggageQuantity / 3)} sets of 3)
-                </Text>
-                <Text style={[fonts.bodySmall, { color: colors.onPrimaryContainer, fontStyle: 'italic' }]}>
-                  Note: Delivery is charged per set of 3 luggages per head.
-                </Text>
-              </View>
-            </View>
-          </Surface>
-        )}
-        {deliveryFee <= 0 && dropOffLocation.location && (
-          <Surface style={[styles.warningSurface, { backgroundColor: colors.errorContainer }]} elevation={1}>
-            <View style={styles.warningContent}>
-              <IconButton icon="alert-circle" size={24} iconColor={colors.error} />
-              <View style={styles.warningText}>
-                <Text style={[fonts.titleSmall, { color: colors.error, marginBottom: 4 }]}>Delivery Fee Unavailable</Text>
-                <Text style={[fonts.bodyMedium, { color: colors.onErrorContainer }]}>
-                  The selected drop-off location is either invalid or out of bounds. Please select a valid one to proceed.
-                </Text>
-              </View>
-            </View>
-          </Surface>
-        )}
-        <Surface style={[styles.surface, { padding: 16, marginBottom: 16, backgroundColor: colors.surface }]} elevation={1}>
           {renderPickupLocation}
-
+          {renderDropOffLocation}
+        <Surface style={[styles.surface, { padding: 16, marginBottom: 16, backgroundColor: colors.surface }]} elevation={1}>
           <LocationAutofill
             onLocationChange={handleLocationChange}
             initialValues={{
@@ -1467,30 +1544,6 @@ const Booking = () => {
         </View>
         </View>
       </ScrollView>
-
-      {/* Sticky compact delivery fee bar */}
-      {dropOffLocation.location && (
-        deliveryFee > 0 ? (
-          <View style={[styles.stickyFeeBar, { backgroundColor: colors.primaryContainer }]}>
-            <View style={styles.stickyCol}>
-              <Text style={[fonts.titleSmall, { color: colors.primary }]}>Base</Text>
-              <Text style={[fonts.bodySmall, { color: colors.onPrimaryContainer }]}>₱{deliveryFee.toFixed(2)}</Text>
-            </View>
-            <View style={styles.stickyCol}>
-              <Text style={[fonts.titleSmall, { color: colors.primary }]}>Total</Text>
-              <Text style={[fonts.bodySmall, { color: colors.onPrimaryContainer }]}>₱{totalDeliveryFee.toFixed(2)}</Text>
-            </View>
-            <View style={styles.stickyCol}>
-              <Text style={[fonts.titleSmall, { color: colors.primary }]}>Luggages</Text>
-              <Text style={[fonts.bodySmall, { color: colors.onPrimaryContainer }]}>{totalLuggageQuantity} ({Math.ceil(totalLuggageQuantity / 3)})</Text>
-            </View>
-          </View>
-        ) : (
-          <View style={[styles.stickyFeeBar, { backgroundColor: colors.errorContainer }]}>
-            <Text style={[fonts.bodySmall, { color: colors.onErrorContainer }]}>Delivery fee unavailable for selected location</Text>
-          </View>
-        )
-      )}
 
       <BottomModal visible={showConfirmationModal} onDismiss={() => setShowConfirmationModal(false)}>
         <View style={styles.confirmationContent}>
@@ -1683,18 +1736,32 @@ const styles = StyleSheet.create({
     flex: 1 
   },
   stickyFeeBar: {
+    borderRadius: 8,
+    marginHorizontal: 8,
+    marginTop: 6,
+  },
+  stickyHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    minWidth: '100%',
+  },
+  stickyRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderTopWidth: 1,
-    borderColor: '#e0e0e0'
+    alignContent: 'center',
+    gap: 12,
+    marginTop: 6,
   },
   stickyCol: {
+    display: 'flex',
     alignItems: 'center',
-    padding: 10,
-  }
+    justifyContent: 'space-between',
+    minWidth: '25%',
+  },
+  warningSurface: {
+    borderRadius: 8,
+    marginHorizontal: 8,
+  },
 })
 
 export default React.memo(Booking)

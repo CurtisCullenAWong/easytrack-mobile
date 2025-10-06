@@ -14,7 +14,7 @@ import {
   Surface,
 } from 'react-native-paper'
 import Header from '../../customComponents/Header'
-import { supabase } from '../../../lib/supabaseAdmin'
+import { supabase } from '../../../lib/supabase'
 import useSnackbar from '../../hooks/useSnackbar'
 
 const COLUMN_WIDTH = 180

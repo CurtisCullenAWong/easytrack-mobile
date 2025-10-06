@@ -12,7 +12,7 @@ export default ({ config }) => ({
     updates: {
       enabled: true,
       fallbackToCacheTimeout: 2000,
-      url: "https://u.expo.dev/51066ce1-0c86-40e9-9f97-2d8098cfa262",
+      url: "https://u.expo.dev/195561a3-4309-43ae-8922-e227b9ea3bc0",
     },
     orientation: "portrait",
     icon: "./assets/images/icon.png",
@@ -102,7 +102,7 @@ export default ({ config }) => ({
     },
     extra: {
       eas: {
-        projectId: "51066ce1-0c86-40e9-9f97-2d8098cfa262"
+        projectId: "195561a3-4309-43ae-8922-e227b9ea3bc0"
       },
     },
   },

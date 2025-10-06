@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react'
+import { useRef, useEffect } from 'react'
 import {
   Animated,
   Dimensions,
@@ -66,12 +66,12 @@ const BottomModal = ({ visible, onDismiss, children }) => {
 
   return (
     <Portal>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={styles.keyboardAvoiding}
-          >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoiding}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
             <Animated.View
               {...panResponder.panHandlers}
               style={[
@@ -85,9 +85,9 @@ const BottomModal = ({ visible, onDismiss, children }) => {
               <View style={[styles.notch, { backgroundColor: colors.tertiary }]} />
               {children}
             </Animated.View>
-          </KeyboardAvoidingView>
-        </View>
-      </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </Portal>
   )
 }
@@ -104,9 +104,10 @@ const styles = StyleSheet.create({
   modalContainer: {
     paddingHorizontal: 20,
     paddingTop: 15,
-    paddingBottom: 30,
+    paddingBottom: 0,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    maxHeight: height * 0.9,
   },
   notch: {
     width: 40,

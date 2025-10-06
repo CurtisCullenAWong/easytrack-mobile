@@ -14,7 +14,7 @@ import {
   Portal,
   Dialog,
 } from 'react-native-paper'
-import { supabase } from '../../../../../lib/supabaseAdmin'
+import { supabase } from '../../../../../lib/supabase'
 import { useFocusEffect } from '@react-navigation/native'
 import BottomModal from '../../../../customComponents/BottomModal'
 import useSnackbar from '../../../../hooks/useSnackbar'
@@ -502,50 +502,17 @@ const ViewProfileScreen = ({ route, navigation }) => {
       if (!email) return showSnackbar('Please enter a new email')
 
       const newEmail = email.trim().toLowerCase()
+      const { data: { session } } = await supabase.auth.getSession()
 
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(newEmail)) {
-        return showSnackbar('Please enter a valid email address')
-      }
-
-      setSaving(true)
-
-      // Check if email already exists in profiles
-      const { data: existingProfile, error: checkError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', newEmail)
-        .single()
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        // PGRST116 = no rows found, which is okay
-        throw checkError
-      }
-
-      if (existingProfile && existingProfile.id !== userId) {
-        return showSnackbar('Email is already in use by another account')
-      }
-
-      // Update email in Supabase Auth
-      const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {
-        email: newEmail,
-        email_confirm: true, // confirm immediately since it's admin action
+      const { data, error } = await supabase.functions.invoke('admin-change-email', {
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+        body: { userId, newEmail },
       })
-      if (updateError) throw updateError
 
-      // Update email in profiles table
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ email: newEmail })
-        .eq('id', userId)
-
-      if (profileError) throw profileError
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
 
       showSnackbar('Email updated successfully', true)
-
-      // Update local state
-      setUser((prev) => ({ ...prev, email: newEmail }))
       setShowChangeEmail(false)
       setEmail('')
     } catch (err) {
@@ -565,11 +532,15 @@ const ViewProfileScreen = ({ route, navigation }) => {
       const pwError = validatePassword(passwords.pw)
       if (pwError) return showSnackbar(pwError)
 
-      setSaving(true)
-      const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {
-        password: passwords.pw,
+      const { data: { session } } = await supabase.auth.getSession()
+
+      const { data, error } = await supabase.functions.invoke('admin-change-password', {
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+        body: { userId, password: passwords.pw },
       })
-      if (updateError) throw updateError
+
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
 
       showSnackbar('Password updated successfully', true)
       setShowChangePw(false)
@@ -631,6 +602,7 @@ const ViewProfileScreen = ({ route, navigation }) => {
   // ----------------- Main UI -----------------
   return (
     <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
+      {SnackbarElement}
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.navigate('UserManagement')} />
@@ -676,7 +648,6 @@ const ViewProfileScreen = ({ route, navigation }) => {
       <InfoCard title={PROFILE_SECTIONS.ACTIVITY} data={recentActivity} colors={colors} fonts={fonts} />
       <VerificationCard user={user} colors={colors} fonts={fonts} />
       <VehicleCard user={user} colors={colors} fonts={fonts} />
-
       {/* Change Email Modal */}
       <BottomModal visible={showChangeEmail} onDismiss={() => setShowChangeEmail(false)}>
         <View style={{ paddingTop: 8 }}>
@@ -702,7 +673,6 @@ const ViewProfileScreen = ({ route, navigation }) => {
           </View>
         </View>
       </BottomModal>
-
       {/* Change Password Modal */}
       <BottomModal visible={showChangePw} onDismiss={() => setShowChangePw(false)}>
         <View style={{ paddingTop: 8 }}>
@@ -747,8 +717,6 @@ const ViewProfileScreen = ({ route, navigation }) => {
           </View>
         </View>
       </BottomModal>
-
-      {SnackbarElement}
     </ScrollView>
   )
 }

@@ -3,7 +3,7 @@ import { ScrollView, View, RefreshControl, StyleSheet } from 'react-native'
 import { DataTable, Text, useTheme, Surface, Searchbar, Menu, Button, ActivityIndicator, Portal, Dialog } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 import useSnackbar from '../../hooks/useSnackbar'
-import { supabase } from '../../../lib/supabaseAdmin'
+import { supabase } from '../../../lib/supabase'
 
 const COLUMN_WIDTH = 180
 

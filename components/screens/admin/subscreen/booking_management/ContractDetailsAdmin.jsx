@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { View, ScrollView, StyleSheet, RefreshControl, Image, Dimensions } from 'react-native'
 import { Text, Card, Divider, useTheme, Appbar, Button, TextInput, Portal, Dialog } from 'react-native-paper'
 import { useFocusEffect } from '@react-navigation/native'
-import { supabase } from '../../../../../lib/supabaseAdmin'
+import { supabase } from '../../../../../lib/supabase'
 import useSnackbar from '../../../../hooks/useSnackbar'
 import AdjustAmountModal from '../../../../customComponents/AdjustAmountModal'
 

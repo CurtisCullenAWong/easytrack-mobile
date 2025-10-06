@@ -13,7 +13,7 @@ import {
   List,
   Surface,
 } from 'react-native-paper'
-import { supabase } from '../../../../../lib/supabaseAdmin'
+import { supabase } from '../../../../../lib/supabase'
 import useSnackbar from '../../../../hooks/useSnackbar'
 import { sendNotificationToUsers } from '../../../../../utils/registerForPushNotifications'
 

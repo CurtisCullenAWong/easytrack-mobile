@@ -11,7 +11,7 @@ import {
   Surface,
   Chip,
 } from 'react-native-paper'
-import { supabase } from '../../../../../lib/supabaseAdmin'
+import { supabase } from '../../../../../lib/supabase'
 
 const COLUMN_WIDTH = 180
 

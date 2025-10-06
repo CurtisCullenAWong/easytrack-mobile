@@ -18,7 +18,7 @@ import {
   Divider
 } from 'react-native-paper'
 import useSnackbar from '../../../../hooks/useSnackbar'
-import { supabase } from '../../../../../lib/supabaseAdmin'
+import { supabase } from '../../../../../lib/supabase'
 import { useFocusEffect } from '@react-navigation/native'
 import { makeRedirectUri } from 'expo-auth-session'
 import * as Crypto from 'expo-crypto'
@@ -133,111 +133,33 @@ const AddAccount = ({ navigation }) => {
     setForm(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleCreateAccount = async () => {
-    if (loading) return
+  const adminCreateAccount = async () => {
     try {
       setLoading(true)
-      const { email } = form
 
-      const validations = [
-        validateEmail(email),
-        validateRole(form.role),
-        validateCorporation(form.corporation)
-      ]
-      if (validations.some(v => !v)) {
-        showSnackbar('Please fix the validation errors before creating account')
-        return
-      }
+      const { data: { session } } = await supabase.auth.getSession()
 
-      if (!role_id || !corporation_id) {
-        if (!role_id) setErrors(prev => ({ ...prev, role: 'Invalid role selected' }))
-        if (!corporation_id) setErrors(prev => ({ ...prev, corporation: 'Invalid corporation selected' }))
-        showSnackbar('Invalid role or corporation selected')
-        return
-      }
-
-      // Validate role-corporation combination
-      if ((role_id === 1 || role_id === 2) && corporation_id !== 1) {
-        setErrors(prev => ({ ...prev, corporation: 'Roles 1 and 2 can only be assigned to corporation 1' }))
-        showSnackbar('Invalid role-corporation combination')
-        return
-      }
-
-      if (role_id !== 1 && role_id !== 2 && corporation_id === 1) {
-        setErrors(prev => ({ ...prev, corporation: 'Corporation 1 can only be assigned to roles 1 and 2' }))
-        showSnackbar('Invalid role-corporation combination')
-        return
-      }
-
-      // Get current user's UID
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
-      if (!currentUser) {
-        showSnackbar('Unable to get current user information')
-        return
-      }
-
-      const sanitizedEmail = sanitizeEmail(email)
-      const encryptedValue = generateSecurePassword()
-
-      const { data, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(sanitizedEmail, {
-        email: sanitizedEmail,
-        data: {
-          password: encryptedValue,
-          role: form.role,
+      const { data, error } = await supabase.functions.invoke('admin-create-account', {
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+        body: {
+          email: form.email,
+          role_id,
+          corporation_id,
+          redirectUrl: 'easytrack://login'
         },
-        redirectTo: makeRedirectUri({
-          scheme: 'easytrack',
-          path: 'login'
-        }),
       })
-      if (inviteError) {
-        showSnackbar(inviteError.message)
-        return
-      }
 
-      const { error: updateError } = await supabase.auth.admin.updateUserById(data.user.id, {
-        email: sanitizedEmail,
-        password: encryptedValue,
-        user_metadata: {
-          password: null,
-          role: null,
-        }
-      })
-      if (updateError) {
-        showSnackbar(updateError.message)
-        return
-      }
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
 
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: data.user.id,
-          email: sanitizedEmail,
-          role_id: role_id,
-          corporation_id: corporation_id,
-          user_status_id: 4,
-          created_by: currentUser.id
-        })
-
-      if (profileError) {
-        showSnackbar('Profile creation failed: ' + profileError.message)
-        return
-      }
-
-      showSnackbar('Account created! Check your email to verify.', true)
-      setShowDialogConfirm(false)
+      showSnackbar('Account created successfully', true)
       navigation.navigate('UserManagement')
-
-      setForm({ email: '', role: '', corporation: '' })
-      setRole_id('')
-      setCorporation_id('')
-    } catch (error) {
-      showSnackbar(error.message)
-      console.error(error)
+      setShowDialogConfirm(false)
+    } catch (err) {
+      console.error('Admin create account error:', err)
+      showSnackbar(err.message || 'Failed to create account')
     } finally {
       setLoading(false)
-      setShowConfirmDialog(false)
-      setShowDialogConfirm(false)
     }
   }
 
@@ -398,7 +320,7 @@ const AddAccount = ({ navigation }) => {
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setShowDialogConfirm(false)} disabled={loading}>Cancel</Button>
-            <Button mode="contained" style={{ backgroundColor: colors.primary }} onPress={handleCreateAccount} loading={loading} disabled={loading}>
+            <Button mode="contained" style={{ backgroundColor: colors.primary }} onPress={adminCreateAccount} loading={loading} disabled={loading}>
               <Text style={[styles.buttonLabel, { color: colors.onPrimary }]}>Confirm Creation</Text>
             </Button>
           </Dialog.Actions>

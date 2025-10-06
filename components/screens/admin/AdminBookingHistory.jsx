@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native'
 import { Text, Button, useTheme, Searchbar, Menu, DataTable, Surface } from 'react-native-paper'
-import { supabase } from '../../../lib/supabaseAdmin'
+import { supabase } from '../../../lib/supabase'
 import Header from '../../customComponents/Header'
 
 const COLUMN_WIDTH = 180

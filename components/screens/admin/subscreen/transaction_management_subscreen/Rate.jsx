@@ -10,7 +10,7 @@ import {
   Menu,
   Surface,
 } from 'react-native-paper'
-import { supabase } from '../../../../../lib/supabaseAdmin'
+import { supabase } from '../../../../../lib/supabase'
 import EditDeliveryRateModal from '../../../../customComponents/EditDeliveryRateModal'
 import useSnackbar from '../../../../hooks/useSnackbar'
 

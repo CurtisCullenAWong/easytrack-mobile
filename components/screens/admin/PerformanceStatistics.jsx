@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { ScrollView, StyleSheet, View, RefreshControl } from 'react-native'
 import { useTheme, Card, Text, ProgressBar, Divider, Button, ActivityIndicator, Menu } from 'react-native-paper'
 import Header from '../../customComponents/Header'
-import { supabase } from '../../../lib/supabaseAdmin'
+import { supabase } from '../../../lib/supabase'
 import { analyzeDeliveryStats } from '../../../utils/geminiUtils'
 import useSnackbar from '../../hooks/useSnackbar'
 

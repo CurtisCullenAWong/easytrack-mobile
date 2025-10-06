@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { View, ScrollView, StyleSheet } from 'react-native'
 import { useTheme, Text, Button, Appbar, Card, Portal, Dialog, Divider } from 'react-native-paper'
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'
-import { supabase } from '../../../../../lib/supabaseAdmin'
+import { supabase } from '../../../../../lib/supabase'
 import useSnackbar from '../../../../hooks/useSnackbar'
 
 const GenerateInvoice = () => {

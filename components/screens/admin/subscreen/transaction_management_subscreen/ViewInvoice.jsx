@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, View, StyleSheet, Image } from 'react-native'
 import { useTheme, Appbar, Card, Text, Button, Divider, Checkbox, Portal, Modal, Dialog, TextInput, Menu, ProgressBar } from 'react-native-paper'
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'
-import { supabase } from '../../../../../lib/supabaseAdmin'
+import { supabase } from '../../../../../lib/supabase'
 import { printPDF, sharePDF, createPDFFile, splitPDFFile } from '../../../../../utils/pdfUtils'
 import * as FileSystem from 'expo-file-system/legacy'
 const RESEND_API_KEY =  process.env.EXPO_PUBLIC_RESEND_API_KEY

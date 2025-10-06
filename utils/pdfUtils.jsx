@@ -1,7 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy'
 import * as Print from 'expo-print'
 import * as Sharing from 'expo-sharing'
-import { supabase } from '../lib/supabaseAdmin'
+import { supabase } from '../lib/supabase'
 import { PDFDocument } from 'pdf-lib'
 import { decode as atob, encode as btoa } from 'base-64'
 
@@ -74,29 +74,8 @@ const generateTransactionReportHTML = async (
   const contractData = await Promise.all(transactions.map(async (transaction) => {
     const { data, error } = await supabase
       .from('contracts')
-      .select(`
-        id,
+      .select(`*
         contract_status:contract_status_id (status_name),
-        delivery_charge,
-        delivery_surcharge,
-        delivery_discount,
-        remarks,
-        passenger_form,
-        pickup_location,
-        delivery_address,
-        address_line_1,
-        address_line_2,
-        delivered_at,
-        cancelled_at,
-        owner_first_name,
-        owner_middle_initial,
-        owner_last_name,
-        owner_contact,
-        luggage_description,
-        luggage_quantity,
-        flight_number,
-        passenger_id,
-        proof_of_delivery
       `)
       .eq('summary_id', transaction.summary_id)
 

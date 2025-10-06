@@ -59,7 +59,7 @@
     "@react-native-community/cli": "^18.0.0",
     "@types/react": "19.1.10",
     "expo": "54.0.12",
-    "supabase": "^2.23.4",
+    "supabase": "^2.48.3",
     "typescript": "5.9.2"
   },
   "private": true,
