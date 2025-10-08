@@ -195,8 +195,8 @@ const AdminNavigator = ({ navigation }) => {
           if (
             item.screen === 'AdminHome' ||
             item.screen === 'Profile' ||
+            item.screen === 'Messages' ||
             item.screen === 'TermsAndConditions' ||
-            item.screen === 'AdminAuditLogs' ||
             item.actionKey === 'logout'
           ) {
             return true

@@ -4,10 +4,23 @@ import { Text, useTheme, Appbar, FAB, Divider } from 'react-native-paper'
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import MapViewDirections from 'react-native-maps-directions'
 import useSnackbar from '../../hooks/useSnackbar'
+import useRequestPermissions from '../../hooks/usePermissions'
 
 const CheckLocation = ({ route, navigation }) => {
   const { colors, fonts } = useTheme()
   const { showSnackbar } = useSnackbar()
+  useRequestPermissions({ 
+    locationForeground: true,
+    onPermissionDenied: (type, canAskAgain) => {
+      if (type === 'location') {
+        showSnackbar('Location access is required to show your current location on the map')
+        // Only navigate to Home if user actively denied (not if already denied)
+        if (canAskAgain === false) {
+          navigation.navigate('Home')
+        }
+      }
+    }
+  })
   const { pickupLocation, pickupLocationGeo, dropOffLocation, dropOffLocationGeo } = route.params
   const mapRef = useRef(null)
   const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY

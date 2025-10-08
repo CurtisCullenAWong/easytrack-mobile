@@ -8,6 +8,7 @@ import { compareGeometriesVicinity, parseGeometry, VICINITY_FEATURE_ENABLED } fr
 import BottomModal from '../../../customComponents/BottomModal'
 import ContractActionModalContent from '../../../customComponents/ContractActionModalContent'
 import useSnackbar from '../../../hooks/useSnackbar'
+import useRequestPermissions from '../../../hooks/usePermissions'
 
 // Constants
 const FILTER_OPTIONS = [
@@ -74,6 +75,21 @@ const ContractsInTransit = ({ navigation }) => {
   const { colors, fonts } = useTheme()
   const { startTracking, stopTracking } = useLocation()
   const { showSnackbar, SnackbarElement } = useSnackbar()
+  
+  // Request location permissions for delivery tracking
+  useRequestPermissions({ 
+    locationForeground: true,
+    locationBackground: true,
+    onPermissionDenied: (type, canAskAgain) => {
+      if (type === 'location') {
+        showSnackbar('Location access is required for delivery tracking and contract management')
+        // Only navigate to Home if user actively denied (not if already denied)
+        if (canAskAgain === false) {
+          navigation.navigate('Home')
+        }
+      }
+    }
+  })
   
   // State management
   const [currentTime, setCurrentTime] = useState('')

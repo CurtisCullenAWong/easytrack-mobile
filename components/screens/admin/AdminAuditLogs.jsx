@@ -174,11 +174,6 @@ const AdminAuditLogs = ({ navigation }) => {
     try {
       setActionByLoading(true)
 
-      // Fetch email using Admin API (GoTrue)
-      const { data: userRes, error: adminErr } = await supabase.auth.admin.getUserById(log.action_by_uuid)
-      if (adminErr) console.error('Admin getUserById error:', adminErr)
-      const email = userRes?.user?.email || null
-
       // Fetch from public.profiles for name
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -193,7 +188,7 @@ const AdminAuditLogs = ({ navigation }) => {
 
       setActionByInfo({
         id: log.action_by_uuid,
-        email: email || profileData?.email || null,
+        email: profileData?.email || null,
         fullName: fullName || null,
         roleId: profileData?.role_id?.role_name || null,
       })

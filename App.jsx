@@ -7,6 +7,7 @@ import lightTheme from './components/themes/lightTheme'
 import darkTheme from './components/themes/darkTheme'
 import { ThemeContext } from './components/themes/themeContext'
 import { ActivityIndicator, View } from 'react-native'
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import './components/hooks/backgroundLocationTask'
 import { NotificationProvider } from './context/NotificationContext'
 import UpdatePrompt from './components/customComponents/UpdatePrompt'
@@ -62,8 +63,12 @@ export default function App() {
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
       <PaperProvider theme={theme}>
         <NotificationProvider>
-          <StackNavigator />
-          <UpdatePrompt />
+          <SafeAreaProvider>
+            <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={['bottom']}>
+              <StackNavigator />
+              <UpdatePrompt />
+            </SafeAreaView>
+          </SafeAreaProvider>
         </NotificationProvider>
       </PaperProvider>
     </ThemeContext.Provider>

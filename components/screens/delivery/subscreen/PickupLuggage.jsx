@@ -8,6 +8,7 @@ import { supabase } from '../../../../lib/supabase'
 import useSnackbar from '../../../hooks/useSnackbar'
 import { parseGeometry, calculateDistanceKm, VICINITY_FEATURE_ENABLED } from '../../../../utils/vicinityUtils'
 import * as Location from 'expo-location'
+import useRequestPermissions from '../../../hooks/usePermissions'
 
 const PickupLuggage = ({ navigation }) => {
   const { colors, fonts } = useTheme()
@@ -32,6 +33,18 @@ const PickupLuggage = ({ navigation }) => {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(3)
   const [pageSizeMenuVisible, setPageSizeMenuVisible] = useState(false)
+
+  // Request location permissions for delivery tracking
+  useRequestPermissions({ 
+    locationForeground: true,
+    locationBackground: true,
+    onPermissionDenied: (type, canAskAgain) => {
+      if (type === 'location') {
+        showSnackbar('Location access is required for delivery tracking and contract management')
+      }
+    },
+  })
+
   // Get device location once per focus, used for pickup vicinity check before in-transit
   useFocusEffect(
     useCallback(() => {

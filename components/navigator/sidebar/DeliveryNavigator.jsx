@@ -190,6 +190,7 @@ const DeliveryNavigator = ({ navigation }) => {
           if (
             item.screen === 'DeliveryHome' ||
             item.screen === 'Profile' ||
+            item.screen === 'Messages' ||
             item.screen === 'TermsAndConditions' ||
             item.actionKey === 'logout'
           ) {

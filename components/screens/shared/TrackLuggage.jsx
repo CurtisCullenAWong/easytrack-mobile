@@ -15,6 +15,7 @@ import { useFocusEffect } from '@react-navigation/native'
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import MapViewDirections from "react-native-maps-directions"
+import useRequestPermissions from '../../hooks/usePermissions'
 
 const { width, height } = Dimensions.get('window')
 
@@ -372,6 +373,18 @@ const TrackLuggage = ({ navigation, route }) => {
     const [refreshing, setRefreshing] = useState(false)
     const { colors, fonts } = useTheme()
     const { showSnackbar, SnackbarElement } = useSnackbar()
+    useRequestPermissions({ 
+        locationForeground: true,
+        onPermissionDenied: (type, canAskAgain) => {
+            if (type === 'location') {
+                showSnackbar('Location access is required for real-time delivery tracking')
+                // Only navigate to Home if user actively denied (not if already denied)
+                if (canAskAgain === false) {
+                    navigation.navigate('Home')
+                }
+            }
+        },
+    })
     const { contractId } = route.params || {}
     const debounceTimer = useRef(null)
 

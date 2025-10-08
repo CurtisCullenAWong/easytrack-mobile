@@ -191,6 +191,7 @@ const AirlineNavigator = ({ navigation }) => {
           if (
             item.screen === 'AirlineHome' ||
             item.screen === 'Profile' ||
+            item.screen === 'Messages' ||
             item.screen === 'TermsAndConditions' ||
             item.actionKey === 'logout'
           ) {

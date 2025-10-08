@@ -36,6 +36,7 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
   const [analyzing, setAnalyzing] = useState(false)
   const [showDateMenu, setShowDateMenu] = useState(false)
   const [dateFilter, setDateFilter] = useState('all')
+  const [statusList, setStatusList] = useState([]) // dynamic statuses from DB
 
   /**
    * Get available date filter options
@@ -138,9 +139,9 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
     fetchStatistics()
   }, [dateFilter])
 
-  /**
-   * Fetch and calculate performance statistics
-   */
+   /**
+    * Fetch and calculate performance statistics
+    */
   const fetchStatistics = async () => {
     try {
       setLoading(true)
@@ -168,9 +169,20 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
         return
       }
 
+      // Fetch dynamic contract statuses
+      const { data: statusData, error: statusError } = await supabase
+        .from('contract_status')
+        .select('id, status_name')
+
+      if (statusError) {
+        console.error('Error fetching contract statuses:', statusError)
+      }
+      const statuses = Array.isArray(statusData) ? statusData : []
+      setStatusList(statuses)
+
       console.log('Fetched contracts:', contracts?.length || 0)
 
-      // Fetch region names
+       // Fetch region names
       const { data: regionData, error: regionError } = await supabase
         .from('pricing_region')
         .select('id, region')
@@ -186,10 +198,10 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
         return acc
       }, {})
 
-      // City → Region mapping
-      const { data: pricingData, error: pricingError } = await supabase
-        .from('pricing')
-        .select('city, region_id')
+       // Build Price → Region mapping from pricing table
+       const { data: pricingData, error: pricingError } = await supabase
+         .from('pricing')
+         .select('price, region_id')
 
       if (pricingError) {
         console.error('Error fetching pricing:', pricingError)
@@ -197,27 +209,44 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
         return
       }
 
-      const cityToRegionMap = pricingData.reduce((acc, item) => {
-        if (item.city && item.region_id !== null && regionNamesMap[item.region_id]) {
-          acc[item.city.toLowerCase()] = regionNamesMap[item.region_id]
-        }
+       const priceToRegionMap = pricingData.reduce((acc, item) => {
+         if (item?.price != null && item.region_id != null && regionNamesMap[item.region_id]) {
+           acc[Number(item.price)] = regionNamesMap[item.region_id]
+         }
+         return acc
+       }, {})
+
+       const detectRegionFromPrice = (deliveryCharge) => {
+         if (!deliveryCharge || Number(deliveryCharge) <= 0) return null
+         const price = Number(deliveryCharge)
+         if (priceToRegionMap[price]) return priceToRegionMap[price]
+         // find closest within 10%
+         let minDiff = Infinity
+         let closestRegion = null
+         for (const key of Object.keys(priceToRegionMap)) {
+           const p = Number(key)
+           const diff = Math.abs(price - p)
+           if (diff < minDiff) {
+             minDiff = diff
+             closestRegion = priceToRegionMap[key]
+           }
+         }
+         if (closestRegion && minDiff <= price * 0.1) return closestRegion
+         return null
+       }
+
+      // Calculate counts by status (1-6)
+      const countsByStatus = contracts.reduce((acc, c) => {
+        const key = c.contract_status_id
+        acc[key] = (acc[key] || 0) + 1
         return acc
       }, {})
 
-      // Calculate counts by status (1-6)
-      const countsByStatus = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 }
-      contracts.forEach(c => {
-        const statusId = c.contract_status_id
-        if (countsByStatus[statusId] !== undefined) {
-          countsByStatus[statusId] = (countsByStatus[statusId] || 0) + 1
-        }
-      })
-
-      // Subset for delivery performance (delivered/failed only)
+       // Subset for delivery performance (delivered/failed only)
       const deliveries = contracts.filter(d => [5, 6].includes(d.contract_status_id))
 
-      // Calculate basic statistics from deliveries
-      const totalDeliveries = contracts.length
+       // Calculate basic statistics
+       const totalDeliveries = contracts.length
       const successfulDeliveries = deliveries.filter(d => d.contract_status_id === 5).length
       const failedDeliveries = deliveries.filter(d => d.contract_status_id === 6).length
       const successRate = (successfulDeliveries + failedDeliveries) > 0 ? successfulDeliveries / (successfulDeliveries + failedDeliveries) : 0
@@ -236,39 +265,31 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
           ? Math.round((validDeliveryTimes.reduce((a, b) => a + b, 0) / validDeliveryTimes.length) * 10) / 10 // Round to 1 decimal place
           : 0
 
-      // Calculate total earnings across all contracts
-      const totalEarnings = contracts.reduce((sum, contract) => {
+       // Calculate total earnings for delivered and failed only (status 5,6)
+       const totalEarnings = contracts
+         .filter(contract => contract.contract_status_id === 5 || contract.contract_status_id === 6)
+         .reduce((sum, contract) => {
         const amount =
           (contract.delivery_charge || 0) +
           (contract.delivery_surcharge || 0) -
           (contract.delivery_discount || 0)
-        return sum + amount
-      }, 0)
+           return sum + amount
+         }, 0)
 
-      // Group by region
-      const regionCounts = deliveries.reduce((acc, delivery) => {
-        const dropOffLocation = delivery.drop_off_location
-          ? delivery.drop_off_location.toLowerCase()
-          : ''
-        let region = 'Unknown Region'
+       // Group by region using pricing price → region and delivery charge
+       const regionCounts = contracts.reduce((acc, contract) => {
+         const detected = detectRegionFromPrice(contract.delivery_charge)
+         const region = detected || 'Unknown Region'
+         acc[region] = (acc[region] || 0) + 1
+         return acc
+       }, {})
 
-        for (const city in cityToRegionMap) {
-          if (dropOffLocation.includes(city)) {
-            region = cityToRegionMap[city]
-            break
-          }
-        }
-
-        acc[region] = (acc[region] || 0) + 1
-        return acc
-      }, {})
-
-      const deliveriesByRegion = Object.values(regionNamesMap)
+       const deliveriesByRegion = Object.values(regionNamesMap)
         .map(regionName => ({
           region: regionName,
           count: regionCounts[regionName] || 0,
         }))
-        .sort((a, b) => a.region.localeCompare(b.region))
+         .sort((a, b) => b.count - a.count || a.region.localeCompare(b.region))
 
       setStats({
         totalDeliveries,
@@ -368,6 +389,18 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
     navigation.navigate('AdminBookingHistory', { status: String(statusId) })
   }
 
+  // Map status to themed colors
+  const getStatusColors = (status) => {
+    const name = String(status?.status_name || '').toLowerCase()
+    const id = status?.id
+    if (id === 5 || name.includes('delivered')) return { color: colors.primary }
+    if (id === 6 || name.includes('failed') || name.includes('cancel')) return { color: colors.error }
+    if (name.includes('transit')) return { color: colors.primary }
+    if (name.includes('accepted') || name.includes('await')) return { color: colors.onSurface }
+    if (name.includes('available')) return { color: colors.onSurfaceVariant }
+    return { color: colors.onSurface }
+  }
+
   return (
     <ScrollView 
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -436,18 +469,40 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
       ) : (
         <>
           {/* Summary Card */}
-          <Card style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
+           <Card style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
+             <Card.Content>
+               <Text variant="titleLarge" style={[styles.sectionTitle, { color: colors.primary }]}>Performance Overview</Text>
+               <Divider style={[styles.divider, { backgroundColor: colors.outline }]} />
+               <View style={styles.kpiRow}>
+                 <View style={[styles.kpi, { borderColor: colors.outline }]}>
+                   <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Total</Text>
+                   <Text variant="titleLarge" style={{ color: colors.onSurface }}>{stats.totalDeliveries}</Text>
+                 </View>
+                 <View style={[styles.kpi, { borderColor: colors.outline }]}>
+                   <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Success</Text>
+                   <Text variant="titleLarge" style={{ color: colors.primary }}>{stats.successfulDeliveries}</Text>
+                 </View>
+                 <View style={[styles.kpi, { borderColor: colors.outline }]}>
+                   <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Failed</Text>
+                   <Text variant="titleLarge" style={{ color: colors.error }}>{stats.failedDeliveries}</Text>
+                 </View>
+               </View>
+               <Text variant="bodyMedium" style={[styles.summaryText, { color: colors.onSurfaceVariant }]}>At-a-glance KPIs for the selected period.</Text>
+             </Card.Content>
+           </Card>
+
+          {/* Total Earnings Card */}
+          <Card style={[styles.statCard, { backgroundColor: colors.surface }]}>
             <Card.Content>
-              <Text variant="titleLarge" style={[styles.sectionTitle, { color: colors.primary }]}>
-                Performance Summary
+              <Text variant="titleMedium" style={{ color: colors.primary }}>
+                Total Earnings
               </Text>
-              <Divider style={[styles.divider, { backgroundColor: colors.outline }]} />
-              <Text variant="bodyLarge" style={[styles.summaryText, { color: colors.onSurface }]}>
-                Overview of delivery performance and statistics for the selected time period.
+              <Text variant="displaySmall" style={[styles.valueText, { color: colors.onSurface }]}>
+                ₱{stats.totalEarnings.toLocaleString()}
               </Text>
             </Card.Content>
           </Card>
-
+          
           {/* Contracts By Status */}
           <Card style={[styles.statCard, { backgroundColor: colors.surface }]}>
             <Card.Content>
@@ -455,64 +510,37 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
                 Contracts by Status
               </Text>
               <View style={styles.statusList}>
-                {[1,2,3,4,5,6].map((id) => (
-                  <View key={id} style={styles.statusRow}>
-                    <Text style={[styles.statusLabel, { color: colors.onSurface }]}>
-                      {getStatusLabel(id)}
-                    </Text>
-                    <View style={styles.statusActions}>
-                      <Text style={[styles.statusCount, { color: colors.onSurface }]}>
-                        {stats.countsByStatus[id] || 0}
-                      </Text>
+                {(statusList.length ? statusList : Object.keys(stats.countsByStatus).map(id => ({ id: Number(id), status_name: `Status ${id}` })) ).map((s) => {
+                  const themeColors = getStatusColors(s)
+                  return (
+                    <View key={s.id} style={styles.statusRow}>
+                      <View style={styles.statusLeft}>
+                        <View style={[styles.statusDot, { backgroundColor: themeColors.color }]} />
+                        <Text style={[styles.statusLabel, { color: themeColors.color }]}>
+                          {s.status_name}
+                        </Text>
+                      </View>
+                      <View style={styles.statusActions}>
+                        <Text style={[styles.statusCount, { color: themeColors.color }]}>
+                          {stats.countsByStatus[s.id] || 0}
+                        </Text>
                       <Button
-                        mode="contained"
-                        onPress={() => navigateToStatus(id)}
+                        mode="outlined"
+                        compact
+                        icon="chevron-right"
+                        onPress={() => navigateToStatus(s.id)}
                         style={styles.viewButton}
-                        contentStyle={styles.buttonContent}
-                        labelStyle={[styles.buttonLabel, { color: colors.onPrimary }]}
+                        contentStyle={styles.statusButtonContent}
+                        labelStyle={[styles.statusButtonLabel, { color: colors.primary }]}
+                        textColor={colors.primary}
                       >
                         View
                       </Button>
+                      </View>
                     </View>
-                  </View>
-                ))}
+                  )
+                })}
               </View>
-            </Card.Content>
-          </Card>
-
-          {/* Total Deliveries Card */}
-          <Card style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <Card.Content>
-              <Text variant="titleMedium" style={{ color: colors.primary }}>
-                Total Deliveries
-              </Text>
-              <Text variant="displaySmall" style={[styles.valueText, { color: colors.onSurface }]}>
-                {stats.totalDeliveries}
-              </Text>
-            </Card.Content>
-          </Card>
-
-          {/* Successful Deliveries Card */}
-          <Card style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <Card.Content>
-              <Text variant="titleMedium" style={{ color: colors.primary }}>
-                Successful Deliveries
-              </Text>
-              <Text variant="displaySmall" style={[styles.valueText, { color: colors.primary }]}>
-                {stats.successfulDeliveries}
-              </Text>
-            </Card.Content>
-          </Card>
-
-          {/* Failed Deliveries Card */}
-          <Card style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <Card.Content>
-              <Text variant="titleMedium" style={{ color: colors.primary }}>
-                Failed Deliveries
-              </Text>
-              <Text variant="displaySmall" style={[styles.valueText, { color: colors.error }]}>
-                {stats.failedDeliveries}
-              </Text>
             </Card.Content>
           </Card>
 
@@ -533,18 +561,6 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
             </Card.Content>
           </Card>
 
-          {/* Total Earnings Card */}
-          <Card style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <Card.Content>
-              <Text variant="titleMedium" style={{ color: colors.primary }}>
-                Total Earnings
-              </Text>
-              <Text variant="displaySmall" style={[styles.valueText, { color: colors.onSurface }]}>
-                ₱{stats.totalEarnings.toLocaleString()}
-              </Text>
-            </Card.Content>
-          </Card>
-
           {/* Average Delivery Time Card */}
           <Card style={[styles.statCard, { backgroundColor: colors.surface }]}>
             <Card.Content>
@@ -557,17 +573,22 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
             </Card.Content>
           </Card>
 
-          {/* Deliveries By Region Card */}
+           {/* Deliveries By Region Card */}
           <Card style={[styles.statCard, { backgroundColor: colors.surface }]}>
             <Card.Content>
               <Text variant="titleMedium" style={{ color: colors.primary }}>
                 Deliveries by Region
               </Text>
-              {stats.deliveriesByRegion.map((region, index) => (
-                <Text key={index} variant="bodyMedium" style={[styles.valueText, { color: colors.onSurface }]}>
-                  {region.region}: {region.count} deliveries
-                </Text>
-              ))}
+               <View style={styles.regionList}>
+                 {stats.deliveriesByRegion.map((region, index) => (
+                   <View key={index} style={[styles.regionRow, { backgroundColor: index % 2 === 0 ? colors.elevation?.level1 || colors.surface : colors.surface }]}>
+                     <Text style={[styles.regionName, { color: colors.onSurface }]} numberOfLines={1}>{region.region}</Text>
+                     <View style={[styles.regionBadge, { backgroundColor: colors.primary }]}>
+                       <Text style={[styles.regionBadgeText, { color: colors.onPrimary }]}>{region.count}</Text>
+                     </View>
+                   </View>
+                 ))}
+               </View>
             </Card.Content>
           </Card>
 
@@ -668,6 +689,20 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontWeight: 'bold',
   },
+  kpiRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'stretch',
+    gap: 10,
+    marginTop: 12,
+  },
+  kpi: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
   progressBar: {
     marginTop: 12,
     height: 10,
@@ -705,6 +740,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 8,
   },
+  statusLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
   statusLabel: {
     flex: 1,
     fontWeight: '600',
@@ -720,6 +766,13 @@ const styles = StyleSheet.create({
   },
   viewButton: {
     borderRadius: 8,
+  },
+  statusButtonContent: {
+    height: 36,
+  },
+  statusButtonLabel: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   refreshButton: {
     marginTop: 8,
@@ -757,6 +810,31 @@ const styles = StyleSheet.create({
   buttonLabel: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  regionList: {
+    marginTop: 8,
+    gap: 6,
+  },
+  regionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  regionName: {
+    flex: 1,
+    marginRight: 12,
+    fontWeight: '600',
+  },
+  regionBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  regionBadgeText: {
+    fontWeight: '700',
   },
 })
 

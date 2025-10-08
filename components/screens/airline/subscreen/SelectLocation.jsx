@@ -4,6 +4,7 @@ import { View, StyleSheet, ScrollView, Dimensions, ActivityIndicator } from 'rea
 import { Text, Button, Appbar, Surface, useTheme, IconButton, Divider } from 'react-native-paper'
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import * as Location from 'expo-location'
+import useRequestPermissions from '../../../hooks/usePermissions'
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
 import useSnackbar from '../../../hooks/useSnackbar'
@@ -31,18 +32,24 @@ const SelectLocation = ({ navigation }) => {
 
   const isAnyGeocodingInProgress = isGeocodingInProgress
 
-  useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync()
-      if (status !== 'granted') {
-        showSnackbar('Permission to access location was denied')
-        return
+  useRequestPermissions({ 
+    locationForeground: true,
+    onPermissionDenied: (type, canAskAgain) => {
+      if (type === 'location') {
+        showSnackbar('Location access is required to use map features')
+        // Only navigate to Home if user actively denied (not if already denied)
+        if (canAskAgain === false) {
+          navigation.navigate('Home')
+        }
       }
-      mapRef.current?.animateToRegion(
-        { ...INITIAL_CENTER, latitudeDelta: 0.01, longitudeDelta: 0.01 },
-        500
-      )
-    })()
+    }
+  })
+
+  useEffect(() => {
+    mapRef.current?.animateToRegion(
+      { ...INITIAL_CENTER, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+      500
+    )
     return () => {
       geocodeTimeoutRef.current && clearTimeout(geocodeTimeoutRef.current)
     }
