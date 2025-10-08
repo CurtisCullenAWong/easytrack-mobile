@@ -20,6 +20,7 @@ import LocationAutofill from '../../../customComponents/LocationAutofill'
 import useSnackbar from '../../../hooks/useSnackbar'
 import { supabase } from '../../../../lib/supabase'
 import { sendNotificationAdmin } from '../../../../utils/registerForPushNotifications'
+import { fetchBaseDeliveryFeeForAddress } from '../../../../utils/pricingUtils'
 
 // ================================
 // CONSTANTS & CONFIGURATION
@@ -71,7 +72,7 @@ const INPUT_LIMITS = {
   lastName: { maxLength: 50, minLength: 2 },
   contact: { maxLength: 10, minLength: 10 },
   flightNumber: { maxLength: 8, minLength: 3 },
-  itemDescription: { maxLength: 100, minLength: 6 },
+  itemDescription: { maxLength: 500, minLength: 6 },
   quantity: { maxLength: 2, minLength: 1 }, // Max 2 digits for up to 25
   province: { maxLength: 50, minLength: 2 },
   cityMunicipality: { maxLength: 50, minLength: 2 },
@@ -679,7 +680,7 @@ const Booking = () => {
         }
 
         if (drop_off_location) {
-          fetchDeliveryPrice(drop_off_location)
+          fetchAndSetDeliveryFee(drop_off_location)
         } else {
           setDeliveryFee(0)
         }
@@ -713,7 +714,7 @@ const Booking = () => {
 
       // Keep itemDescriptions in sync with quantity
       const syncDescriptions = () => {
-        const qty = Math.max(0, Math.min(3, parseInt(String(updated[index].quantity || '0')) || 0))
+        const qty = Math.max(0, Math.min(15, parseInt(String(updated[index].quantity || '0')) || 0))
         let arr = Array.isArray(updated[index].itemDescriptions) ? [...updated[index].itemDescriptions] : []
         if (arr.length > qty) arr = arr.slice(0, qty)
         if (arr.length < qty) arr = [...arr, ...Array.from({ length: qty - arr.length }, () => '')]
@@ -1091,6 +1092,15 @@ const Booking = () => {
         const terminalMeta = terminalOptions.find(t => t.label === selectedTerminalLabel) || null
         const pickupGeoPoint = terminalMeta ? `POINT(${terminalMeta.lng} ${terminalMeta.lat})` : null
 
+        // Calculate total charge for this contract (existing logic)
+        const qty = parseInt(contract.quantity || '0') || 0
+        const setsOfThree = Math.ceil(qty / 3)
+        const totalCharge = deliveryFee * setsOfThree
+        
+        // Separate into base and excess charges
+        const baseCharge = deliveryFee // Base charge per passenger
+        const excessCharge = totalCharge - baseCharge // Excess charge per passenger
+
         const contractData = {
           id: trackingID,
           airline_id: user.id,
@@ -1110,7 +1120,8 @@ const Booking = () => {
           pickup_location_geo: pickupGeoPoint,
           drop_off_location: dropOffLocation.location,
           drop_off_location_geo: (dropOffLocation.lng !== null && dropOffLocation.lat !== null) ? `POINT(${dropOffLocation.lng} ${dropOffLocation.lat})` : null,
-          delivery_charge: deliveryFee
+          delivery_charge: baseCharge,
+          delivery_surcharge: excessCharge
         }
 
         const { data: insertedContract, error: contractError } = await supabase
@@ -1164,35 +1175,12 @@ const Booking = () => {
   // PRICING FUNCTIONS
   // ================================
 
-  const fetchDeliveryPrice = async (address) => {
-    try {
-      const { data: pricingList, error } = await supabase
-        .from('pricing')
-        .select('city, price')
-
-      if (error) throw error
-
-      if (!Array.isArray(pricingList) || pricingList.length === 0) {
-        setDeliveryFee(0)
-        showSnackbar('No pricing data available')
-        return
-      }
-
-      const normalizedAddress = String(address || '').toLowerCase()
-
-      const matched = pricingList.find(entry =>
-        normalizedAddress.includes(String(entry.city || '').toLowerCase())
-      )
-
-      if (matched) {
-        setDeliveryFee(Number(matched.price) || 0)
-      } else {
-        setDeliveryFee(0)
-        showSnackbar('The selected address is either invalid or out of bounds')
-      }
-    } catch (error) {
-      console.error('Error fetching delivery price:', error)
-      setDeliveryFee(0)
+  const fetchAndSetDeliveryFee = async (address) => {
+    const { fee, status } = await fetchBaseDeliveryFeeForAddress(address)
+    setDeliveryFee(fee)
+    if (status === 'no_pricing') {
+      showSnackbar('No pricing data available')
+    } else if (status === 'no_match') {
       showSnackbar('The selected address is either invalid or out of bounds')
     }
   }
@@ -1213,6 +1201,7 @@ const Booking = () => {
             icon="map-marker"
             style={{ backgroundColor: colors.primary, alignSelf: 'center', marginBottom: 8, paddingVertical: 6 }}
             contentStyle={{ height: 36 }}
+            disabled={loading}
           >
             Select Location
           </Button>
@@ -1232,7 +1221,7 @@ const Booking = () => {
         </View>
       )}
     </Surface>
-  ), [dropOffLocation, colors, fonts, navigation])
+  ), [dropOffLocation, colors, fonts, navigation, loading])
 
   const renderPickupLocation = useMemo(() => (
     <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={1}>
@@ -1250,13 +1239,14 @@ const Booking = () => {
           visible={showTerminalMenu}
           onDismiss={() => setShowTerminalMenu(false)}
           anchor={
-            <TouchableOpacity onPress={() => setShowTerminalMenu(prev => !prev)}>
+            <TouchableOpacity onPress={() => !loading && setShowTerminalMenu(prev => !prev)} disabled={loading}>
               <TextInput
                 label="Terminal"
                 value={selectedTerminal || ''}
                 mode="outlined"
-                right={<TextInput.Icon icon="menu-down" onPress={() => setShowTerminalMenu(prev => !prev)} />}
+                right={<TextInput.Icon icon="menu-down" onPress={() => !loading && setShowTerminalMenu(prev => !prev)} />}
                 editable={false}
+                disabled={loading}
                 style={{ marginBottom: 16, width: 150 }} // fixed width
               />
             </TouchableOpacity>
@@ -1279,14 +1269,14 @@ const Booking = () => {
           visible={showBayMenu}
           onDismiss={() => setShowBayMenu(false)}
           anchor={
-            <TouchableOpacity onPress={() => selectedTerminal && setShowBayMenu(prev => !prev)}>
+            <TouchableOpacity onPress={() => !loading && selectedTerminal && setShowBayMenu(prev => !prev)} disabled={loading}>
               <TextInput
                 label="Bay"
                 value={selectedBay || ''}
                 mode="outlined"
-                right={<TextInput.Icon icon="menu-down" onPress={() => selectedTerminal && setShowBayMenu(prev => !prev)} />}
+                right={<TextInput.Icon icon="menu-down" onPress={() => !loading && selectedTerminal && setShowBayMenu(prev => !prev)} />}
                 editable={false}
-                disabled={!selectedTerminal}
+                disabled={loading || !selectedTerminal}
                 style={{ marginBottom: 16, width: 150 }} // fixed width
               />
             </TouchableOpacity>
@@ -1306,7 +1296,7 @@ const Booking = () => {
         </Menu>
       </View>
     </Surface>
-  ), [pickupLocation, pickupError, showTerminalMenu, showBayMenu, selectedTerminal, selectedBay, terminalOptions, pickupBays, colors])
+  ), [pickupLocation, pickupError, showTerminalMenu, showBayMenu, selectedTerminal, selectedBay, terminalOptions, pickupBays, colors, loading])
 
   // ================================
   // MAIN RENDER
@@ -1421,7 +1411,7 @@ const Booking = () => {
                   { color: colors.onSurfaceVariant, fontStyle: 'italic', marginTop: 6 },
                 ]}
               >
-                Note: Charged per 3 luggages per head.
+                Note: Base charge for first set (1-3 luggages), excess charge for additional sets.
               </Text>
             </Surface>
           )}
@@ -1442,7 +1432,7 @@ const Booking = () => {
               barangay: locationSelections.barangay?.name || '',
               postalCode: postalCode || '',
             }}
-            disabled={!dropOffLocation.location || deliveryFee <= 0}
+            disabled={loading || !dropOffLocation.location || deliveryFee <= 0}
             errors={addressErrors}
           />
 
@@ -1454,7 +1444,7 @@ const Booking = () => {
             mode="outlined" 
             style={{ marginBottom: 12 }} 
             error={addressErrors.street}
-            disabled={!dropOffLocation.location || deliveryFee <= 0}
+            disabled={loading || !dropOffLocation.location || deliveryFee <= 0}
           />
           <TextInput 
             label="Village/Building*" 
@@ -1463,7 +1453,7 @@ const Booking = () => {
             mode="outlined" 
             style={{ marginBottom: 12 }} 
             error={addressErrors.villageBuilding}
-            disabled={!dropOffLocation.location || deliveryFee <= 0}
+            disabled={loading || !dropOffLocation.location || deliveryFee <= 0}
           />
 
           <Text style={[fonts.titleMedium, { color: colors.primary, marginBottom: 8 }]}>Address Line 2</Text>
@@ -1473,7 +1463,7 @@ const Booking = () => {
             onChangeText={setRoomUnitNo} 
             mode="outlined" 
             style={{ marginBottom: 12 }}
-            disabled={!dropOffLocation.location || deliveryFee <= 0}
+            disabled={loading || !dropOffLocation.location || deliveryFee <= 0}
           />
           <TextInput 
             label="Landmark / Entrance (Optional)" 
@@ -1483,7 +1473,7 @@ const Booking = () => {
             multiline 
             numberOfLines={2} 
             style={{ marginBottom: 12 }}
-            disabled={!dropOffLocation.location || deliveryFee <= 0}
+            disabled={loading || !dropOffLocation.location || deliveryFee <= 0}
           />
           <Button
             mode="outlined"
@@ -1513,7 +1503,7 @@ const Booking = () => {
               onClear={clearSingleContract}
               onDelete={deleteContract}
               isLastContract={contracts.length === 1}
-              isDisabled={!dropOffLocation.location || deliveryFee <= 0}
+              isDisabled={loading || !dropOffLocation.location || deliveryFee <= 0}
               flightPrefixes={flightPrefixes}
               isFixedCorporation={userRoleId === 3}
               fixedPrefix={fixedPrefix}
@@ -1527,7 +1517,7 @@ const Booking = () => {
             mode="outlined"
             onPress={addContract}
             icon="plus"
-            disabled={!dropOffLocation.location || deliveryFee <= 0 || contracts.length >= 15}
+            disabled={loading || !dropOffLocation.location || deliveryFee <= 0 || contracts.length >= 15}
           >
             Add Passenger
           </Button>

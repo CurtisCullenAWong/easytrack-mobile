@@ -48,15 +48,6 @@ export default function App() {
       setReady(true)
     }
     initialize()
-    console.log("ENV VARIABLES:", {
-    ANDROID_GOOGLE_MAPS_API_KEY: process.env.EXPO_PUBLIC_ANDROID_GOOGLE_MAPS_API_KEY,
-    GEMINI_API_KEY: process.env.EXPO_PUBLIC_GEMINI_API_KEY,
-    GOOGLE_MAPS_API_KEY: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
-    RESEND_API_KEY: process.env.EXPO_PUBLIC_RESEND_API_KEY,
-    SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-    SUPABASE_SERVICE_ROLE_KEY: process.env.EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY,
-    SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
-    })
   }, [])
 
   if (!ready) {

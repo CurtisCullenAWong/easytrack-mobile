@@ -78,7 +78,7 @@ const SelectLocation = ({ navigation }) => {
       try {
         const [address] = await Location.reverseGeocodeAsync({ latitude, longitude })
         const formatted = address
-          ? [address.name, address.street, address.district, address.city, address.region, address.postalCode, address.country]
+          ? [address.name, address.street, address.district, address.city, address.region, address.subregion, address.postalCode, address.country]
               .filter(Boolean)
               .join(', ')
           : null
@@ -140,12 +140,6 @@ const SelectLocation = ({ navigation }) => {
           onPress={(data, details) => {
             if (details) {
               const { lat, lng } = details.geometry.location
-              const newLocation = {
-                location: data.description,
-                lat,
-                lng,
-              }
-              setSelectedLocation(newLocation)
               mapRef.current?.animateToRegion(
                 {
                   latitude: lat,
