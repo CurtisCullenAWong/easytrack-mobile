@@ -1,7 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Platform, StyleSheet } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Updates from 'expo-updates'
 import { Portal, Dialog, Button, Text, ActivityIndicator, ProgressBar, useTheme } from 'react-native-paper'
+
+const REMIND_DELAY_MINUTES = 1
+const REMIND_DELAY_MS = REMIND_DELAY_MINUTES * 60 * 1000
 
 const UpdatePrompt = () => {
   const { colors, fonts } = useTheme()
@@ -12,10 +16,19 @@ const UpdatePrompt = () => {
 
   const checkForUpdates = useCallback(async () => {
     if (Platform.OS === 'web') return
+
     try {
+      // Check if we should respect "remind later"
+      const remindLaterTimestamp = await AsyncStorage.getItem(REMIND_LATER_KEY)
+      if (remindLaterTimestamp && Date.now() < parseInt(remindLaterTimestamp)) {
+        return
+      }
+
       setChecking(true)
       const result = await Updates.checkForUpdateAsync()
-      setIsUpdateAvailable(!!result.isAvailable)
+      if (result.isAvailable) {
+        setIsUpdateAvailable(true)
+      }
     } catch (error) {
       setErrorMessage('Failed to check for updates.')
     } finally {
@@ -45,8 +58,20 @@ const UpdatePrompt = () => {
     }
   }, [])
 
+  const remindLater = async () => {
+    const remindTime = Date.now() + REMIND_DELAY_MS
+    await AsyncStorage.setItem(REMIND_LATER_KEY, remindTime.toString())
+    setIsUpdateAvailable(false)
+  }
+
   useEffect(() => {
     checkForUpdates()
+    // Optionally, check periodically (e.g., every 30 min)
+    const interval = setInterval(() => {
+      checkForUpdates()
+    }, 1000 * 60 * 30)
+
+    return () => clearInterval(interval)
   }, [checkForUpdates])
 
   return (
@@ -98,7 +123,7 @@ const UpdatePrompt = () => {
         <Dialog.Actions>
           {!downloading && (
             <Button 
-              onPress={() => setIsUpdateAvailable(false)}
+              onPress={remindLater}
               textColor={colors.primary}
               labelStyle={fonts.labelLarge}
               style={{ borderRadius: 8 }}
@@ -123,7 +148,6 @@ const UpdatePrompt = () => {
 }
 
 export default UpdatePrompt
-
 
 const styles = StyleSheet.create({
   loadingContainer: {
