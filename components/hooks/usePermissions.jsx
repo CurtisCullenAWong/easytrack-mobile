@@ -73,7 +73,7 @@ export default function useRequestPermissions(options = {}) {
   }, [onPermissionDenied, showAlerts])
 
   const requestPermissions = useCallback(async () => {
-    console.log('🔐 Requesting permissions:', { locationForeground, locationBackground, notifications })
+    console.log('Requesting permissions:', { locationForeground, locationBackground, notifications })
     
     try {
       if (locationForeground) {
