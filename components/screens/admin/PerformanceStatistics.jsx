@@ -573,22 +573,43 @@ const PerformanceStatisticsScreen = ({ navigation }) => {
             </Card.Content>
           </Card>
 
-           {/* Deliveries By Region Card */}
+          {/* Deliveries By Region Card */}
           <Card style={[styles.statCard, { backgroundColor: colors.surface }]}>
             <Card.Content>
-              <Text variant="titleMedium" style={{ color: colors.primary }}>
+              <Text variant="titleMedium" style={{ color: colors.primary, marginBottom: 12 }}>
                 Deliveries by Region
               </Text>
-               <View style={styles.regionList}>
-                 {stats.deliveriesByRegion.map((region, index) => (
-                   <View key={index} style={[styles.regionRow, { backgroundColor: index % 2 === 0 ? colors.elevation?.level1 || colors.surface : colors.surface }]}>
-                     <Text style={[styles.regionName, { color: colors.onSurface }]} numberOfLines={1}>{region.region}</Text>
-                     <View style={[styles.regionBadge, { backgroundColor: colors.primary }]}>
-                       <Text style={[styles.regionBadgeText, { color: colors.onPrimary }]}>{region.count}</Text>
-                     </View>
-                   </View>
-                 ))}
-               </View>
+              <View style={styles.regionList}>
+                {stats.deliveriesByRegion.length > 0 ? (
+                  stats.deliveriesByRegion.map((region, index) => (
+                    <View key={index} style={[styles.regionRow, { 
+                      backgroundColor: index % 2 === 0 ? colors.surfaceVariant : colors.surface,
+                      borderLeftWidth: 2,
+                      borderLeftColor: colors.outline
+                    }]}>
+                      <View style={styles.regionInfo}>
+                        <Text style={[styles.regionName, { color: colors.onSurface }]} numberOfLines={1}>
+                          {region.region}
+                        </Text>
+                        <Text style={[styles.regionSubtext, { color: colors.onSurfaceVariant }]}>
+                          {region.count === 1 ? '1 delivery' : `${region.count} deliveries`}
+                        </Text>
+                      </View>
+                      <View style={[styles.regionBadge, { backgroundColor: colors.secondary }]}>
+                        <Text style={[styles.regionBadgeText, { color: colors.onSecondary }]}>
+                          {region.count}
+                        </Text>
+                      </View>
+                    </View>
+                  ))
+                ) : (
+                  <View style={styles.emptyState}>
+                    <Text style={[styles.emptyStateText, { color: colors.onSurfaceVariant }]}>
+                      No delivery data available
+                    </Text>
+                  </View>
+                )}
+              </View>
             </Card.Content>
           </Card>
 
@@ -812,29 +833,49 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   regionList: {
-    marginTop: 8,
-    gap: 6,
+    marginTop: 4,
+    gap: 8,
   },
   regionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     borderRadius: 8,
+    marginHorizontal: -4,
   },
-  regionName: {
+  regionInfo: {
     flex: 1,
     marginRight: 12,
+  },
+  regionName: {
+    fontSize: 16,
     fontWeight: '600',
+    marginBottom: 2,
+  },
+  regionSubtext: {
+    fontSize: 12,
+    fontWeight: '400',
   },
   regionBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    minWidth: 32,
+    alignItems: 'center',
   },
   regionBadgeText: {
+    fontSize: 14,
     fontWeight: '700',
+  },
+  emptyState: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 14,
+    fontStyle: 'italic',
   },
 })
 

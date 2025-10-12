@@ -8,7 +8,11 @@ import * as FileSystem from 'expo-file-system/legacy'
 const RESEND_API_KEY =  process.env.EXPO_PUBLIC_RESEND_API_KEY
 import useSnackbar from '../../../../hooks/useSnackbar'
 import Signature from 'react-native-signature-canvas'
-export const FILE_SIZE_LIMIT = Math.round(24 * 1024 * 1024)
+// Optimized limits for different scenarios
+export const RESEND_ATTACHMENT_LIMIT = Math.round(25 * 1024 * 1024) // 25MB for Resend API
+export const GMAIL_ATTACHMENT_LIMIT = Math.round(25 * 1024 * 1024) // 25MB for Gmail
+export const CHUNK_SIZE = Math.round(5 * 1024 * 1024) // 5MB chunks for processing
+export const MAX_ATTACHMENTS_PER_EMAIL = 10 // Limit attachments per email
 
 const CreateInvoice = () => {
   const { colors, fonts } = useTheme()
@@ -178,9 +182,8 @@ const CreateInvoice = () => {
         return;
       }
 
-      const attachments = [];
-
-      // 1) create the PDF
+      // Create PDF
+      setSendProgress(20);
       const pdfData = await createPDFFile(
         transactions,
         null,
@@ -193,38 +196,37 @@ const CreateInvoice = () => {
         { signatureOnFirstPage: true },
         buildInvoiceData()
       );
-      setSendProgress(20);
 
       if (!pdfData?.path) {
         showSnackbar('Failed to generate PDF');
         return;
       }
 
-      // 2) check size + split into max-size parts
+      // Split PDF if too large
       const fileInfo = await FileSystem.getInfoAsync(pdfData.path);
       let filesToSend = [];
-      if (fileInfo.size > FILE_SIZE_LIMIT) {
-        filesToSend = await splitPDFFile(pdfData.path, FILE_SIZE_LIMIT);
+      
+      if (fileInfo.size > RESEND_ATTACHMENT_LIMIT) {
+        showSnackbar(`PDF is large (${formatFileSize(fileInfo.size)}). Splitting into smaller parts...`);
+        filesToSend = await splitPDFFile(pdfData.path, RESEND_ATTACHMENT_LIMIT);
       } else {
         filesToSend = [pdfData.path];
       }
       setSendProgress(60);
 
-      // 3) encode attachments one-by-one (to manage memory usage)
-      for (let j = 0; j < filesToSend.length; j++) {
-        const fpath = filesToSend[j];
-        const base64 = await FileSystem.readAsStringAsync(fpath, {
+      // Create attachments
+      const attachments = [];
+      for (let i = 0; i < filesToSend.length; i++) {
+        const base64 = await FileSystem.readAsStringAsync(filesToSend[i], {
           encoding: FileSystem.EncodingType.Base64,
         });
 
         attachments.push({
-          filename: filesToSend.length > 1
-            ? `Invoice_part${j + 1}.pdf`
-            : `Invoice.pdf`,
+          filename: filesToSend.length > 1 ? `Invoice_part${i + 1}.pdf` : `Invoice.pdf`,
           content: base64,
         });
 
-        setSendProgress(60 + Math.floor(((j + 1) / filesToSend.length) * 30));
+        setSendProgress(60 + Math.floor(((i + 1) / filesToSend.length) * 30));
       }
 
       if (attachments.length === 0) {
@@ -236,38 +238,33 @@ const CreateInvoice = () => {
       const body = {
         from: 'EasyTrack <easytrack@ghe-easytrack.org>',
         to: [email],
-        subject: `Invoice${attachments.length > 1 ? ` (parts 1-${attachments.length})` : ''} from EasyTrack`,
+        subject: 'Your Invoice & SOA PDF',
         html: `<p>Please find the attached invoice and summary report (split into ${attachments.length} part(s)).</p>`,
+        text: 'Please find your invoice attached.',
         attachments,
       };
 
-      const sendOnce = async () => {
-        const res = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${RESEND_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(body),
-        });
-        return res;
-      };
-
-      let response = await sendOnce();
-      if (!response.ok) {
-        // retry once
-        await new Promise(r => setTimeout(r, 1200));
-        response = await sendOnce();
-      }
-      setSendProgress(100);
+      setSendProgress(90);
+      let response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
 
       if (!response.ok) {
         const errText = await response.text();
         showSnackbar(`Failed to send email: ${response.status} ${errText}`);
+        setSendProgress(0);
         return;
       }
+
+      setSendProgress(95);
       showSnackbar(`Email sent to ${email} with ${attachments.length} attachment(s).`, true);
-      // 5) update summary status
+      
+      // Update summary status
       if (summary?.summary_id) {
         const { error: statusUpdateError } = await supabase
           .from('summary')
@@ -275,6 +272,8 @@ const CreateInvoice = () => {
           .eq('id', summary.summary_id);
         if (statusUpdateError) console.error('Error updating summary_status_id:', statusUpdateError);
       }
+      
+      setSendProgress(100);
       setEmailDialogVisible(false);
     } catch (error) {
       console.error('Error sending email:', error);
@@ -283,7 +282,7 @@ const CreateInvoice = () => {
       setIsSendingEmail(false);
       setSendProgress(0);
     }
-}
+  };
 
   // Signature component renderer
   const renderSignatureSection = (signerType, signatureDataUrl, signatureSize, signatureRotation) => {

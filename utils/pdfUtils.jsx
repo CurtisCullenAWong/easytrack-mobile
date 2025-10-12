@@ -74,8 +74,8 @@ const generateTransactionReportHTML = async (
   const contractData = await Promise.all(transactions.map(async (transaction) => {
     const { data, error } = await supabase
       .from('contracts')
-      .select(`*
-        contract_status:contract_status_id (status_name),
+      .select(`*,
+        contract_status:contract_status_id (status_name)
       `)
       .eq('summary_id', transaction.summary_id)
 
@@ -737,23 +737,19 @@ const generateTransactionReportHTML = async (
             word-wrap: break-word;
           }
           .form-image-container {
-            flex: 1;
+            width: 100%;
+            height: 500px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 20px;
             border: 1px solid #ddd;
             background-color: #fff;
-            min-height: 400px;
-            max-height: 800px;
             overflow: hidden;
             position: relative;
           }
           .form-image {
-            min-width: 70%;
-            min-height: 70%;
-            width: auto;
-            height: auto;
+            width: 100%;
+            height: 100%;
             object-fit: contain;
             object-position: center;
             display: block;

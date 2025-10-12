@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useMemo } from 'react'
 import { ScrollView, View, StyleSheet, Image, RefreshControl } from 'react-native'
-import { Avatar, Card, Text, Divider, Button, useTheme, ActivityIndicator, Portal, Dialog, Appbar } from 'react-native-paper'
+import { Avatar, Card, Text, Divider, Button, useTheme, ActivityIndicator, Portal, Dialog, TextInput } from 'react-native-paper'
 import Header from '../../customComponents/Header'
 import { supabase } from '../../../lib/supabase'
 import useLogout from '../../hooks/useLogout'
 import { useFocusEffect } from '@react-navigation/native'
 import useSnackbar from '../../hooks/useSnackbar'
+import BottomModal from '../../customComponents/BottomModal'
 
 // Profile Card Component
 const ProfileCard = React.memo(({ profile, colors, fonts }) => {
@@ -229,9 +230,42 @@ const Profile = ({ navigation }) => {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [isModalVisible, setIsModalVisible] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [isPasswordChanging, setIsPasswordChanging] = useState(false)
+  const [visibility, setVisibility] = useState({ newPassword: false, confirmPassword: false })
 
   const { handleLogout, LogoutDialog } = useLogout(navigation)
   const { showSnackbar, SnackbarElement } = useSnackbar()
+
+  const toggleVisibility = (field) => {
+    setVisibility(prev => ({ ...prev, [field]: !prev[field] }))
+  }
+
+  const handlePasswordChange = async () => {
+    if (newPassword !== confirmPassword) {
+      showSnackbar("Passwords do not match.")
+      return
+    }
+    if (newPassword.length < 6) {
+      showSnackbar("Password should be at least 6 characters.")
+      return
+    }
+
+    setIsPasswordChanging(true)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    setIsPasswordChanging(false)
+
+    if (error) {
+      showSnackbar(error.message)
+    } else {
+      showSnackbar("Password updated successfully!", true)
+      setIsModalVisible(false)
+      setNewPassword('')
+      setConfirmPassword('')
+    }
+  }
 
   const fetchProfile = useCallback(async () => {
     setLoading(true)
@@ -361,6 +395,15 @@ const Profile = ({ navigation }) => {
         >
           Edit Profile
         </Button>
+        <Button
+          icon="lock-reset"
+          mode="contained"
+          style={[styles.button, { backgroundColor: colors.primary }]}
+          onPress={() => setIsModalVisible(true)}
+          labelStyle={[{ color: colors.onPrimary, ...fonts.labelLarge }]}
+        >
+          Change Password
+        </Button>
       </View>
 
       <InfoCard title="Personal Information" data={personalInfo} colors={colors} fonts={fonts} />
@@ -387,6 +430,52 @@ const Profile = ({ navigation }) => {
       </View>
 
       {LogoutDialog}
+
+      <BottomModal visible={isModalVisible} onDismiss={() => setIsModalVisible(false)}>
+        <ScrollView contentContainerStyle={styles.modalScrollViewContainer}>
+          <Text style={[fonts.headlineSmall, styles.modalHeaderText, { color: colors.onSurface }]}>Change Password</Text>
+          <TextInput
+            label="New Password"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            secureTextEntry={!visibility.newPassword}
+            mode="outlined"
+            style={styles.modalTextInput}
+            right={
+              <TextInput.Icon
+                icon={visibility.newPassword ? 'eye' : 'eye-off'}
+                iconColor={colors.primary}
+                onPress={() => toggleVisibility('newPassword')}
+              />
+            }
+          />
+          <TextInput
+            label="Confirm New Password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry={!visibility.confirmPassword}
+            mode="outlined"
+            style={styles.modalTextInput}
+            right={
+              <TextInput.Icon
+                icon={visibility.confirmPassword ? 'eye' : 'eye-off'}
+                iconColor={colors.primary}
+                onPress={() => toggleVisibility('confirmPassword')}
+              />
+            }
+          />
+          <Button
+            mode="contained"
+            onPress={handlePasswordChange}
+            loading={isPasswordChanging}
+            disabled={isPasswordChanging}
+            style={[styles.modalButton, { backgroundColor: colors.primary }]}
+            labelStyle={[fonts.labelLarge, { color: colors.onPrimary }]}
+          >
+            Update Password
+          </Button>
+        </ScrollView>
+      </BottomModal>
     </ScrollView>
   )
 }
@@ -448,6 +537,26 @@ const styles = StyleSheet.create({
     width: '100%',
     height: undefined,
     borderRadius: 8,
+  },
+  modalScrollViewContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modalHeaderText: {
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  modalTextInput: {
+    marginBottom: 16,
+  },
+  modalButton: {
+    alignSelf: 'center',
+    width: '85%',
+    height: 50,
+    justifyContent: 'center',
+    borderRadius: 8,
+    marginTop: 16,
   },
 })
 

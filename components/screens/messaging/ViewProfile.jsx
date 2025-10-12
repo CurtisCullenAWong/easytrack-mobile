@@ -264,9 +264,11 @@ const ViewProfile = ({ navigation, route }) => {
             <Text style={[styles.infoLabel, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
               Contact Number:
             </Text>
-            <Text style={[styles.infoValue, { color: colors.onSurface, ...fonts.bodyMedium }]} selectable>
-              {profile.contact_number || 'Not provided'}
-            </Text>
+              <TouchableOpacity onPress={handleCall}>
+              <Text style={[styles.infoValue, { color: colors.primary, ...fonts.bodyMedium }]} selectable>
+                {profile.contact_number || 'Not provided'}
+              </Text>
+              </TouchableOpacity>
           </View>
           
           <View style={styles.infoRow}>

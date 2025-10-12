@@ -1,19 +1,19 @@
 import { supabase } from '../lib/supabase'
 
-// Normalize string for case-insensitive, accent-insensitive comparisons (ñ → n, etc.)
-// Also trims whitespace and removes "city" keyword for better matching
+// Normalize string for case-insensitive, accent-insensitive comparisons
+// Also trims whitespace, removes "city" keyword, and converts "Kalakhang Maynila" → "Metro Manila"
 const normalize = (value) => {
   const s = String(value || '').toLowerCase().trim()
   return s
     .normalize('NFD') // Remove diacritics (ñ → n, á → a)
     .replace(/[\u0300-\u036f]/g, '') // Strip combining marks
+    .replace(/\bkalakhang maynila\b/g, 'metro manila') // Replace phrase in both city and address
     .replace(/\bcity\b/g, '') // Remove standalone "city"
     .replace(/\s*,\s*/g, ', ') // Normalize comma spacing
     .replace(/\s+/g, ' ') // Collapse multiple spaces
     .trim()
 }
 
-// Find matching pricing entry by checking if normalized city+region appears in address
 const findPricingMatch = (pricingList, address) => {
   const normAddress = normalize(address)
   return (
@@ -25,7 +25,7 @@ const findPricingMatch = (pricingList, address) => {
 }
 
 // Fetch base delivery fee for a given free-form address string.
-// Returns an object: { fee: number, status: 'ok' | 'no_pricing' | 'no_match' }
+// Returns: { fee: number, status: 'ok' | 'no_pricing' | 'no_match', city?: string }
 export const fetchBaseDeliveryFeeForAddress = async (address) => {
   try {
     const { data: pricingList, error } = await supabase
@@ -40,8 +40,9 @@ export const fetchBaseDeliveryFeeForAddress = async (address) => {
 
     const matched = findPricingMatch(pricingList, address)
     if (matched) {
+      const cityName = matched.city.replace(/Kalakhang Maynila/gi, 'Metro Manila')
       const fee = Number(matched.price) || 0
-      return { fee, status: 'ok' }
+      return { fee, status: 'ok', city: cityName }
     }
 
     return { fee: 0, status: 'no_match' }

@@ -43,9 +43,14 @@ const ViewMessage = ({ navigation, route }) => {
   // ------------------------------
   useEffect(() => {
     getCurrentUser()
-    getOtherUser()
-    fetchStatusMap()
   }, [])
+  
+  useEffect(() => {
+    if (currentUser) {
+      getOtherUser()
+      fetchStatusMap()
+    }
+  }, [currentUser])
 
   useFocusEffect(
     useCallback(() => {
@@ -80,7 +85,16 @@ const ViewMessage = ({ navigation, route }) => {
       const {
         data: { user },
       } = await supabase.auth.getUser()
-      if (user) setCurrentUser(user)
+      if (!user) return
+  
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("id, role_id, corporation_id, first_name, last_name, pfp_id")
+        .eq("id", user.id)
+        .single()
+  
+      if (error) throw error
+      setCurrentUser(profile)
     } catch (error) {
       console.error("Error getting current user:", error)
     }
@@ -90,16 +104,29 @@ const ViewMessage = ({ navigation, route }) => {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, first_name, last_name, pfp_id")
+        .select("id, first_name, last_name, pfp_id, role_id, corporation_id")
         .eq("id", otherUserId)
         .single()
-
+  
       if (error) throw error
+  
+      // Restriction: only allow chatting within same corporation if both are role_id 3
+      if (
+        currentUser?.role_id === 3 &&
+        data.role_id === 3 &&
+        currentUser.corporation_id !== data.corporation_id
+      ) {
+        alert("You are not allowed to view this user's messages.")
+        navigation.goBack()
+        return
+      }
+  
       setOtherUser(data)
     } catch (error) {
       console.error("Error getting other user:", error)
     }
   }
+  
 
   const fetchStatusMap = async () => {
     try {

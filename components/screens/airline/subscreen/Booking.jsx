@@ -522,7 +522,7 @@ const Booking = () => {
     { label: 'Terminal 1', lat: 14.508963226090515, lng: 121.00417400814496 },
     { label: 'Terminal 2', lat: 14.511166725278645, lng: 121.01288969053523 },
     { label: 'Terminal 3', lat: 14.5201168528943, lng: 121.01377520505147 },
-    { label: 'Terminal 4', lat: 14.525440177319647, lng: 121.00111980000001 }
+    // { label: 'Terminal 4', lat: 14.525440177319647, lng: 121.00111980000001 }
   ]), [])
 
   const pickupBays = useMemo(() => 

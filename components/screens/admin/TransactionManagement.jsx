@@ -19,7 +19,7 @@ const TransactionManagement = ({ navigation, route }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header navigation={navigation} title="Transaction Management" />
+      <Header navigation={navigation} title="Manage Transactions" />
 
       <View style={styles.segmentContainer}>
         <SegmentedButtons
