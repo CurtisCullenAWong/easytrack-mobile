@@ -116,7 +116,6 @@ const ViewMessage = ({ navigation, route }) => {
         data.role_id === 3 &&
         currentUser.corporation_id !== data.corporation_id
       ) {
-        alert("You are not allowed to view this user's messages.")
         navigation.goBack()
         return
       }

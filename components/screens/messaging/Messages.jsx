@@ -266,9 +266,15 @@ const Messages = ({ navigation }) => {
 
   // --- API Calls ---
   const getCurrentUser = async () => {
-    const { data, error } = await supabase.auth.getUser()
-    if (data?.user) setCurrentUser(data.user)
-    if (error) console.error(error)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, role_id, corporation_id')
+        .eq('id', user.id)
+        .single()
+      setCurrentUser(profile)
+    }
   }
 
   const fetchStatusMap = async () => {
@@ -308,11 +314,11 @@ const Messages = ({ navigation }) => {
         .select(`
           id, content, created_at, read_at, status_id, sender_id, receiver_id,
           sender:sender_id (
-            id, first_name, last_name, pfp_id, role_id,
+            id, first_name, last_name, pfp_id, role_id, corporation_id,
             roles:role_id ( role_name )
           ),
           receiver:receiver_id (
-            id, first_name, last_name, pfp_id, role_id,
+            id, first_name, last_name, pfp_id, role_id, corporation_id,
             roles:role_id ( role_name )
           )
         `)
@@ -364,6 +370,14 @@ const Messages = ({ navigation }) => {
         msg.sender_id === currentUser.id ? msg.receiver : msg.sender
       const isOwn = msg.sender_id === currentUser.id
       const isUnread = msg.receiver_id === currentUser.id && !msg.read_at
+
+      if (
+        currentUser?.role_id === 3 &&
+        otherUser?.role_id === 3 &&
+        currentUser.corporation_id !== otherUser.corporation_id
+      ) {
+        return
+      }
       
       // Get status label with fallback
       let statusLabel = ""

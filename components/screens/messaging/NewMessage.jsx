@@ -23,7 +23,14 @@ const NewMessage = ({ navigation }) => {
   const getCurrentUser = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) setCurrentUser(user)
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, role_id, corporation_id')
+          .eq('id', user.id)
+          .single()
+        setCurrentUser(profile)
+      }
     } catch (e) {
       console.error('Error getting user', e)
     }
@@ -41,6 +48,7 @@ const NewMessage = ({ navigation }) => {
           pfp_id,
           email,
           role_id,
+          corporation_id,
           roles:role_id ( role_name )
         `)
         .neq('id', currentUser.id)
@@ -57,6 +65,13 @@ const NewMessage = ({ navigation }) => {
   }
 
   const filtered = profiles.filter(p => {
+    if (
+      currentUser?.role_id === 3 &&
+      p.role_id === 3 &&
+      currentUser.corporation_id !== p.corporation_id
+    ) {
+      return false
+    }
     const q = search.trim().toLowerCase()
     if (!q) return true
     const fullName = `${p.first_name || ''} ${p.last_name || ''}`.toLowerCase()
