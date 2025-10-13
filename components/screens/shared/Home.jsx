@@ -233,6 +233,12 @@ const airlineAnnouncement =
                 </View>
                 <Text style={[styles.announcementText, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
                   {deliveryAnnouncement}
+                  <Text
+                    style={[styles.announcementText, { color: 'blue', ...fonts.bodyMedium, textDecorationLine: 'underline' }]}
+                    onPress={() => Linking.openURL('https://drive.google.com/file/d/1pztpMiHW6_KpX0Je7O5cGgWiMvSEI9BS/view?usp=drive_link')}
+                  >
+                    EasyTrack Mobile APK File
+                  </Text>
                 </Text>
               </Surface>
             )}
@@ -244,6 +250,12 @@ const airlineAnnouncement =
                 </View>
                 <Text style={[styles.announcementText, { color: colors.onSurfaceVariant, ...fonts.bodyMedium }]}>
                   {airlineAnnouncement}
+                  <Text
+                    style={[styles.announcementText, { color: 'blue', ...fonts.bodyMedium, textDecorationLine: 'underline' }]}
+                    onPress={() => Linking.openURL('https://drive.google.com/file/d/1pztpMiHW6_KpX0Je7O5cGgWiMvSEI9BS/view?usp=drive_link')}
+                  >
+                    EasyTrack Mobile APK File
+                  </Text>
                 </Text>
               </Surface>
             )}

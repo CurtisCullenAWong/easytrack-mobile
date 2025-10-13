@@ -9,9 +9,12 @@ import {
   useTheme,
   Menu,
   Surface,
+  Dialog,
+  Portal,
 } from 'react-native-paper'
 import { supabase } from '../../../../../lib/supabase'
 import EditDeliveryRateModal from '../../../../customComponents/EditDeliveryRateModal'
+import AddDeliveryRateModal from '../../../../customComponents/AddDeliveryRateModal'
 import useSnackbar from '../../../../hooks/useSnackbar'
 
 const COLUMN_WIDTH = 180
@@ -19,7 +22,7 @@ const CITY_COLUMN_WIDTH = 200
 const PRICE_COLUMN_WIDTH = 150
 const REGION_COLUMN_WIDTH = 200
 
-const DeliveryRates = ({ navigation }) => {
+const DeliveryRates = () => {
   const { colors, fonts } = useTheme()
   const { showSnackbar, SnackbarElement } = useSnackbar()
 
@@ -40,6 +43,19 @@ const DeliveryRates = ({ navigation }) => {
   const [priceAmount, setPriceAmount] = useState('')
   const [priceError, setPriceError] = useState('')
   const [loadingEdit, setLoadingEdit] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [loadingDelete, setLoadingDelete] = useState(false)
+
+  // Add modal state
+  const [showAddDialog, setShowAddDialog] = useState(false)
+  const [newCity, setNewCity] = useState('')
+  const [newPrice, setNewPrice] = useState('')
+  const [selectedRegion, setSelectedRegion] = useState(null)
+  const [regions, setRegions] = useState([])
+  const [cityError, setCityError] = useState('')
+  const [addPriceError, setAddPriceError] = useState('')
+  const [regionError, setRegionError] = useState('')
+  const [loadingAdd, setLoadingAdd] = useState(false)
 
   const fetchRates = async () => {
     setLoading(true)
@@ -59,6 +75,9 @@ const DeliveryRates = ({ navigation }) => {
       city: rate.city || 'N/A',
       price: rate.price ? `₱${rate.price.toFixed(2)}` : 'N/A',
       region: rate.region?.region || 'N/A',
+      created_at: rate.created_at
+        ? new Date(rate.created_at).toLocaleString('en-PH')
+        : 'N/A',
       updated_at: rate.updated_at
         ? new Date(rate.updated_at).toLocaleString('en-PH')
         : 'N/A',
@@ -69,11 +88,103 @@ const DeliveryRates = ({ navigation }) => {
     setLoading(false)
   }
 
+  const fetchRegions = async () => {
+    const { data, error } = await supabase.from('pricing_region').select('*')
+    if (error) {
+      console.error('Error fetching regions:', error)
+      return
+    }
+    setRegions(data)
+  }
+
+  const handleAddRate = () => {
+    setNewCity('')
+    setNewPrice('')
+    setSelectedRegion(null)
+    setCityError('')
+    setAddPriceError('')
+    setRegionError('')
+    setShowAddDialog(true)
+  }
+
+  const handleCreateRate = async () => {
+    let hasError = false
+    const cityTrimmed = newCity.trim()
+
+    if (!cityTrimmed) {
+      setCityError('City is required')
+      hasError = true
+    } else if (rates.some(rate => rate.city.toLowerCase() === cityTrimmed.toLowerCase() && rate.region_id === selectedRegion?.id)) {
+      setCityError('This city and region combination already exists.')
+      hasError = true
+    } else {
+      setCityError('')
+    }
+
+    if (!selectedRegion) {
+      setRegionError('Region is required')
+      hasError = true
+    } else {
+      setRegionError('')
+    }
+
+    const sanitize = (val) => {
+      let v = (val ?? '').toString().trim()
+      if (v === '') return { ok: false, num: null }
+      v = v.replace(/[^0-9.]/g, '')
+      const parts = v.split('.')
+      if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('')
+      if (v.length > 1 && v.startsWith('0') && v[1] !== '.') {
+        v = v.replace(/^0+/, '')
+      }
+      if (v.includes('.')) {
+        const [intPart, decPart] = v.split('.')
+        v = intPart + '.' + decPart.slice(0, 2)
+      }
+      const num = parseFloat(v)
+      return { ok: !(isNaN(num) || num < 0), num }
+    }
+
+    const price = sanitize(newPrice)
+    if (!price.ok) {
+      setAddPriceError('Enter a valid, non-negative amount')
+      hasError = true
+    } else {
+      setAddPriceError('')
+    }
+
+    if (hasError) return
+
+    const fullCity = `${cityTrimmed}, ${selectedRegion.region}`
+
+    setLoadingAdd(true)
+    try {
+      const { error } = await supabase
+        .from('pricing')
+        .insert({
+          city: fullCity,
+          region_id: selectedRegion.id,
+          price: price.num,
+        })
+      
+      if (error) throw error
+
+      setShowAddDialog(false)
+      await fetchRates()
+      showSnackbar('Delivery rate added successfully!', true)
+    } catch (error) {
+      showSnackbar('Error adding delivery rate.', false)
+      console.error('Error adding delivery rate:', error)
+    } finally {
+      setLoadingAdd(false)
+    }
+  }
+
   const handleEditRate = (rate) => {
     setSelectedRate(rate)
     setPriceAmount(String(rate.raw_price || 0))
     setPriceError('')
-    setShowEditDialog(true)
+    setShowEditDialog((true))
   }
 
   const handleUpdatePrice = async (newPrice) => {
@@ -126,9 +237,38 @@ const DeliveryRates = ({ navigation }) => {
     }
   }
 
+  const handleDeleteRate = (rate) => {
+    setSelectedRate(rate)
+    setShowDeleteDialog(true)
+  }
+
+  const confirmDeleteRate = async () => {
+    if (!selectedRate) return
+    setLoadingDelete(true)
+    try {
+      const { error } = await supabase
+        .from('pricing')
+        .delete()
+        .eq('id', selectedRate.id)
+      
+      if (error) throw error
+
+      setShowDeleteDialog(false)
+      setSelectedRate(null)
+      await fetchRates()
+      showSnackbar('Delivery rate deleted successfully!', true)
+    } catch (error) {
+      showSnackbar('Error deleting delivery rate.', false)
+      console.error('Error deleting delivery rate:', error)
+    } finally {
+      setLoadingDelete(false)
+    }
+  }
+
   useFocusEffect(
     useCallback(() => {
       fetchRates()
+      fetchRegions()
       // Realtime subscription for pricing updates
       const channelRef = { current: null }
       channelRef.current = supabase
@@ -190,16 +330,18 @@ const DeliveryRates = ({ navigation }) => {
   const paginatedRates = filteredAndSortedRates.slice(from, to)
 
   const filterOptions = [
-    { label: 'Price', value: 'price' },
     { label: 'City', value: 'city' },
+    { label: 'Price', value: 'price' },
     { label: 'Region', value: 'region' },
+    { label: 'Created at', value: 'created_at' },
     { label: 'Last Updated', value: 'updated_at' },
   ]
 
   const columns = [
-    { key: 'price', label: 'Price', width: PRICE_COLUMN_WIDTH },
     { key: 'city', label: 'City', width: CITY_COLUMN_WIDTH },
+    { key: 'price', label: 'Price', width: PRICE_COLUMN_WIDTH },
     { key: 'region', label: 'Region', width: REGION_COLUMN_WIDTH },
+    { key: 'created_at', label: 'Created at', width: COLUMN_WIDTH },
     { key: 'updated_at', label: 'Last Updated', width: COLUMN_WIDTH },
   ]
 
@@ -269,6 +411,14 @@ const DeliveryRates = ({ navigation }) => {
               ))}
             </Menu>
           </View>
+          <Button
+            mode="contained"
+            icon="plus"
+            onPress={handleAddRate}
+            style={{ marginTop: 10 }}
+          >
+            Add City
+          </Button>
         </Surface>
 
         {/* Results Section */}
@@ -329,7 +479,8 @@ const DeliveryRates = ({ navigation }) => {
                           index % 2 === 0 && { backgroundColor: colors.surfaceVariant + '20' }
                         ]}
                       >
-                        <DataTable.Cell style={[styles.actionColumn, { justifyContent: 'center' }]}>
+                      <DataTable.Cell style={[styles.actionColumn]}>
+                        <View style={styles.actionButtonsContainer}>
                           <Button
                             mode="contained"
                             style={[styles.actionButton, { backgroundColor: colors.primary }]}
@@ -339,7 +490,17 @@ const DeliveryRates = ({ navigation }) => {
                           >
                             Edit
                           </Button>
-                        </DataTable.Cell>
+                          <Button
+                            mode="contained"
+                            style={[styles.actionButton, { backgroundColor: colors.error }]}
+                            contentStyle={styles.buttonContent}
+                            labelStyle={[styles.buttonLabel, { color: colors.onError }]}
+                            onPress={() => handleDeleteRate(rate)}
+                          >
+                            Delete
+                          </Button>
+                        </View>
+                      </DataTable.Cell>
                         {columns.map(({ key, width }) => (
                           <DataTable.Cell
                             key={key}
@@ -406,6 +567,49 @@ const DeliveryRates = ({ navigation }) => {
         currencySymbol="₱"
       />
 
+      <AddDeliveryRateModal
+        visible={showAddDialog}
+        onDismiss={() => setShowAddDialog(false)}
+        title="Add New Delivery Rate"
+        description={`Enter the city name and select a region to add a new delivery rate.`}
+        city={newCity}
+        setCity={setNewCity}
+        cityError={cityError}
+        price={newPrice}
+        setPrice={setNewPrice}
+        priceError={addPriceError}
+        selectedRegion={selectedRegion}
+        setSelectedRegion={setSelectedRegion}
+        regionError={regionError}
+        regions={regions}
+        loading={loadingAdd}
+        onConfirm={handleCreateRate}
+        currencySymbol="₱"
+      />
+
+      <Portal>
+        <Dialog
+          visible={showDeleteDialog}
+          onDismiss={() => setShowDeleteDialog(false)}
+          style={{ backgroundColor: colors.surface }}
+        >
+          <Dialog.Title>Confirm Deletion</Dialog.Title>
+          <Dialog.Content>
+            <Text>
+              Are you sure you want to delete the rate for {selectedRate?.city}? This action cannot be undone.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setShowDeleteDialog(false)} disabled={loadingDelete}>
+              Cancel
+            </Button>
+            <Button onPress={confirmDeleteRate} loading={loadingDelete} disabled={loadingDelete} textColor={colors.error}>
+              Delete
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
       {SnackbarElement}
     </ScrollView>
   )
@@ -428,6 +632,9 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.12)',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   resultsCount: { marginTop: 4 },
   loadingContainer: { padding: 32, alignItems: 'center' },
@@ -441,14 +648,23 @@ const styles = StyleSheet.create({
   tableRow: {
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+    flexDirection: 'row',
   },
-  actionColumn: { width: 140, paddingVertical: 12 },
+  actionColumn: { width: 220, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent:'center' },
   tableColumn: { paddingVertical: 12 },
   sortableHeader: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   sortIcon: { fontSize: 12 },
   headerText: { fontWeight: '600' },
   cellText: { textAlign: 'center' },
-  actionButton: { borderRadius: 8 },
+  actionButtonsContainer: {
+  flexDirection: 'row',
+  justifyContent: 'center',
+  alignItems: 'center',
+  },
+  actionButton: {
+    borderRadius: 8,
+    marginRight: 8,
+  },
   buttonContent: { height: 40 },
   buttonLabel: { fontSize: 14, fontWeight: '600' },
   noDataCell: {
