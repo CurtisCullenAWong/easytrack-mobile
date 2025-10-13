@@ -42,6 +42,8 @@ const DeliveryRates = () => {
   const [selectedRate, setSelectedRate] = useState(null)
   const [priceAmount, setPriceAmount] = useState('')
   const [priceError, setPriceError] = useState('')
+  const [editedCity, setEditedCity] = useState('')
+  const [editedCityError, setEditedCityError] = useState('')
   const [loadingEdit, setLoadingEdit] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [loadingDelete, setLoadingDelete] = useState(false)
@@ -114,7 +116,7 @@ const DeliveryRates = () => {
     if (!cityTrimmed) {
       setCityError('City is required')
       hasError = true
-    } else if (rates.some(rate => rate.city.toLowerCase() === cityTrimmed.toLowerCase() && rate.region_id === selectedRegion?.id)) {
+    } else if (selectedRegion && rates.some(rate => rate.city.toLowerCase() === `${cityTrimmed}, ${selectedRegion.region}`.toLowerCase())) {
       setCityError('This city and region combination already exists.')
       hasError = true
     } else {
@@ -173,8 +175,13 @@ const DeliveryRates = () => {
       await fetchRates()
       showSnackbar('Delivery rate added successfully!', true)
     } catch (error) {
-      showSnackbar('Error adding delivery rate.', false)
-      console.error('Error adding delivery rate:', error)
+      if (error.code === '23505') {
+        setCityError('This city and region combination already exists.')
+        showSnackbar('Error: A rate for this city and region already exists.', false)
+      } else {
+        showSnackbar('Error adding delivery rate.', false)
+        console.error('Error adding delivery rate:', error)
+      }
     } finally {
       setLoadingAdd(false)
     }
@@ -183,11 +190,13 @@ const DeliveryRates = () => {
   const handleEditRate = (rate) => {
     setSelectedRate(rate)
     setPriceAmount(String(rate.raw_price || 0))
+    setEditedCity(rate.city.split(',')[0].trim())
     setPriceError('')
-    setShowEditDialog((true))
+    setEditedCityError('')
+    setShowEditDialog(true)
   }
 
-  const handleUpdatePrice = async (newPrice) => {
+  const handleUpdateRate = async ({ price: newPrice, city: newCity }) => {
     const sanitize = (val) => {
       let v = (val ?? '').toString().trim()
       if (v === '') return { ok: false, num: null }
@@ -205,10 +214,35 @@ const DeliveryRates = () => {
       return { ok: !(isNaN(num) || num < 0), num }
     }
 
-    const price = sanitize(newPrice)
+    let hasError = false
+    const cityTrimmed = newCity.trim()
+    if (!cityTrimmed) {
+      setEditedCityError('City is required')
+      hasError = true
+    } else {
+      setEditedCityError('')
+    }
 
+    const price = sanitize(newPrice)
     if (!price.ok) {
       setPriceError('Enter a valid, non-negative amount')
+      hasError = true
+    } else {
+      setPriceError('')
+    }
+
+    if (hasError) return
+
+    const fullCity = `${cityTrimmed}, ${selectedRate.region}`
+
+    if (
+      rates.some(
+        (rate) =>
+          rate.city.toLowerCase() === fullCity.toLowerCase() &&
+          rate.id !== selectedRate.id
+      )
+    ) {
+      setEditedCityError('This city and region combination already exists.')
       return
     }
 
@@ -216,22 +250,29 @@ const DeliveryRates = () => {
     try {
       const { error } = await supabase
         .from('pricing')
-        .update({ 
+        .update({
           price: price.num,
-          updated_at: new Date().toISOString()
+          city: fullCity,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', selectedRate.id)
-      
+
       if (error) throw error
-      
+
       setShowEditDialog(false)
       setPriceAmount('')
+      setEditedCity('')
       setSelectedRate(null)
       await fetchRates()
       showSnackbar('Delivery rate updated successfully!', true)
     } catch (error) {
-      showSnackbar('Error updating delivery rate.', false)
-      console.error('Error updating delivery rate:', error)
+      if (error.code === '23505') {
+        setEditedCityError('This city and region combination already exists.')
+        showSnackbar('Error: A rate for this city and region already exists.', false)
+      } else {
+        showSnackbar('Error updating delivery rate.', false)
+        console.error('Error updating delivery rate:', error)
+      }
     } finally {
       setLoadingEdit(false)
     }
@@ -557,13 +598,17 @@ const DeliveryRates = () => {
         visible={showEditDialog}
         onDismiss={() => setShowEditDialog(false)}
         title="Edit Delivery Rate"
-        description={`Update delivery price for ${selectedRate?.city || 'this city'}. Enter a valid amount.`}
+        description={`Update delivery rate for ${selectedRate?.city || 'this city'}.`}
         priceAmount={priceAmount}
         setPriceAmount={setPriceAmount}
         priceError={priceError}
         setPriceError={setPriceError}
+        city={editedCity}
+        setCity={setEditedCity}
+        cityError={editedCityError}
+        setCityError={setEditedCityError}
         loading={loadingEdit}
-        onConfirm={handleUpdatePrice}
+        onConfirm={handleUpdateRate}
         currencySymbol="₱"
       />
 

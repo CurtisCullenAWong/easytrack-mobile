@@ -13,7 +13,11 @@ const EditDeliveryRateModal = ({
   setPriceError,
   loading,
   onConfirm,
-  currencySymbol = '₱'
+  currencySymbol = '₱',
+  city,
+  setCity,
+  cityError,
+  setCityError,
 }) => {
   const { colors, fonts } = useTheme()
 
@@ -29,6 +33,11 @@ const EditDeliveryRateModal = ({
     if (setPriceError) setPriceError('')
   }
 
+  const handleChangeCity = (value) => {
+    setCity(value)
+    if (setCityError) setCityError('')
+  }
+
   return (
     <Modal
       visible={visible}
@@ -37,13 +46,25 @@ const EditDeliveryRateModal = ({
       onRequestClose={onDismiss}
     >
       <View style={styles.overlay}>
-        <View style={[styles.card, { backgroundColor: colors.surface }]}>  
+        <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <ScrollView contentContainerStyle={styles.scrollViewContainer} keyboardShouldPersistTaps="handled">
             <Text style={[fonts.headlineSmall, styles.headerText]}>{title}</Text>
             {description ? (
               <Text style={[fonts.bodyMedium, styles.descriptionText]}>{description}</Text>
             ) : null}
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+              <TextInput
+                label="City"
+                value={city}
+                onChangeText={handleChangeCity}
+                mode="outlined"
+                style={styles.textInput}
+                error={!!cityError}
+                disabled={loading}
+              />
+              {cityError ? (
+                <Text style={{ color: colors.error, marginBottom: 8 }}>{cityError}</Text>
+              ) : null}
               <TextInput
                 label="Delivery Price"
                 value={priceAmount}
@@ -73,7 +94,7 @@ const EditDeliveryRateModal = ({
               </Button>
               <Button
                 mode="contained"
-                onPress={() => onConfirm(priceAmount)}
+                onPress={() => onConfirm({ price: priceAmount, city })}
                 style={[styles.button, { backgroundColor: colors.primary }]}
                 loading={loading}
                 disabled={loading}
