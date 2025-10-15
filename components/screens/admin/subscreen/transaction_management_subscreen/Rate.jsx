@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import { ScrollView, StyleSheet, View, RefreshControl } from 'react-native'
 import {
@@ -110,78 +110,56 @@ const DeliveryRates = () => {
   }
 
   const handleCreateRate = async () => {
-    let hasError = false
-    const cityTrimmed = newCity.trim()
+    const cityTrimmed = newCity?.trim()
+    const priceValue = parseFloat(String(newPrice).replace(/[^0-9.]/g, ''))
 
+    // Basic validation
     if (!cityTrimmed) {
-      setCityError('City is required')
-      hasError = true
-    } else if (selectedRegion && rates.some(rate => rate.city.toLowerCase() === `${cityTrimmed}, ${selectedRegion.region}`.toLowerCase())) {
-      setCityError('This city and region combination already exists.')
-      hasError = true
-    } else {
-      setCityError('')
+      setCityError('City is required.')
+      return
+    }
+    if (!selectedRegion?.id) {
+      setRegionError('Region is required.')
+      return
+    }
+    if (isNaN(priceValue)) {
+      setAddPriceError('Enter a valid price.')
+      return
     }
 
-    if (!selectedRegion) {
-      setRegionError('Region is required')
-      hasError = true
-    } else {
-      setRegionError('')
-    }
-
-    const sanitize = (val) => {
-      let v = (val ?? '').toString().trim()
-      if (v === '') return { ok: false, num: null }
-      v = v.replace(/[^0-9.]/g, '')
-      const parts = v.split('.')
-      if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('')
-      if (v.length > 1 && v.startsWith('0') && v[1] !== '.') {
-        v = v.replace(/^0+/, '')
-      }
-      if (v.includes('.')) {
-        const [intPart, decPart] = v.split('.')
-        v = intPart + '.' + decPart.slice(0, 2)
-      }
-      const num = parseFloat(v)
-      return { ok: !(isNaN(num) || num < 0), num }
-    }
-
-    const price = sanitize(newPrice)
-    if (!price.ok) {
-      setAddPriceError('Enter a valid, non-negative amount')
-      hasError = true
-    } else {
-      setAddPriceError('')
-    }
-
-    if (hasError) return
-
-    const fullCity = `${cityTrimmed}, ${selectedRegion.region}`
-
-    setLoadingAdd(true)
     try {
-      const { error } = await supabase
+      setLoadingAdd(true)
+
+      // Duplicate check
+      const { data: existing, error: dupError } = await supabase
         .from('pricing')
-        .insert({
-          city: fullCity,
+        .select('id')
+        .eq('city', cityTrimmed)
+        .eq('region_id', selectedRegion.id)
+
+      if (dupError) throw dupError
+      if (existing?.length > 0) {
+        setCityError('This city already exists for the selected region.')
+        return
+      }
+
+      // Insert new rate
+      const { error } = await supabase.from('pricing').insert([
+        {
+          city: cityTrimmed,
           region_id: selectedRegion.id,
-          price: price.num,
-        })
-      
+          price: priceValue,
+        },
+      ])
+
       if (error) throw error
 
+      showSnackbar('Delivery rate added successfully!', true)
       setShowAddDialog(false)
       await fetchRates()
-      showSnackbar('Delivery rate added successfully!', true)
     } catch (error) {
-      if (error.code === '23505') {
-        setCityError('This city and region combination already exists.')
-        showSnackbar('Error: A rate for this city and region already exists.', false)
-      } else {
-        showSnackbar('Error adding delivery rate.', false)
-        console.error('Error adding delivery rate:', error)
-      }
+      console.error('Add rate error:', error)
+      showSnackbar('Error adding delivery rate. Please try again.', false)
     } finally {
       setLoadingAdd(false)
     }
@@ -189,90 +167,65 @@ const DeliveryRates = () => {
 
   const handleEditRate = (rate) => {
     setSelectedRate(rate)
-    setPriceAmount(String(rate.raw_price || 0))
-    setEditedCity(rate.city.split(',')[0].trim())
+    setPriceAmount(rate.raw_price != null ? String(rate.raw_price) : '')
+    setEditedCity(rate.city && rate.city !== 'N/A' ? rate.city : '')
     setPriceError('')
     setEditedCityError('')
     setShowEditDialog(true)
   }
 
-  const handleUpdateRate = async ({ price: newPrice, city: newCity }) => {
-    const sanitize = (val) => {
-      let v = (val ?? '').toString().trim()
-      if (v === '') return { ok: false, num: null }
-      v = v.replace(/[^0-9.]/g, '')
-      const parts = v.split('.')
-      if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('')
-      if (v.length > 1 && v.startsWith('0') && v[1] !== '.') {
-        v = v.replace(/^0+/, '')
-      }
-      if (v.includes('.')) {
-        const [intPart, decPart] = v.split('.')
-        v = intPart + '.' + decPart.slice(0, 2)
-      }
-      const num = parseFloat(v)
-      return { ok: !(isNaN(num) || num < 0), num }
-    }
+  const handleUpdateRate = async () => {
+    const cityTrimmed = editedCity?.trim()
+    const priceValue = parseFloat(String(priceAmount).replace(/[^0-9.]/g, ''))
 
-    let hasError = false
-    const cityTrimmed = newCity.trim()
+    if (!selectedRate?.id) {
+      showSnackbar('No selected rate to update.', false)
+      return
+    }
     if (!cityTrimmed) {
-      setEditedCityError('City is required')
-      hasError = true
-    } else {
-      setEditedCityError('')
+      setEditedCityError('City is required.')
+      return
     }
-
-    const price = sanitize(newPrice)
-    if (!price.ok) {
-      setPriceError('Enter a valid, non-negative amount')
-      hasError = true
-    } else {
-      setPriceError('')
-    }
-
-    if (hasError) return
-
-    const fullCity = `${cityTrimmed}, ${selectedRate.region}`
-
-    if (
-      rates.some(
-        (rate) =>
-          rate.city.toLowerCase() === fullCity.toLowerCase() &&
-          rate.id !== selectedRate.id
-      )
-    ) {
-      setEditedCityError('This city and region combination already exists.')
+    if (isNaN(priceValue)) {
+      setPriceError('Enter a valid price.')
       return
     }
 
-    setLoadingEdit(true)
     try {
+      setLoadingEdit(true)
+
+      // Duplicate check (ignore current record)
+      const { data: existing, error: dupError } = await supabase
+        .from('pricing')
+        .select('id')
+        .eq('city', cityTrimmed)
+        .eq('region_id', selectedRate.region_id)
+        .neq('id', selectedRate.id)
+
+      if (dupError) throw dupError
+      if (existing?.length > 0) {
+        setEditedCityError('This city already exists for the selected region.')
+        return
+      }
+
+      // Update
       const { error } = await supabase
         .from('pricing')
         .update({
-          price: price.num,
-          city: fullCity,
+          city: cityTrimmed,
+          price: priceValue,
           updated_at: new Date().toISOString(),
         })
         .eq('id', selectedRate.id)
 
       if (error) throw error
 
-      setShowEditDialog(false)
-      setPriceAmount('')
-      setEditedCity('')
-      setSelectedRate(null)
-      await fetchRates()
       showSnackbar('Delivery rate updated successfully!', true)
+      setShowEditDialog(false)
+      await fetchRates()
     } catch (error) {
-      if (error.code === '23505') {
-        setEditedCityError('This city and region combination already exists.')
-        showSnackbar('Error: A rate for this city and region already exists.', false)
-      } else {
-        showSnackbar('Error updating delivery rate.', false)
-        console.error('Error updating delivery rate:', error)
-      }
+      console.error('Update rate error:', error)
+      showSnackbar('Error updating delivery rate.', false)
     } finally {
       setLoadingEdit(false)
     }

@@ -185,9 +185,9 @@ const SelectLocation = ({ navigation }) => {
       setAddressDetails(address || null)
       
       // Fetch pricing for the new location
-      if (formatted) {
+      if (formatted && address) {
         setIsFetchingPrice(true)
-        const { fee, status } = await fetchBaseDeliveryFeeForAddress(formatted)
+        const { fee, status } = await fetchBaseDeliveryFeeForAddress(address.city, address.region)
         setDeliveryFee(fee)
         setPricingStatus(status)
         setIsFetchingPrice(false)

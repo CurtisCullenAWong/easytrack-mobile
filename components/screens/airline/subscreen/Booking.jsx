@@ -1142,6 +1142,19 @@ const Booking = () => {
       street: false,
       villageBuilding: false
     })
+    
+    // Clear address fields in all contracts
+    setContracts(prev => prev.map(contract => ({
+      ...contract,
+      province: '',
+      cityMunicipality: '',
+      barangay: '',
+      postalCode: '',
+      street: '',
+      villageBuilding: '',
+      roomUnitNo: '',
+      landmarkEntrance: ''
+    })))
   }
 
   // Clear all UI selections: address, drop-off, pickup, corporation/prefix selection
@@ -1162,7 +1175,7 @@ const Booking = () => {
     setSelectedCorporationId(null)
     setFlightPrefixes([])
     setFixedPrefix(null)
-  }, [clearDeliveryAddress])
+  }, [])
   
   const clearSingleContract = useCallback((index) => {
     setContracts(prev => {
