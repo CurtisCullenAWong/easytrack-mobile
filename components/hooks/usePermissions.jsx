@@ -73,13 +73,10 @@ export default function useRequestPermissions(options = {}) {
   }, [onPermissionDenied, showAlerts])
 
   const requestPermissions = useCallback(async () => {
-    console.log('Requesting permissions:', { locationForeground, locationBackground, notifications })
-    
     try {
       if (locationForeground) {
         // Check current permission status first
         const { status: currentStatus } = await Location.getForegroundPermissionsAsync()
-        console.log(' Current location permission status:', currentStatus)
         
         // Always request if not granted (including if denied)
         if (currentStatus !== 'granted') {
@@ -93,8 +90,6 @@ export default function useRequestPermissions(options = {}) {
             handlePermissionDenied('location', canAskAgain)
             return // Don't request background if foreground is denied
           }
-        } else {
-          console.log(' Location permission already granted')
         }
         
         // Request background permission if foreground is granted

@@ -66,12 +66,13 @@ const BottomModal = ({ visible, onDismiss, children }) => {
 
   return (
     <Portal>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoiding}
-      >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={styles.keyboardAvoiding}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
+          >
             <Animated.View
               {...panResponder.panHandlers}
               style={[
@@ -85,9 +86,9 @@ const BottomModal = ({ visible, onDismiss, children }) => {
               <View style={[styles.notch, { backgroundColor: colors.tertiary }]} />
               {children}
             </Animated.View>
-          </View>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </View>
+      </TouchableWithoutFeedback>
     </Portal>
   )
 }

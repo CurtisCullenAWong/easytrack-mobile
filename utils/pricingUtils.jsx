@@ -14,23 +14,27 @@ const normalize = (value) => {
     .trim()
 }
 
-const findPricingMatch = (pricingList, address) => {
-  const normAddress = normalize(address)
+// Find exact pricing match based on city and region
+const findExactPricingMatch = (pricingList, city, region) => {
+  const normCity = normalize(city)
+  const normRegion = normalize(region)
+  
   return (
     pricingList.find((entry) => {
-      const normCity = normalize(entry.city)
-      return normAddress.includes(normCity)
+      const normEntryCity = normalize(entry.city)
+      const normEntryRegion = normalize(entry.region_id?.region || '')
+      return normEntryCity === normCity && normEntryRegion === normRegion
     }) || null
   )
 }
 
-// Fetch base delivery fee for a given free-form address string.
-// Returns: { fee: number, status: 'ok' | 'no_pricing' | 'no_match', city?: string }
-export const fetchBaseDeliveryFeeForAddress = async (address) => {
+// Fetch base delivery fee based on exact city and region match from geocoded location.
+// Returns: { fee: number, status: 'ok' | 'no_pricing' | 'no_match', city?: string, region?: string }
+export const fetchBaseDeliveryFeeForAddress = async (city, region) => {
   try {
     const { data: pricingList, error } = await supabase
       .from('pricing')
-      .select('city, price')
+      .select('city, region_id (region), price')
 
     if (error) throw error
 
@@ -38,11 +42,12 @@ export const fetchBaseDeliveryFeeForAddress = async (address) => {
       return { fee: 0, status: 'no_pricing' }
     }
 
-    const matched = findPricingMatch(pricingList, address)
+    const matched = findExactPricingMatch(pricingList, city, region)
     if (matched) {
       const cityName = matched.city.replace(/Kalakhang Maynila/gi, 'Metro Manila')
+      const regionName = matched.region_id?.region || null
       const fee = Number(matched.price) || 0
-      return { fee, status: 'ok', city: cityName }
+      return { fee, status: 'ok', city: cityName, region: regionName }
     }
 
     return { fee: 0, status: 'no_match' }
