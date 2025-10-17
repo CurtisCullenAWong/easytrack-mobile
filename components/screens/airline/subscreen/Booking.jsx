@@ -4,7 +4,7 @@
 
 // React & React Native
 import React, { useState, useCallback, useMemo, useEffect } from 'react'
-import { View, ScrollView, StyleSheet, TouchableOpacity, KeyboardAvoidingView } from 'react-native'
+import { View, ScrollView, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native'
 
 // React Native Paper
 import { useTheme, TextInput, Button, Text, IconButton, Menu, Surface, List, Divider } from 'react-native-paper'
@@ -1175,7 +1175,10 @@ const Booking = () => {
     setSelectedCorporationId(null)
     setFlightPrefixes([])
     setFixedPrefix(null)
-  }, [])
+
+    // Signal SelectLocation screen to clear its state
+    navigation.setParams({ clearDropOffLocation: true })
+  }, [navigation])
   
   const clearSingleContract = useCallback((index) => {
     setContracts(prev => {
@@ -1552,7 +1555,14 @@ const Booking = () => {
 
           <Button
             mode="contained"
-            onPress={() => navigation.navigate('SelectLocation')}
+            onPress={() => {
+              const clearFlag = route.params?.clearDropOffLocation || false
+              navigation.navigate('SelectLocation', { clearLocation: clearFlag })
+              // Clear the flag after passing it
+              if (clearFlag) {
+                navigation.setParams({ clearDropOffLocation: undefined })
+              }
+            }}
             icon="map-marker"
             style={{ backgroundColor: colors.primary, alignSelf: 'center', marginBottom: 8, }}
             disabled={loading}
@@ -1657,7 +1667,7 @@ const Booking = () => {
   // ================================
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior='height'>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       {/* Compact sticky booking summary */}
       {dropOffLocation.location && (
         <View>

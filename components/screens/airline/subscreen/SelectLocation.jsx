@@ -4,6 +4,7 @@ import { View, StyleSheet, ScrollView, Dimensions, ActivityIndicator, TouchableO
 import { Text, Button, Appbar, Surface, useTheme, IconButton, Divider, Menu, TextInput } from 'react-native-paper'
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
 import * as Location from 'expo-location'
+import { useFocusEffect } from '@react-navigation/native'
 import useRequestPermissions from '../../../hooks/usePermissions'
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
@@ -19,7 +20,7 @@ const INITIAL_CENTER = {
   longitude: 121.01383118650679,
 }
 
-const SelectLocation = ({ navigation }) => {
+const SelectLocation = ({ navigation, route }) => {
   const { colors, fonts } = useTheme()
   const [selectedLocation, setSelectedLocation] = useState({
     location: 'Terminal 3, NAIA, Pasay, Metro Manila, Philippines',
@@ -159,6 +160,36 @@ const SelectLocation = ({ navigation }) => {
       geocodeTimeoutRef.current && clearTimeout(geocodeTimeoutRef.current)
     }
   }, [])
+
+  // Clear location when navigating from Booking with clearLocation flag
+  useFocusEffect(
+    useCallback(() => {
+      if (route.params?.clearLocation) {
+        // Reset to initial state
+        setSelectedLocation({
+          location: null,
+          lat: INITIAL_CENTER.latitude,
+          lng: INITIAL_CENTER.longitude,
+        })
+        setDeliveryFee(0)
+        setPricingStatus(null)
+        setAddressDetails(null)
+        setSelectedRegion(null)
+        setSelectedCity('')
+        setRegionQuery('')
+        setCityQuery('')
+        
+        // Animate map back to initial center
+        mapRef.current?.animateToRegion(
+          { ...INITIAL_CENTER, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+          500
+        )
+        
+        // Clear the flag from route params to prevent repeated clears
+        navigation.setParams({ clearLocation: undefined })
+      }
+    }, [route.params?.clearLocation, navigation])
+  )
 
   const handleMarkerDragStart = useCallback(() => {
     setIsMapInteracting(true)
@@ -583,13 +614,24 @@ const SelectLocation = ({ navigation }) => {
               {isAnyGeocodingInProgress && (
                 <ActivityIndicator size="small" color={colors.primary} />
               )}
+              <Button
+                mode="contained"
+                onPress={() => setIsMapModalVisible(true)}
+                icon="map"
+                labelStyle={[fonts.bodyMedium, { color: colors.onPrimary }]}
+                contentStyle={{ height: 56 }}
+                style={{ borderRadius: 16, backgroundColor: colors.primary }}
+                compact
+              >
+                Open Map
+              </Button>
             </View>
             <Divider style={[styles.divider, { backgroundColor: colors.outline }]} />
             <View style={styles.locationDetails}>
               <Text style={[fonts.bodyMedium, { color: colors.onSurface, lineHeight: 22 }]}>
                 {isAnyGeocodingInProgress
                   ? 'Getting address...'
-                  : selectedLocation.location || 'No address found. Please drag the marker.'
+                  : selectedLocation.location || 'No address found. Please select in the dropdown or drag the marker in the map.'
                 }
               </Text>
               <View style={styles.coordinatesContainer}>
@@ -744,9 +786,8 @@ const SelectLocation = ({ navigation }) => {
                   pinColor={colors.primary}
                 />
               </MapView>
-              {/* Center to Marker Button */}
               <TouchableOpacity
-                style={styles.centerToMarkerBtn}
+                style={[styles.centerToMarkerBtn, { backgroundColor: colors.surface }]}
                 onPress={() => {
                   mapRef.current?.animateToRegion({
                     latitude: selectedLocation.lat,
@@ -757,7 +798,7 @@ const SelectLocation = ({ navigation }) => {
                 }}
                 activeOpacity={0.8}
               >
-                <IconButton icon="crosshairs-gps" size={28} iconColor={colors.primary} style={{ backgroundColor: colors.surface, borderRadius: 24, elevation: 2 }} />
+                <IconButton icon="magnify" size={15} iconColor={colors.primary} style={{ backgroundColor: colors.surface, elevation: 2 }} />
               </TouchableOpacity>
             </View>
             
@@ -771,29 +812,12 @@ const SelectLocation = ({ navigation }) => {
               icon="crosshairs-gps"
               labelStyle={[fonts.labelMedium, { color: colors.primary }]}
               contentStyle={styles.centerButtonContent}
-              style={{ marginTop: 12 }}
+              style={{ margin: 24, ...styles.centerButton, borderColor: colors.primary }}
             >
               Center to Terminal 3
             </Button>
         </View>
       </BottomModal>
-      
-      {/* Floating Action Button to Open Map */}
-      <Surface style={styles.fab} elevation={4}>
-        <Button
-          mode="contained"
-          onPress={() => {
-            setIsMapModalVisible(true)
-            }
-          }
-          icon="map"
-          labelStyle={[fonts.labelLarge, { color: colors.onPrimary }]}
-          contentStyle={{ height: 56 }}
-          style={{ borderRadius: 28, backgroundColor: colors.primary }}
-        >
-          Open Map
-        </Button>
-      </Surface>
     </View>
   )
 }
@@ -883,7 +907,7 @@ const styles = StyleSheet.create({
     marginTop: 8 
   },
   centerButtonContent: { 
-    height: 42 
+    height: 42,
   },
   locationDetails: { 
     padding: 16, 
@@ -925,18 +949,13 @@ const styles = StyleSheet.create({
   },
   centerToMarkerBtn: {
     position: 'absolute',
-    top: 16,
-    left: 16,
+    top: 10,
+    left: 10,
     alignItems: 'center',
     zIndex: 10,
-    backgroundColor: 'transparent',
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    borderRadius: 28,
-    elevation: 4,
+    borderRadius: 8,
+    elevation: 3,
+    flexDirection: 'row',
   },
 })
 
