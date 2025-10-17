@@ -1,111 +1,66 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Platform, StyleSheet } from 'react-native'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Updates from 'expo-updates'
-import { Portal, Dialog, Button, Text, ActivityIndicator, ProgressBar, useTheme } from 'react-native-paper'
-
-const REMIND_DELAY_MINUTES = 1
-const REMIND_DELAY_MS = REMIND_DELAY_MINUTES * 60 * 1000
+import { Portal, Dialog, Text, ProgressBar, useTheme } from 'react-native-paper'
 
 const UpdatePrompt = () => {
   const { colors, fonts } = useTheme()
-  const [isUpdateAvailable, setIsUpdateAvailable] = useState(false)
-  const [checking, setChecking] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [errorMessage, setErrorMessage] = useState(null)
 
-  const checkForUpdates = useCallback(async () => {
+  const checkAndUpdate = useCallback(async () => {
     if (Platform.OS === 'web') return
 
     try {
-      // Check if we should respect "remind later"
-      const remindLaterTimestamp = await AsyncStorage.getItem(REMIND_LATER_KEY)
-      if (remindLaterTimestamp && Date.now() < parseInt(remindLaterTimestamp)) {
-        return
-      }
-
-      setChecking(true)
       const result = await Updates.checkForUpdateAsync()
       if (result.isAvailable) {
-        setIsUpdateAvailable(true)
+        // Automatically download and install the update
+        setDownloading(true)
+        setErrorMessage(null)
+        
+        const update = await Updates.fetchUpdateAsync()
+        if (update && update.isNew) {
+          // Give a brief moment to show completion, then reload
+          setTimeout(() => {
+            Updates.reloadAsync().catch(() => {})
+          }, 500)
+        } else {
+          setDownloading(false)
+        }
       }
     } catch (error) {
-      setErrorMessage('Failed to check for updates.')
-    } finally {
-      setChecking(false)
-    }
-  }, [])
-
-  const downloadAndInstall = useCallback(async () => {
-    if (Platform.OS === 'web') return
-    try {
-      setErrorMessage(null)
-      setDownloading(true)
-      const update = await Updates.fetchUpdateAsync()
-      if (update && update.isNew) {
-        setIsUpdateAvailable(false)
-        setDownloading(false)
-        setTimeout(() => {
-          Updates.reloadAsync().catch(() => {})
-        }, 250)
-      } else {
-        setIsUpdateAvailable(false)
-      }
-    } catch (error) {
-      setErrorMessage('Failed to download or install update.')
-    } finally {
+      setErrorMessage('Failed to update. Will retry later.')
       setDownloading(false)
+      // Clear error after 5 seconds
+      setTimeout(() => setErrorMessage(null), 5000)
     }
   }, [])
-
-  const remindLater = async () => {
-    const remindTime = Date.now() + REMIND_DELAY_MS
-    await AsyncStorage.setItem(REMIND_LATER_KEY, remindTime.toString())
-    setIsUpdateAvailable(false)
-  }
 
   useEffect(() => {
-    checkForUpdates()
-    // Optionally, check periodically (e.g., every 30 min)
+    checkAndUpdate()
+    // Check periodically (every 30 minutes)
     const interval = setInterval(() => {
-      checkForUpdates()
+      checkAndUpdate()
     }, 1000 * 60 * 30)
 
     return () => clearInterval(interval)
-  }, [checkForUpdates])
+  }, [checkAndUpdate])
 
   return (
     <Portal>
       <Dialog 
-        visible={!!isUpdateAvailable} 
-        dismissable={!downloading} 
-        onDismiss={() => !downloading && setIsUpdateAvailable(false)}
+        visible={downloading || !!errorMessage} 
+        dismissable={false}
         style={{ backgroundColor: colors.surface }}
       >
         <Dialog.Title style={[fonts.headlineSmall, { color: colors.onSurface }]}>
-          Update available
+          {downloading ? 'Updating app' : 'Update failed'}
         </Dialog.Title>
         <Dialog.Content>
-          {checking && (
-            <>
-              <Text style={[fonts.bodyMedium, { color: colors.onSurfaceVariant }]}>
-                Checking for updates…
-              </Text>
-              <ActivityIndicator 
-                style={styles.loadingContainer} 
-                color={colors.primary}
-              />
-            </>
-          )}
-          {!checking && !downloading && (
-            <Text style={[fonts.bodyMedium, { color: colors.onSurfaceVariant }]}>
-              A new version is ready. Install now?
-            </Text>
-          )}
           {downloading && (
             <>
               <Text style={[fonts.bodyMedium, { color: colors.onSurfaceVariant }]}>
-                Downloading update…
+                Downloading and installing update…
               </Text>
               <ProgressBar 
                 indeterminate 
@@ -115,33 +70,11 @@ const UpdatePrompt = () => {
             </>
           )}
           {!!errorMessage && (
-            <Text style={[fonts.bodyMedium, { color: colors.error, marginTop: 12 }]}>
+            <Text style={[fonts.bodyMedium, { color: colors.error }]}>
               {errorMessage}
             </Text>
           )}
         </Dialog.Content>
-        <Dialog.Actions>
-          {!downloading && (
-            <Button 
-              onPress={remindLater}
-              textColor={colors.primary}
-              labelStyle={fonts.labelLarge}
-              style={{ borderRadius: 8 }}
-            >
-              Later
-            </Button>
-          )}
-          {!downloading && (
-            <Button 
-              mode="contained" 
-              onPress={downloadAndInstall}
-              style={{ backgroundColor: colors.primary, borderRadius: 8 }}
-              labelStyle={[fonts.labelLarge, { color: colors.onPrimary }]}
-            >
-              Install
-            </Button>
-          )}
-        </Dialog.Actions>
       </Dialog>
     </Portal>
   )
@@ -150,9 +83,6 @@ const UpdatePrompt = () => {
 export default UpdatePrompt
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    marginTop: 16
-  },
   progressBar: {
     marginTop: 16
   }
