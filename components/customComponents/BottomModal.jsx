@@ -69,7 +69,7 @@ const BottomModal = ({ visible, onDismiss, children }) => {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.keyboardAvoiding}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
           >
