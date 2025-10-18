@@ -40,9 +40,9 @@ const SelectLocation = ({ navigation, route }) => {
   // Track if user is dragging the map or marker to prevent modal swipe conflict
   const [isMapInteracting, setIsMapInteracting] = useState(false)
 
-  // Pricing dropdown states
-  const [pricingData, setPricingData] = useState([])
-  const [pricingRegions, setPricingRegions] = useState([])
+  // --- OPTIMIZED PRICING STATE ---
+  // Store all pricing data from a single fetch
+  const [allPricingData, setAllPricingData] = useState([])
   const [selectedRegion, setSelectedRegion] = useState(null)
   const [selectedCity, setSelectedCity] = useState('')
   const [showRegionMenu, setShowRegionMenu] = useState(false)
@@ -53,7 +53,7 @@ const SelectLocation = ({ navigation, route }) => {
 
   const isAnyGeocodingInProgress = isGeocodingInProgress
 
-  useRequestPermissions({ 
+  useRequestPermissions({
     locationForeground: true,
     onPermissionDenied: (type, canAskAgain) => {
       if (type === 'location') {
@@ -63,93 +63,103 @@ const SelectLocation = ({ navigation, route }) => {
           navigation.navigate('Home')
         }
       }
-    }
+    },
   })
 
-  // Fetch pricing regions on mount
+  // --- OPTIMIZED FETCH ---
+  // Fetch ALL pricing data and region data in a single query on mount
   useEffect(() => {
-    const fetchPricingRegions = async () => {
-      try {
-        setLoadingPricingData(true)
-        const { data, error } = await supabase
-          .from('pricing_region')
-          .select('*')
-          .order('region', { ascending: true })
-
-        if (error) throw error
-        setPricingRegions(data || [])
-      } catch (error) {
-        console.error('Error fetching pricing regions:', error)
-        showSnackbar('Failed to load pricing regions')
-      } finally {
-        setLoadingPricingData(false)
-      }
-    }
-
-    fetchPricingRegions()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // Fetch cities when region is selected
-  useEffect(() => {
-    const fetchCitiesByRegion = async () => {
-      if (!selectedRegion) {
-        setPricingData([])
-        return
-      }
-
+    const fetchAllPricingData = async () => {
       try {
         setLoadingPricingData(true)
         const { data, error } = await supabase
           .from('pricing')
-          .select('*')
-          .eq('region_id', selectedRegion.id)
+          .select('*, pricing_region(id, region)') // Join with pricing_region table
           .order('city', { ascending: true })
 
         if (error) throw error
-        setPricingData(data || [])
+        setAllPricingData(data || [])
       } catch (error) {
-        console.error('Error fetching pricing data:', error)
-        showSnackbar('Failed to load cities')
-        setPricingData([])
+        console.error('Error fetching all pricing data:', error)
+        showSnackbar('Failed to load pricing data')
       } finally {
         setLoadingPricingData(false)
       }
     }
 
-    fetchCitiesByRegion()
+    fetchAllPricingData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRegion])
+  }, [])
+
+  // --- OPTIMIZED DERIVED STATE (useMemo) ---
+
+  // Derive unique regions from the allPricingData
+  const pricingRegions = useMemo(() => {
+    if (!allPricingData) return []
+    const regionsMap = new Map()
+    allPricingData.forEach((item) => {
+      if (item.pricing_region && !regionsMap.has(item.pricing_region.id)) {
+        regionsMap.set(item.pricing_region.id, item.pricing_region)
+      }
+    })
+    // Sort regions alphabetically
+    return Array.from(regionsMap.values()).sort((a, b) =>
+      a.region.localeCompare(b.region)
+    )
+  }, [allPricingData])
 
   // Filter regions based on search query
   const filteredRegions = useMemo(() => {
     const query = regionQuery.toLowerCase().trim()
     if (!query) return pricingRegions
 
-    return pricingRegions.filter(region =>
+    return pricingRegions.filter((region) =>
       region.region.toLowerCase().includes(query)
     )
   }, [pricingRegions, regionQuery])
 
-  // Filter cities based on search query and sort: cities with prices first, then those without
+  // Filter cities based on search query AND/OR selected region
   const filteredCities = useMemo(() => {
     const query = cityQuery.toLowerCase().trim()
-    let filtered = query 
-      ? pricingData.filter(item => item.city.toLowerCase().includes(query))
-      : pricingData
+    
+    // 1. If no query, only show cities if a region is selected
+    if (!query) {
+      if (selectedRegion) {
+        const regionCities = allPricingData.filter(item => item.region_id === selectedRegion.id)
+        // Sort and return
+        return regionCities.sort((a, b) => {
+          const hasA = a.price != null && a.price > 0
+          const hasB = b.price != null && b.price > 0
+          if (hasA && !hasB) return -1
+          if (!hasA && hasB) return 1
+          return a.city.localeCompare(b.city)
+        })
+      } else {
+        return [] // No region, no query = empty list
+      }
+    }
 
-    // Sort: cities with prices first (alphabetically), then those without prices (alphabetically)
+    // 2. If there IS a query:
+    let baseCityList = allPricingData
+    // If a region is *also* selected, search only within that region
+    if (selectedRegion) {
+      baseCityList = allPricingData.filter(item => item.region_id === selectedRegion.id)
+    }
+    
+    // 3. Now filter the (potentially pre-filtered) list by the query
+    let filtered = baseCityList.filter(item => item.city.toLowerCase().includes(query))
+    
+    // 4. Sort and return
     return filtered.sort((a, b) => {
       const hasA = a.price != null && a.price > 0
       const hasB = b.price != null && b.price > 0
-      
       if (hasA && !hasB) return -1
       if (!hasA && hasB) return 1
-      
-      // Both have prices or both don't have prices - sort alphabetically
       return a.city.localeCompare(b.city)
     })
-  }, [pricingData, cityQuery])
+  }, [allPricingData, selectedRegion, cityQuery])
+  // --- END OPTIMIZED DERIVED STATE ---
+
 
   useEffect(() => {
     mapRef.current?.animateToRegion(
@@ -299,19 +309,26 @@ const SelectLocation = ({ navigation, route }) => {
     )
   }, [])
 
+  // --- UPDATED HANDLER ---
+  // Now auto-fills region when a city is selected
   const handleCitySelection = useCallback(async (item) => {
     setSelectedCity(item.city)
     setCityQuery('')
     setShowCityMenu(false)
-    // Update delivery fee based on selected city
     setDeliveryFee(item.price || 0)
     setPricingStatus('ok')
+
+    // --- NEW: Auto-fill region ---
+    if (item.pricing_region) {
+      setSelectedRegion(item.pricing_region)
+      setRegionQuery('') // Clear region search query
+    }
 
     // Geocode the city and move map to that location
     try {
       setIsGeocodingInProgress(true)
       // Construct a full address for better geocoding results
-      const regionName = selectedRegion?.region || ''
+      const regionName = item.pricing_region?.region || '' // Use item's region info
       const searchAddress = `${item.city}, ${regionName}, Philippines`
       
       const geocodeResult = await Location.geocodeAsync(searchAddress)
@@ -363,7 +380,7 @@ const SelectLocation = ({ navigation, route }) => {
     } finally {
       setIsGeocodingInProgress(false)
     }
-  }, [selectedRegion, showSnackbar])
+  }, [showSnackbar]) // Removed selectedRegion dependency
 
   const handleConfirm = useCallback(() => {
     if (!selectedLocation || isAnyGeocodingInProgress) return
@@ -430,7 +447,7 @@ const SelectLocation = ({ navigation, route }) => {
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
         
-      {/* Pricing Region and City Selection */}
+      {/* --- UPDATED: Pricing Region and City Selection --- */}
       <Surface style={[styles.surface, { backgroundColor: colors.surface }]} elevation={2}>
         <View style={styles.sectionFooter}>
           <IconButton icon="database-search" size={20} iconColor={colors.primary} />
@@ -447,53 +464,51 @@ const SelectLocation = ({ navigation, route }) => {
             visible={showRegionMenu}
             onDismiss={() => setShowRegionMenu(false)}
             anchor={
-              <TouchableOpacity onPress={() => setShowRegionMenu(prev => !prev)}>
-                <TextInput
-                  label="Select Region"
-                  value={selectedRegion ? selectedRegion.region : regionQuery}
-                  onChangeText={(text) => {
-                    setRegionQuery(text)
-                    setSelectedRegion(null)
-                  }}
-                  editable={false}
-                  mode="outlined"
-                  style={{ marginBottom: 8 }}
-                  left={
-                    <TextInput.Icon 
-                      icon="magnify" 
-                      onPress={() => setShowRegionMenu(prev => !prev)}
-                    />
-                  }
-                  right={
-                    selectedRegion && (
-                      <TextInput.Icon
-                        icon="close"
-                        onPress={() => {
-                          setSelectedRegion(null)
-                          setRegionQuery('')
-                          setSelectedCity('')
-                          setCityQuery('')
-                        }}
-                      />
-                    )
-                  }
-                  placeholder="Search region..."
-                />
-              </TouchableOpacity>
+              // This TextInput acts as the button to open the menu
+              <TextInput
+                label="Select Region"
+                value={selectedRegion ? selectedRegion.region : ''} // Only show selected region
+                editable={false} // Not editable, just a display
+                mode="outlined"
+                style={{ marginBottom: 8 }}
+                placeholder="Select region..."
+                onPress={() => setShowRegionMenu(true)} // Open menu on press
+                left={ <TextInput.Icon icon="map-search-outline" /> }
+                right={
+                  <TextInput.Icon
+                    icon={showRegionMenu ? "menu-up" : "menu-down"}
+                    onPress={() => setShowRegionMenu(prev => !prev)}
+                  />
+                }
+              />
             }
             contentStyle={{ 
               backgroundColor: colors.surface,
-              maxHeight: 300,
               width: '100%',
             }}
-            style={{
-              marginTop: 8,
-            }}
+            style={{ marginTop: 8 }}
           >
+            {/* Search bar INSIDE the menu */}
+            <TextInput
+              label="Search Region"
+              value={regionQuery}
+              onChangeText={setRegionQuery}
+              mode="outlined"
+              dense
+              style={{ marginHorizontal: 12, marginVertical: 8 }}
+              onFocus={(e) => e.stopPropagation()} // Prevent menu from closing on focus
+              left={<TextInput.Icon icon="magnify" />}
+              right={
+                regionQuery ? (
+                  <TextInput.Icon icon="close" onPress={() => setRegionQuery('')} />
+                ) : null
+              }
+            />
+            <Divider />
             <ScrollView style={{ maxHeight: 300 }} nestedScrollEnabled={true}>
               {filteredRegions.length === 0 ? (
                 <Menu.Item
-                  title="No regions found"
+                  title={regionQuery ? "No regions found" : "Type to search"}
                   disabled
                   titleStyle={{ color: colors.onSurfaceVariant, fontSize: 14 }}
                   style={{ minHeight: 40, height: 40 }}
@@ -506,7 +521,7 @@ const SelectLocation = ({ navigation, route }) => {
                       setSelectedRegion(region)
                       setRegionQuery('')
                       setShowRegionMenu(false)
-                      setSelectedCity('')
+                      setSelectedCity('') // Clear city when region changes
                       setCityQuery('')
                     }}
                     title={region.region}
@@ -523,53 +538,51 @@ const SelectLocation = ({ navigation, route }) => {
             visible={showCityMenu}
             onDismiss={() => setShowCityMenu(false)}
             anchor={
-              <TouchableOpacity onPress={() => selectedRegion && setShowCityMenu(prev => !prev)}>
-                <TextInput
-                  label="Select City"
-                  value={selectedCity || cityQuery}
-                  onChangeText={(text) => {
-                    setCityQuery(text)
-                    setSelectedCity('')
-                  }}
-                  mode="outlined"
-                  style={{ marginBottom: 8 }}
-                  disabled={!selectedRegion}
-                  editable={false}
-                  left={
-                    <TextInput.Icon 
-                      icon="magnify" 
-                      onPress={() => selectedRegion && setShowCityMenu(prev => !prev)}
-                      disabled={!selectedRegion}
-                    />
-                  }
-                  right={
-                    selectedCity && (
-                      <TextInput.Icon
-                        icon="close"
-                        onPress={() => {
-                          setSelectedCity('')
-                          setCityQuery('')
-                        }}
-                      />
-                    )
-                  }
-                  placeholder={selectedRegion ? "Search city..." : "Select a region first"}
-                />
-              </TouchableOpacity>
+              // This TextInput acts as the button to open the menu
+              <TextInput
+                label="Select City"
+                value={selectedCity || ''} // Only show selected city
+                editable={false} // Not editable
+                mode="outlined"
+                style={{ marginBottom: 8 }}
+                placeholder="Select city or search..."
+                onPress={() => setShowCityMenu(true)}
+                left={ <TextInput.Icon icon="city-variant-outline" /> }
+                right={
+                  <TextInput.Icon
+                    icon={showCityMenu ? "menu-up" : "menu-down"}
+                    onPress={() => setShowCityMenu(prev => !prev)}
+                  />
+                }
+              />
             }
             contentStyle={{ 
               backgroundColor: colors.surface,
-              maxHeight: 300,
               width: '100%',
             }}
-            style={{
-              marginTop: 8,
-            }}
+            style={{ marginTop: 8 }}
           >
+            {/* Search bar INSIDE the menu */}
+            <TextInput
+              label={selectedRegion ? `Search in ${selectedRegion.region}` : "Search all cities"}
+              value={cityQuery}
+              onChangeText={setCityQuery}
+              mode="outlined"
+              dense
+              style={{ marginHorizontal: 12, marginVertical: 8 }}
+              onFocus={(e) => e.stopPropagation()}
+              left={<TextInput.Icon icon="magnify" />}
+              right={
+                cityQuery ? (
+                  <TextInput.Icon icon="close" onPress={() => setCityQuery('')} />
+                ) : null
+              }
+            />
+            <Divider />
             <ScrollView style={{ maxHeight: 300 }} nestedScrollEnabled={true}>
               {filteredCities.length === 0 ? (
                 <Menu.Item
-                  title={selectedRegion ? "No cities found" : "Select a region first"}
+                  title={cityQuery ? "No cities found" : "Type to search"}
                   disabled
                   titleStyle={{ color: colors.onSurfaceVariant, fontSize: 14 }}
                   style={{ minHeight: 40, height: 40 }}
@@ -592,9 +605,17 @@ const SelectLocation = ({ navigation, route }) => {
                       borderBottomColor: colors.outlineVariant,
                     }}
                   >
-                    <Text style={{ color: colors.onSurface, fontSize: 14, flex: 1 }}>
-                      {item.city}
-                    </Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: colors.onSurface, fontSize: 14 }}>
+                        {item.city}
+                      </Text>
+                      {/* Show region if searching all cities */}
+                      {!selectedRegion && item.pricing_region && (
+                        <Text style={{ color: colors.onSurfaceVariant, fontSize: 12, paddingTop: 2 }}>
+                          {item.pricing_region.region}
+                        </Text>
+                      )}
+                    </View>
                     <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 13, marginLeft: 12 }}>
                       ₱{item.price?.toFixed(2) || '0.00'}
                     </Text>

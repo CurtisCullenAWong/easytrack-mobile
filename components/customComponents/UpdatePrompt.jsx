@@ -29,10 +29,10 @@ const UpdatePrompt = () => {
         }
       }
     } catch (error) {
-      setErrorMessage('Failed to update. Will retry later.')
+      setErrorMessage('Update unavailable. Will retry later.')
       setDownloading(false)
-      // Clear error after 5 seconds
-      setTimeout(() => setErrorMessage(null), 5000)
+      // Clear error after 2 seconds
+      setTimeout(() => setErrorMessage(null), 2000)
     }
   }, [])
 

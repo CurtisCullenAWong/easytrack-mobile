@@ -27,136 +27,26 @@ import {
   getPostalCodes,
 } from '../../../../utils/locationData'
 
-// ================================
-// CONSTANTS & CONFIGURATION
-// ================================
+// Constants & Utilities
+import {
+  INITIAL_CONTRACT,
+  INPUT_LIMITS,
+  TERMINAL_OPTIONS,
+  MAX_CONTRACTS,
+  PICKUP_BAYS_COUNT
+} from './booking_sub_files/bookingConstants'
 
-/** Initial contract template */
-const INITIAL_CONTRACT = {
-  firstName: "",
-  middleInitial: "",
-  lastName: "",
-  contact: "",
-  flightNumber: "",
-  itemDescription: "",
-  itemDescriptions: [],
-  quantity: "1",
-  deliveryAddress: "",
-  addressLine1: "",
-  addressLine2: "",
-  province: "",
-  cityMunicipality: "",
-  barangay: "",
-  postalCode: "",
-  street: "",
-  villageBuilding: "",
-  roomUnitNo: "",
-  landmarkEntrance: "",
-  errors: {
-    firstName: false,
-    lastName: false,
-    contact: false,
-    flightNumber: false,
-    itemDescription: false,
-    quantity: false,
-    addressLine1: false,
-    province: false,
-    cityMunicipality: false,
-    barangay: false,
-    postalCode: false,
-    street: false,
-    villageBuilding: false,
-    landmarkEntrance: false
-  }
-}
+import {
+  filterSpecialCharacters,
+  formatFieldName,
+  generateTrackingID,
+  formatContactNumber,
+  validateContract as validateSingleContract,
+  findDuplicateNames,
+  calculateTotalDeliveryFee,
+  calculateTotalLuggage
+} from './booking_sub_files/bookingUtils'
 
-/** Input limits and validation patterns */
-const INPUT_LIMITS = {
-  firstName: { maxLength: 50, minLength: 2 },
-  middleInitial: { maxLength: 1 },
-  lastName: { maxLength: 50, minLength: 2 },
-  contact: { maxLength: 10, minLength: 10 },
-  flightNumber: { maxLength: 8, minLength: 3 },
-  itemDescription: { maxLength: 500, minLength: 6 },
-  quantity: { maxLength: 2, minLength: 1 }, // Max 2 digits for up to 25
-  province: { maxLength: 50, minLength: 2 },
-  cityMunicipality: { maxLength: 50, minLength: 2 },
-  barangay: { maxLength: 50, minLength: 2 },
-  postalCode: { maxLength: 4, minLength: 4 },
-  street: { maxLength: 50, minLength: 2 },
-  villageBuilding: { maxLength: 50, minLength: 2 },
-  roomUnitNo: { maxLength: 50 },
-  landmarkEntrance: { maxLength: 100 }
-}
-
-const VALIDATION_PATTERNS = {
-  contact: /^9\d{9}$/,
-  flightNumber: /^[A-Za-z0-9]{3,8}$/,
-  postalCode: /^\d{4}$/,
-  quantity: /^(?:[1-9]|1[0-5])$/,
-  province: /^[A-Za-z\s\-\.]+$/,
-  cityMunicipality: /^[A-Za-z\s\-\.]+$/,
-  barangay: /^[A-Za-z0-9\s\-\.\,\#]+$/,
-  street: /^[A-Za-z0-9\s\-\.\,\#]+$/,
-  villageBuilding: /^[A-Za-z0-9\s\-\.\,\#]+$/,
-  roomUnitNo: /^[A-Za-z0-9\s\-\.\,\#]*$/,
-  landmarkEntrance: /^[A-Za-z0-9\s\-\.\,\#]*$/
-}
-
-// ================================
-// UTILITY FUNCTIONS
-// ================================
-
-/** Filter special characters depending on field type */
-const filterSpecialCharacters = (text, fieldType) => {
-  if (typeof text !== 'string') return ''
-  switch (fieldType) {
-    case 'name':
-      return text.replace(/[^A-Za-z\s\-']/g, '')
-    case 'contact':
-      return text.replace(/[^0-9]/g, '')
-    case 'flightNumber':
-      return text.replace(/[^A-Za-z0-9]/g, '')
-    case 'postalCode':
-      return text.replace(/[^0-9]/g, '')
-    case 'quantity':
-      return text.replace(/[^0-9]/g, '')
-    case 'address':
-      return text.replace(/[^A-Za-z0-9ñÑ\s\-\.\,\#\/''(\)&]/g, '')
-    case 'itemDescription':
-      return text.replace(/[^A-Za-z0-9\s\-\.\,\#]/g, '')
-    default:
-      return text.replace(/[^A-Za-z0-9\s]/g, '')
-  }
-}
-
-/** Format a camelCase / camel-style field into a human readable label */
-const formatFieldName = (key) =>
-  key
-    .replace(/([A-Z])/g, " $1") // insert spaces before capitals
-    .replace(/^./, (str) => str.toUpperCase()) // capitalize first letter
-
-/** Generate a reasonably unique tracking ID (retries occur in submission logic) */
-const generateTrackingID = () => {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  const randomPart = [...Array(4)].map(() => Math.random().toString(36).slice(2, 3).toUpperCase()).join('')
-  return `${year}${month}${day}MKTP${randomPart}`
-}
-
-/** Format phone/contact into the storage/display format used in the app */
-const formatContactNumber = (contact) => {
-  const c = String(contact || '').replace(/[^0-9]/g, '')
-  if (c.length === 10 && c.startsWith('9')) {
-    return `+63 ${c.slice(0, 3)} ${c.slice(3, 6)} ${c.slice(6)}`
-  }
-  if (c.length === 11 && c.startsWith('63')) {
-    return `+${c}`
-  }
-  return c ? `+63 ${c}` : ''
-}
 
 // ================================
 // CHILD COMPONENTS
@@ -202,7 +92,56 @@ const ContractForm = React.memo(({
   }, [contract.errors, hasPersonalInfoErrors, hasLuggageInfoErrors])
 
   const qty = parseInt(contract.quantity || '0') || 0
-  const itemsIdx = Array.from({ length: qty }, (_, i) => i)
+  const itemsIdx = useMemo(() => Array.from({ length: qty }, (_, i) => i), [qty])
+
+  // Memoize handlers to prevent re-creation on every render
+  const handleFirstNameChange = useCallback((text) => {
+    onInputChange(index, "firstName", filterSpecialCharacters(text, 'name'))
+  }, [index, onInputChange])
+
+  const handleMiddleInitialChange = useCallback((text) => {
+    onInputChange(index, "middleInitial", filterSpecialCharacters(text, 'name'))
+  }, [index, onInputChange])
+
+  const handleLastNameChange = useCallback((text) => {
+    onInputChange(index, "lastName", filterSpecialCharacters(text, 'name'))
+  }, [index, onInputChange])
+
+  const handleContactChange = useCallback((text) => {
+    onInputChange(index, "contact", filterSpecialCharacters(text, 'contact'))
+  }, [index, onInputChange])
+
+  const handleFlightNumberChange = useCallback((text) => {
+    const cleaned = filterSpecialCharacters(text, 'flightNumber').toUpperCase()
+    onInputChange(index, "flightNumber", cleaned)
+  }, [index, onInputChange])
+
+  const handleQuantityChange = useCallback((text) => {
+    const filtered = filterSpecialCharacters(text, 'quantity')
+    if (filtered === '' || (parseInt(filtered) >= 1 && parseInt(filtered) <= 15)) {
+      onInputChange(index, "quantity", filtered)
+    }
+  }, [index, onInputChange])
+
+  const handleFlightPrefixSelect = useCallback((prefix) => {
+    onInputChange(index, "flightNumber", `${prefix.flight_prefix}`)
+    setShowFlightPrefixMenu(false)
+  }, [index, onInputChange])
+
+  const handleItemDescriptionChange = useCallback((i, text) => {
+    const sanitized = filterSpecialCharacters(text, 'itemDescription')
+    const next = [...(contract.itemDescriptions || [])]
+    next[i] = sanitized
+    onInputChange(index, 'itemDescriptions', next)
+  }, [index, contract.itemDescriptions, onInputChange])
+
+  const handleDeletePress = useCallback(() => {
+    onDelete(index)
+  }, [index, onDelete])
+
+  const handleClearPress = useCallback(() => {
+    onClear(index)
+  }, [index, onClear])
 
   return (
     <View style={[styles.luggageBlock, { backgroundColor: colors.surface, borderColor: colors.primary, opacity: isDisabled ? 0.6 : 1 }]}>
@@ -211,7 +150,7 @@ const ContractForm = React.memo(({
         <IconButton
           icon="close"
           size={20}
-          onPress={() => onDelete(index)}
+          onPress={handleDeletePress}
           style={{ margin: 0 }}
           disabled={isLastContract || isDisabled}
           iconColor={isLastContract ? colors.disabled : colors.error}
@@ -239,7 +178,7 @@ const ContractForm = React.memo(({
               dense
               label="First Name*"
               value={contract.firstName}
-              onChangeText={(text) => onInputChange(index, "firstName", filterSpecialCharacters(text, 'name'))}
+              onChangeText={handleFirstNameChange}
               mode="outlined"
               style={[styles.nameField, { marginRight: 6 }]}
               error={contract.errors?.firstName || hasDuplicateName}
@@ -251,7 +190,7 @@ const ContractForm = React.memo(({
               dense
               label="M.I."
               value={contract.middleInitial}
-              onChangeText={(text) => onInputChange(index, "middleInitial", filterSpecialCharacters(text, 'name'))}
+              onChangeText={handleMiddleInitialChange}
               mode="outlined"
               style={[styles.middleInitialField]}
               maxLength={INPUT_LIMITS.middleInitial.maxLength}
@@ -264,7 +203,7 @@ const ContractForm = React.memo(({
             dense
             label="Last Name*"
             value={contract.lastName}
-            onChangeText={(text) => onInputChange(index, "lastName", filterSpecialCharacters(text, 'name'))}
+            onChangeText={handleLastNameChange}
             mode="outlined"
             style={{ marginBottom: 8 }}
             error={contract.errors?.lastName || hasDuplicateName}
@@ -277,7 +216,7 @@ const ContractForm = React.memo(({
             dense
             label="Owner's Contact Number*"
             value={contract.contact}
-            onChangeText={(text) => onInputChange(index, "contact", filterSpecialCharacters(text, 'contact'))}
+            onChangeText={handleContactChange}
             mode="outlined"
             style={{ marginBottom: 8 }}
             keyboardType="phone-pad"
@@ -306,11 +245,7 @@ const ContractForm = React.memo(({
                   dense
                   label="Flight Number*"
                   value={contract.flightNumber}
-                  onChangeText={(text) => {
-                    // when fixed prefix is present, allow editing after the prefix
-                    const cleaned = filterSpecialCharacters(text, 'flightNumber').toUpperCase()
-                    onInputChange(index, "flightNumber", cleaned)
-                  }}
+                  onChangeText={handleFlightNumberChange}
                   mode="outlined"
                   error={contract.errors?.flightNumber}
                   maxLength={INPUT_LIMITS.flightNumber.maxLength}
@@ -329,11 +264,7 @@ const ContractForm = React.memo(({
                       dense
                       label="Flight Number*"
                       value={contract.flightNumber}
-                      onChangeText={(text) => {
-                        // Allow alphanumerical characters
-                        const cleaned = filterSpecialCharacters(text, 'flightNumber').toUpperCase()
-                        onInputChange(index, "flightNumber", cleaned)
-                      }}
+                      onChangeText={handleFlightNumberChange}
                       mode="outlined"
                       error={contract.errors?.flightNumber}
                       maxLength={INPUT_LIMITS.flightNumber.maxLength}
@@ -354,11 +285,7 @@ const ContractForm = React.memo(({
                 {flightPrefixes.map((prefix) => (
                   <Menu.Item
                     key={prefix.id}
-                    onPress={() => {
-                      // clear any existing flight number and set only the prefix
-                      onInputChange(index, "flightNumber", `${prefix.flight_prefix}`)
-                      setShowFlightPrefixMenu(false)
-                    }}
+                    onPress={() => handleFlightPrefixSelect(prefix)}
                     title={`${prefix.corporation_name} - ${prefix.flight_prefix}`}
                   />
                 ))}
@@ -370,12 +297,7 @@ const ContractForm = React.memo(({
             dense
             label="Luggage Quantity*"
             value={contract.quantity}
-            onChangeText={(text) => {
-              const filtered = filterSpecialCharacters(text, 'quantity')
-            if (filtered === '' || (parseInt(filtered) >= 1 && parseInt(filtered) <= 15)) {
-                onInputChange(index, "quantity", filtered)
-              }
-            }}
+            onChangeText={handleQuantityChange}
             inputMode="numeric"
             mode="outlined"
             style={{ marginBottom: 8 }}
@@ -391,12 +313,7 @@ const ContractForm = React.memo(({
                 key={`desc-${index}-${i}`}
                 label={`Luggage Description ${i + 1}*`}
                 value={contract.itemDescriptions?.[i] ?? ''}
-                onChangeText={(text) => {
-                  const sanitized = filterSpecialCharacters(text, 'itemDescription')
-                  const next = [...(contract.itemDescriptions || [])]
-                  next[i] = sanitized
-                  onInputChange(index, 'itemDescriptions', next)
-                }}
+                onChangeText={(text) => handleItemDescriptionChange(i, text)}
                 mode="outlined"
                 style={{ marginBottom: 8 }}
                 placeholder="Describe the luggage"
@@ -416,7 +333,7 @@ const ContractForm = React.memo(({
 
       <Button
         mode="outlined"
-        onPress={() => onClear(index)}
+        onPress={handleClearPress}
         style={{ marginTop: 12 }}
         icon="refresh"
         disabled={isDisabled}
@@ -854,28 +771,18 @@ const Booking = () => {
   // ================================
   // DERIVED VALUES & COMPUTED STATE
   // ================================
-  const totalDeliveryFee = useMemo(() => {
-    return contracts.reduce((total, contract) => {
-      const qty = parseInt(contract.quantity || '0') || 0
-      const setsOfThree = Math.ceil(qty / 3)
-      return total + (deliveryFee * setsOfThree)
-    }, 0)
-  }, [deliveryFee, contracts])
+  const totalDeliveryFee = useMemo(() => 
+    calculateTotalDeliveryFee(contracts, deliveryFee), 
+    [contracts, deliveryFee]
+  )
   
   const totalLuggageQuantity = useMemo(() => 
-    contracts.reduce((sum, c) => sum + Number(c.quantity || 0), 0), 
+    calculateTotalLuggage(contracts), 
     [contracts]
   )
 
-  const terminalOptions = useMemo(() => ([
-    { label: 'Terminal 1', lat: 14.508963226090515, lng: 121.00417400814496 },
-    { label: 'Terminal 2', lat: 14.511166725278645, lng: 121.01288969053523 },
-    { label: 'Terminal 3', lat: 14.5201168528943, lng: 121.01377520505147 },
-    // { label: 'Terminal 4', lat: 14.525440177319647, lng: 121.00111980000001 }
-  ]), [])
-
   const pickupBays = useMemo(() => 
-    Array.from({ length: 20 }, (_, i) => `Bay ${i + 1}`), 
+    Array.from({ length: PICKUP_BAYS_COUNT }, (_, i) => `Bay ${i + 1}`), 
     []
   )
 
@@ -1200,8 +1107,8 @@ const Booking = () => {
 
   const addContract = useCallback(() => {
     setContracts(prev => {
-      if (prev.length >= 15) {
-        showSnackbar('Maximum of 15 passenger forms reached')
+      if (prev.length >= MAX_CONTRACTS) {
+        showSnackbar(`Maximum of ${MAX_CONTRACTS} passenger forms reached`)
         return prev
       }
 
@@ -1238,35 +1145,8 @@ const Booking = () => {
   // VALIDATION FUNCTIONS
   // ================================
 
-  // Check for duplicate names across all contracts
   const validateContract = useCallback((contract) => {
-    const trim = (s) => String(s || "").trim()
-    return {
-      firstName:
-        !trim(contract.firstName) ||
-        trim(contract.firstName).length < INPUT_LIMITS.firstName.minLength ||
-        trim(contract.firstName).length > INPUT_LIMITS.firstName.maxLength,
-      lastName:
-        !trim(contract.lastName) ||
-        trim(contract.lastName).length < INPUT_LIMITS.lastName.minLength ||
-        trim(contract.lastName).length > INPUT_LIMITS.lastName.maxLength,
-      contact:
-        !trim(contract.contact) ||
-        !VALIDATION_PATTERNS.contact.test(trim(contract.contact)),
-      flightNumber:
-        !trim(contract.flightNumber) ||
-        !VALIDATION_PATTERNS.flightNumber.test(trim(contract.flightNumber).toUpperCase()),
-      itemDescription: (() => {
-        const qty = parseInt(contract.quantity || "0") || 0
-        const descs = Array.isArray(contract.itemDescriptions) ? contract.itemDescriptions.slice(0, qty) : []
-        const hasEmpty = qty > 0 && descs.some((d) => !String(d || "").trim())
-        const joined = descs.map((d, i) => `${i + 1}. ${String(d || "").trim()}\n`).join("")
-        return qty <= 0 || hasEmpty || joined.length < INPUT_LIMITS.itemDescription.minLength || joined.length > INPUT_LIMITS.itemDescription.maxLength
-      })(),
-      quantity:
-        !String(contract.quantity || "").trim() ||
-        !VALIDATION_PATTERNS.quantity.test(String(contract.quantity || ""))
-    }
+    return validateSingleContract(contract)
   }, [])
 
   const validateDeliveryAddress = useCallback(() => {
@@ -1310,19 +1190,7 @@ const Booking = () => {
     }
 
     // Check for duplicate passenger names
-    const nameMap = new Map()
-    const duplicateNames = []
-    
-    contracts.forEach((contract, index) => {
-      const fullName = `${contract.firstName?.trim()} ${contract.lastName?.trim()}`.toLowerCase()
-      if (fullName.trim() && fullName !== ' ') {
-        if (nameMap.has(fullName)) {
-          duplicateNames.push(fullName)
-        } else {
-          nameMap.set(fullName, index)
-        }
-      }
-    })
+    const duplicateNames = findDuplicateNames(contracts)
 
     if (duplicateNames.length > 0) {
       showSnackbar("Passengers cannot have the same name. Please ensure each passenger has a unique name.")
@@ -1461,7 +1329,7 @@ const Booking = () => {
 
         // Resolve pickup geo based on selected terminal
         const selectedTerminalLabel = selectedTerminal || (pickupLocation?.split(',')?.[0]?.trim() || null)
-        const terminalMeta = terminalOptions.find(t => t.label === selectedTerminalLabel) || null
+        const terminalMeta = TERMINAL_OPTIONS.find(t => t.label === selectedTerminalLabel) || null
         const pickupGeoPoint = terminalMeta ? `POINT(${terminalMeta.lng} ${terminalMeta.lat})` : null
 
         // Calculate total charge for this contract (existing logic)
@@ -1472,6 +1340,13 @@ const Booking = () => {
         // Separate into base and excess charges
         const baseCharge = deliveryFee // Base charge per passenger
         const excessCharge = totalCharge - baseCharge // Excess charge per passenger
+
+        // Resolve flight number with prefix affix (for fixed corporation)
+        const rawFlight = String(contract.flightNumber || '').toUpperCase().trim()
+        const normalizedPrefix = String(fixedPrefix || '').toUpperCase().trim()
+        const finalFlightNumber = normalizedPrefix
+          ? (rawFlight.startsWith(normalizedPrefix) ? rawFlight : `${normalizedPrefix}${rawFlight}`)
+          : rawFlight
 
         const contractData = {
           id: trackingID,
@@ -1484,7 +1359,7 @@ const Booking = () => {
           ? contract.itemDescriptions.filter(d => d && d.trim() !== '').join('\n')
           : String(contract.itemDescription || '').trim(),
           luggage_quantity: contract.quantity,
-          flight_number: contract.flightNumber,
+          flight_number: finalFlightNumber,
           delivery_address: combinedDeliveryAddress,
           address_line_1: combinedAddressLine1,
           address_line_2: combinedAddressLine2,
@@ -1510,12 +1385,10 @@ const Booking = () => {
       await notifyAdministrators(createdContracts, user)
       showSnackbar('Contracts created successfully', true)
 
-      // Reset state to defaults
-      setDropOffLocation({ location: '', lat: null, lng: null })
-      setPickupLocation('')
-      setSelectedTerminal(null)
-      setSelectedBay(null)
+      // Reset state to defaults: clear all selections and form values used for insertion
+      clearAllSelections()
       setContracts([JSON.parse(JSON.stringify(INITIAL_CONTRACT))])
+      setShowStickyExpanded(false)
 
       navigation.navigate('BookingManagement', { screen: 'made' })
     } catch (error) {
@@ -1540,7 +1413,8 @@ const Booking = () => {
     notifyAdministrators,
     navigation,
     validateForm,
-    showSnackbar
+    showSnackbar,
+    fixedPrefix
   ])
 
   // ================================
@@ -1617,7 +1491,7 @@ const Booking = () => {
           }
           contentStyle={{ backgroundColor: colors.surface, width: 150 }} // match width
         >
-          {terminalOptions.map(t => (
+          {TERMINAL_OPTIONS.map(t => (
             <Menu.Item
               key={t.label}
               onPress={() => {
@@ -1660,7 +1534,7 @@ const Booking = () => {
         </Menu>
       </View>
     </Surface>
-  ), [pickupLocation, pickupError, showTerminalMenu, showBayMenu, selectedTerminal, selectedBay, terminalOptions, pickupBays, colors, loading])
+  ), [pickupLocation, pickupError, showTerminalMenu, showBayMenu, selectedTerminal, selectedBay, TERMINAL_OPTIONS, pickupBays, colors, loading])
 
   // ================================
   // MAIN RENDER
@@ -1843,7 +1717,7 @@ const Booking = () => {
             mode="outlined"
             onPress={clearAllSelections}
             icon="broom"
-            disabled={!hasSelections}
+            disabled={!hasSelections || loading}
           >
             Clear Delivery Addresses
           </Button>
@@ -1881,7 +1755,7 @@ const Booking = () => {
             mode="outlined"
             onPress={addContract}
             icon="plus"
-            disabled={loading || !dropOffLocation.location || deliveryFee <= 0 || contracts.length >= 15}
+            disabled={loading || !dropOffLocation.location || deliveryFee <= 0 || contracts.length >= MAX_CONTRACTS}
           >
             Add Passenger
           </Button>
