@@ -31,8 +31,8 @@ const UpdatePrompt = () => {
     } catch (error) {
       setErrorMessage('Update unavailable. Will retry later.')
       setDownloading(false)
-      // Clear error after 2 seconds
-      setTimeout(() => setErrorMessage(null), 2000)
+      // Clear error after 1 second
+      setTimeout(() => setErrorMessage(null), 1000)
     }
   }, [])
 

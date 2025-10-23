@@ -535,7 +535,7 @@ const AdminBookingList = ({ navigation }) => {
                     <Button
                       mode="outlined"
                       icon="filter-variant"
-                      onPress={() => setFilterMenuVisible(true)}
+                      onPress={() => setFilterMenuVisible(prev => !prev)}
                       style={[styles.filterButton, { borderColor: colors.outline }]}
                       contentStyle={styles.buttonContent}
                       labelStyle={[styles.buttonLabel, { color: colors.onSurface }]}
@@ -794,7 +794,7 @@ const AdminBookingList = ({ navigation }) => {
                                 onPress={() => {
                                   setActionMenuVisible(null)
                                   setSelectedContract(contract)
-                                  setShowAssignDialog(true)
+                                  setShowAssignDialog(prev => !prev)
                                 }}
                                 title="Assign Luggage"
                                 leadingIcon="account-plus"

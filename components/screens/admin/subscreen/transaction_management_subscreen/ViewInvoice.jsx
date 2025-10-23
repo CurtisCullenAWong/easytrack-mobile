@@ -128,9 +128,6 @@ const CreateInvoice = () => {
 
   const handleShare = async () => {
     try {
-      if (pdfFileSize && pdfFileSize > FILE_SIZE_LIMIT) {
-        showSnackbar(`The PDF file size is too large ${[FILE_SIZE_LIMIT]}`)
-      } else {
         // Use normal sharePDF
         await sharePDF(
           buildTransactionsPayload(),
@@ -144,7 +141,6 @@ const CreateInvoice = () => {
           { signatureOnFirstPage: true },
           buildInvoiceData()
         )
-      }
     } catch (error) {
       console.error('Error sharing PDF:', error)
       showSnackbar(`Failed to share PDF: ${error.message}`)

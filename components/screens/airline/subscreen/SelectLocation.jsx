@@ -367,6 +367,8 @@ const SelectLocation = ({ navigation, route }) => {
             lat: latitude,
             lng: longitude,
           })
+          console.log('Reverse geocoded address:', address)
+          console.log(`POINT(${selectedLocation.lng} ${selectedLocation.lat})`)
           setAddressDetails(address)
         }
         
@@ -394,6 +396,10 @@ const SelectLocation = ({ navigation, route }) => {
         pricing_status: pricingStatus,
       },
     })
+    console.log('')
+    console.log(selectedLocation.location)
+    console.log(`POINT(${selectedLocation.lng} ${selectedLocation.lat})`)
+    console.log(deliveryFee)
   }, [selectedLocation, navigation, isAnyGeocodingInProgress, addressDetails, deliveryFee, pricingStatus])
   const placesRef = useRef(null)
 

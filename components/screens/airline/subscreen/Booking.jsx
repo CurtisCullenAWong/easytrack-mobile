@@ -600,7 +600,9 @@ const LocationAutofill = ({
       <Text style={[fonts.titleMedium, { color: colors.primary, marginBottom: 16 }]}>
         Delivery Address
       </Text>
-      
+      <Text style={[fonts.bodySmall, { color: colors.onSurfaceVariant, marginBottom: 12 }]}>
+        Note: This section is for viewing only and will not affect the pricing calculation.
+      </Text>
       {renderAutofillDropdown(
         "Region*",
         region,
