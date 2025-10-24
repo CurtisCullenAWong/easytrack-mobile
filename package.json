@@ -8,7 +8,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "deploy:prod": "eas env:pull --environment production --force && eas update --channel production --platform android --message \"Production update\"",
-    "deploy:admin_prod": "eas env:pull --environment admin_production --force && eas update --channel admin_production --platform android --message \"Admin Production update\""
+    "deploy:admin_prod": "eas env:pull --environment preview --force && eas update --channel admin_production --platform android --message \"Admin Production update\""
   },
   "dependencies": {
     "@google/genai": "^1.3.0",

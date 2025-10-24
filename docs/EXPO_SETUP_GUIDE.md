@@ -104,7 +104,10 @@ y
 
 eas update --channel admin_production --platform android --message "Admin Production update"
 ```
-
+```bash
+npm run deploy:prod
+npm run deploy:admin_prod
+```
 ## Support
 
 For issues with Expo Updates:
