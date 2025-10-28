@@ -11,7 +11,7 @@
   [![License](https://img.shields.io/badge/License-Private-red.svg)]()
 </div>
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)
@@ -28,7 +28,7 @@
 - [Contributing](#contributing)
 - [Support](#support)
 
-## 🎯 Overview
+## Overview
 
 EasyTrack is a comprehensive mobile application designed to streamline luggage delivery services between airlines and delivery partners. The platform provides real-time tracking, contract management, and performance analytics for three distinct user roles: Administrators, Airline Personnel, and Delivery Partners.
 
@@ -42,72 +42,72 @@ EasyTrack is a comprehensive mobile application designed to streamline luggage d
 - **Document Management**: PDF generation and digital signatures
 - **Push Notifications**: Real-time updates for important events
 
-## ✨ Features
+## Features
 
-### 🔐 Authentication & Security
+### Authentication & Security
 - Secure user authentication with Supabase
 - Role-based access control (Admin, Airline, Delivery)
 - Profile verification system
 - Password recovery and management
 - Session persistence across app restarts
 
-### 📍 Location Services
+### Location Services
 - Real-time GPS tracking for delivery personnel
 - Background location updates
 - Route optimization and mapping
 - Geofencing capabilities
 - Location-based notifications
 
-### 📊 Dashboard & Analytics
+### Dashboard & Analytics
 - Role-specific home screens with relevant information
 - Performance statistics and KPIs
 - Transaction management and reporting
 - Audit logs for system monitoring
 - Data visualization and charts
 
-### 📱 Contract Management
+### Contract Management
 - Create and manage delivery contracts
 - Digital signature collection
 - Document attachment and viewing
 - Status tracking throughout delivery lifecycle
 - Pricing calculation and invoicing
 
-### 💬 Communication
+### Communication
 - In-app messaging system
 - User profile viewing
 - Notification management
 - Real-time chat functionality
 
-### 📋 Booking & History
+### Booking & History
 - Comprehensive booking management
 - Historical transaction viewing
 - Search and filter capabilities
 - Export functionality for records
 
-## 👥 User Roles
+## User Roles
 
-### 🛡️ Administrator
+### Administrator
 - **User Management**: Create, edit, and manage user accounts
 - **System Monitoring**: Access to audit logs and system analytics
 - **Transaction Oversight**: Review and manage all transactions
 - **Performance Tracking**: Monitor platform-wide performance metrics
 - **Account Verification**: Approve user verifications and role assignments
 
-### ✈️ Airline Personnel
+### Airline Personnel
 - **Booking Creation**: Create delivery requests for luggage
 - **Luggage Tracking**: Monitor delivery status in real-time
 - **History Management**: View past bookings and transactions
 - **Performance Metrics**: Access to delivery performance data
 - **Communication**: Direct messaging with delivery partners
 
-### 🚚 Delivery Partners
+### Delivery Partners
 - **Contract Management**: Accept and manage delivery contracts
 - **Real-time Tracking**: Provide location updates during delivery
 - **Route Management**: Optimize delivery routes
 - **Performance Analytics**: View personal delivery metrics
 - **Digital Confirmation**: Collect digital signatures for deliveries
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 - **React Native** (0.81.4) - Cross-platform mobile development
@@ -135,7 +135,7 @@ EasyTrack is a comprehensive mobile application designed to streamline luggage d
 - **expo-location** - Location services and background tracking
 - **expo-notifications** - Push notification handling
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before you begin, ensure you have the following installed:
 
@@ -157,7 +157,7 @@ Before you begin, ensure you have the following installed:
 - **Google Cloud Platform** (for Maps API)
 - **Firebase Project** (for push notifications)
 
-## 🚀 Installation
+## Installation
 
 1. **Clone the repository**
    ```bash
@@ -180,7 +180,7 @@ Before you begin, ensure you have the following installed:
    npx expo install --fix
    ```
 
-## ⚙️ Environment Setup
+## Environment Setup
 
 1. **Create environment file**
    ```bash
@@ -212,7 +212,7 @@ Before you begin, ensure you have the following installed:
    eas build:configure
    ```
 
-## 🏃‍♂️ Running the App
+## Running the App
 
 ### Development Mode
 ```bash
@@ -247,7 +247,7 @@ npm run deploy:prod
 npm run deploy:admin_prod
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 easytrack-mobile/
@@ -279,7 +279,7 @@ easytrack-mobile/
 └── package.json              # Dependencies and scripts
 ```
 
-## 🔑 Key Components
+## Key Components
 
 ### Navigation Architecture
 - **StackNavigator**: Main navigation container
@@ -359,7 +359,7 @@ eas update --channel production --platform android --message "Production update"
 eas update --channel admin_production --platform android --message "Admin update"
 ```
 
-## 📚 Documentation
+## Documentation
 
 - [API Documentation](./docs/API.md) - Detailed API integration guide
 - [Developer Setup](./docs/DEVELOPER_SETUP.md) - Complete development environment setup
@@ -367,7 +367,7 @@ eas update --channel admin_production --platform android --message "Admin update
 - [Component Documentation](./docs/COMPONENTS.md) - Component architecture and usage
 - [User Guide](./docs/USER_GUIDE.md) - End-user documentation
 
-## 🤝 Contributing
+## Contributing
 
 1. **Fork the repository**
 2. **Create your feature branch** (`git checkout -b feature/AmazingFeature`)
@@ -382,7 +382,7 @@ eas update --channel admin_production --platform android --message "Admin update
 - Write comprehensive tests
 - Update documentation for new features
 
-## 📞 Support
+## Support
 
 ### Feedback and Suggestions
 We value your feedback! Please use our feedback form to share your thoughts and suggestions:
@@ -404,6 +404,6 @@ This project is private and proprietary. All rights reserved.
 ---
 
 <div align="center">
-  <p>Built with ❤️ using React Native and Expo</p>
-  <p>© 2024 EasyTrack. All rights reserved.</p>
+  <p>Built using React Native and Expo</p>
+  <p>© 2025 EasyTrack. All rights reserved.</p>
 </div>
