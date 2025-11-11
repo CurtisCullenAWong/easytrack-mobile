@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+- [Quick Start - Install APK](#quick-start---install-apk)
 - [Overview](#overview)
 - [Features](#features)
 - [User Roles](#user-roles)
@@ -27,6 +28,43 @@
 - [Deployment](#deployment)
 - [Contributing](#contributing)
 - [Support](#support)
+
+## Quick Start - Install APK
+
+### Download and Install
+
+1. **Download the APK**
+   - Get the latest EasyTrack APK from the releases section or build artifacts
+   - Transfer the APK file to your Android device
+
+2. **Enable Installation from Unknown Sources**
+   - Go to **Settings** > **Security** > **Install unknown apps**
+   - Select your browser or file manager
+   - Enable **Allow from this source**
+
+3. **Install the APK**
+   - Open the APK file on your device
+   - Tap **Install** and wait for the installation to complete
+   - Tap **Open** to launch the app
+
+### Test Account Login
+
+Use the following dummy account to test the application:
+
+```
+Email: easytracktesting@gmail.com
+Password: CebuPacific.EasyTrack-851
+```
+
+**Note**: This is a test account for demonstration purposes. Please do not use this account for production data.
+
+### Required Permissions
+
+When first launching the app, you'll need to grant the following permissions:
+- **Location** - For real-time tracking and delivery services
+- **Notifications** - For booking updates and alerts
+- **Camera** - For document scanning and profile photos
+- **Storage** - For accessing and saving documents
 
 ## Overview
 
@@ -195,15 +233,10 @@ Before you begin, ensure you have the following installed:
 
    # Google Maps API
    EXPO_PUBLIC_ANDROID_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
-
-   # Firebase Configuration
-   EXPO_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
-   EXPO_PUBLIC_FIREBASE_PROJECT_ID=your_firebase_project_id
    ```
 
 3. **Configure Google Services**
    - Place `google-services.json` in the project root
-   - Ensure Firebase project is properly configured
 
 4. **Set up EAS configuration**
    ```bash
